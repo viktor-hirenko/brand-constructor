@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import type { User } from '@brand-constructor/shared';
+import type { User, UserRole } from '@brand-constructor/shared';
 import { ROLE_LABELS, USER_ROLES } from '@brand-constructor/shared';
 import { apiPost, apiPut, apiDelete } from '@/composables/useApi';
 import { useAuthStore } from '@/stores/auth';
@@ -14,7 +14,7 @@ const loading = ref(false);
 
 const showModal = ref(false);
 const editingUser = ref<User | null>(null);
-const form = ref({ name: '', email: '', role: USER_ROLES.PRODUCT_OWNER });
+const form = ref<{ name: string; email: string; role: UserRole }>({ name: '', email: '', role: USER_ROLES.PRODUCT_OWNER });
 
 const isEditing = computed(() => editingUser.value !== null);
 const modalTitle = computed(() => isEditing.value ? 'Edit User' : 'Add User');

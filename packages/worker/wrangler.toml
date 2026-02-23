@@ -2,12 +2,13 @@ name = "brand-constructor-api"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "71bd6a3d109ad42e0973488dafe041b2"
 
 # Cloudflare D1 Database
 [[d1_databases]]
 binding = "DB"
 database_name = "brand-constructor-db"
-database_id = "TODO_REPLACE_WITH_ACTUAL_D1_ID"
+database_id = "2aafe66b-27be-4058-9c09-e784efefa404"
 
 # Cloudflare R2 Bucket
 [[r2_buckets]]
@@ -17,8 +18,26 @@ bucket_name = "brand-constructor-assets"
 # Cloudflare KV for sessions
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "TODO_REPLACE_WITH_ACTUAL_KV_ID"
+id = "c4531fb03f2947418c131880e7ba4a36"
 
+# Development environment
 [vars]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:5173"
+
+# Production environment
+[env.production]
+vars = { ENVIRONMENT = "production", CORS_ORIGIN = "https://brand-constructor.pages.dev" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "brand-constructor-db"
+database_id = "2aafe66b-27be-4058-9c09-e784efefa404"
+
+[[env.production.r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "brand-constructor-assets"
+
+[[env.production.kv_namespaces]]
+binding = "SESSIONS"
+id = "c4531fb03f2947418c131880e7ba4a36"

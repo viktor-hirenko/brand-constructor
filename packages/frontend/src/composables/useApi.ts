@@ -1,6 +1,8 @@
 import { ref, type Ref } from 'vue';
 import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-constructor/shared';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 interface FetchState<T> {
   data: Ref<T | null>;
   loading: Ref<boolean>;
@@ -11,6 +13,7 @@ async function request<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const fullUrl = url.startsWith('/api') ? `${API_BASE}${url}` : url;
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
@@ -19,7 +22,7 @@ async function request<T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(fullUrl, { ...options, headers });
   const json = await response.json();
 
   if (!response.ok) {
