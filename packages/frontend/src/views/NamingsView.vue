@@ -6,21 +6,21 @@ import { useAuthStore } from '@/stores/auth';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
-import StatusBadge from '@/components/ui/StatusBadge.vue';
 
 const authStore = useAuthStore();
 const canWrite = authStore.canWriteLibrary('external_namings');
 
 const activeTab = ref<'external' | 'internal'>('external');
-const statusFilter = ref('active');
 const conceptFilter = ref<string>('all');
+
+type ExternalNamingRow = ExternalNaming & { concept_name: string | null; author_name: string };
 
 const {
   data: externalNamings,
   loading: extLoading,
   total: extTotal,
   fetchData: fetchExternal,
-} = useApiList<ExternalNaming & { concept_name: string | null; author_name: string }>('/api/namings/external');
+} = useApiList<ExternalNamingRow>('/api/namings/external');
 
 const {
   data: internalNamings,
@@ -29,13 +29,26 @@ const {
   fetchData: fetchInternal,
 } = useApiList<InternalNaming & { author_name: string }>('/api/namings/internal');
 
+const {
+  data: concepts,
+  fetchData: fetchConcepts,
+} = useApiList<Concept>('/api/concepts');
+
 const showCreateModal = ref(false);
+const showEditModal = ref(false);
 const newName = ref('');
+const newTagline = ref('');
 const newConceptId = ref<string | null>(null);
 const creating = ref(false);
 
+const editId = ref('');
+const editName = ref('');
+const editTagline = ref('');
+const editConceptId = ref<string | null>(null);
+const saving = ref(false);
+
 function refreshList() {
-  const params: Record<string, string> = { status: statusFilter.value };
+  const params: Record<string, string> = {};
   if (activeTab.value === 'external') {
     if (conceptFilter.value !== 'all') {
       params.filter = conceptFilter.value;
@@ -46,8 +59,18 @@ function refreshList() {
   }
 }
 
-onMounted(refreshList);
-watch([activeTab, statusFilter, conceptFilter], refreshList);
+onMounted(() => {
+  refreshList();
+  fetchConcepts({ per_page: '100' });
+});
+watch([activeTab, conceptFilter], refreshList);
+
+function openCreateModal() {
+  newName.value = '';
+  newTagline.value = '';
+  newConceptId.value = null;
+  showCreateModal.value = true;
+}
 
 async function handleCreate() {
   if (!newName.value.trim()) return;
@@ -56,17 +79,49 @@ async function handleCreate() {
     if (activeTab.value === 'external') {
       await apiPost('/api/namings/external', {
         name: newName.value.trim(),
+        tagline: newTagline.value.trim(),
         concept_id: newConceptId.value || null,
       });
     } else {
-      await apiPost('/api/namings/internal', { name: newName.value.trim() });
+      await apiPost('/api/namings/internal', {
+        name: newName.value.trim(),
+        tagline: newTagline.value.trim(),
+      });
     }
     showCreateModal.value = false;
-    newName.value = '';
-    newConceptId.value = null;
     refreshList();
   } finally {
     creating.value = false;
+  }
+}
+
+type InternalNamingRow = InternalNaming & { author_name: string };
+
+function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
+  editId.value = naming.id;
+  editName.value = naming.name;
+  editTagline.value = naming.tagline || '';
+  editConceptId.value = 'concept_id' in naming ? (naming as ExternalNamingRow).concept_id : null;
+  showEditModal.value = true;
+}
+
+async function handleSaveEdit() {
+  if (!editName.value.trim()) return;
+  saving.value = true;
+  try {
+    const type = activeTab.value;
+    const body: Record<string, unknown> = {
+      name: editName.value.trim(),
+      tagline: editTagline.value.trim(),
+    };
+    if (type === 'external') {
+      body.concept_id = editConceptId.value || null;
+    }
+    await apiPut(`/api/namings/${type}/${editId.value}`, body);
+    showEditModal.value = false;
+    refreshList();
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -99,11 +154,6 @@ async function handleDeleteNaming(id: string, name: string) {
 
     <div class="namings-view__toolbar">
       <div class="namings-view__filters">
-        <select v-model="statusFilter" class="namings-view__select">
-          <option value="active">Active</option>
-          <option value="draft">Drafts</option>
-          <option value="archived">Archived</option>
-        </select>
         <select
           v-if="activeTab === 'external'"
           v-model="conceptFilter"
@@ -117,7 +167,7 @@ async function handleDeleteNaming(id: string, name: string) {
           {{ activeTab === 'external' ? extTotal : intTotal }} namings
         </span>
       </div>
-      <BaseButton v-if="canWrite" @click="showCreateModal = true">
+      <BaseButton v-if="canWrite" @click="openCreateModal">
         + New Naming
       </BaseButton>
     </div>
@@ -129,12 +179,12 @@ async function handleDeleteNaming(id: string, name: string) {
       Loading...
     </div>
 
-    <table v-else class="namings-view__table">
+    <div v-else class="namings-view__table-wrap">
+    <table class="namings-view__table">
       <thead>
         <tr>
           <th>Name</th>
           <th v-if="activeTab === 'external'">Linked Concept</th>
-          <th>Status</th>
           <th>Author</th>
           <th>Created</th>
           <th v-if="canWrite">Actions</th>
@@ -143,12 +193,22 @@ async function handleDeleteNaming(id: string, name: string) {
       <tbody>
         <template v-if="activeTab === 'external'">
           <tr v-for="n in externalNamings" :key="n.id">
-            <td class="namings-view__name">{{ n.name }}</td>
+            <td class="namings-view__name-cell">
+              <span class="namings-view__name">{{ n.name }}</span>
+              <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+            </td>
             <td>{{ n.concept_name || '—' }}</td>
-            <td><StatusBadge :status="n.status" /></td>
             <td>{{ n.author_name }}</td>
             <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
-            <td v-if="canWrite">
+            <td v-if="canWrite" class="namings-view__actions">
+              <BaseButton
+                v-if="!n.used_in_brand_id"
+                variant="secondary"
+                size="sm"
+                @click="openEditModal(n)"
+              >
+                Edit
+              </BaseButton>
               <BaseButton
                 v-if="!n.used_in_brand_id"
                 variant="danger"
@@ -162,11 +222,21 @@ async function handleDeleteNaming(id: string, name: string) {
         </template>
         <template v-else>
           <tr v-for="n in internalNamings" :key="n.id">
-            <td class="namings-view__name">{{ n.name }}</td>
-            <td><StatusBadge :status="n.status" /></td>
+            <td class="namings-view__name-cell">
+              <span class="namings-view__name">{{ n.name }}</span>
+              <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+            </td>
             <td>{{ n.author_name }}</td>
             <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
-            <td v-if="canWrite">
+            <td v-if="canWrite" class="namings-view__actions">
+              <BaseButton
+                v-if="!n.used_in_brand_id"
+                variant="secondary"
+                size="sm"
+                @click="openEditModal(n)"
+              >
+                Edit
+              </BaseButton>
               <BaseButton
                 v-if="!n.used_in_brand_id"
                 variant="danger"
@@ -180,6 +250,7 @@ async function handleDeleteNaming(id: string, name: string) {
         </template>
       </tbody>
     </table>
+    </div>
 
     <BaseModal
       v-if="showCreateModal"
@@ -193,11 +264,56 @@ async function handleDeleteNaming(id: string, name: string) {
           placeholder="Enter naming..."
           required
         />
+        <BaseInput
+          v-model="newTagline"
+          label="Tagline"
+          placeholder="Short description..."
+        />
+        <div v-if="activeTab === 'external'" class="namings-view__field">
+          <label class="namings-view__label">Link to Concept</label>
+          <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
+            <option :value="null">— No concept —</option>
+            <option v-for="c in concepts" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
+        </div>
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
         <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
           Create
+        </BaseButton>
+      </template>
+    </BaseModal>
+
+    <BaseModal
+      v-if="showEditModal"
+      :title="`Edit ${activeTab === 'external' ? 'External' : 'Internal'} Naming`"
+      @close="showEditModal = false"
+    >
+      <form class="namings-view__form" @submit.prevent="handleSaveEdit">
+        <BaseInput
+          v-model="editName"
+          label="Naming"
+          placeholder="Enter naming..."
+          required
+        />
+        <BaseInput
+          v-model="editTagline"
+          label="Tagline"
+          placeholder="Short description..."
+        />
+        <div v-if="activeTab === 'external'" class="namings-view__field">
+          <label class="namings-view__label">Link to Concept</label>
+          <select v-model="editConceptId" class="namings-view__select namings-view__select--full">
+            <option :value="null">— No concept —</option>
+            <option v-for="c in concepts" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
+        </div>
+      </form>
+      <template #footer>
+        <BaseButton variant="secondary" @click="showEditModal = false">Cancel</BaseButton>
+        <BaseButton :loading="saving" :disabled="!editName.trim()" @click="handleSaveEdit">
+          Save
         </BaseButton>
       </template>
     </BaseModal>
@@ -266,17 +382,28 @@ async function handleDeleteNaming(id: string, name: string) {
     color: $color-text-secondary;
   }
 
-  &__table {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: $color-bg-white;
+  &__table-wrap {
     border: 1px solid $color-border;
     border-radius: $radius-lg;
+    overflow: hidden;
+    overflow-x: auto;
+  }
 
-    th, td {
-      padding: $spacing-3 $spacing-4;
+  &__table {
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: separate;
+    background-color: $color-bg-white;
+
+    th,
+    td {
+      padding: $spacing-2 $spacing-3;
       text-align: left;
       border-bottom: 1px solid $color-border;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
     }
 
     th {
@@ -286,21 +413,63 @@ async function handleDeleteNaming(id: string, name: string) {
       text-transform: uppercase;
       letter-spacing: 0.05em;
       background-color: $color-bg;
+      white-space: nowrap;
     }
 
     td {
       font-size: $font-size-sm;
+      vertical-align: middle;
     }
+  }
+
+  &__name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   &__name {
     font-weight: $font-weight-medium;
   }
 
+  &__tagline {
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    line-height: 1.3;
+  }
+
+  &__actions {
+    white-space: nowrap;
+
+    :deep(button) {
+      margin-right: $spacing-2;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
   &__form {
     display: flex;
     flex-direction: column;
     gap: $spacing-4;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text;
+  }
+
+  &__select--full {
+    width: 100%;
   }
 }
 </style>

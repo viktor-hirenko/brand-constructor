@@ -11,6 +11,7 @@ const createSchema = z.object({
   name: z.string().min(1).max(300),
   description: z.string().max(5000).default(''),
   teams_involved: z.string().max(2000).default(''),
+  requirements: z.string().max(5000).default(''),
   goals: z.string().max(5000).default(''),
   components_list: z.string().max(5000).default(''),
   timeline: z.string().max(1000).default(''),
@@ -21,6 +22,7 @@ const updateSchema = z.object({
   name: z.string().min(1).max(300).optional(),
   description: z.string().max(5000).optional(),
   teams_involved: z.string().max(2000).optional(),
+  requirements: z.string().max(5000).optional(),
   goals: z.string().max(5000).optional(),
   components_list: z.string().max(5000).optional(),
   timeline: z.string().max(1000).optional(),
@@ -76,14 +78,15 @@ app.post('/', requireLibraryAccess('pr_packages'), async (c) => {
   const id = generateId('prp');
 
   await c.env.DB.prepare(
-    `INSERT INTO pr_packages (id, number, name, description, teams_involved, goals, components_list, timeline, expenses, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO pr_packages (id, number, name, description, teams_involved, requirements, goals, components_list, timeline, expenses, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id,
     parsed.data.number,
     parsed.data.name,
     parsed.data.description,
     parsed.data.teams_involved,
+    parsed.data.requirements,
     parsed.data.goals,
     parsed.data.components_list,
     parsed.data.timeline,

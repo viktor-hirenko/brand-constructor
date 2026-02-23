@@ -5,6 +5,7 @@ export type NamingStatus = (typeof ENTITY_STATUSES)[keyof typeof ENTITY_STATUSES
 export interface ExternalNaming {
   id: string;
   name: string;
+  tagline: string;
   concept_id: string | null;
   status: NamingStatus;
   created_by: string;
@@ -16,6 +17,7 @@ export interface ExternalNaming {
 export interface InternalNaming {
   id: string;
   name: string;
+  tagline: string;
   status: NamingStatus;
   created_by: string;
   used_in_brand_id: string | null;
@@ -25,20 +27,24 @@ export interface InternalNaming {
 
 export interface CreateExternalNamingPayload {
   name: string;
+  tagline?: string;
   concept_id?: string | null;
 }
 
 export interface CreateInternalNamingPayload {
   name: string;
+  tagline?: string;
 }
 
 export interface UpdateExternalNamingPayload {
   name?: string;
+  tagline?: string;
   concept_id?: string | null;
   status?: NamingStatus;
 }
 
 export interface UpdateInternalNamingPayload {
   name?: string;
+  tagline?: string;
   status?: NamingStatus;
 }

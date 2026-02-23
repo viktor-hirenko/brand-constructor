@@ -1,4 +1,8 @@
-import { ASSET_VALIDATION_RULES, ASSET_FILE_TYPES } from '@brand-constructor/shared';
+import {
+  ASSET_VALIDATION_RULES,
+  ASSET_FILE_TYPES,
+  COMPONENT_TYPE_ASPECT_RATIOS,
+} from '@brand-constructor/shared';
 import type { AssetEntityType, AssetFileType } from '@brand-constructor/shared';
 
 interface ValidationResult {
@@ -41,11 +45,18 @@ export function extractPngDimensions(buffer: ArrayBuffer): ImageMeta | null {
   return { width, height, aspectRatio: width / height };
 }
 
+function formatRatio(ratio: number): string {
+  if (ratio >= 4) return `${ratio.toFixed(1)}:1`;
+  if (ratio >= 1) return `${(ratio * 10).toFixed(0)}:10`;
+  return `1:${(1 / ratio).toFixed(1)}`;
+}
+
 export function validateAsset(
   entityType: AssetEntityType,
   fileType: AssetFileType,
   fileSize: number,
-  meta: ImageMeta | null
+  meta: ImageMeta | null,
+  componentTypeId?: string
 ): ValidationResult {
   const errors: string[] = [];
 
@@ -73,19 +84,33 @@ export function validateAsset(
     return { valid: false, errors };
   }
 
-  if (meta.width < rule.min_width || meta.height < rule.min_height) {
+  let expectedRatio = rule.aspect_ratio;
+  let minWidth = rule.min_width;
+  let minHeight = rule.min_height;
+  let tolerance = rule.aspect_ratio_tolerance;
+
+  if (entityType === 'component_thumbnail' && componentTypeId) {
+    const typeConfig = COMPONENT_TYPE_ASPECT_RATIOS[componentTypeId];
+    if (typeConfig) {
+      expectedRatio = typeConfig.aspect_ratio;
+      minWidth = typeConfig.min_width;
+      minHeight = typeConfig.min_height;
+    }
+  }
+
+  if (meta.width < minWidth || meta.height < minHeight) {
     errors.push(
-      `Image too small: ${meta.width}x${meta.height} (minimum ${rule.min_width}x${rule.min_height})`
+      `Image too small: ${meta.width}x${meta.height} (minimum ${minWidth}x${minHeight})`
     );
   }
 
-  const expectedRatio = rule.aspect_ratio;
-  const actualRatio = meta.aspectRatio;
-  if (Math.abs(actualRatio - expectedRatio) > rule.aspect_ratio_tolerance) {
-    const expected = expectedRatio > 1 ? `${Math.round(expectedRatio * 9)}:9` : `9:${Math.round(9 / expectedRatio)}`;
-    errors.push(
-      `Wrong aspect ratio: ${actualRatio.toFixed(2)} (expected ~${expectedRatio.toFixed(2)}, ${expected})`
-    );
+  if (expectedRatio > 0) {
+    const actualRatio = meta.aspectRatio;
+    if (Math.abs(actualRatio - expectedRatio) > tolerance) {
+      errors.push(
+        `Wrong aspect ratio: ${formatRatio(actualRatio)} (expected ~${formatRatio(expectedRatio)})`
+      );
+    }
   }
 
   return { valid: errors.length === 0, errors };

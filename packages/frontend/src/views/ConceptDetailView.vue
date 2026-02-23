@@ -112,7 +112,7 @@ async function handleFileUpload(event: Event, entityType: string) {
         <h3>Visual Assets</h3>
         <div class="concept-detail__assets">
           <div class="asset-slot">
-            <span class="asset-slot__label">Visual (16:9)</span>
+            <span class="asset-slot__label">Visual</span>
             <div class="asset-slot__preview">
               <img v-if="concept.visual_url" :src="concept.visual_url" alt="Visual" />
               <span v-else>No visual uploaded</span>
@@ -126,7 +126,7 @@ async function handleFileUpload(event: Event, entityType: string) {
             />
           </div>
           <div class="asset-slot">
-            <span class="asset-slot__label">Logo (1:1)</span>
+            <span class="asset-slot__label">Logo</span>
             <div class="asset-slot__preview asset-slot__preview--square">
               <img v-if="concept.logo_url" :src="concept.logo_url" alt="Logo" />
               <span v-else>No logo uploaded</span>
@@ -248,7 +248,7 @@ async function handleFileUpload(event: Event, entityType: string) {
   }
 
   &__preview {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1;
     background-color: $color-bg;
     border: 1px dashed $color-border;
     border-radius: $radius-md;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Concept } from '@brand-constructor/shared';
 import { useApiList, apiPost, apiDelete } from '@/composables/useApi';
@@ -8,26 +8,19 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseTextarea from '@/components/ui/BaseTextarea.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
-import StatusBadge from '@/components/ui/StatusBadge.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const canWrite = authStore.canWriteLibrary('concepts');
 
-const { data: concepts, loading, total, page, fetchData } = useApiList<Concept>('/api/concepts');
+const { data: concepts, loading, total, fetchData } = useApiList<Concept>('/api/concepts');
 
-const statusFilter = ref('active');
 const showCreateModal = ref(false);
 const newName = ref('');
 const newDescription = ref('');
 const creating = ref(false);
 
-onMounted(() => fetchData({ status: statusFilter.value }));
-
-watch(statusFilter, () => {
-  page.value = 1;
-  fetchData({ status: statusFilter.value });
-});
+onMounted(() => fetchData());
 
 async function handleCreate() {
   if (!newName.value.trim()) return;
@@ -49,22 +42,14 @@ async function handleCreate() {
 async function handleDelete(id: string, name: string) {
   if (!confirm(`Delete concept "${name}"? This action cannot be undone.`)) return;
   await apiDelete(`/api/concepts/${id}`);
-  fetchData({ status: statusFilter.value });
+  fetchData();
 }
 </script>
 
 <template>
   <div class="concepts-view">
     <div class="concepts-view__toolbar">
-      <div class="concepts-view__filters">
-        <select v-model="statusFilter" class="concepts-view__select">
-          <option value="active">Active</option>
-          <option value="draft">Drafts</option>
-          <option value="archived">Archived</option>
-          <option value="used">Used</option>
-        </select>
-        <span class="concepts-view__count">{{ total }} concepts</span>
-      </div>
+      <span class="concepts-view__count">{{ total }} concepts</span>
       <BaseButton v-if="canWrite" @click="showCreateModal = true">
         + New Concept
       </BaseButton>
@@ -92,10 +77,7 @@ async function handleDelete(id: string, name: string) {
           <div v-else class="concept-card__placeholder">No visual</div>
         </div>
         <div class="concept-card__body">
-          <div class="concept-card__header">
-            <h3 class="concept-card__name">{{ concept.name }}</h3>
-            <StatusBadge :status="concept.status" />
-          </div>
+          <h3 class="concept-card__name">{{ concept.name }}</h3>
           <p class="concept-card__description">
             {{ concept.description || 'No description' }}
           </p>
@@ -154,20 +136,6 @@ async function handleDelete(id: string, name: string) {
     margin-bottom: $spacing-6;
   }
 
-  &__filters {
-    display: flex;
-    align-items: center;
-    gap: $spacing-4;
-  }
-
-  &__select {
-    padding: $spacing-2 $spacing-3;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    font-size: $font-size-sm;
-    background-color: $color-bg-white;
-  }
-
   &__count {
     font-size: $font-size-sm;
     color: $color-text-secondary;
@@ -208,7 +176,7 @@ async function handleDelete(id: string, name: string) {
   }
 
   &__image {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1;
     background-color: $color-bg;
     overflow: hidden;
 
@@ -233,14 +201,8 @@ async function handleDelete(id: string, name: string) {
     padding: $spacing-4;
   }
 
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: $spacing-2;
-  }
-
   &__name {
+    margin-bottom: $spacing-2;
     font-size: $font-size-base;
     font-weight: $font-weight-semibold;
   }

@@ -13,9 +13,14 @@ app.post('/upload', async (c) => {
   const file = formData.get('file') as File | null;
   const entityType = formData.get('entity_type') as AssetEntityType | null;
   const entityId = formData.get('entity_id') as string | null;
+  const componentTypeId = formData.get('component_type_id') as string | null;
 
   if (!file || !entityType || !entityId) {
     return c.json({ success: false, error: 'Missing required fields: file, entity_type, entity_id' }, 400);
+  }
+
+  if (entityType === 'component_thumbnail' && !componentTypeId) {
+    return c.json({ success: false, error: 'component_type_id is required for component_thumbnail uploads' }, 400);
   }
 
   const buffer = await file.arrayBuffer();
@@ -30,9 +35,13 @@ app.post('/upload', async (c) => {
     meta = extractPngDimensions(buffer);
   }
 
-  const validation = validateAsset(entityType, fileType, buffer.byteLength, meta);
+  const validation = validateAsset(entityType, fileType, buffer.byteLength, meta, componentTypeId || undefined);
   if (!validation.valid) {
-    return c.json({ success: false, error: 'Asset validation failed', details: { validation: validation.errors } }, 400);
+    return c.json({
+      success: false,
+      error: `Asset validation failed: ${validation.errors.join('; ')}`,
+      details: { validation: validation.errors },
+    }, 400);
   }
 
   const id = generateId('ast');
@@ -44,7 +53,7 @@ app.post('/upload', async (c) => {
     customMetadata: { entityType, entityId, originalName: file.name },
   });
 
-  const fileUrl = `/assets/${r2Key}`;
+  const fileUrl = `/api/assets/${r2Key}`;
 
   await c.env.DB.prepare(
     `INSERT INTO assets (id, entity_type, entity_id, file_url, file_name, file_type, aspect_ratio, width, height, file_size)
@@ -61,6 +70,17 @@ app.post('/upload', async (c) => {
     meta?.height || 0,
     buffer.byteLength
   ).run();
+
+  if (entityType === 'concept_visual') {
+    await c.env.DB.prepare("UPDATE concepts SET visual_url = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(fileUrl, entityId).run();
+  } else if (entityType === 'concept_logo') {
+    await c.env.DB.prepare("UPDATE concepts SET logo_url = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(fileUrl, entityId).run();
+  } else if (entityType === 'component_thumbnail') {
+    await c.env.DB.prepare("UPDATE component_variants SET thumbnail_url = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(fileUrl, entityId).run();
+  }
 
   const asset = await c.env.DB.prepare('SELECT * FROM assets WHERE id = ?').bind(id).first();
   return c.json({ success: true, data: asset }, 201);

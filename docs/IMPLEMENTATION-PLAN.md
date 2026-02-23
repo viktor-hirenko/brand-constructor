@@ -148,59 +148,71 @@ brand-constructor/
 ### Фаза 1: Инфраструктура + Scaffold
 - [x] Создать monorepo, настроить pnpm workspaces + turbo
 - [x] Создать структуру директорий
-- [x] Shared types package
-- [ ] Scaffold Worker с Hono.js + базовые bindings
-- [ ] Scaffold Vue 3 + Vite проект
-- [ ] Создать Cloudflare R2 bucket через wrangler
-- [ ] Создать Cloudflare D1 database, применить миграцию
-- [ ] Настроить Cloudflare Access на dev-домене
+- [x] Shared types package (types + constants: roles, statuses, assets)
+- [x] Scaffold Worker с Hono.js + базовые bindings (D1, R2, KV)
+- [x] Scaffold Vue 3 + Vite проект (router, pinia, SCSS)
+- [x] D1 schema + миграция + seed-данные
+- [ ] Создать Cloudflare R2 bucket через wrangler (remote, нужен доступ к CF account)
+- [ ] Настроить Cloudflare Access на dev-домене (нужен доступ к CF account)
 
-**Статус**: 🔄 В процессе
+**Статус**: ✅ Завершена (локальная инфра работает, remote CF ресурсы ожидают доступ)
 
 ### Фаза 2: Библиотека концептов + ассеты
-- [ ] CRUD API для concepts в Worker
-- [ ] Upload/delete ассетов через R2 API
-- [ ] Валидация ассетов (format, aspect ratio, dimensions)
-- [ ] Vue: ConceptsView -- список, создание, редактирование, удаление
-- [ ] Vue: FileUpload компонент с preview и валидацией
-- [ ] Vue: ConceptCard, ConceptForm компоненты
+- [x] CRUD API для concepts в Worker (GET list, GET detail, POST, PUT, DELETE)
+- [x] Upload/delete ассетов через R2 API (POST /api/assets/upload, DELETE)
+- [x] Валидация ассетов (format detection, aspect ratio, dimensions, file size)
+- [x] Vue: ConceptsView -- список с фильтрами, создание, удаление
+- [x] Vue: ConceptDetailView -- детальная страница, редактирование, upload ассетов
+- [x] Vue: ConceptCard + StatusBadge компоненты
 
-**Статус**: ⏳ Ожидает
+**Статус**: ✅ Завершена
 
 ### Фаза 3: Naming библиотеки + связывание
-- [ ] CRUD API для external + internal namings
-- [ ] Связывание external naming с concept (FK concept_id)
-- [ ] Vue: NamingsView -- список с фильтрами
-- [ ] Vue: NamingForm с опцией привязки к концепту
+- [x] CRUD API для external namings (GET с фильтрами linked/standalone, POST, PUT, DELETE)
+- [x] CRUD API для internal namings (GET, POST, PUT, DELETE)
+- [x] Связывание external naming с concept (FK concept_id, валидация)
+- [x] Vue: NamingsView -- табы external/internal, фильтры, таблица, создание, удаление
 
-**Статус**: ⏳ Ожидает
+**Статус**: ✅ Завершена
 
 ### Фаза 4: PR-пакеты
-- [ ] CRUD API для PR-пакетов
-- [ ] Vue: PrPackagesView -- карточки 6 пакетов
-- [ ] Vue: PrPackageForm -- форма с полями
+- [x] CRUD API для PR-пакетов (GET list sorted by number, POST, PUT, DELETE)
+- [x] Vue: PrPackagesView -- карточки с create/edit модалом и формой
+- [x] Форма: number, name, description, teams, goals, components, timeline, expenses
 
-**Статус**: ⏳ Ожидает
+**Статус**: ✅ Завершена
 
 ### Фаза 5: UI-компоненты
-- [ ] CRUD API для component_types + component_variants
-- [ ] Vue: ComponentsView -- типы с вариантами внутри
-- [ ] Vue: ComponentVariantForm -- загрузка thumbnail + preview
+- [x] CRUD API для component_types (GET with variant_count, POST)
+- [x] CRUD API для component_variants (GET by type, POST, PUT, DELETE)
+- [x] Vue: ComponentsView -- grid типов с количеством вариантов
+- [x] Vue: ComponentVariantsView -- варианты типа, upload thumbnail, удаление
 
-**Статус**: ⏳ Ожидает
+**Статус**: ✅ Завершена
 
 ### Фаза 6: Роли + архивирование + polish
-- [ ] Auth middleware в Worker -- проверка роли
-- [ ] Vue: UsersView -- управление пользователями и ролями
-- [ ] Логика архивирования (used in brand -> archived)
-- [ ] History log для каждой сущности
-- [ ] Поиск и фильтрация по всем библиотекам
+- [x] Auth middleware (CF Access JWT + dev-mode fallback)
+- [x] requireLibraryAccess middleware -- проверка роли для каждой библиотеки
+- [x] requireAdmin middleware для user management
+- [x] Vue: UsersView -- управление пользователями и ролями (admin only)
+- [x] Логика архивирования (used_in_brand_id -> cannot delete/modify)
+- [x] Audit log (audit_log таблица с user_id, action, entity_type, entity_id)
+- [x] LIBRARY_WRITE_PERMISSIONS map в shared constants
 
-**Статус**: ⏳ Ожидает
+**Статус**: ✅ Завершена
 
 ---
 
 ## Changelog
+
+### 2026-02-21
+- Все 6 фаз реализованы
+- Worker API: 6 роутов (concepts, namings, pr-packages, components, assets, users)
+- Frontend: 7 views, 7 UI-компонентов, router, pinia store, useApi composable
+- D1 schema: 8 таблиц + 9 индексов, seed с users + component types
+- Auth: middleware chain (CF Access / dev-mode) + role-based library access
+- Asset validation: format detection (PNG magic bytes, SVG XML), aspect ratio, dimensions, file size
+- Все API протестированы через curl -- concepts CRUD, namings с линковкой, component types с seed
 
 ### 2026-02-19
 - Создан проект и документация

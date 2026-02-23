@@ -4,6 +4,7 @@ export interface PrPackage {
   name: string;
   description: string;
   teams_involved: string;
+  requirements: string;
   goals: string;
   components_list: string;
   timeline: string;
@@ -19,6 +20,7 @@ export interface CreatePrPackagePayload {
   name: string;
   description: string;
   teams_involved: string;
+  requirements: string;
   goals: string;
   components_list: string;
   timeline: string;
@@ -29,6 +31,7 @@ export interface UpdatePrPackagePayload {
   name?: string;
   description?: string;
   teams_involved?: string;
+  requirements?: string;
   goals?: string;
   components_list?: string;
   timeline?: string;

@@ -1,12 +1,8 @@
 -- Seed data for development
 
--- Default admin user
+-- Default admin user (dev mode fallback)
 INSERT OR IGNORE INTO users (id, email, name, role) VALUES
-  ('usr_admin_001', 'admin@brand-constructor.dev', 'Admin', 'admin'),
-  ('usr_strategy_001', 'strategy@brand-constructor.dev', 'Art Director', 'strategy_identity'),
-  ('usr_designer_001', 'designer@brand-constructor.dev', 'UI Designer', 'ui_designer'),
-  ('usr_pr_001', 'pr@brand-constructor.dev', 'PR Manager', 'pr_marketing'),
-  ('usr_po_001', 'po@brand-constructor.dev', 'Product Owner', 'product_owner');
+  ('usr_admin_001', 'admin@brand-constructor.dev', 'Admin', 'admin');
 
 -- Default component types (MVP)
 INSERT OR IGNORE INTO component_types (id, name, description, sort_order) VALUES

@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
-import StatusBadge from '@/components/ui/StatusBadge.vue';
+
 
 const route = useRoute();
 const router = useRouter();
@@ -22,6 +22,9 @@ const loading = ref(false);
 const showCreateModal = ref(false);
 const newName = ref('');
 const creating = ref(false);
+
+const lightboxUrl = ref<string | null>(null);
+const lightboxAlt = ref('');
 
 async function fetchVariants() {
   loading.value = true;
@@ -68,6 +71,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     formData.append('file', file);
     formData.append('entity_type', 'component_thumbnail');
     formData.append('entity_id', variantId);
+    formData.append('component_type_id', typeId);
     await apiUpload('/api/assets/upload', formData);
     fetchVariants();
   } catch (err) {
@@ -96,7 +100,13 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     <div v-else class="variants-view__grid">
       <div v-for="v in variants" :key="v.id" class="variant-card">
         <div class="variant-card__preview">
-          <img v-if="v.thumbnail_url" :src="v.thumbnail_url" :alt="v.name" />
+          <img
+            v-if="v.thumbnail_url"
+            :src="v.thumbnail_url"
+            :alt="v.name"
+            class="variant-card__img"
+            @click="lightboxUrl = v.thumbnail_url; lightboxAlt = v.name"
+          />
           <div v-else class="variant-card__placeholder">
             <span>No thumbnail</span>
             <input
@@ -108,10 +118,6 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
           </div>
         </div>
         <div class="variant-card__body">
-          <div class="variant-card__header">
-            <span class="variant-card__number">Type {{ v.variant_number }}</span>
-            <StatusBadge :status="v.status" />
-          </div>
           <h4 class="variant-card__name">{{ v.name }}</h4>
           <span class="variant-card__author">by {{ v.author_name }}</span>
           <div v-if="canWrite && !v.used_in_brand_id" class="variant-card__actions">
@@ -120,6 +126,12 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div v-if="lightboxUrl" class="lightbox" @click="lightboxUrl = null">
+        <img :src="lightboxUrl" :alt="lightboxAlt" class="lightbox__img" />
+      </div>
+    </Teleport>
 
     <BaseModal
       v-if="showCreateModal"
@@ -170,20 +182,24 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
   overflow: hidden;
 
   &__preview {
-    aspect-ratio: 4 / 3;
     background-color: $color-bg;
     overflow: hidden;
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
     }
   }
 
   &__placeholder {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 16 / 9;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -197,19 +213,6 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     padding: $spacing-4;
   }
 
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: $spacing-2;
-  }
-
-  &__number {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    color: $color-primary;
-  }
-
   &__name {
     font-size: $font-size-base;
     font-weight: $font-weight-semibold;
@@ -221,10 +224,32 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     color: $color-text-muted;
   }
 
+  &__img {
+    cursor: zoom-in;
+  }
+
   &__actions {
     margin-top: $spacing-3;
     display: flex;
     gap: $spacing-2;
+  }
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+
+  &__img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: $radius-md;
   }
 }
 </style>

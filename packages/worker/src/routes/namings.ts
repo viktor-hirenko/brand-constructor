@@ -8,21 +8,25 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 const createExternalSchema = z.object({
   name: z.string().min(1).max(200),
+  tagline: z.string().max(500).optional().default(''),
   concept_id: z.string().nullable().optional(),
 });
 
 const createInternalSchema = z.object({
   name: z.string().min(1).max(200),
+  tagline: z.string().max(500).optional().default(''),
 });
 
 const updateExternalSchema = z.object({
   name: z.string().min(1).max(200).optional(),
+  tagline: z.string().max(500).optional(),
   concept_id: z.string().nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
 });
 
 const updateInternalSchema = z.object({
   name: z.string().min(1).max(200).optional(),
+  tagline: z.string().max(500).optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
 });
 
@@ -91,8 +95,8 @@ app.post('/external', requireLibraryAccess('external_namings'), async (c) => {
   const id = generateId('exn');
 
   await c.env.DB.prepare(
-    'INSERT INTO external_namings (id, name, concept_id, created_by) VALUES (?, ?, ?, ?)'
-  ).bind(id, parsed.data.name, parsed.data.concept_id || null, user.id).run();
+    'INSERT INTO external_namings (id, name, tagline, concept_id, created_by) VALUES (?, ?, ?, ?, ?)'
+  ).bind(id, parsed.data.name, parsed.data.tagline || '', parsed.data.concept_id || null, user.id).run();
 
   const naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?').bind(id).first();
   return c.json({ success: true, data: naming }, 201);
@@ -199,8 +203,8 @@ app.post('/internal', requireLibraryAccess('internal_namings'), async (c) => {
   const id = generateId('inn');
 
   await c.env.DB.prepare(
-    'INSERT INTO internal_namings (id, name, created_by) VALUES (?, ?, ?)'
-  ).bind(id, parsed.data.name, user.id).run();
+    'INSERT INTO internal_namings (id, name, tagline, created_by) VALUES (?, ?, ?, ?)'
+  ).bind(id, parsed.data.name, parsed.data.tagline || '', user.id).run();
 
   const naming = await c.env.DB.prepare('SELECT * FROM internal_namings WHERE id = ?').bind(id).first();
   return c.json({ success: true, data: naming }, 201);

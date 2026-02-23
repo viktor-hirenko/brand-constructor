@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS concepts (
 CREATE TABLE IF NOT EXISTS external_namings (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  tagline TEXT NOT NULL DEFAULT '',
   concept_id TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   created_by TEXT NOT NULL,
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS external_namings (
 CREATE TABLE IF NOT EXISTS internal_namings (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  tagline TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'active',
   created_by TEXT NOT NULL,
   used_in_brand_id TEXT,
@@ -55,6 +57,7 @@ CREATE TABLE IF NOT EXISTS pr_packages (
   name TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   teams_involved TEXT NOT NULL DEFAULT '',
+  requirements TEXT NOT NULL DEFAULT '',
   goals TEXT NOT NULL DEFAULT '',
   components_list TEXT NOT NULL DEFAULT '',
   timeline TEXT NOT NULL DEFAULT '',

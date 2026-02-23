@@ -11,13 +11,20 @@ export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
     const env = c.env.ENVIRONMENT;
 
     if (env === 'development') {
-      const devEmail = c.req.header('X-Dev-User-Email') || 'admin@brand-constructor.dev';
-      const user = await c.env.DB.prepare('SELECT id, email, name, role FROM users WHERE email = ?')
-        .bind(devEmail)
-        .first();
+      const devEmail = c.req.header('X-Dev-User-Email');
+
+      let user;
+      if (devEmail) {
+        user = await c.env.DB.prepare('SELECT id, email, name, role FROM users WHERE email = ?')
+          .bind(devEmail)
+          .first();
+      } else {
+        user = await c.env.DB.prepare("SELECT id, email, name, role FROM users WHERE role = 'admin' ORDER BY created_at ASC LIMIT 1")
+          .first();
+      }
 
       if (!user) {
-        return c.json({ success: false, error: 'User not found' }, 401);
+        return c.json({ success: false, error: 'No admin user found. Run seed or create one.' }, 401);
       }
 
       c.set('user', user as { id: string; email: string; name: string; role: string });

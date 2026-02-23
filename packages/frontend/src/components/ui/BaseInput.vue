@@ -13,7 +13,7 @@ withDefaults(defineProps<InputProps>(), {
   required: false,
 });
 
-const model = defineModel<string>({ default: '' });
+const model = defineModel<string | number>({ default: '' });
 </script>
 
 <template>
