@@ -1,0 +1,26 @@
+{
+  "name": "brand-constructor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Brand Constructor Admin Panel - библиотеки концептов, неймінгів, PR-пакетів та UI-компонентів",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "dev:frontend": "pnpm --filter @brand-constructor/frontend dev",
+    "dev:worker": "pnpm --filter @brand-constructor/worker dev",
+    "build:frontend": "pnpm --filter @brand-constructor/frontend build",
+    "build:worker": "pnpm --filter @brand-constructor/worker build",
+    "deploy:worker": "pnpm --filter @brand-constructor/worker deploy",
+    "db:migrate": "pnpm --filter @brand-constructor/worker db:migrate",
+    "db:seed": "pnpm --filter @brand-constructor/worker db:seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

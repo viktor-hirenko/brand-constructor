@@ -1,0 +1,24 @@
+name = "brand-constructor-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "brand-constructor-db"
+database_id = "TODO_REPLACE_WITH_ACTUAL_D1_ID"
+
+# Cloudflare R2 Bucket
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "brand-constructor-assets"
+
+# Cloudflare KV for sessions
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "TODO_REPLACE_WITH_ACTUAL_KV_ID"
+
+[vars]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:5173"
