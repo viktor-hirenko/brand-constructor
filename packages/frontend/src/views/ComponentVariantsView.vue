@@ -122,10 +122,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             :src="getAssetUrl(v.thumbnail_url)"
             :alt="v.name"
             class="variant-card__img"
-            @click="
-              lightboxUrl = getAssetUrl(v.thumbnail_url)
-              lightboxAlt = v.name
-            "
+            @click="lightboxUrl = getAssetUrl(v.thumbnail_url); lightboxAlt = v.name"
           />
           <div v-else class="variant-card__placeholder">
             <svg
@@ -157,7 +154,10 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
 
         <div class="variant-card__body">
           <h4 class="variant-card__name">{{ v.name }}</h4>
-          <span class="variant-card__author">by {{ v.author_name }}</span>
+          <div class="variant-card__meta">
+            <span class="variant-card__author">by {{ v.author_name }}</span>
+            <span class="variant-card__date">{{ new Date(v.created_at).toLocaleDateString() }}</span>
+          </div>
           <div v-if="canWrite" class="variant-card__actions">
             <BaseButton
               v-if="!v.used_in_brand_id"
@@ -292,7 +292,19 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     margin-bottom: $spacing-1;
   }
 
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: $spacing-2;
+  }
+
   &__author {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+
+  &__date {
     font-size: $font-size-xs;
     color: $color-text-muted;
   }

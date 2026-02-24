@@ -39,7 +39,8 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: $color-bg;
 
   &__main {
@@ -47,6 +48,7 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    overflow: hidden;
   }
 
   &__content {

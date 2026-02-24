@@ -38,7 +38,7 @@ function handleLogout() {
 <template>
   <aside class="sidebar">
     <div class="sidebar__logo">
-      <span class="sidebar__logo-text">Brand Constructor</span>
+      <span class="sidebar__logo-text">BC Admin</span>
     </div>
 
     <nav class="sidebar__nav">
@@ -69,12 +69,13 @@ function handleLogout() {
 <style lang="scss" scoped>
 .sidebar {
   width: $sidebar-width;
-  min-height: 100vh;
+  height: 100vh;
   background-color: $color-bg-sidebar;
   color: $color-text-inverse;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  overflow-y: auto;
 
   &__logo {
     padding: $spacing-6;

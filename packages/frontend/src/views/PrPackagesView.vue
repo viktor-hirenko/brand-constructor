@@ -14,11 +14,12 @@ const canWrite = computed(() => authStore.canWriteLibrary('pr_packages'))
 
 const ALL_TEAMS = PR_TEAMS
 
+type PrPackageWithAuthor = PrPackage & { author_name: string }
 const {
   data: packages,
   loading,
   fetchData: fetchPackages,
-} = useApiList<PrPackage>('/api/pr-packages')
+} = useApiList<PrPackageWithAuthor>('/api/pr-packages')
 const showCreateModal = ref(false)
 const editingPkg = ref<PrPackage | null>(null)
 const viewingPkg = ref<PrPackage | null>(null)
@@ -165,11 +166,15 @@ async function handleDelete(id: string, name: string) {
             <p>{{ pkg.timeline }}</p>
           </div>
         </div>
-        <div v-if="canWrite" class="package-card__actions">
-          <BaseButton variant="secondary" size="sm" @click.stop="openEdit(pkg)">Edit</BaseButton>
-          <BaseButton variant="danger" size="sm" @click.stop="handleDelete(pkg.id, pkg.name)"
-            >Delete</BaseButton
-          >
+        <div class="package-card__footer">
+          <div class="package-card__meta">
+            <span class="package-card__author">by {{ pkg.author_name }}</span>
+            <span class="package-card__date">{{ new Date(pkg.created_at).toLocaleDateString() }}</span>
+          </div>
+          <div v-if="canWrite" class="package-card__actions">
+            <BaseButton variant="secondary" size="sm" @click.stop="openEdit(pkg)">Edit</BaseButton>
+            <BaseButton variant="danger" size="sm" @click.stop="handleDelete(pkg.id, pkg.name)">Delete</BaseButton>
+          </div>
         </div>
       </div>
     </div>
@@ -509,13 +514,35 @@ button.team-chip {
     margin-bottom: 2px;
   }
 
-  &__actions {
+  &__footer {
     padding: $spacing-3 $spacing-5;
     border-top: 1px solid $color-border;
     display: flex;
-    gap: $spacing-2;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
     flex-shrink: 0;
+    gap: $spacing-2;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__author {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+
+  &__date {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-2;
   }
 }
 </style>

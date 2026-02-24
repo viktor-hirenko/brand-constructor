@@ -13,7 +13,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
 
-const { data: concepts, loading, total, fetchData } = useApiList<Concept>('/api/concepts')
+type ConceptWithAuthor = Concept & { author_name: string }
+const { data: concepts, loading, total, fetchData } = useApiList<ConceptWithAuthor>('/api/concepts')
 
 const showCreateModal = ref(false)
 const newName = ref('')
@@ -80,8 +81,9 @@ async function handleDelete(id: string, name: string) {
             {{ concept.description || 'No description' }}
           </p>
           <div class="concept-card__footer">
-            <span class="concept-card__date">
-              {{ new Date(concept.created_at).toLocaleDateString() }}
+            <span class="concept-card__meta">
+              <span class="concept-card__author">by {{ concept.author_name }}</span>
+              <span class="concept-card__date">{{ new Date(concept.created_at).toLocaleDateString() }}</span>
             </span>
             <BaseButton
               v-if="canWrite && !concept.used_in_brand_id"
@@ -211,6 +213,17 @@ async function handleDelete(id: string, name: string) {
     align-items: center;
     justify-content: space-between;
     margin-top: $spacing-3;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__author {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
   }
 
   &__date {

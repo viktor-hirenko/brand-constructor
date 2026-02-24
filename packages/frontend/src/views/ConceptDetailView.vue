@@ -27,7 +27,9 @@ const {
 const isEditing = ref(false)
 const editName = ref('')
 const editDescription = ref('')
-const uploading = ref(false)
+const uploadingType = ref<string | null>(null)
+
+const visualInputRef = ref<HTMLInputElement | null>(null)
 
 onMounted(() => fetchData())
 
@@ -53,7 +55,7 @@ async function handleFileUpload(event: Event, entityType: string) {
   const file = input.files?.[0]
   if (!file || !concept.value) return
 
-  uploading.value = true
+  uploadingType.value = entityType
   try {
     const formData = new FormData()
     formData.append('file', file)
@@ -65,7 +67,7 @@ async function handleFileUpload(event: Event, entityType: string) {
   } catch (err) {
     alert(err instanceof Error ? err.message : 'Upload failed')
   } finally {
-    uploading.value = false
+    uploadingType.value = null
     input.value = ''
   }
 }
@@ -89,8 +91,7 @@ async function handleFileUpload(event: Event, entityType: string) {
             <BaseInput v-else v-model="editName" placeholder="Concept name" />
           </div>
           <p class="concept-detail__meta">
-            Created by {{ concept.author_name }} on
-            {{ new Date(concept.created_at).toLocaleDateString() }}
+            by {{ concept.author_name }} · {{ new Date(concept.created_at).toLocaleDateString() }}
           </p>
         </div>
         <div v-if="canWrite" class="concept-detail__actions">
@@ -117,30 +118,28 @@ async function handleFileUpload(event: Event, entityType: string) {
             <span class="asset-slot__label">Visual</span>
             <div class="asset-slot__preview">
               <img v-if="concept.visual_url" :src="getAssetUrl(concept.visual_url)" alt="Visual" />
-              <span v-else>No visual uploaded</span>
+              <span v-else class="asset-slot__empty-text">No visual uploaded</span>
             </div>
-            <input
-              v-if="canWrite"
-              type="file"
-              accept="image/png,image/svg+xml"
-              :disabled="uploading"
-              @change="e => handleFileUpload(e, 'concept_visual')"
-            />
+            <template v-if="canWrite">
+              <input
+                ref="visualInputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_visual')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_visual'"
+                :disabled="uploadingType !== null"
+                @click="visualInputRef?.click()"
+              >
+                {{ concept.visual_url ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
           </div>
-          <div class="asset-slot">
-            <span class="asset-slot__label">Logo</span>
-            <div class="asset-slot__preview asset-slot__preview--square">
-              <img v-if="concept.logo_url" :src="getAssetUrl(concept.logo_url)" alt="Logo" />
-              <span v-else>No logo uploaded</span>
-            </div>
-            <input
-              v-if="canWrite"
-              type="file"
-              accept="image/png,image/svg+xml"
-              :disabled="uploading"
-              @change="e => handleFileUpload(e, 'concept_logo')"
-            />
-          </div>
+
         </div>
       </div>
 
@@ -191,8 +190,8 @@ async function handleFileUpload(event: Event, entityType: string) {
   }
 
   &__meta {
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
+    font-size: $font-size-xs;
+    color: $color-text-muted;
     margin-top: $spacing-1;
   }
 
@@ -269,6 +268,15 @@ async function handleFileUpload(event: Event, entityType: string) {
       height: 100%;
       object-fit: cover;
     }
+  }
+
+  &__empty-text {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+
+  &__file-input {
+    display: none;
   }
 }
 
