@@ -1,72 +1,72 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared';
-import { useApi, apiPut, apiUpload, getAssetUrl } from '@/composables/useApi';
-import { useAuthStore } from '@/stores/auth';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseTextarea from '@/components/ui/BaseTextarea.vue';
-import StatusBadge from '@/components/ui/StatusBadge.vue';
-
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared'
+import { useApi, apiPut, apiUpload, getAssetUrl } from '@/composables/useApi'
+import { useAuthStore } from '@/stores/auth'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 interface ConceptDetail extends Concept {
-  namings: ExternalNaming[];
-  assets: Asset[];
-  author_name: string;
+  namings: ExternalNaming[]
+  assets: Asset[]
+  author_name: string
 }
 
-const route = useRoute();
-const router = useRouter();
-const authStore = useAuthStore();
-const canWrite = computed(() => authStore.canWriteLibrary('concepts'));
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
 
-const { data: concept, loading, fetchData } = useApi<ConceptDetail>(
-  `/api/concepts/${route.params.id}`
-);
+const {
+  data: concept,
+  loading,
+  fetchData,
+} = useApi<ConceptDetail>(`/api/concepts/${route.params.id}`)
 
-const isEditing = ref(false);
-const editName = ref('');
-const editDescription = ref('');
-const uploading = ref(false);
+const isEditing = ref(false)
+const editName = ref('')
+const editDescription = ref('')
+const uploading = ref(false)
 
-onMounted(() => fetchData());
+onMounted(() => fetchData())
 
 function startEditing() {
-  if (!concept.value) return;
-  editName.value = concept.value.name;
-  editDescription.value = concept.value.description;
-  isEditing.value = true;
+  if (!concept.value) return
+  editName.value = concept.value.name
+  editDescription.value = concept.value.description
+  isEditing.value = true
 }
 
 async function saveChanges() {
-  if (!concept.value || !editName.value.trim()) return;
+  if (!concept.value || !editName.value.trim()) return
   await apiPut(`/api/concepts/${concept.value.id}`, {
     name: editName.value.trim(),
     description: editDescription.value.trim(),
-  });
-  isEditing.value = false;
-  fetchData();
+  })
+  isEditing.value = false
+  fetchData()
 }
 
 async function handleFileUpload(event: Event, entityType: string) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file || !concept.value) return;
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !concept.value) return
 
-  uploading.value = true;
+  uploading.value = true
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('entity_type', entityType);
-    formData.append('entity_id', concept.value.id);
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('entity_type', entityType)
+    formData.append('entity_id', concept.value.id)
 
-    await apiUpload<Asset>('/api/assets/upload', formData);
-    fetchData();
+    await apiUpload<Asset>('/api/assets/upload', formData)
+    fetchData()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Upload failed');
+    alert(err instanceof Error ? err.message : 'Upload failed')
   } finally {
-    uploading.value = false;
-    input.value = '';
+    uploading.value = false
+    input.value = ''
   }
 }
 </script>
@@ -87,10 +87,10 @@ async function handleFileUpload(event: Event, entityType: string) {
           <div class="concept-detail__title-row">
             <h2 v-if="!isEditing">{{ concept.name }}</h2>
             <BaseInput v-else v-model="editName" placeholder="Concept name" />
-            <StatusBadge :status="concept.status" />
           </div>
           <p class="concept-detail__meta">
-            Created by {{ concept.author_name }} on {{ new Date(concept.created_at).toLocaleDateString() }}
+            Created by {{ concept.author_name }} on
+            {{ new Date(concept.created_at).toLocaleDateString() }}
           </p>
         </div>
         <div v-if="canWrite" class="concept-detail__actions">
@@ -105,7 +105,9 @@ async function handleFileUpload(event: Event, entityType: string) {
       <div class="concept-detail__section">
         <h3>Description</h3>
         <BaseTextarea v-if="isEditing" v-model="editDescription" :rows="4" />
-        <p v-else class="concept-detail__text">{{ concept.description || 'No description provided.' }}</p>
+        <p v-else class="concept-detail__text">
+          {{ concept.description || 'No description provided.' }}
+        </p>
       </div>
 
       <div class="concept-detail__section">
@@ -122,7 +124,7 @@ async function handleFileUpload(event: Event, entityType: string) {
               type="file"
               accept="image/png,image/svg+xml"
               :disabled="uploading"
-              @change="(e) => handleFileUpload(e, 'concept_visual')"
+              @change="e => handleFileUpload(e, 'concept_visual')"
             />
           </div>
           <div class="asset-slot">
@@ -136,7 +138,7 @@ async function handleFileUpload(event: Event, entityType: string) {
               type="file"
               accept="image/png,image/svg+xml"
               :disabled="uploading"
-              @change="(e) => handleFileUpload(e, 'concept_logo')"
+              @change="e => handleFileUpload(e, 'concept_logo')"
             />
           </div>
         </div>
@@ -150,7 +152,6 @@ async function handleFileUpload(event: Event, entityType: string) {
         <div v-else class="concept-detail__namings">
           <div v-for="naming in concept.namings" :key="naming.id" class="naming-chip">
             {{ naming.name }}
-            <StatusBadge :status="naming.status" />
           </div>
         </div>
       </div>

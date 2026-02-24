@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-const route = useRoute();
-const authStore = useAuthStore();
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+const isProductionMode = import.meta.env.VITE_ENVIRONMENT === 'production'
 
 interface NavItem {
-  label: string;
-  path: string;
-  icon: string;
-  adminOnly?: boolean;
+  label: string
+  path: string
+  icon: string
+  adminOnly?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -19,14 +21,17 @@ const navItems: NavItem[] = [
   { label: 'PR Packages', path: '/pr-packages', icon: '&#9733;' },
   { label: 'UI Components', path: '/components', icon: '&#9638;' },
   { label: 'Users', path: '/users', icon: '&#9823;', adminOnly: true },
-];
+]
 
-const visibleItems = computed(() =>
-  navItems.filter((item) => !item.adminOnly || authStore.isAdmin)
-);
+const visibleItems = computed(() => navItems.filter(item => !item.adminOnly || authStore.isAdmin))
 
 function isActive(path: string): boolean {
-  return route.path.startsWith(path);
+  return route.path.startsWith(path)
+}
+
+function handleLogout() {
+  authStore.logout()
+  router.push({ name: 'login' })
 }
 </script>
 
@@ -53,6 +58,9 @@ function isActive(path: string): boolean {
       <div v-if="authStore.user" class="sidebar__user">
         <span class="sidebar__user-name">{{ authStore.user.name }}</span>
         <span class="sidebar__user-role">{{ authStore.user.role }}</span>
+        <button v-if="isProductionMode" class="sidebar__logout" @click="handleLogout">
+          Sign out
+        </button>
       </div>
     </div>
   </aside>
@@ -134,6 +142,25 @@ function isActive(path: string): boolean {
     font-size: $font-size-xs;
     color: $color-text-muted;
     text-transform: capitalize;
+  }
+
+  &__logout {
+    margin-top: $spacing-2;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: $radius-md;
+    color: $color-text-muted;
+    font-size: $font-size-xs;
+    padding: $spacing-1 $spacing-3;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      color: $color-text-inverse;
+    }
   }
 }
 </style>

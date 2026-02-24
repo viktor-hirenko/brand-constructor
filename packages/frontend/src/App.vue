@@ -1,26 +1,39 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import AppSidebar from '@/components/ui/AppSidebar.vue';
-import AppHeader from '@/components/ui/AppHeader.vue';
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import AppSidebar from '@/components/ui/AppSidebar.vue'
+import AppHeader from '@/components/ui/AppHeader.vue'
 
-const authStore = useAuthStore();
+const route = useRoute()
+const authStore = useAuthStore()
+
+const isLoginPage = computed(() => route.name === 'login')
 
 onMounted(async () => {
-  await authStore.fetchCurrentUser();
-});
+  // In development mode, fetch user from API (dev bypass handles auth)
+  if (import.meta.env.VITE_ENVIRONMENT === 'development') {
+    await authStore.fetchCurrentUser()
+  }
+})
 </script>
 
 <template>
-  <div class="app-layout">
-    <AppSidebar />
-    <div class="app-layout__main">
-      <AppHeader />
-      <main class="app-layout__content">
-        <RouterView />
-      </main>
+  <template v-if="isLoginPage">
+    <RouterView />
+  </template>
+
+  <template v-else>
+    <div class="app-layout">
+      <AppSidebar />
+      <div class="app-layout__main">
+        <AppHeader />
+        <main class="app-layout__content">
+          <RouterView />
+        </main>
+      </div>
     </div>
-  </div>
+  </template>
 </template>
 
 <style lang="scss" scoped>

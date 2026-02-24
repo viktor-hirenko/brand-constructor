@@ -1,84 +1,100 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import type { ComponentType, ComponentVariant, Asset } from '@brand-constructor/shared';
-import { apiPost, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi';
-import { useAuthStore } from '@/stores/auth';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import type { ComponentType, ComponentVariant } from '@brand-constructor/shared'
+import { apiPost, apiDelete, apiUpload, getAssetUrl, getAuthHeader } from '@/composables/useApi'
+import { useAuthStore } from '@/stores/auth'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+const canWrite = computed(() => authStore.canWriteLibrary('component_variants'))
 
-const route = useRoute();
-const router = useRouter();
-const authStore = useAuthStore();
-const canWrite = computed(() => authStore.canWriteLibrary('component_variants'));
+const typeId = route.params.typeId as string
+const componentType = ref<ComponentType | null>(null)
+const variants = ref<(ComponentVariant & { author_name: string })[]>([])
+const loading = ref(false)
 
-const typeId = route.params.typeId as string;
-const componentType = ref<ComponentType | null>(null);
-const variants = ref<(ComponentVariant & { author_name: string })[]>([]);
-const loading = ref(false);
+const showCreateModal = ref(false)
+const newName = ref('')
+const creating = ref(false)
 
-const showCreateModal = ref(false);
-const newName = ref('');
-const creating = ref(false);
+const lightboxUrl = ref<string | null>(null)
+const lightboxAlt = ref('')
 
-const lightboxUrl = ref<string | null>(null);
-const lightboxAlt = ref('');
+const uploadingIds = ref<Set<string>>(new Set())
+const uploadInputRefs = ref<Map<string, HTMLInputElement>>(new Map())
 
-async function fetchVariants() {
-  loading.value = true;
-  try {
-    const apiBase = import.meta.env.VITE_API_URL || '';
-    const res = await fetch(`${apiBase}/api/components/types/${typeId}/variants`);
-    const json = await res.json();
-    if (json.success) {
-      componentType.value = json.data.type;
-      variants.value = json.data.variants;
-    }
-  } finally {
-    loading.value = false;
+function setUploadRef(el: unknown, variantId: string) {
+  if (el instanceof HTMLInputElement) {
+    uploadInputRefs.value.set(variantId, el)
   }
 }
 
-onMounted(fetchVariants);
+function triggerUpload(variantId: string) {
+  uploadInputRefs.value.get(variantId)?.click()
+}
+
+async function fetchVariants() {
+  loading.value = true
+  try {
+    const apiBase = import.meta.env.VITE_API_URL || ''
+    const res = await fetch(`${apiBase}/api/components/types/${typeId}/variants`, {
+      headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+    })
+    const json = await res.json()
+    if (json.success) {
+      componentType.value = json.data.type
+      variants.value = json.data.variants
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchVariants)
 
 async function handleCreate() {
-  if (!newName.value.trim()) return;
-  creating.value = true;
+  if (!newName.value.trim()) return
+  creating.value = true
   try {
-    await apiPost(`/api/components/types/${typeId}/variants`, { name: newName.value.trim() });
-    showCreateModal.value = false;
-    newName.value = '';
-    fetchVariants();
+    await apiPost(`/api/components/types/${typeId}/variants`, { name: newName.value.trim() })
+    showCreateModal.value = false
+    newName.value = ''
+    fetchVariants()
   } finally {
-    creating.value = false;
+    creating.value = false
   }
 }
 
 async function handleDelete(id: string, name: string) {
-  if (!confirm(`Delete variant "${name}"?`)) return;
-  await apiDelete(`/api/components/variants/${id}`);
-  fetchVariants();
+  if (!confirm(`Delete variant "${name}"?`)) return
+  await apiDelete(`/api/components/variants/${id}`)
+  fetchVariants()
 }
 
 async function handleUploadThumbnail(event: Event, variantId: string) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
 
+  uploadingIds.value = new Set([...uploadingIds.value, variantId])
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('entity_type', 'component_thumbnail');
-    formData.append('entity_id', variantId);
-    formData.append('component_type_id', typeId);
-    await apiUpload('/api/assets/upload', formData);
-    fetchVariants();
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('entity_type', 'component_thumbnail')
+    formData.append('entity_id', variantId)
+    formData.append('component_type_id', typeId)
+    await apiUpload('/api/assets/upload', formData)
+    fetchVariants()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Upload failed');
+    alert(err instanceof Error ? err.message : 'Upload failed')
   } finally {
-    input.value = '';
+    input.value = ''
+    uploadingIds.value = new Set([...uploadingIds.value].filter(id => id !== variantId))
   }
 }
 </script>
@@ -106,23 +122,60 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             :src="getAssetUrl(v.thumbnail_url)"
             :alt="v.name"
             class="variant-card__img"
-            @click="lightboxUrl = getAssetUrl(v.thumbnail_url); lightboxAlt = v.name"
+            @click="
+              lightboxUrl = getAssetUrl(v.thumbnail_url)
+              lightboxAlt = v.name
+            "
           />
           <div v-else class="variant-card__placeholder">
-            <span>No thumbnail</span>
-            <input
-              v-if="canWrite"
-              type="file"
-              accept="image/png,image/svg+xml"
-              @change="(e) => handleUploadThumbnail(e, v.id)"
-            />
+            <svg
+              class="variant-card__placeholder-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <span class="variant-card__placeholder-text">No image yet</span>
           </div>
         </div>
+
+        <input
+          v-if="canWrite"
+          :ref="el => setUploadRef(el, v.id)"
+          type="file"
+          accept="image/png,image/svg+xml"
+          class="variant-card__file-input"
+          @change="e => handleUploadThumbnail(e, v.id)"
+        />
+
         <div class="variant-card__body">
           <h4 class="variant-card__name">{{ v.name }}</h4>
           <span class="variant-card__author">by {{ v.author_name }}</span>
-          <div v-if="canWrite && !v.used_in_brand_id" class="variant-card__actions">
-            <BaseButton variant="danger" size="sm" @click="handleDelete(v.id, v.name)">Delete</BaseButton>
+          <div v-if="canWrite" class="variant-card__actions">
+            <BaseButton
+              v-if="!v.used_in_brand_id"
+              variant="secondary"
+              size="sm"
+              :loading="uploadingIds.has(v.id)"
+              @click="triggerUpload(v.id)"
+            >
+              {{ v.thumbnail_url ? 'Change image' : 'Upload image' }}
+            </BaseButton>
+            <BaseButton
+              v-if="!v.used_in_brand_id"
+              variant="danger"
+              size="sm"
+              @click="handleDelete(v.id, v.name)"
+            >
+              Delete
+            </BaseButton>
           </div>
         </div>
       </div>
@@ -134,17 +187,20 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       </div>
     </Teleport>
 
-    <BaseModal
-      v-if="showCreateModal"
-      title="Create New Variant"
-      @close="showCreateModal = false"
-    >
+    <BaseModal v-if="showCreateModal" title="Create New Variant" @close="showCreateModal = false">
       <form @submit.prevent="handleCreate">
-        <BaseInput v-model="newName" label="Variant Name" placeholder="e.g. Modern Gradient" required />
+        <BaseInput
+          v-model="newName"
+          label="Variant Name"
+          placeholder="e.g. Modern Gradient"
+          required
+        />
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
-        <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">Create</BaseButton>
+        <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate"
+          >Create</BaseButton
+        >
       </template>
     </BaseModal>
   </div>
@@ -208,6 +264,22 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     gap: $spacing-2;
     color: $color-text-muted;
     font-size: $font-size-sm;
+  }
+
+  &__placeholder-icon {
+    width: 32px;
+    height: 32px;
+    color: $color-text-muted;
+    opacity: 0.5;
+  }
+
+  &__placeholder-text {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+
+  &__file-input {
+    display: none;
   }
 
   &__body {

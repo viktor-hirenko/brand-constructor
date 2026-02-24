@@ -1,48 +1,48 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import type { Concept } from '@brand-constructor/shared';
-import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi';
-import { useAuthStore } from '@/stores/auth';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseTextarea from '@/components/ui/BaseTextarea.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import type { Concept } from '@brand-constructor/shared'
+import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
+import { useAuthStore } from '@/stores/auth'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
-const router = useRouter();
-const authStore = useAuthStore();
-const canWrite = computed(() => authStore.canWriteLibrary('concepts'));
+const router = useRouter()
+const authStore = useAuthStore()
+const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
 
-const { data: concepts, loading, total, fetchData } = useApiList<Concept>('/api/concepts');
+const { data: concepts, loading, total, fetchData } = useApiList<Concept>('/api/concepts')
 
-const showCreateModal = ref(false);
-const newName = ref('');
-const newDescription = ref('');
-const creating = ref(false);
+const showCreateModal = ref(false)
+const newName = ref('')
+const newDescription = ref('')
+const creating = ref(false)
 
-onMounted(() => fetchData());
+onMounted(() => fetchData())
 
 async function handleCreate() {
-  if (!newName.value.trim()) return;
-  creating.value = true;
+  if (!newName.value.trim()) return
+  creating.value = true
   try {
     const concept = await apiPost<Concept>('/api/concepts', {
       name: newName.value.trim(),
       description: newDescription.value.trim(),
-    });
-    showCreateModal.value = false;
-    newName.value = '';
-    newDescription.value = '';
-    router.push(`/concepts/${concept.id}`);
+    })
+    showCreateModal.value = false
+    newName.value = ''
+    newDescription.value = ''
+    router.push(`/concepts/${concept.id}`)
   } finally {
-    creating.value = false;
+    creating.value = false
   }
 }
 
 async function handleDelete(id: string, name: string) {
-  if (!confirm(`Delete concept "${name}"? This action cannot be undone.`)) return;
-  await apiDelete(`/api/concepts/${id}`);
-  fetchData();
+  if (!confirm(`Delete concept "${name}"? This action cannot be undone.`)) return
+  await apiDelete(`/api/concepts/${id}`)
+  fetchData()
 }
 </script>
 
@@ -50,9 +50,7 @@ async function handleDelete(id: string, name: string) {
   <div class="concepts-view">
     <div class="concepts-view__toolbar">
       <span class="concepts-view__count">{{ total }} concepts</span>
-      <BaseButton v-if="canWrite" @click="showCreateModal = true">
-        + New Concept
-      </BaseButton>
+      <BaseButton v-if="canWrite" @click="showCreateModal = true"> + New Concept </BaseButton>
     </div>
 
     <div v-if="loading" class="concepts-view__loading">Loading...</div>
@@ -98,18 +96,9 @@ async function handleDelete(id: string, name: string) {
       </div>
     </div>
 
-    <BaseModal
-      v-if="showCreateModal"
-      title="Create New Concept"
-      @close="showCreateModal = false"
-    >
+    <BaseModal v-if="showCreateModal" title="Create New Concept" @close="showCreateModal = false">
       <form class="concepts-view__form" @submit.prevent="handleCreate">
-        <BaseInput
-          v-model="newName"
-          label="Concept Name"
-          placeholder="e.g. WonderLand"
-          required
-        />
+        <BaseInput v-model="newName" label="Concept Name" placeholder="e.g. WonderLand" required />
         <BaseTextarea
           v-model="newDescription"
           label="Description"

@@ -1,135 +1,132 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import type { ExternalNaming, InternalNaming, Concept } from '@brand-constructor/shared';
-import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi';
-import { useAuthStore } from '@/stores/auth';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
+import { ref, computed, onMounted, watch } from 'vue'
+import type { ExternalNaming, InternalNaming, Concept } from '@brand-constructor/shared'
+import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import { useAuthStore } from '@/stores/auth'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
-const authStore = useAuthStore();
-const canWrite = computed(() => authStore.canWriteLibrary('external_namings'));
+const authStore = useAuthStore()
+const canWrite = computed(() => authStore.canWriteLibrary('external_namings'))
 
-const activeTab = ref<'external' | 'internal'>('external');
-const conceptFilter = ref<string>('all');
+const activeTab = ref<'external' | 'internal'>('external')
+const conceptFilter = ref<string>('all')
 
-type ExternalNamingRow = ExternalNaming & { concept_name: string | null; author_name: string };
+type ExternalNamingRow = ExternalNaming & { concept_name: string | null; author_name: string }
 
 const {
   data: externalNamings,
   loading: extLoading,
   total: extTotal,
   fetchData: fetchExternal,
-} = useApiList<ExternalNamingRow>('/api/namings/external');
+} = useApiList<ExternalNamingRow>('/api/namings/external')
 
 const {
   data: internalNamings,
   loading: intLoading,
   total: intTotal,
   fetchData: fetchInternal,
-} = useApiList<InternalNaming & { author_name: string }>('/api/namings/internal');
+} = useApiList<InternalNaming & { author_name: string }>('/api/namings/internal')
 
-const {
-  data: concepts,
-  fetchData: fetchConcepts,
-} = useApiList<Concept>('/api/concepts');
+const { data: concepts, fetchData: fetchConcepts } = useApiList<Concept>('/api/concepts')
 
-const showCreateModal = ref(false);
-const showEditModal = ref(false);
-const newName = ref('');
-const newTagline = ref('');
-const newConceptId = ref<string | null>(null);
-const creating = ref(false);
+const showCreateModal = ref(false)
+const showEditModal = ref(false)
+const newName = ref('')
+const newTagline = ref('')
+const newConceptId = ref<string | null>(null)
+const creating = ref(false)
 
-const editId = ref('');
-const editName = ref('');
-const editTagline = ref('');
-const editConceptId = ref<string | null>(null);
-const saving = ref(false);
+const editId = ref('')
+const editName = ref('')
+const editTagline = ref('')
+const editConceptId = ref<string | null>(null)
+const saving = ref(false)
 
 function refreshList() {
-  const params: Record<string, string> = {};
+  const params: Record<string, string> = {}
   if (activeTab.value === 'external') {
     if (conceptFilter.value !== 'all') {
-      params.filter = conceptFilter.value;
+      params.filter = conceptFilter.value
     }
-    fetchExternal(params);
+    fetchExternal(params)
   } else {
-    fetchInternal(params);
+    fetchInternal(params)
   }
 }
 
 onMounted(() => {
-  refreshList();
-  fetchConcepts({ per_page: '100' });
-});
-watch([activeTab, conceptFilter], refreshList);
+  refreshList()
+  fetchConcepts({ per_page: '100' })
+})
+watch([activeTab, conceptFilter], refreshList)
 
 function openCreateModal() {
-  newName.value = '';
-  newTagline.value = '';
-  newConceptId.value = null;
-  showCreateModal.value = true;
+  newName.value = ''
+  newTagline.value = ''
+  newConceptId.value = null
+  showCreateModal.value = true
 }
 
 async function handleCreate() {
-  if (!newName.value.trim()) return;
-  creating.value = true;
+  if (!newName.value.trim()) return
+  creating.value = true
   try {
     if (activeTab.value === 'external') {
       await apiPost('/api/namings/external', {
         name: newName.value.trim(),
         tagline: newTagline.value.trim(),
         concept_id: newConceptId.value || null,
-      });
+      })
     } else {
       await apiPost('/api/namings/internal', {
         name: newName.value.trim(),
         tagline: newTagline.value.trim(),
-      });
+      })
     }
-    showCreateModal.value = false;
-    refreshList();
+    showCreateModal.value = false
+    refreshList()
   } finally {
-    creating.value = false;
+    creating.value = false
   }
 }
 
-type InternalNamingRow = InternalNaming & { author_name: string };
+type InternalNamingRow = InternalNaming & { author_name: string }
 
 function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
-  editId.value = naming.id;
-  editName.value = naming.name;
-  editTagline.value = naming.tagline || '';
-  editConceptId.value = 'concept_id' in naming ? (naming as ExternalNamingRow).concept_id : null;
-  showEditModal.value = true;
+  editId.value = naming.id
+  editName.value = naming.name
+  editTagline.value = naming.tagline || ''
+  editConceptId.value = 'concept_id' in naming ? (naming as ExternalNamingRow).concept_id : null
+  showEditModal.value = true
 }
 
 async function handleSaveEdit() {
-  if (!editName.value.trim()) return;
-  saving.value = true;
+  if (!editName.value.trim()) return
+  saving.value = true
   try {
-    const type = activeTab.value;
+    const type = activeTab.value
     const body: Record<string, unknown> = {
       name: editName.value.trim(),
       tagline: editTagline.value.trim(),
-    };
-    if (type === 'external') {
-      body.concept_id = editConceptId.value || null;
     }
-    await apiPut(`/api/namings/${type}/${editId.value}`, body);
-    showEditModal.value = false;
-    refreshList();
+    if (type === 'external') {
+      body.concept_id = editConceptId.value || null
+    }
+    await apiPut(`/api/namings/${type}/${editId.value}`, body)
+    showEditModal.value = false
+    refreshList()
   } finally {
-    saving.value = false;
+    saving.value = false
   }
 }
 
 async function handleDeleteNaming(id: string, name: string) {
-  if (!confirm(`Delete naming "${name}"?`)) return;
-  const type = activeTab.value;
-  await apiDelete(`/api/namings/${type}/${id}`);
-  refreshList();
+  if (!confirm(`Delete naming "${name}"?`)) return
+  const type = activeTab.value
+  await apiDelete(`/api/namings/${type}/${id}`)
+  refreshList()
 }
 </script>
 
@@ -167,89 +164,84 @@ async function handleDeleteNaming(id: string, name: string) {
           {{ activeTab === 'external' ? extTotal : intTotal }} namings
         </span>
       </div>
-      <BaseButton v-if="canWrite" @click="openCreateModal">
-        + New Naming
-      </BaseButton>
+      <BaseButton v-if="canWrite" @click="openCreateModal"> + New Naming </BaseButton>
     </div>
 
-    <div
-      v-if="(activeTab === 'external' ? extLoading : intLoading)"
-      class="namings-view__loading"
-    >
+    <div v-if="activeTab === 'external' ? extLoading : intLoading" class="namings-view__loading">
       Loading...
     </div>
 
     <div v-else class="namings-view__table-wrap">
-    <table class="namings-view__table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th v-if="activeTab === 'external'">Linked Concept</th>
-          <th>Author</th>
-          <th>Created</th>
-          <th v-if="canWrite">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template v-if="activeTab === 'external'">
-          <tr v-for="n in externalNamings" :key="n.id">
-            <td class="namings-view__name-cell">
-              <span class="namings-view__name">{{ n.name }}</span>
-              <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
-            </td>
-            <td>{{ n.concept_name || '—' }}</td>
-            <td>{{ n.author_name }}</td>
-            <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
-            <td v-if="canWrite" class="namings-view__actions">
-              <BaseButton
-                v-if="!n.used_in_brand_id"
-                variant="secondary"
-                size="sm"
-                @click="openEditModal(n)"
-              >
-                Edit
-              </BaseButton>
-              <BaseButton
-                v-if="!n.used_in_brand_id"
-                variant="danger"
-                size="sm"
-                @click="handleDeleteNaming(n.id, n.name)"
-              >
-                Delete
-              </BaseButton>
-            </td>
+      <table class="namings-view__table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th v-if="activeTab === 'external'">Linked Concept</th>
+            <th>Author</th>
+            <th>Created</th>
+            <th v-if="canWrite">Actions</th>
           </tr>
-        </template>
-        <template v-else>
-          <tr v-for="n in internalNamings" :key="n.id">
-            <td class="namings-view__name-cell">
-              <span class="namings-view__name">{{ n.name }}</span>
-              <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
-            </td>
-            <td>{{ n.author_name }}</td>
-            <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
-            <td v-if="canWrite" class="namings-view__actions">
-              <BaseButton
-                v-if="!n.used_in_brand_id"
-                variant="secondary"
-                size="sm"
-                @click="openEditModal(n)"
-              >
-                Edit
-              </BaseButton>
-              <BaseButton
-                v-if="!n.used_in_brand_id"
-                variant="danger"
-                size="sm"
-                @click="handleDeleteNaming(n.id, n.name)"
-              >
-                Delete
-              </BaseButton>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <template v-if="activeTab === 'external'">
+            <tr v-for="n in externalNamings" :key="n.id">
+              <td class="namings-view__name-cell">
+                <span class="namings-view__name">{{ n.name }}</span>
+                <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+              </td>
+              <td>{{ n.concept_name || '—' }}</td>
+              <td>{{ n.author_name }}</td>
+              <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
+              <td v-if="canWrite" class="namings-view__actions">
+                <BaseButton
+                  v-if="!n.used_in_brand_id"
+                  variant="secondary"
+                  size="sm"
+                  @click="openEditModal(n)"
+                >
+                  Edit
+                </BaseButton>
+                <BaseButton
+                  v-if="!n.used_in_brand_id"
+                  variant="danger"
+                  size="sm"
+                  @click="handleDeleteNaming(n.id, n.name)"
+                >
+                  Delete
+                </BaseButton>
+              </td>
+            </tr>
+          </template>
+          <template v-else>
+            <tr v-for="n in internalNamings" :key="n.id">
+              <td class="namings-view__name-cell">
+                <span class="namings-view__name">{{ n.name }}</span>
+                <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+              </td>
+              <td>{{ n.author_name }}</td>
+              <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
+              <td v-if="canWrite" class="namings-view__actions">
+                <BaseButton
+                  v-if="!n.used_in_brand_id"
+                  variant="secondary"
+                  size="sm"
+                  @click="openEditModal(n)"
+                >
+                  Edit
+                </BaseButton>
+                <BaseButton
+                  v-if="!n.used_in_brand_id"
+                  variant="danger"
+                  size="sm"
+                  @click="handleDeleteNaming(n.id, n.name)"
+                >
+                  Delete
+                </BaseButton>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
     </div>
 
     <BaseModal
@@ -258,17 +250,8 @@ async function handleDeleteNaming(id: string, name: string) {
       @close="showCreateModal = false"
     >
       <form class="namings-view__form" @submit.prevent="handleCreate">
-        <BaseInput
-          v-model="newName"
-          label="Naming"
-          placeholder="Enter naming..."
-          required
-        />
-        <BaseInput
-          v-model="newTagline"
-          label="Tagline"
-          placeholder="Short description..."
-        />
+        <BaseInput v-model="newName" label="Naming" placeholder="Enter naming..." required />
+        <BaseInput v-model="newTagline" label="Tagline" placeholder="Short description..." />
         <div v-if="activeTab === 'external'" class="namings-view__field">
           <label class="namings-view__label">Link to Concept</label>
           <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
@@ -291,17 +274,8 @@ async function handleDeleteNaming(id: string, name: string) {
       @close="showEditModal = false"
     >
       <form class="namings-view__form" @submit.prevent="handleSaveEdit">
-        <BaseInput
-          v-model="editName"
-          label="Naming"
-          placeholder="Enter naming..."
-          required
-        />
-        <BaseInput
-          v-model="editTagline"
-          label="Tagline"
-          placeholder="Short description..."
-        />
+        <BaseInput v-model="editName" label="Naming" placeholder="Enter naming..." required />
+        <BaseInput v-model="editTagline" label="Tagline" placeholder="Short description..." />
         <div v-if="activeTab === 'external'" class="namings-view__field">
           <label class="namings-view__label">Link to Concept</label>
           <select v-model="editConceptId" class="namings-view__select namings-view__select--full">

@@ -1,23 +1,27 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import type { PrPackage } from '@brand-constructor/shared';
-import { useAuthStore } from '@/stores/auth';
-import { apiPost, apiPut, apiDelete } from '@/composables/useApi';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseTextarea from '@/components/ui/BaseTextarea.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
+import { ref, computed, onMounted } from 'vue'
+import type { PrPackage } from '@brand-constructor/shared'
+import { PR_TEAMS } from '@brand-constructor/shared'
+import { useAuthStore } from '@/stores/auth'
+import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
-const authStore = useAuthStore();
-const canWrite = computed(() => authStore.canWriteLibrary('pr_packages'));
+const authStore = useAuthStore()
+const canWrite = computed(() => authStore.canWriteLibrary('pr_packages'))
 
-const ALL_TEAMS = ['PR', 'Retention', 'Design', 'Copy', 'SMM', 'Creative', 'Makeberry Aff', 'Risk', 'Legal'];
+const ALL_TEAMS = PR_TEAMS
 
-const packages = ref<PrPackage[]>([]);
-const loading = ref(false);
-const showCreateModal = ref(false);
-const editingPkg = ref<PrPackage | null>(null);
-const viewingPkg = ref<PrPackage | null>(null);
+const {
+  data: packages,
+  loading,
+  fetchData: fetchPackages,
+} = useApiList<PrPackage>('/api/pr-packages')
+const showCreateModal = ref(false)
+const editingPkg = ref<PrPackage | null>(null)
+const viewingPkg = ref<PrPackage | null>(null)
 
 const form = ref({
   number: 0,
@@ -29,46 +33,57 @@ const form = ref({
   components_list: '',
   timeline: '',
   expenses: '',
-});
+})
 
 const selectedTeams = computed({
-  get: () => form.value.teams_involved ? form.value.teams_involved.split(',').map(t => t.trim()).filter(Boolean) : [],
-  set: (val: string[]) => { form.value.teams_involved = val.join(', '); },
-});
+  get: () =>
+    form.value.teams_involved
+      ? form.value.teams_involved
+          .split(',')
+          .map(t => t.trim())
+          .filter(Boolean)
+      : [],
+  set: (val: string[]) => {
+    form.value.teams_involved = val.join(', ')
+  },
+})
 
 function toggleTeam(team: string) {
-  const current = selectedTeams.value;
+  const current = selectedTeams.value
   if (current.includes(team)) {
-    selectedTeams.value = current.filter(t => t !== team);
+    selectedTeams.value = current.filter(t => t !== team)
   } else {
-    selectedTeams.value = [...current, team];
+    selectedTeams.value = [...current, team]
   }
 }
 
 function parseTeams(str: string): string[] {
-  return str ? str.split(',').map(t => t.trim()).filter(Boolean) : [];
+  return str
+    ? str
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean)
+    : []
 }
 
-async function fetchPackages() {
-  loading.value = true;
-  try {
-    const apiBase = import.meta.env.VITE_API_URL || '';
-    const res = await fetch(`${apiBase}/api/pr-packages`);
-    const json = await res.json();
-    if (json.success) packages.value = json.data;
-  } finally {
-    loading.value = false;
+onMounted(fetchPackages)
+
+function resetForm() {
+  form.value = {
+    number: 0,
+    name: '',
+    description: '',
+    teams_involved: '',
+    requirements: '',
+    goals: '',
+    components_list: '',
+    timeline: '',
+    expenses: '',
   }
 }
 
-onMounted(fetchPackages);
-
-function resetForm() {
-  form.value = { number: 0, name: '', description: '', teams_involved: '', requirements: '', goals: '', components_list: '', timeline: '', expenses: '' };
-}
-
 function openEdit(pkg: PrPackage) {
-  editingPkg.value = pkg;
+  editingPkg.value = pkg
   form.value = {
     number: pkg.number,
     name: pkg.name,
@@ -79,38 +94,38 @@ function openEdit(pkg: PrPackage) {
     components_list: pkg.components_list,
     timeline: pkg.timeline,
     expenses: pkg.expenses,
-  };
-  showCreateModal.value = true;
+  }
+  showCreateModal.value = true
 }
 
 async function handleSave() {
-  if (!form.value.name.trim()) return;
+  if (!form.value.name.trim()) return
   try {
     if (editingPkg.value) {
-      await apiPut(`/api/pr-packages/${editingPkg.value.id}`, form.value);
+      await apiPut(`/api/pr-packages/${editingPkg.value.id}`, form.value)
     } else {
-      await apiPost('/api/pr-packages', form.value);
+      await apiPost('/api/pr-packages', form.value)
     }
-    showCreateModal.value = false;
-    editingPkg.value = null;
-    resetForm();
-    fetchPackages();
+    showCreateModal.value = false
+    editingPkg.value = null
+    resetForm()
+    fetchPackages()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Failed to save package');
+    alert(err instanceof Error ? err.message : 'Failed to save package')
   }
 }
 
 function openCreate() {
-  editingPkg.value = null;
-  resetForm();
-  form.value.number = packages.value.length;
-  showCreateModal.value = true;
+  editingPkg.value = null
+  resetForm()
+  form.value.number = packages.value.length
+  showCreateModal.value = true
 }
 
 async function handleDelete(id: string, name: string) {
-  if (!confirm(`Delete PR package "${name}"?`)) return;
-  await apiDelete(`/api/pr-packages/${id}`);
-  fetchPackages();
+  if (!confirm(`Delete PR package "${name}"?`)) return
+  await apiDelete(`/api/pr-packages/${id}`)
+  fetchPackages()
 }
 </script>
 
@@ -133,7 +148,12 @@ async function handleDelete(id: string, name: string) {
           <div v-if="pkg.teams_involved" class="package-card__field">
             <span class="package-card__label">Teams</span>
             <div class="team-chips team-chips--sm">
-              <span v-for="team in parseTeams(pkg.teams_involved)" :key="team" class="team-chip team-chip--active">{{ team }}</span>
+              <span
+                v-for="team in parseTeams(pkg.teams_involved)"
+                :key="team"
+                class="team-chip team-chip--active"
+                >{{ team }}</span
+              >
             </div>
           </div>
           <div v-if="pkg.description" class="package-card__field">
@@ -147,7 +167,9 @@ async function handleDelete(id: string, name: string) {
         </div>
         <div v-if="canWrite" class="package-card__actions">
           <BaseButton variant="secondary" size="sm" @click.stop="openEdit(pkg)">Edit</BaseButton>
-          <BaseButton variant="danger" size="sm" @click.stop="handleDelete(pkg.id, pkg.name)">Delete</BaseButton>
+          <BaseButton variant="danger" size="sm" @click.stop="handleDelete(pkg.id, pkg.name)"
+            >Delete</BaseButton
+          >
         </div>
       </div>
     </div>
@@ -162,7 +184,12 @@ async function handleDelete(id: string, name: string) {
         <div v-if="viewingPkg.teams_involved" class="package-view__field">
           <span class="package-view__label">Teams Involved</span>
           <div class="team-chips">
-            <span v-for="team in parseTeams(viewingPkg.teams_involved)" :key="team" class="team-chip team-chip--active">{{ team }}</span>
+            <span
+              v-for="team in parseTeams(viewingPkg.teams_involved)"
+              :key="team"
+              class="team-chip team-chip--active"
+              >{{ team }}</span
+            >
           </div>
         </div>
         <div v-if="viewingPkg.description" class="package-view__field">
@@ -192,7 +219,18 @@ async function handleDelete(id: string, name: string) {
       </div>
       <template #footer>
         <BaseButton variant="secondary" @click="viewingPkg = null">Close</BaseButton>
-        <BaseButton v-if="canWrite" @click="() => { const p = viewingPkg!; viewingPkg = null; openEdit(p); }">Edit</BaseButton>
+        <BaseButton
+          v-if="canWrite"
+          variant="secondary"
+          @click="
+            () => {
+              const p = viewingPkg!
+              viewingPkg = null
+              openEdit(p)
+            }
+          "
+          >Edit</BaseButton
+        >
       </template>
     </BaseModal>
 
@@ -204,18 +242,8 @@ async function handleDelete(id: string, name: string) {
     >
       <form class="pr-packages-view__form" @submit.prevent="handleSave">
         <div class="pr-packages-view__form-row">
-          <BaseInput
-            v-model.number="form.number"
-            label="№"
-            type="number"
-            required
-          />
-          <BaseInput
-            v-model="form.name"
-            label="Name"
-            placeholder="e.g. Reputation Full"
-            required
-          />
+          <BaseInput v-model.number="form.number" label="№" type="number" required />
+          <BaseInput v-model="form.name" label="Name" placeholder="e.g. Reputation Full" required />
         </div>
         <BaseTextarea v-model="form.description" label="Description" :rows="3" />
         <div class="teams-selector">
@@ -228,11 +256,20 @@ async function handleDelete(id: string, name: string) {
               class="team-chip"
               :class="{ 'team-chip--active': selectedTeams.includes(team) }"
               @click="toggleTeam(team)"
-            >{{ team }}</button>
+            >
+              {{ team }}
+            </button>
           </div>
-          <p v-if="selectedTeams.length === 0" class="teams-selector__hint">Select one or more teams</p>
+          <p v-if="selectedTeams.length === 0" class="teams-selector__hint">
+            Select one or more teams
+          </p>
         </div>
-        <BaseTextarea v-model="form.requirements" label="Requirements" placeholder="What's needed to start..." :rows="2" />
+        <BaseTextarea
+          v-model="form.requirements"
+          label="Requirements"
+          placeholder="What's needed to start..."
+          :rows="2"
+        />
         <BaseTextarea v-model="form.goals" label="Goals" :rows="3" />
         <BaseTextarea v-model="form.components_list" label="Package Components" :rows="3" />
         <BaseInput v-model="form.timeline" label="Timeline" placeholder="e.g. 0-6 months" />
@@ -330,7 +367,10 @@ async function handleDelete(id: string, name: string) {
   border: 1.5px solid $color-border;
   background-color: $color-bg;
   color: $color-text-secondary;
-  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
   user-select: none;
   line-height: 1;
   white-space: nowrap;
@@ -403,7 +443,9 @@ button.team-chip {
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: box-shadow $transition-fast, border-color $transition-fast;
+  transition:
+    box-shadow $transition-fast,
+    border-color $transition-fast;
 
   &:hover {
     box-shadow: $shadow-md;

@@ -1,59 +1,50 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import type { ComponentType } from '@brand-constructor/shared';
-import { useAuthStore } from '@/stores/auth';
-import { apiPost } from '@/composables/useApi';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
-import BaseTextarea from '@/components/ui/BaseTextarea.vue';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import type { ComponentType } from '@brand-constructor/shared'
+import { useAuthStore } from '@/stores/auth'
+import { useApiList, apiPost } from '@/composables/useApi'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 
-const router = useRouter();
-const authStore = useAuthStore();
-const canWrite = computed(() => authStore.canWriteLibrary('component_types'));
+const router = useRouter()
+const authStore = useAuthStore()
+const canWrite = computed(() => authStore.canWriteLibrary('component_types'))
 
 interface ComponentTypeWithCount extends ComponentType {
-  variant_count: number;
+  variant_count: number
 }
 
-const types = ref<ComponentTypeWithCount[]>([]);
-const loading = ref(false);
-const showCreateModal = ref(false);
-const creating = ref(false);
-const newName = ref('');
-const newDescription = ref('');
-
-async function fetchTypes() {
-  loading.value = true;
-  try {
-    const apiBase = import.meta.env.VITE_API_URL || '';
-    const res = await fetch(`${apiBase}/api/components/types`);
-    const json = await res.json();
-    if (json.success) types.value = json.data;
-  } finally {
-    loading.value = false;
-  }
-}
+const {
+  data: types,
+  loading,
+  fetchData: fetchTypes,
+} = useApiList<ComponentTypeWithCount>('/api/components/types')
+const showCreateModal = ref(false)
+const creating = ref(false)
+const newName = ref('')
+const newDescription = ref('')
 
 async function handleCreate() {
-  if (!newName.value.trim()) return;
-  creating.value = true;
+  if (!newName.value.trim()) return
+  creating.value = true
   try {
     await apiPost('/api/components/types', {
       name: newName.value.trim(),
       description: newDescription.value.trim(),
-    });
-    newName.value = '';
-    newDescription.value = '';
-    showCreateModal.value = false;
-    fetchTypes();
+    })
+    newName.value = ''
+    newDescription.value = ''
+    showCreateModal.value = false
+    fetchTypes()
   } finally {
-    creating.value = false;
+    creating.value = false
   }
 }
 
-onMounted(fetchTypes);
+onMounted(fetchTypes)
 </script>
 
 <template>

@@ -1,8 +1,14 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+    },
     {
       path: '/',
       redirect: '/concepts',
@@ -43,6 +49,26 @@ const router = createRouter({
       component: () => import('@/views/UsersView.vue'),
     },
   ],
-});
+})
 
-export { router };
+router.beforeEach(to => {
+  // Skip auth checks in local development mode
+  if (import.meta.env.VITE_ENVIRONMENT === 'development') return true
+
+  const authStore = useAuthStore()
+
+  // Already authenticated → redirect away from login page
+  if (to.name === 'login') {
+    if (authStore.isAuthenticated) return { name: 'concepts' }
+    return true
+  }
+
+  // Not authenticated → go to login
+  if (!authStore.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  return true
+})
+
+export { router }
