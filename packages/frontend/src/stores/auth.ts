@@ -21,7 +21,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchCurrentUser() {
     loading.value = true;
     try {
-      const response = await fetch('/api/users/me');
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiBase}/api/users/me`);
       const json = await response.json();
       if (json.success) {
         user.value = json.data;

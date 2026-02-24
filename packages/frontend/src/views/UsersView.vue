@@ -28,7 +28,8 @@ const roleOptions = Object.entries(USER_ROLES).map(([, value]) => ({
 async function fetchUsers() {
   loading.value = true;
   try {
-    const res = await fetch('/api/users');
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${apiBase}/api/users`);
     const json = await res.json();
     if (json.success) users.value = json.data;
   } finally {

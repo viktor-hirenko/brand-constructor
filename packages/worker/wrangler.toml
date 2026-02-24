@@ -27,7 +27,7 @@ CORS_ORIGIN = "http://localhost:5173"
 
 # Production environment
 [env.production]
-vars = { ENVIRONMENT = "production", CORS_ORIGIN = "https://brand-constructor.pages.dev" }
+vars = { ENVIRONMENT = "development", CORS_ORIGIN = "https://brand-constructor.pages.dev" }
 
 [[env.production.d1_databases]]
 binding = "DB"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import type { ExternalNaming, InternalNaming, Concept } from '@brand-constructor/shared';
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi';
 import { useAuthStore } from '@/stores/auth';
@@ -8,7 +8,7 @@ import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 
 const authStore = useAuthStore();
-const canWrite = authStore.canWriteLibrary('external_namings');
+const canWrite = computed(() => authStore.canWriteLibrary('external_namings'));
 
 const activeTab = ref<'external' | 'internal'>('external');
 const conceptFilter = ref<string>('all');

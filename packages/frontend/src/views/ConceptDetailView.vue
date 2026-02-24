@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared';
-import { useApi, apiPut, apiUpload } from '@/composables/useApi';
+import { useApi, apiPut, apiUpload, getAssetUrl } from '@/composables/useApi';
 import { useAuthStore } from '@/stores/auth';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
@@ -18,7 +18,7 @@ interface ConceptDetail extends Concept {
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const canWrite = authStore.canWriteLibrary('concepts');
+const canWrite = computed(() => authStore.canWriteLibrary('concepts'));
 
 const { data: concept, loading, fetchData } = useApi<ConceptDetail>(
   `/api/concepts/${route.params.id}`
@@ -114,7 +114,7 @@ async function handleFileUpload(event: Event, entityType: string) {
           <div class="asset-slot">
             <span class="asset-slot__label">Visual</span>
             <div class="asset-slot__preview">
-              <img v-if="concept.visual_url" :src="concept.visual_url" alt="Visual" />
+              <img v-if="concept.visual_url" :src="getAssetUrl(concept.visual_url)" alt="Visual" />
               <span v-else>No visual uploaded</span>
             </div>
             <input
@@ -128,7 +128,7 @@ async function handleFileUpload(event: Event, entityType: string) {
           <div class="asset-slot">
             <span class="asset-slot__label">Logo</span>
             <div class="asset-slot__preview asset-slot__preview--square">
-              <img v-if="concept.logo_url" :src="concept.logo_url" alt="Logo" />
+              <img v-if="concept.logo_url" :src="getAssetUrl(concept.logo_url)" alt="Logo" />
               <span v-else>No logo uploaded</span>
             </div>
             <input

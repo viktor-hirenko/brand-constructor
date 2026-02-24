@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import type { PrPackage } from '@brand-constructor/shared';
 import { useAuthStore } from '@/stores/auth';
 import { apiPost, apiPut, apiDelete } from '@/composables/useApi';
@@ -9,13 +9,14 @@ import BaseTextarea from '@/components/ui/BaseTextarea.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 
 const authStore = useAuthStore();
-const canWrite = authStore.canWriteLibrary('pr_packages');
+const canWrite = computed(() => authStore.canWriteLibrary('pr_packages'));
+
+const ALL_TEAMS = ['PR', 'Retention', 'Design', 'Copy', 'SMM', 'Creative', 'Makeberry Aff', 'Risk', 'Legal'];
 
 const packages = ref<PrPackage[]>([]);
 const loading = ref(false);
 const showCreateModal = ref(false);
 const editingPkg = ref<PrPackage | null>(null);
-
 const viewingPkg = ref<PrPackage | null>(null);
 
 const form = ref({
@@ -30,10 +31,29 @@ const form = ref({
   expenses: '',
 });
 
+const selectedTeams = computed({
+  get: () => form.value.teams_involved ? form.value.teams_involved.split(',').map(t => t.trim()).filter(Boolean) : [],
+  set: (val: string[]) => { form.value.teams_involved = val.join(', '); },
+});
+
+function toggleTeam(team: string) {
+  const current = selectedTeams.value;
+  if (current.includes(team)) {
+    selectedTeams.value = current.filter(t => t !== team);
+  } else {
+    selectedTeams.value = [...current, team];
+  }
+}
+
+function parseTeams(str: string): string[] {
+  return str ? str.split(',').map(t => t.trim()).filter(Boolean) : [];
+}
+
 async function fetchPackages() {
   loading.value = true;
   try {
-    const res = await fetch('/api/pr-packages');
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${apiBase}/api/pr-packages`);
     const json = await res.json();
     if (json.success) packages.value = json.data;
   } finally {
@@ -112,7 +132,9 @@ async function handleDelete(id: string, name: string) {
         <div class="package-card__body">
           <div v-if="pkg.teams_involved" class="package-card__field">
             <span class="package-card__label">Teams</span>
-            <p>{{ pkg.teams_involved }}</p>
+            <div class="team-chips team-chips--sm">
+              <span v-for="team in parseTeams(pkg.teams_involved)" :key="team" class="team-chip team-chip--active">{{ team }}</span>
+            </div>
           </div>
           <div v-if="pkg.description" class="package-card__field">
             <span class="package-card__label">Description</span>
@@ -139,7 +161,9 @@ async function handleDelete(id: string, name: string) {
       <div class="package-view">
         <div v-if="viewingPkg.teams_involved" class="package-view__field">
           <span class="package-view__label">Teams Involved</span>
-          <p>{{ viewingPkg.teams_involved }}</p>
+          <div class="team-chips">
+            <span v-for="team in parseTeams(viewingPkg.teams_involved)" :key="team" class="team-chip team-chip--active">{{ team }}</span>
+          </div>
         </div>
         <div v-if="viewingPkg.description" class="package-view__field">
           <span class="package-view__label">Description</span>
@@ -194,7 +218,20 @@ async function handleDelete(id: string, name: string) {
           />
         </div>
         <BaseTextarea v-model="form.description" label="Description" :rows="3" />
-        <BaseInput v-model="form.teams_involved" label="Teams Involved" placeholder="e.g. PR, Retention, Copy" />
+        <div class="teams-selector">
+          <label class="teams-selector__label">Teams Involved</label>
+          <div class="teams-selector__chips">
+            <button
+              v-for="team in ALL_TEAMS"
+              :key="team"
+              type="button"
+              class="team-chip"
+              :class="{ 'team-chip--active': selectedTeams.includes(team) }"
+              @click="toggleTeam(team)"
+            >{{ team }}</button>
+          </div>
+          <p v-if="selectedTeams.length === 0" class="teams-selector__hint">Select one or more teams</p>
+        </div>
         <BaseTextarea v-model="form.requirements" label="Requirements" placeholder="What's needed to start..." :rows="2" />
         <BaseTextarea v-model="form.goals" label="Goals" :rows="3" />
         <BaseTextarea v-model="form.components_list" label="Package Components" :rows="3" />
@@ -247,6 +284,86 @@ async function handleDelete(id: string, name: string) {
     display: grid;
     grid-template-columns: 80px 1fr;
     gap: $spacing-4;
+  }
+}
+
+.teams-selector {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+  }
+
+  &__hint {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+}
+
+.team-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-1;
+
+  &--sm {
+    gap: 4px;
+  }
+}
+
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px $spacing-3;
+  border-radius: $radius-full;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  border: 1.5px solid $color-border;
+  background-color: $color-bg;
+  color: $color-text-secondary;
+  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
+  user-select: none;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+// Read-only chips (cards & view modal) — subtle, informational
+span.team-chip {
+  &.team-chip--active {
+    border-color: $color-primary;
+    background-color: $color-primary-light;
+    color: $color-primary;
+  }
+}
+
+// Interactive chip buttons (selector in form) — strong, actionable
+button.team-chip {
+  cursor: pointer;
+
+  &:not(.team-chip--active):hover {
+    border-color: $color-primary;
+    color: $color-primary;
+    background-color: $color-primary-light;
+  }
+
+  &.team-chip--active {
+    border-color: $color-primary;
+    background-color: $color-primary;
+    color: #fff;
+
+    &:hover {
+      border-color: $color-primary-hover;
+      background-color: $color-primary-hover;
+    }
   }
 }
 

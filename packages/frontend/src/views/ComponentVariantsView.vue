@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { ComponentType, ComponentVariant, Asset } from '@brand-constructor/shared';
-import { apiPost, apiDelete, apiUpload } from '@/composables/useApi';
+import { apiPost, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi';
 import { useAuthStore } from '@/stores/auth';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
@@ -12,7 +12,7 @@ import BaseModal from '@/components/ui/BaseModal.vue';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const canWrite = authStore.canWriteLibrary('component_variants');
+const canWrite = computed(() => authStore.canWriteLibrary('component_variants'));
 
 const typeId = route.params.typeId as string;
 const componentType = ref<ComponentType | null>(null);
@@ -29,7 +29,8 @@ const lightboxAlt = ref('');
 async function fetchVariants() {
   loading.value = true;
   try {
-    const res = await fetch(`/api/components/types/${typeId}/variants`);
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${apiBase}/api/components/types/${typeId}/variants`);
     const json = await res.json();
     if (json.success) {
       componentType.value = json.data.type;
@@ -102,10 +103,10 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
         <div class="variant-card__preview">
           <img
             v-if="v.thumbnail_url"
-            :src="v.thumbnail_url"
+            :src="getAssetUrl(v.thumbnail_url)"
             :alt="v.name"
             class="variant-card__img"
-            @click="lightboxUrl = v.thumbnail_url; lightboxAlt = v.name"
+            @click="lightboxUrl = getAssetUrl(v.thumbnail_url); lightboxAlt = v.name"
           />
           <div v-else class="variant-card__placeholder">
             <span>No thumbnail</span>

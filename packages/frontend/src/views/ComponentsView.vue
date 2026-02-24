@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import type { ComponentType } from '@brand-constructor/shared';
 import { useAuthStore } from '@/stores/auth';
+import { apiPost } from '@/composables/useApi';
 import BaseButton from '@/components/ui/BaseButton.vue';
+import BaseInput from '@/components/ui/BaseInput.vue';
+import BaseModal from '@/components/ui/BaseModal.vue';
+import BaseTextarea from '@/components/ui/BaseTextarea.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const canWrite = authStore.canWriteLibrary('component_types');
+const canWrite = computed(() => authStore.canWriteLibrary('component_types'));
 
 interface ComponentTypeWithCount extends ComponentType {
   variant_count: number;
@@ -15,15 +19,37 @@ interface ComponentTypeWithCount extends ComponentType {
 
 const types = ref<ComponentTypeWithCount[]>([]);
 const loading = ref(false);
+const showCreateModal = ref(false);
+const creating = ref(false);
+const newName = ref('');
+const newDescription = ref('');
 
 async function fetchTypes() {
   loading.value = true;
   try {
-    const res = await fetch('/api/components/types');
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${apiBase}/api/components/types`);
     const json = await res.json();
     if (json.success) types.value = json.data;
   } finally {
     loading.value = false;
+  }
+}
+
+async function handleCreate() {
+  if (!newName.value.trim()) return;
+  creating.value = true;
+  try {
+    await apiPost('/api/components/types', {
+      name: newName.value.trim(),
+      description: newDescription.value.trim(),
+    });
+    newName.value = '';
+    newDescription.value = '';
+    showCreateModal.value = false;
+    fetchTypes();
+  } finally {
+    creating.value = false;
   }
 }
 
@@ -34,9 +60,14 @@ onMounted(fetchTypes);
   <div class="components-view">
     <div class="components-view__toolbar">
       <span class="components-view__count">{{ types.length }} component types</span>
+      <BaseButton v-if="canWrite" @click="showCreateModal = true">+ New Component Type</BaseButton>
     </div>
 
     <div v-if="loading" class="components-view__loading">Loading...</div>
+
+    <div v-else-if="types.length === 0" class="components-view__empty">
+      No component types found. Create your first component type to get started.
+    </div>
 
     <div v-else class="components-view__grid">
       <div
@@ -51,6 +82,33 @@ onMounted(fetchTypes);
         <span class="type-card__count">{{ type.variant_count }} variants</span>
       </div>
     </div>
+
+    <BaseModal
+      v-if="showCreateModal"
+      title="Create Component Type"
+      @close="showCreateModal = false"
+    >
+      <form class="components-view__form" @submit.prevent="handleCreate">
+        <BaseInput
+          v-model="newName"
+          label="Name"
+          placeholder="e.g. Banners, Header, Tabbar..."
+          required
+        />
+        <BaseTextarea
+          v-model="newDescription"
+          label="Description"
+          placeholder="Brief description of this component type..."
+          :rows="3"
+        />
+        <div class="components-view__form-actions">
+          <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
+          <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
+            Create
+          </BaseButton>
+        </div>
+      </form>
+    </BaseModal>
   </div>
 </template>
 
@@ -68,7 +126,8 @@ onMounted(fetchTypes);
     color: $color-text-secondary;
   }
 
-  &__loading {
+  &__loading,
+  &__empty {
     text-align: center;
     padding: $spacing-12;
     color: $color-text-secondary;
@@ -78,6 +137,19 @@ onMounted(fetchTypes);
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: $spacing-4;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+  }
+
+  &__form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-2;
+    margin-top: $spacing-2;
   }
 }
 

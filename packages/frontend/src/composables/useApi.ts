@@ -3,6 +3,12 @@ import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-cons
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+export function getAssetUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('/api')) return `${API_BASE}${url}`;
+  return url;
+}
+
 interface FetchState<T> {
   data: Ref<T | null>;
   loading: Ref<boolean>;

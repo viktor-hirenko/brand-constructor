@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Concept } from '@brand-constructor/shared';
-import { useApiList, apiPost, apiDelete } from '@/composables/useApi';
+import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi';
 import { useAuthStore } from '@/stores/auth';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
@@ -11,7 +11,7 @@ import BaseModal from '@/components/ui/BaseModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const canWrite = authStore.canWriteLibrary('concepts');
+const canWrite = computed(() => authStore.canWriteLibrary('concepts'));
 
 const { data: concepts, loading, total, fetchData } = useApiList<Concept>('/api/concepts');
 
@@ -71,7 +71,7 @@ async function handleDelete(id: string, name: string) {
         <div class="concept-card__image">
           <img
             v-if="concept.visual_url"
-            :src="concept.visual_url"
+            :src="getAssetUrl(concept.visual_url)"
             :alt="concept.name"
           />
           <div v-else class="concept-card__placeholder">No visual</div>
