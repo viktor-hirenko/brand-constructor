@@ -376,10 +376,20 @@ async function handleDelete(user: User) {
     align-items: center;
     justify-content: space-between;
     margin-bottom: $spacing-1;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-2;
+    }
   }
 
   &__role-info {
     position: relative;
+
+    @include mobile {
+      width: 100%;
+    }
   }
 
   &__info-btn {
@@ -423,6 +433,14 @@ async function handleDelete(user: User) {
   box-shadow: $shadow-lg;
   overflow: hidden;
 
+  @include mobile {
+    position: static;
+    width: 100%;
+    margin-top: $spacing-2;
+    box-shadow: none;
+    border-radius: $radius-md;
+  }
+
   &__header {
     display: flex;
     align-items: center;
@@ -451,6 +469,10 @@ async function handleDelete(user: User) {
 
     &:hover {
       color: $color-text;
+    }
+
+    @include mobile {
+      display: none;
     }
   }
 

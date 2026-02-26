@@ -226,7 +226,6 @@ async function handleDelete(id: string, name: string) {
         <BaseButton variant="secondary" @click="viewingPkg = null">Close</BaseButton>
         <BaseButton
           v-if="canWrite"
-          variant="secondary"
           @click="
             () => {
               const p = viewingPkg!

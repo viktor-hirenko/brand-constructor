@@ -94,7 +94,7 @@ function handleLogout() {
 
 .sidebar {
   width: $sidebar-width;
-  height: 100vh;
+  height: 100svh;
   background-color: $color-bg-sidebar;
   color: $color-text-inverse;
   display: flex;
