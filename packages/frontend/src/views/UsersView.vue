@@ -247,6 +247,8 @@ async function handleDelete(user: User) {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+
 .users-view {
   &__forbidden {
     text-align: center;
@@ -260,6 +262,12 @@ async function handleDelete(user: User) {
     align-items: center;
     justify-content: space-between;
     margin-bottom: $spacing-6;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-3;
+    }
   }
 
   &__count {
@@ -277,6 +285,8 @@ async function handleDelete(user: User) {
     border: 1px solid $color-border;
     border-radius: $radius-lg;
     overflow: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   &__table {
@@ -284,6 +294,10 @@ async function handleDelete(user: User) {
     border-collapse: separate;
     border-spacing: 0;
     background-color: $color-bg-white;
+
+    @include mobile {
+      min-width: 600px;
+    }
 
     th,
     td {

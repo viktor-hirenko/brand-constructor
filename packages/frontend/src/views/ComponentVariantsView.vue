@@ -207,6 +207,8 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+
 .variants-view {
   &__back {
     margin-bottom: $spacing-4;
@@ -217,6 +219,12 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     align-items: center;
     justify-content: space-between;
     margin-bottom: $spacing-6;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-3;
+    }
   }
 
   &__loading {
@@ -227,8 +235,12 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: $spacing-4;
+
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
   }
 }
 

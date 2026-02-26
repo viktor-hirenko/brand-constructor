@@ -3,6 +3,18 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+interface Props {
+  isOpen?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  isOpen: false,
+})
+
+const emit = defineEmits<{
+  close: []
+}>()
+
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -23,10 +35,16 @@ const navItems: NavItem[] = [
   { label: 'Users', path: '/users', icon: '&#9823;', adminOnly: true },
 ]
 
-const visibleItems = computed(() => navItems.filter(item => !item.adminOnly || authStore.isAdmin))
+const visibleItems = computed(() =>
+  navItems.filter(item => !item.adminOnly || authStore.isAdmin)
+)
 
 function isActive(path: string): boolean {
   return route.path.startsWith(path)
+}
+
+function handleNavClick() {
+  emit('close')
 }
 
 function handleLogout() {
@@ -36,9 +54,12 @@ function handleLogout() {
 </script>
 
 <template>
-  <aside class="sidebar">
-    <div class="sidebar__logo">
+  <aside class="sidebar" :class="{ 'sidebar--open': props.isOpen }">
+    <div class="sidebar__header">
       <span class="sidebar__logo-text">BC Admin</span>
+      <button class="sidebar__close" aria-label="Close menu" @click="emit('close')">
+        ✕
+      </button>
     </div>
 
     <nav class="sidebar__nav">
@@ -48,6 +69,7 @@ function handleLogout() {
         :to="item.path"
         class="sidebar__link"
         :class="{ 'sidebar__link--active': isActive(item.path) }"
+        @click="handleNavClick"
       >
         <span class="sidebar__link-icon" v-html="item.icon" />
         <span class="sidebar__link-label">{{ item.label }}</span>
@@ -67,6 +89,9 @@ function handleLogout() {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+@use '@/styles/variables' as *;
+
 .sidebar {
   width: $sidebar-width;
   height: 100vh;
@@ -77,14 +102,54 @@ function handleLogout() {
   flex-shrink: 0;
   overflow-y: auto;
 
-  &__logo {
+  @include mobile-tablet {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: $z-sidebar;
+    transform: translateX(-100%);
+    transition: transform $transition-slow;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  }
+
+  &--open {
+    @include mobile-tablet {
+      transform: translateX(0);
+    }
+  }
+
+  &__header {
     padding: $spacing-6;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   &__logo-text {
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
+  }
+
+  &__close {
+    display: none;
+    background: none;
+    border: none;
+    color: $color-text-muted;
+    font-size: $font-size-lg;
+    cursor: pointer;
+    padding: $spacing-1;
+    line-height: 1;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $color-text-inverse;
+    }
+
+    @include mobile-tablet {
+      display: block;
+    }
   }
 
   &__nav {
@@ -114,6 +179,11 @@ function handleLogout() {
     &--active {
       color: $color-text-inverse;
       background-color: $color-bg-sidebar-active;
+    }
+
+    @include mobile-tablet {
+      padding: $spacing-4 $spacing-6;
+      font-size: $font-size-base;
     }
   }
 

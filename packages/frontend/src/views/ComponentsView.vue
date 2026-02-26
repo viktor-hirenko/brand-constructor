@@ -104,12 +104,20 @@ onMounted(fetchTypes)
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+
 .components-view {
   &__toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: $spacing-6;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-3;
+    }
   }
 
   &__count {
@@ -126,8 +134,12 @@ onMounted(fetchTypes)
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: $spacing-4;
+
+    @include mobile {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   &__form {

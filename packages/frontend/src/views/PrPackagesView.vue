@@ -291,12 +291,20 @@ async function handleDelete(id: string, name: string) {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+
 .pr-packages-view {
   &__toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: $spacing-6;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-3;
+    }
   }
 
   &__count {
@@ -314,6 +322,14 @@ async function handleDelete(id: string, name: string) {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: $spacing-4;
+
+    @include tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__form {

@@ -186,6 +186,8 @@ async function handleFileUpload(event: Event, entityType: string) {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+
 .concept-detail {
   max-width: 900px;
 
@@ -208,6 +210,12 @@ async function handleFileUpload(event: Event, entityType: string) {
     background-color: $color-bg-white;
     border-radius: $radius-lg;
     border: 1px solid $color-border;
+
+    @include mobile {
+      flex-direction: column;
+      gap: $spacing-4;
+      padding: $spacing-4;
+    }
   }
 
   &__title-row {
@@ -234,6 +242,10 @@ async function handleFileUpload(event: Event, entityType: string) {
     border: 1px solid $color-border;
     margin-bottom: $spacing-4;
 
+    @include mobile {
+      padding: $spacing-4;
+    }
+
     h3 {
       margin-bottom: $spacing-4;
       font-size: $font-size-base;
@@ -249,6 +261,10 @@ async function handleFileUpload(event: Event, entityType: string) {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: $spacing-4;
+
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__empty {

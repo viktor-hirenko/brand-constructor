@@ -295,6 +295,8 @@ async function handleDeleteNaming(id: string, name: string) {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+
 .namings-view {
   &__tabs {
     display: flex;
@@ -329,12 +331,22 @@ async function handleDeleteNaming(id: string, name: string) {
     align-items: center;
     justify-content: space-between;
     margin-bottom: $spacing-4;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-3;
+    }
   }
 
   &__filters {
     display: flex;
     align-items: center;
     gap: $spacing-3;
+
+    @include mobile {
+      flex-wrap: wrap;
+    }
   }
 
   &__select {
@@ -361,11 +373,16 @@ async function handleDeleteNaming(id: string, name: string) {
     border-radius: $radius-lg;
     overflow: hidden;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   &__table {
     width: 100%;
     border-spacing: 0;
+
+    @include mobile {
+      min-width: 560px;
+    }
     border-collapse: separate;
     background-color: $color-bg-white;
 
