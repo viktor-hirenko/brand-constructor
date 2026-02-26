@@ -1,60 +1,73 @@
-# Brand Constructor - Implementation Plan
+# Brand Constructor — План реалізації
 
-**Статус документа**: Активный план реализации  
-**Последнее обновление**: 2026-02-19
+**Статус документа**: Активний план реалізації  
+**Останнє оновлення**: 2026-02-24
 
 ---
 
-## Архитектурные решения
+## Архітектурні рішення
 
-### Стек технологий
+### Стек технологій
+
 - **Frontend**: Vue 3 + TypeScript + Vite + SCSS + Pinia + Vue Router
 - **Backend API**: Cloudflare Worker + Hono.js (lightweight, TypeScript-first фреймворк для Workers)
-- **Database**: Cloudflare D1 (SQLite) -- реляционные связи между сущностями
-- **File Storage**: Cloudflare R2 -- для ассетов библиотек (PNG, SVG)
-- **Cache/Sessions**: Cloudflare KV -- для сессий аутентификации и кеша
-- **Auth**: Cloudflare Access (Zero Trust) + app-level роли в D1
+- **Database**: Cloudflare D1 (SQLite) — реляційні зв'язки між сутностями
+- **File Storage**: Cloudflare R2 — для асетів бібліотек (PNG, SVG)
+- **Cache/Sessions**: Cloudflare KV — для JWT-сесій автентифікації
+- **Auth**: Google OAuth + власний JWT
 
-### Почему эти решения
-- **D1 вместо KV** для данных: сущности связаны между собой (naming -> concept, variant -> component_type). SQL с JOIN/FK -- единственный разумный путь
-- **Hono.js** для Worker: TypeScript-native, встроенная поддержка D1/R2/KV bindings, middleware для auth, валидация через Zod
-- **Monorepo** с pnpm workspaces: shared types между фронтом и worker, один CI/CD пайплайн
-- **Cloudflare Access** для auth: панель на dev-домене, CF Access -- нативная защита без кода
+### Чому ці рішення
 
-### Скоуп задачи
+- **D1 замість KV** для даних: сутності пов'язані між собою (naming → concept, variant → component_type). SQL з JOIN/FK — єдиний розумний шлях
+- **Hono.js** для Worker: TypeScript-native, вбудована підтримка D1/R2/KV bindings, middleware для auth, валідація через Zod
+- **Монорепо** з pnpm workspaces: shared types між фронтом і worker, один CI/CD пайплайн
+- **Google OAuth** для auth: Google OAuth напряму — повний контроль над сесіями, ролями та дозволами без зовнішніх залежностей
 
-**ВХОДИТ (эта задача):**
-- [x] Cloudflare инфраструктура (R2, D1, Worker, Access)
-- [ ] Админ-панель для управления 5 библиотеками
-- [ ] Связывание сущностей между библиотеками
-- [ ] Загрузка/валидация ассетов (PNG/SVG, aspect ratio)
-- [ ] Базовая модель ролей
+### Скоуп задачі
 
-**НЕ ВХОДИТ (отдельная задача позже):**
-- 9-шаговый wizard конструктора брендов (Product Owner flow)
-- Live Preview мобильного шаблона казино
-- Интеграции (Confluence, Slack, Jira)
+**ВХОДИТЬ (ця задача):**
+
+- [x] Cloudflare інфраструктура (R2, D1, Worker, KV)
+- [x] Google OAuth автентифікація + JWT-сесії
+- [x] Адмін-панель для управління 5 бібліотеками
+- [x] Зв'язування сутностей між бібліотеками
+- [x] Завантаження/валідація асетів (PNG/SVG, формат, розміри)
+- [x] Рольова модель доступу (8 ролей, RBAC)
+
+**НЕ ВХОДИТЬ (окрема задача пізніше):**
+
+- 9-кроковий wizard конструктора брендів (Product Owner flow)
+- Live Preview мобільного шаблону казино
+- Інтеграції (Confluence, Slack, Jira)
 - Approval flow (CPO/CEO)
 
 ---
 
-## Структура монорепозитория
+## Структура монорепозиторію
 
 ```
 brand-constructor/
-├── docs/                      # Документация проекта
-│   ├── TASK-REQUIREMENTS.md   # Оригинальная задача
-│   └── IMPLEMENTATION-PLAN.md # Этот файл
+├── docs/                        # Документація проєкту
+│   ├── TASK-REQUIREMENTS.md     # Оригінальна задача + Product Concept v1.0
+│   ├── IMPLEMENTATION-PLAN.md   # Цей файл
+│   ├── PROJECT-DOCS.md          # Технічна документація проєкту
+│   ├── FUTURE-WORK.md           # Що не реалізовано і чому
+│   └── product-spec/            # Оригінальна продуктова документація
+│       ├── README.md            # Індекс документів з маппінгом scope
+│       ├── jira-task.md         # Текст задачі з Jira
+│       ├── v1-product-concept.md
+│       ├── v2-prd.md
+│       ├── technical-requirements.md
+│       ├── success-metrics.md
+│       ├── pr-packages-detailed.md
+│       ├── v2-technical-requirements.md
+│       ├── v2-future-enhancements.md
+│       └── assets/              # Flow-діаграми з FigJam
 ├── packages/
-│   ├── frontend/              # Vue 3 + Vite админ-панель
+│   ├── frontend/                # Vue 3 + Vite адмін-панель
 │   │   ├── src/
 │   │   │   ├── assets/
-│   │   │   ├── components/
-│   │   │   │   ├── ui/
-│   │   │   │   ├── concepts/
-│   │   │   │   ├── namings/
-│   │   │   │   ├── pr-packages/
-│   │   │   │   └── ui-components/
+│   │   │   ├── components/ui/
 │   │   │   ├── composables/
 │   │   │   ├── views/
 │   │   │   ├── stores/
@@ -63,7 +76,7 @@ brand-constructor/
 │   │   │   └── styles/
 │   │   ├── vite.config.ts
 │   │   └── package.json
-│   ├── worker/                # Cloudflare Worker API
+│   ├── worker/                  # Cloudflare Worker API
 │   │   ├── src/
 │   │   │   ├── index.ts
 │   │   │   ├── routes/
@@ -72,132 +85,188 @@ brand-constructor/
 │   │   │   └── utils/
 │   │   ├── wrangler.toml
 │   │   └── package.json
-│   └── shared/                # Shared TypeScript types
+│   └── shared/                  # Спільні TypeScript-типи та константи
 │       ├── src/
 │       │   ├── types/
 │       │   └── constants/
 │       └── package.json
-├── package.json               # Root workspace config
+├── package.json                 # Root workspace config
 ├── pnpm-workspace.yaml
 └── turbo.json
 ```
 
 ---
 
-## Модель данных (D1 Schema)
+## Модель даних (D1 Schema)
 
-### Таблицы
-- `users` - пользователи и роли
-- `concepts` - концепты брендов
-- `external_namings` - внешние неймінги (могут быть привязаны к концепту)
-- `internal_namings` - внутренние неймінги
-- `pr_packages` - PR-пакеты (6 штук)
-- `component_types` - типы UI-компонентов (banner, tabbar, header, etc.)
-- `component_variants` - варианты каждого типа компонента
-- `assets` - метаданные загруженных файлов
+### Таблиці (9)
 
-### Роли пользователей
-- `admin` -- полный доступ
-- `head_dhc` -- полный доступ
-- `strategy_identity` -- концепты + неймінги
-- `ui_designer` -- UI компоненты
-- `pr_marketing` -- PR пакеты
-- `product_owner`, `cpo_ceo`, `product_designer` -- только просмотр
+- `users` — користувачі та ролі
+- `concepts` — концепти брендів
+- `external_namings` — зовнішні неймінги (можуть бути прив'язані до концепту)
+- `internal_namings` — внутрішні неймінги
+- `pr_packages` — PR-пакети (6 штук)
+- `component_types` — типи UI-компонентів (banner, tabbar, header тощо)
+- `component_variants` — варіанти кожного типу компонента
+- `assets` — метадані завантажених файлів
+- `audit_log` — історія дій користувачів
 
----
+### Індекси (11)
 
-## API эндпоинты
+- `idx_concepts_status`, `idx_concepts_created_by`
+- `idx_external_namings_concept_id`, `idx_external_namings_status`
+- `idx_internal_namings_status`
+- `idx_component_variants_type_id`, `idx_component_variants_status`
+- `idx_assets_entity`
+- `idx_audit_log_entity`, `idx_audit_log_user`
 
-- `GET/POST /api/concepts` -- список / создание концептов
-- `GET/PUT/DELETE /api/concepts/:id` -- CRUD одного концепта
-- `POST /api/concepts/:id/namings` -- привязать naming к концепту
-- `GET/POST /api/namings/external` -- внешние неймінги
-- `GET/POST /api/namings/internal` -- внутренние неймінги
-- `GET/PUT/DELETE /api/namings/:type/:id` -- CRUD неймінга
-- `GET/POST /api/pr-packages` -- PR-пакеты
-- `GET/PUT/DELETE /api/pr-packages/:id`
-- `GET/POST /api/component-types` -- типы компонентов
-- `GET/POST /api/component-types/:id/variants` -- варианты
-- `GET/PUT/DELETE /api/component-variants/:id`
-- `POST /api/assets/upload` -- загрузка файла в R2
-- `DELETE /api/assets/:id` -- удаление ассета
-- `GET /api/users` -- список пользователей (admin)
-- `PUT /api/users/:id/role` -- назначение роли (admin)
-- `GET /api/me` -- текущий пользователь + роль
+### Ролі користувачів
+
+- `admin` — повний доступ
+- `head_dhc` — повний доступ
+- `strategy_identity` — концепти + неймінги
+- `ui_designer` — UI-компоненти
+- `pr_marketing` — PR-пакети
+- `product_owner`, `cpo_ceo`, `product_designer` — тільки перегляд
 
 ---
 
-## Валидация ассетов
+## API-ендпоінти
 
-При загрузке изображений Worker проверяет:
-1. **Формат**: только PNG и SVG (mime type + magic bytes)
-2. **Размер файла**: макс 10MB для PNG, 2MB для SVG
-3. **Aspect ratio**: зависит от типа сущности
-4. **Dimensions**: минимальные размеры для качества
+### Автентифікація (без JWT)
 
-Тестовые aspect ratio:
-- Concept visual: 16:9 (баннерный формат)
-- Concept logo: 1:1 (квадрат)
-- Component thumbnail: 4:3
-- Component preview: 9:16 (мобильный формат)
+- `POST /api/auth/google` — обмін Google ID-токена на сесійний JWT
+- `POST /api/auth/logout` — вихід із системи
+- `GET /api/health` — перевірка стану сервісу
+
+### Користувачі (потрібна авт.)
+
+- `GET /api/users/me` — поточний користувач
+- `GET /api/users` — список всіх (лише admin)
+- `POST /api/users` — створити користувача (лише admin)
+- `PUT /api/users/:id` — оновити користувача (лише admin)
+- `DELETE /api/users/:id` — видалити користувача (лише admin)
+
+### Концепти
+
+- `GET /api/concepts` — список із фільтрами
+- `GET /api/concepts/:id` — деталі з неймінгами та асетами
+- `POST /api/concepts` — створити
+- `PUT /api/concepts/:id` — оновити
+- `DELETE /api/concepts/:id` — видалити
+
+### Неймінги
+
+- `GET /api/namings/external` — список зовнішніх (фільтри: linked/standalone)
+- `GET /api/namings/internal` — список внутрішніх
+- `POST /api/namings/external` — створити зовнішній
+- `POST /api/namings/internal` — створити внутрішній
+- `PUT /api/namings/external/:id` — оновити (включно з прив'язкою до концепту через `concept_id`)
+- `PUT /api/namings/internal/:id` — оновити
+- `DELETE /api/namings/external/:id` — видалити
+- `DELETE /api/namings/internal/:id` — видалити
+
+### PR-пакети
+
+- `GET /api/pr-packages` — список
+- `GET /api/pr-packages/:id` — деталі
+- `POST /api/pr-packages` — створити
+- `PUT /api/pr-packages/:id` — оновити
+- `DELETE /api/pr-packages/:id` — видалити
+
+### UI-компоненти
+
+- `GET /api/components/types` — список типів із кількістю варіантів
+- `POST /api/components/types` — створити тип
+- `GET /api/components/types/:id/variants` — варіанти типу
+- `POST /api/components/types/:id/variants` — створити варіант
+- `PUT /api/components/variants/:id` — оновити варіант
+- `DELETE /api/components/variants/:id` — видалити варіант
+
+### Асети
+
+- `GET /api/assets/:entityType/:entityId/:fileName` — отримати файл (публічний, без авт.)
+- `POST /api/assets/upload` — завантажити файл (потрібна авт.)
+- `DELETE /api/assets/:id` — видалити асет за ID з бази
 
 ---
 
-## Фазы реализации
+## Валідація асетів
 
-### Фаза 1: Инфраструктура + Scaffold
-- [x] Создать monorepo, настроить pnpm workspaces + turbo
-- [x] Создать структуру директорий
-- [x] Shared types package (types + constants: roles, statuses, assets)
-- [x] Scaffold Worker с Hono.js + базовые bindings (D1, R2, KV)
-- [x] Scaffold Vue 3 + Vite проект (router, pinia, SCSS)
-- [x] D1 schema + миграция + seed-данные
-- [ ] Создать Cloudflare R2 bucket через wrangler (remote, нужен доступ к CF account)
-- [ ] Настроить Cloudflare Access на dev-домене (нужен доступ к CF account)
+При завантаженні зображень Worker перевіряє:
 
-**Статус**: ✅ Завершена (локальная инфра работает, remote CF ресурсы ожидают доступ)
+1. **Формат**: тільки PNG і SVG (mime type + magic bytes)
+2. **Розмір файлу**: макс. 10 МБ для PNG, 2 МБ для SVG
+3. **Мінімальні розміри**: залежать від типу сутності (від 64×64 до 300×300)
 
-### Фаза 2: Библиотека концептов + ассеты
-- [x] CRUD API для concepts в Worker (GET list, GET detail, POST, PUT, DELETE)
-- [x] Upload/delete ассетов через R2 API (POST /api/assets/upload, DELETE)
-- [x] Валидация ассетов (format detection, aspect ratio, dimensions, file size)
-- [x] Vue: ConceptsView -- список с фильтрами, создание, удаление
-- [x] Vue: ConceptDetailView -- детальная страница, редактирование, upload ассетов
-- [x] Vue: ConceptCard + StatusBadge компоненты
+> **Примітка щодо aspect ratio**: Строгі співвідношення сторін (16:9 для банерів, 1:1 для лого тощо) описані в продуктовому документі для Phase 2 — Live Preview у конструкторі брендів. В адмін-панелі (Phase 1) перевірка ratio **вимкнена** (`aspect_ratio: 0`), оскільки зображення відображаються через `object-fit: cover` у CSS і строгі ratio не потрібні для бібліотечного управління.
+
+---
+
+## Фази реалізації
+
+### Фаза 1: Інфраструктура + Scaffold
+
+- [x] Створити монорепо, налаштувати pnpm workspaces + turbo
+- [x] Створити структуру директорій
+- [x] Shared types package (types + constants: ролі, статуси, асети)
+- [x] Scaffold Worker з Hono.js + базові bindings (D1, R2, KV)
+- [x] Scaffold Vue 3 + Vite проєкт (router, pinia, SCSS)
+- [x] D1 schema + міграція + seed-дані
+- [x] Створити Cloudflare R2 bucket
+- [x] Налаштувати Google OAuth автентифікацію
 
 **Статус**: ✅ Завершена
 
-### Фаза 3: Naming библиотеки + связывание
-- [x] CRUD API для external namings (GET с фильтрами linked/standalone, POST, PUT, DELETE)
+### Фаза 2: Бібліотека концептів + асети
+
+- [x] CRUD API для concepts у Worker (GET list, GET detail, POST, PUT, DELETE)
+- [x] Upload/delete асетів через R2 API (POST /api/assets/upload, DELETE)
+- [x] Валідація асетів (format detection, dimensions, file size)
+- [x] Vue: ConceptsView — список із фільтрами, створення, видалення
+- [x] Vue: ConceptDetailView — детальна сторінка, редагування, upload асетів
+- [x] Vue: ConceptCard + StatusBadge компоненти
+
+**Статус**: ✅ Завершена
+
+### Фаза 3: Naming бібліотеки + зв'язування
+
+- [x] CRUD API для external namings (GET з фільтрами linked/standalone, POST, PUT, DELETE)
 - [x] CRUD API для internal namings (GET, POST, PUT, DELETE)
-- [x] Связывание external naming с concept (FK concept_id, валидация)
-- [x] Vue: NamingsView -- табы external/internal, фильтры, таблица, создание, удаление
+- [x] Зв'язування external naming з concept (FK concept_id, валідація)
+- [x] Vue: NamingsView — таби external/internal, фільтри, таблиця, створення, видалення
 
 **Статус**: ✅ Завершена
 
-### Фаза 4: PR-пакеты
-- [x] CRUD API для PR-пакетов (GET list sorted by number, POST, PUT, DELETE)
-- [x] Vue: PrPackagesView -- карточки с create/edit модалом и формой
+### Фаза 4: PR-пакети
+
+- [x] CRUD API для PR-пакетів (GET list sorted by number, POST, PUT, DELETE)
+- [x] Vue: PrPackagesView — картки з create/edit модалом та формою
 - [x] Форма: number, name, description, teams, goals, components, timeline, expenses
 
 **Статус**: ✅ Завершена
 
-### Фаза 5: UI-компоненты
+### Фаза 5: UI-компоненти
+
 - [x] CRUD API для component_types (GET with variant_count, POST)
 - [x] CRUD API для component_variants (GET by type, POST, PUT, DELETE)
-- [x] Vue: ComponentsView -- grid типов с количеством вариантов
-- [x] Vue: ComponentVariantsView -- варианты типа, upload thumbnail, удаление
+- [x] Vue: ComponentsView — grid типів із кількістю варіантів
+- [x] Vue: ComponentVariantsView — варіанти типу, upload thumbnail, видалення
 
 **Статус**: ✅ Завершена
 
-### Фаза 6: Роли + архивирование + polish
-- [x] Auth middleware (CF Access JWT + dev-mode fallback)
-- [x] requireLibraryAccess middleware -- проверка роли для каждой библиотеки
+### Фаза 6: Ролі + автентифікація + polish
+
+- [x] Google OAuth автентифікація (верифікація ID-токена, власний JWT)
+- [x] authMiddleware (JWT-перевірка + dev-mode fallback)
+- [x] requireLibraryAccess middleware — перевірка ролі для кожної бібліотеки
 - [x] requireAdmin middleware для user management
-- [x] Vue: UsersView -- управление пользователями и ролями (admin only)
-- [x] Логика архивирования (used_in_brand_id -> cannot delete/modify)
-- [x] Audit log (audit_log таблица с user_id, action, entity_type, entity_id)
-- [x] LIBRARY_WRITE_PERMISSIONS map в shared constants
+- [x] Vue: LoginView — Google Sign-In
+- [x] Vue: UsersView — управління користувачами та ролями (лише admin)
+- [x] Логіка архівування (used_in_brand_id — підготовлено для Phase 2)
+- [x] Audit log (audit_log таблиця з user_id, action, entity_type, entity_id)
+- [x] LIBRARY_WRITE_PERMISSIONS map у shared constants
+- [x] Responsive design для мобільних та планшетів
 
 **Статус**: ✅ Завершена
 
@@ -205,15 +274,28 @@ brand-constructor/
 
 ## Changelog
 
+### 2026-02-24
+
+- Оновлено документацію: переклад на українську, виправлення невідповідностей з кодом
+- Додано responsive design для мобільних та планшетів (bottom-sheet модалки, viewport units)
+- Додано product-spec/ з оригінальною продуктовою документацією
+
+### 2026-02-22
+
+- Стандартизовано відображення автора/дати у всіх views
+- Відновлено upload лого в ConceptDetailView
+- Переписано PROJECT-DOCS та FUTURE-WORK на українську
+
 ### 2026-02-21
-- Все 6 фаз реализованы
-- Worker API: 6 роутов (concepts, namings, pr-packages, components, assets, users)
-- Frontend: 7 views, 7 UI-компонентов, router, pinia store, useApi composable
-- D1 schema: 8 таблиц + 9 индексов, seed с users + component types
-- Auth: middleware chain (CF Access / dev-mode) + role-based library access
-- Asset validation: format detection (PNG magic bytes, SVG XML), aspect ratio, dimensions, file size
-- Все API протестированы через curl -- concepts CRUD, namings с линковкой, component types с seed
+
+- Всі 6 фаз реалізовані
+- Worker API: 7 модулів роутів (auth, concepts, namings, pr-packages, components, assets, users)
+- Frontend: 8 views, базові UI-компоненти, router, pinia store, useApi composable
+- D1 schema: 9 таблиць + 11 індексів, seed з users + component types
+- Auth: Google OAuth + JWT middleware + role-based library access
+- Asset validation: format detection (PNG magic bytes, SVG XML), dimensions, file size
 
 ### 2026-02-19
-- Создан проект и документация
-- Начата Фаза 1: Инфраструктура + Scaffold
+
+- Створено проєкт і документацію
+- Розпочато Фазу 1: Інфраструктура + Scaffold
