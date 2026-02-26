@@ -30,6 +30,7 @@ const editDescription = ref('')
 const uploadingType = ref<string | null>(null)
 
 const visualInputRef = ref<HTMLInputElement | null>(null)
+const logoInputRef = ref<HTMLInputElement | null>(null)
 
 onMounted(() => fetchData())
 
@@ -136,6 +137,32 @@ async function handleFileUpload(event: Event, entityType: string) {
                 @click="visualInputRef?.click()"
               >
                 {{ concept.visual_url ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
+          </div>
+
+          <div class="asset-slot">
+            <span class="asset-slot__label">Logo</span>
+            <div class="asset-slot__preview asset-slot__preview--square">
+              <img v-if="concept.logo_url" :src="getAssetUrl(concept.logo_url)" alt="Logo" />
+              <span v-else class="asset-slot__empty-text">No logo uploaded</span>
+            </div>
+            <template v-if="canWrite">
+              <input
+                ref="logoInputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_logo')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_logo'"
+                :disabled="uploadingType !== null"
+                @click="logoInputRef?.click()"
+              >
+                {{ concept.logo_url ? 'Change image' : 'Upload image' }}
               </BaseButton>
             </template>
           </div>

@@ -239,7 +239,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
   overflow: hidden;
 
   &__preview {
-    background-color: $color-bg;
+    background-color: #e2e8f0;
     overflow: hidden;
     aspect-ratio: 16 / 9;
     display: flex;
