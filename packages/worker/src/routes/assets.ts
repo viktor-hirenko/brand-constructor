@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import type { Env, Variables } from '../types';
-import { authMiddleware } from '../middleware/auth';
 import { generateId } from '../utils/id';
 import { detectFileType, extractPngDimensions, validateAsset } from '../utils/asset-validation';
 import { buildR2Key, getContentType } from '../utils/r2';
@@ -110,7 +109,7 @@ app.delete('/:id', async (c) => {
     return c.json({ success: false, error: 'Asset not found' }, 404);
   }
 
-  const r2Key = (asset.file_url as string).replace('/assets/', '');
+  const r2Key = (asset.file_url as string).replace('/api/assets/', '');
   await c.env.ASSETS_BUCKET.delete(r2Key);
   await c.env.DB.prepare('DELETE FROM assets WHERE id = ?').bind(id).run();
 

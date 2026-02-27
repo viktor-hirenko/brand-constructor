@@ -77,12 +77,3 @@ export async function verifyJWT(token: string, secret: string): Promise<JWTPaylo
   }
 }
 
-export function decodeGoogleCredential(credential: string): Record<string, unknown> | null {
-  try {
-    const parts = credential.split('.')
-    if (parts.length !== 3) return null
-    return JSON.parse(base64UrlDecode(parts[1]))
-  } catch {
-    return null
-  }
-}
