@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared'
-import { apiPost, apiDelete, apiUpload, getAssetUrl, getAuthHeader } from '@/composables/useApi'
+import { apiGet, apiPost, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -41,15 +41,13 @@ function triggerUpload(variantId: string) {
 async function fetchVariants() {
   loading.value = true
   try {
-    const apiBase = import.meta.env.VITE_API_URL || ''
-    const res = await fetch(`${apiBase}/api/components/types/${typeId}/variants`, {
-      headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
-    })
-    const json = await res.json()
-    if (json.success) {
-      componentType.value = json.data.type
-      variants.value = json.data.variants
-    }
+    const result = await apiGet<{ type: ComponentType; variants: (ComponentVariant & { author_name: string })[] }>(
+      `/api/components/types/${typeId}/variants`
+    )
+    componentType.value = result.type
+    variants.value = result.variants
+  } catch (err) {
+    console.error('Failed to fetch variants:', err)
   } finally {
     loading.value = false
   }

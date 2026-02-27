@@ -130,3 +130,8 @@ export async function apiUpload<T>(url: string, formData: FormData): Promise<T> 
   })
   return result.data
 }
+
+export async function apiGet<T>(url: string): Promise<T> {
+  const result = await request<ApiResponse<T>>(url)
+  return result.data
+}
