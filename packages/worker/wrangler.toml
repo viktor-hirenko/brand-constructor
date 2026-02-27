@@ -15,11 +15,6 @@ database_id = "2aafe66b-27be-4058-9c09-e784efefa404"
 binding = "ASSETS_BUCKET"
 bucket_name = "brand-constructor-assets"
 
-# Cloudflare KV for sessions
-[[kv_namespaces]]
-binding = "SESSIONS"
-id = "c4531fb03f2947418c131880e7ba4a36"
-
 # Development environment
 [vars]
 ENVIRONMENT = "development"
@@ -38,6 +33,3 @@ database_id = "2aafe66b-27be-4058-9c09-e784efefa404"
 binding = "ASSETS_BUCKET"
 bucket_name = "brand-constructor-assets"
 
-[[env.production.kv_namespaces]]
-binding = "SESSIONS"
-id = "c4531fb03f2947418c131880e7ba4a36"

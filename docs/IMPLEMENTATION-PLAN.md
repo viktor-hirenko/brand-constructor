@@ -13,13 +13,12 @@
 - **Backend API**: Cloudflare Worker + Hono.js (lightweight, TypeScript-first фреймворк для Workers)
 - **Database**: Cloudflare D1 (SQLite) — реляційні зв'язки між сутностями
 - **File Storage**: Cloudflare R2 — для асетів бібліотек (PNG, SVG)
-- **Cache/Sessions**: Cloudflare KV — для JWT-сесій автентифікації
 - **Auth**: Google OAuth + власний JWT
 
 ### Чому ці рішення
 
 - **D1 замість KV** для даних: сутності пов'язані між собою (naming → concept, variant → component_type). SQL з JOIN/FK — єдиний розумний шлях
-- **Hono.js** для Worker: TypeScript-native, вбудована підтримка D1/R2/KV bindings, middleware для auth, валідація через Zod
+- **Hono.js** для Worker: TypeScript-native, вбудована підтримка D1/R2 bindings, middleware для auth, валідація через Zod
 - **Монорепо** з pnpm workspaces: shared types між фронтом і worker, один CI/CD пайплайн
 - **Google OAuth** для auth: Google OAuth напряму — повний контроль над сесіями, ролями та дозволами без зовнішніх залежностей
 
@@ -27,7 +26,7 @@
 
 **ВХОДИТЬ (ця задача):**
 
-- [x] Cloudflare інфраструктура (R2, D1, Worker, KV)
+- [x] Cloudflare інфраструктура (R2, D1, Worker)
 - [x] Google OAuth автентифікація + JWT-сесії
 - [x] Адмін-панель для управління 5 бібліотеками
 - [x] Зв'язування сутностей між бібліотеками
@@ -111,7 +110,7 @@ brand-constructor/
 - `assets` — метадані завантажених файлів
 - `audit_log` — історія дій користувачів
 
-### Індекси (11)
+### Індекси (10)
 
 - `idx_concepts_status`, `idx_concepts_created_by`
 - `idx_external_namings_concept_id`, `idx_external_namings_status`
@@ -197,9 +196,12 @@ brand-constructor/
 
 1. **Формат**: тільки PNG і SVG (mime type + magic bytes)
 2. **Розмір файлу**: макс. 10 МБ для PNG, 2 МБ для SVG
-3. **Мінімальні розміри**: залежать від типу сутності (від 64×64 до 300×300)
+3. **Мінімальні розміри**: залежать від типу сутності (від 100×20 для component thumbnails до 300×300 для concept visuals)
+4. **Aspect ratio**:
+   - Для `concept_visual` і `concept_logo`: перевірка ratio не виконується
+   - Для `component_thumbnail`: перевірка ratio активна і залежить від типу компонента (Header 6.05:1, Banners 1.9:1, Thumbnails 2.14:1, Tabbar 5.07:1, Sidebar 0.47:1)
 
-> **Примітка щодо aspect ratio**: Строгі співвідношення сторін (16:9 для банерів, 1:1 для лого тощо) описані в продуктовому документі для Phase 2 — Live Preview у конструкторі брендів. В адмін-панелі (Phase 1) перевірка ratio **вимкнена** (`aspect_ratio: 0`), оскільки зображення відображаються через `object-fit: cover` у CSS і строгі ratio не потрібні для бібліотечного управління.
+При невідповідності вимогам API повертає HTTP 400 з текстом помилки, frontend показує її через нативний браузерний `alert()`.
 
 ---
 
@@ -210,7 +212,7 @@ brand-constructor/
 - [x] Створити монорепо, налаштувати pnpm workspaces + turbo
 - [x] Створити структуру директорій
 - [x] Shared types package (types + constants: ролі, статуси, асети)
-- [x] Scaffold Worker з Hono.js + базові bindings (D1, R2, KV)
+- [x] Scaffold Worker з Hono.js + базові bindings (D1, R2)
 - [x] Scaffold Vue 3 + Vite проєкт (router, pinia, SCSS)
 - [x] D1 schema + міграція + seed-дані
 - [x] Створити Cloudflare R2 bucket
@@ -225,8 +227,6 @@ brand-constructor/
 - [x] Валідація асетів (format detection, dimensions, file size)
 - [x] Vue: ConceptsView — список із фільтрами, створення, видалення
 - [x] Vue: ConceptDetailView — детальна сторінка, редагування, upload асетів
-- [x] Vue: ConceptCard + StatusBadge компоненти
-
 **Статус**: ✅ Завершена
 
 ### Фаза 3: Naming бібліотеки + зв'язування
@@ -242,7 +242,7 @@ brand-constructor/
 
 - [x] CRUD API для PR-пакетів (GET list sorted by number, POST, PUT, DELETE)
 - [x] Vue: PrPackagesView — картки з create/edit модалом та формою
-- [x] Форма: number, name, description, teams, goals, components, timeline, expenses
+- [x] Форма: number, name, description, teams, requirements, goals, components, timeline, expenses
 
 **Статус**: ✅ Завершена
 
@@ -291,7 +291,7 @@ brand-constructor/
 - Всі 6 фаз реалізовані
 - Worker API: 7 модулів роутів (auth, concepts, namings, pr-packages, components, assets, users)
 - Frontend: 8 views, базові UI-компоненти, router, pinia store, useApi composable
-- D1 schema: 9 таблиць + 11 індексів, seed з users + component types
+- D1 schema: 9 таблиць + 10 індексів, seed з users + component types
 - Auth: Google OAuth + JWT middleware + role-based library access
 - Asset validation: format detection (PNG magic bytes, SVG XML), dimensions, file size
 

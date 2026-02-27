@@ -1,7 +1,6 @@
 export interface Env {
   DB: D1Database
   ASSETS_BUCKET: R2Bucket
-  SESSIONS: KVNamespace
   ENVIRONMENT: string
   CORS_ORIGIN: string
   JWT_SECRET: string

@@ -44,7 +44,7 @@
 |---|---|---|
 | **jira-task.md** | Задача на адмін-панель бібліотек | **Так** — повністю |
 | v1.0: Section 4 (Roles & Permissions) | Ролі та права доступу | **Так** — 8 ролей у BC Admin |
-| v1.0: Section 5 (Library Management) | CRUD бібліотек, архівування, історія | **Так** — CRUD + audit_log |
+| v1.0: Section 5 (Library Management) | CRUD бібліотек, архівування, історія | **Так** — CRUD + audit_log (наразі лише для концептів) |
 | v2.0: "Управління бібліотеками" | Admin Panel для наповнення | **Так** — реалізовано у BC Admin |
 | technical-requirements.md | Data models (Concept, Naming, Component) | **Частково** — реалізовано без Brand entity |
 | pr-packages-detailed.md | Повні описи 6 PR-пакетів | **Так** — структура реалізована, контент вносять менеджери |

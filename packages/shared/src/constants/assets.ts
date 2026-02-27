@@ -31,12 +31,17 @@ export interface ComponentTypeAspectConfig {
   min_height: number;
 }
 
+/**
+ * Aspect ratios derived from Figma prototype measurements.
+ * Reference sizes: Header 387×64, Banners 273×144, Thumbnails 270×126, Tabbar 289×57, Sidebar 289×614.
+ * Set aspect_ratio to 0 to disable ratio validation for a component type.
+ */
 export const COMPONENT_TYPE_ASPECT_RATIOS: Record<string, ComponentTypeAspectConfig> = {
-  ct_header: { aspect_ratio: 0, min_width: 100, min_height: 20 },
-  ct_banners: { aspect_ratio: 0, min_width: 100, min_height: 50 },
-  ct_thumbnails: { aspect_ratio: 0, min_width: 100, min_height: 50 },
-  ct_tabbar: { aspect_ratio: 0, min_width: 100, min_height: 20 },
-  ct_sidebar: { aspect_ratio: 0, min_width: 100, min_height: 100 },
+  ct_header: { aspect_ratio: 6.05, min_width: 100, min_height: 20 },
+  ct_banners: { aspect_ratio: 1.9, min_width: 100, min_height: 50 },
+  ct_thumbnails: { aspect_ratio: 2.14, min_width: 100, min_height: 50 },
+  ct_tabbar: { aspect_ratio: 5.07, min_width: 100, min_height: 20 },
+  ct_sidebar: { aspect_ratio: 0.47, min_width: 100, min_height: 100 },
 };
 
 /**
