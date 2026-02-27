@@ -45,8 +45,8 @@ export const COMPONENT_TYPE_ASPECT_RATIOS: Record<string, ComponentTypeAspectCon
 };
 
 /**
- * Concept visual: no ratio check (displayed via object-fit:cover, CSS handles cropping)
- * Concept logo:   no ratio check (test phase, final ratios TBD)
+ * Concept visual: no ratio check (CSS object-fit:cover handles cropping to card shape)
+ * Concept logo:   no ratio check (displayed in various contexts with different crops)
  * Component thumbnail: dynamic ratio per component type (see COMPONENT_TYPE_ASPECT_RATIOS)
  */
 export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [

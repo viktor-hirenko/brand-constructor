@@ -46,9 +46,16 @@ export function extractPngDimensions(buffer: ArrayBuffer): ImageMeta | null {
 }
 
 function formatRatio(ratio: number): string {
-  if (ratio >= 4) return `${ratio.toFixed(1)}:1`;
-  if (ratio >= 1) return `${(ratio * 10).toFixed(0)}:10`;
-  return `1:${(1 / ratio).toFixed(1)}`;
+  // Always show as width:height format for consistency
+  if (ratio >= 1) {
+    // Landscape or square: show as X:1 or simplified
+    if (ratio >= 4) return `${ratio.toFixed(1)}:1`;
+    if (Number.isInteger(ratio * 10)) return `${(ratio * 10).toFixed(0)}:10`;
+    return `${ratio.toFixed(2)}:1`;
+  }
+  // Portrait: show as 1:Y format but also show decimal
+  const inverted = 1 / ratio;
+  return `${ratio.toFixed(2)}:1 (portrait ~1:${inverted.toFixed(1)})`;
 }
 
 export function validateAsset(
