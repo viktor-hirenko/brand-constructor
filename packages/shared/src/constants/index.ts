@@ -11,5 +11,6 @@ export {
   MAX_FILE_SIZES,
   ASSET_VALIDATION_RULES,
   COMPONENT_TYPE_ASPECT_RATIOS,
+  parseAspectRatio,
 } from './assets'
 export type { ComponentTypeAspectConfig } from './assets'

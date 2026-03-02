@@ -46,16 +46,8 @@ export function extractPngDimensions(buffer: ArrayBuffer): ImageMeta | null {
 }
 
 function formatRatio(ratio: number): string {
-  // Always show as width:height format for consistency
-  if (ratio >= 1) {
-    // Landscape or square: show as X:1 or simplified
-    if (ratio >= 4) return `${ratio.toFixed(1)}:1`;
-    if (Number.isInteger(ratio * 10)) return `${(ratio * 10).toFixed(0)}:10`;
-    return `${ratio.toFixed(2)}:1`;
-  }
-  // Portrait: show as 1:Y format but also show decimal
-  const inverted = 1 / ratio;
-  return `${ratio.toFixed(2)}:1 (portrait ~1:${inverted.toFixed(1)})`;
+  const rounded = Math.round(ratio * 100) / 100;
+  return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(2);
 }
 
 export function validateAsset(
@@ -63,7 +55,8 @@ export function validateAsset(
   fileType: AssetFileType,
   fileSize: number,
   meta: ImageMeta | null,
-  componentTypeId?: string
+  componentTypeId?: string,
+  aspectRatioOverride?: number
 ): ValidationResult {
   const errors: string[] = [];
 
@@ -91,15 +84,12 @@ export function validateAsset(
     return { valid: false, errors };
   }
 
-  let expectedRatio = rule.aspect_ratio;
   let minWidth = rule.min_width;
   let minHeight = rule.min_height;
-  let tolerance = rule.aspect_ratio_tolerance;
 
   if (entityType === 'component_thumbnail' && componentTypeId) {
     const typeConfig = COMPONENT_TYPE_ASPECT_RATIOS[componentTypeId];
     if (typeConfig) {
-      expectedRatio = typeConfig.aspect_ratio;
       minWidth = typeConfig.min_width;
       minHeight = typeConfig.min_height;
     }
@@ -111,11 +101,17 @@ export function validateAsset(
     );
   }
 
-  if (expectedRatio > 0) {
+  // Aspect ratio check: user-provided override takes priority
+  // If override is a valid positive number — use it with ±1% tolerance
+  // If override is undefined/NaN — no ratio check (any proportions allowed)
+  const hasOverride = aspectRatioOverride !== undefined && !isNaN(aspectRatioOverride) && aspectRatioOverride > 0;
+
+  if (hasOverride) {
     const actualRatio = meta.aspectRatio;
-    if (Math.abs(actualRatio - expectedRatio) > tolerance) {
+    const tolerance = aspectRatioOverride * 0.01;
+    if (Math.abs(actualRatio - aspectRatioOverride) > tolerance) {
       errors.push(
-        `Wrong aspect ratio: ${formatRatio(actualRatio)} (expected ~${formatRatio(expectedRatio)})`
+        `Wrong aspect ratio: ${formatRatio(actualRatio)} (expected ~${formatRatio(aspectRatioOverride)}, tolerance ±1%)`
       );
     }
   }

@@ -45,6 +45,24 @@ export const COMPONENT_TYPE_ASPECT_RATIOS: Record<string, ComponentTypeAspectCon
 };
 
 /**
+ * Parse user input into a numeric aspect ratio.
+ * Accepts "16:9" → 1.778, "1.5" → 1.5, empty/invalid → null.
+ */
+export function parseAspectRatio(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.includes(':')) {
+    const [w, h] = trimmed.split(':').map(Number);
+    if (!w || !h || isNaN(w) || isNaN(h) || h === 0) return null;
+    return w / h;
+  }
+
+  const num = parseFloat(trimmed);
+  return isNaN(num) || num <= 0 ? null : num;
+}
+
+/**
  * Concept visual: no ratio check (CSS object-fit:cover handles cropping to card shape)
  * Concept logo:   no ratio check (displayed in various contexts with different crops)
  * Component thumbnail: dynamic ratio per component type (see COMPONENT_TYPE_ASPECT_RATIOS)

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared'
+import { COMPONENT_TYPE_ASPECT_RATIOS, parseAspectRatio } from '@brand-constructor/shared'
 import { apiGet, apiPost, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -27,6 +28,9 @@ const lightboxAlt = ref('')
 
 const uploadingIds = ref<Set<string>>(new Set())
 const uploadInputRefs = ref<Map<string, HTMLInputElement>>(new Map())
+
+const configRatio = COMPONENT_TYPE_ASPECT_RATIOS[typeId]?.aspect_ratio
+const aspectRatioInput = ref(configRatio ? String(configRatio) : '')
 
 function setUploadRef(el: unknown, variantId: string) {
   if (el instanceof HTMLInputElement) {
@@ -79,6 +83,8 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
   const file = input.files?.[0]
   if (!file) return
 
+  const parsedRatio = parseAspectRatio(aspectRatioInput.value)
+
   uploadingIds.value = new Set([...uploadingIds.value, variantId])
   try {
     const formData = new FormData()
@@ -86,6 +92,9 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     formData.append('entity_type', 'component_thumbnail')
     formData.append('entity_id', variantId)
     formData.append('component_type_id', typeId)
+    if (parsedRatio !== null) {
+      formData.append('aspect_ratio', String(parsedRatio))
+    }
     await apiUpload('/api/assets/upload', formData)
     fetchVariants()
   } catch (err) {
@@ -108,6 +117,17 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     <div v-if="componentType" class="variants-view__header">
       <h2>{{ componentType.name }} Variants</h2>
       <BaseButton v-if="canWrite" @click="showCreateModal = true">+ New Variant</BaseButton>
+    </div>
+
+    <div v-if="canWrite" class="variants-view__ratio-field">
+      <BaseInput
+        v-model="aspectRatioInput"
+        label="Співвідношення сторін"
+        placeholder="напр. 1.9 або 16:9"
+      />
+      <span class="variants-view__ratio-hint">
+        {{ aspectRatioInput ? 'Перевірка ±1% при завантаженні' : 'Без перевірки пропорцій' }}
+      </span>
     </div>
 
     <div v-if="loading" class="variants-view__loading">Loading...</div>
@@ -223,6 +243,18 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       align-items: flex-start;
       gap: $spacing-3;
     }
+  }
+
+  &__ratio-field {
+    max-width: 300px;
+    margin-bottom: $spacing-4;
+  }
+
+  &__ratio-hint {
+    display: block;
+    margin-top: $spacing-1;
+    font-size: $font-size-xs;
+    color: $color-text-muted;
   }
 
   &__loading {

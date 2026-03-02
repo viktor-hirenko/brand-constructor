@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared'
+import { parseAspectRatio } from '@brand-constructor/shared'
 import { useApi, apiPut, apiUpload, getAssetUrl } from '@/composables/useApi'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -31,6 +32,8 @@ const uploadingType = ref<string | null>(null)
 
 const visualInputRef = ref<HTMLInputElement | null>(null)
 const logoInputRef = ref<HTMLInputElement | null>(null)
+const visualAspectRatio = ref('')
+const logoAspectRatio = ref('')
 
 onMounted(() => fetchData())
 
@@ -56,12 +59,18 @@ async function handleFileUpload(event: Event, entityType: string) {
   const file = input.files?.[0]
   if (!file || !concept.value) return
 
+  const ratioInput = entityType === 'concept_visual' ? visualAspectRatio.value : logoAspectRatio.value
+  const parsedRatio = parseAspectRatio(ratioInput)
+
   uploadingType.value = entityType
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('entity_type', entityType)
     formData.append('entity_id', concept.value.id)
+    if (parsedRatio !== null) {
+      formData.append('aspect_ratio', String(parsedRatio))
+    }
 
     await apiUpload<Asset>('/api/assets/upload', formData)
     fetchData()
@@ -122,6 +131,12 @@ async function handleFileUpload(event: Event, entityType: string) {
               <span v-else class="asset-slot__empty-text">No visual uploaded</span>
             </div>
             <template v-if="canWrite">
+              <BaseInput
+                v-model="visualAspectRatio"
+                label="Співвідношення сторін"
+                placeholder="напр. 1.5 або 16:9"
+                class="asset-slot__ratio-input"
+              />
               <input
                 ref="visualInputRef"
                 type="file"
@@ -148,6 +163,12 @@ async function handleFileUpload(event: Event, entityType: string) {
               <span v-else class="asset-slot__empty-text">No logo uploaded</span>
             </div>
             <template v-if="canWrite">
+              <BaseInput
+                v-model="logoAspectRatio"
+                label="Співвідношення сторін"
+                placeholder="напр. 1 або 1:1"
+                class="asset-slot__ratio-input"
+              />
               <input
                 ref="logoInputRef"
                 type="file"
@@ -316,6 +337,10 @@ async function handleFileUpload(event: Event, entityType: string) {
   &__empty-text {
     font-size: $font-size-xs;
     color: $color-text-muted;
+  }
+
+  &__ratio-input {
+    margin-top: $spacing-1;
   }
 
   &__file-input {

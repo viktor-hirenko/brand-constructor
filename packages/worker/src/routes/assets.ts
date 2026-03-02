@@ -13,6 +13,7 @@ app.post('/upload', async (c) => {
   const entityType = formData.get('entity_type') as AssetEntityType | null;
   const entityId = formData.get('entity_id') as string | null;
   const componentTypeId = formData.get('component_type_id') as string | null;
+  const aspectRatioParam = formData.get('aspect_ratio') as string | null;
 
   if (!file || !entityType || !entityId) {
     return c.json({ success: false, error: 'Missing required fields: file, entity_type, entity_id' }, 400);
@@ -34,7 +35,10 @@ app.post('/upload', async (c) => {
     meta = extractPngDimensions(buffer);
   }
 
-  const validation = validateAsset(entityType, fileType, buffer.byteLength, meta, componentTypeId || undefined);
+  // Parse optional aspect_ratio override from user input
+  const aspectRatioOverride = aspectRatioParam ? parseFloat(aspectRatioParam) : undefined;
+
+  const validation = validateAsset(entityType, fileType, buffer.byteLength, meta, componentTypeId || undefined, aspectRatioOverride);
   if (!validation.valid) {
     return c.json({
       success: false,
