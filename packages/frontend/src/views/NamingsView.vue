@@ -31,6 +31,10 @@ const {
 
 const { data: concepts, fetchData: fetchConcepts } = useApiList<Concept>('/api/concepts')
 
+const sortedConcepts = computed(() =>
+  [...concepts.value].sort((a, b) => a.name.localeCompare(b.name))
+)
+
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const newName = ref('')
@@ -66,6 +70,7 @@ function openCreateModal() {
   newName.value = ''
   newTagline.value = ''
   newConceptId.value = null
+  fetchConcepts({ per_page: '100' })
   showCreateModal.value = true
 }
 
@@ -99,6 +104,7 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
   editName.value = naming.name
   editTagline.value = naming.tagline || ''
   editConceptId.value = 'concept_id' in naming ? (naming as ExternalNamingRow).concept_id : null
+  fetchConcepts({ per_page: '100' })
   showEditModal.value = true
 }
 
@@ -256,7 +262,7 @@ async function handleDeleteNaming(id: string, name: string) {
           <label class="namings-view__label">Link to Concept</label>
           <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
             <option :value="null">— No concept —</option>
-            <option v-for="c in concepts" :key="c.id" :value="c.id">{{ c.name }}</option>
+            <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
         </div>
       </form>
@@ -280,7 +286,7 @@ async function handleDeleteNaming(id: string, name: string) {
           <label class="namings-view__label">Link to Concept</label>
           <select v-model="editConceptId" class="namings-view__select namings-view__select--full">
             <option :value="null">— No concept —</option>
-            <option v-for="c in concepts" :key="c.id" :value="c.id">{{ c.name }}</option>
+            <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
         </div>
       </form>

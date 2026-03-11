@@ -19,6 +19,7 @@ export interface Concept {
 export interface CreateConceptPayload {
   name: string;
   description: string;
+  naming_ids?: string[];
 }
 
 export interface UpdateConceptPayload {

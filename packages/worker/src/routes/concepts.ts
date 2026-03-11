@@ -9,6 +9,7 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 const createSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).default(''),
+  naming_ids: z.array(z.string()).max(10).optional(),
 });
 
 const updateSchema = z.object({
@@ -91,9 +92,17 @@ app.post('/', requireLibraryAccess('concepts'), async (c) => {
     'INSERT INTO concepts (id, name, description, created_by) VALUES (?, ?, ?, ?)'
   ).bind(id, parsed.data.name, parsed.data.description, user.id).run();
 
+  const namingIds = parsed.data.naming_ids?.filter(Boolean) ?? [];
+  if (namingIds.length > 0) {
+    const placeholders = namingIds.map(() => '?').join(', ');
+    await c.env.DB.prepare(
+      `UPDATE external_namings SET concept_id = ?, updated_at = datetime('now') WHERE id IN (${placeholders}) AND concept_id IS NULL`
+    ).bind(id, ...namingIds).run();
+  }
+
   await c.env.DB.prepare(
     "INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details) VALUES (?, ?, 'create', 'concept', ?, ?)"
-  ).bind(generateId('log'), user.id, id, JSON.stringify({ name: parsed.data.name })).run();
+  ).bind(generateId('log'), user.id, id, JSON.stringify({ name: parsed.data.name, naming_ids: namingIds })).run();
 
   const concept = await c.env.DB.prepare('SELECT * FROM concepts WHERE id = ?').bind(id).first();
 

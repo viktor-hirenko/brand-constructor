@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Concept } from '@brand-constructor/shared'
+import type { Concept, ExternalNaming } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -16,24 +16,59 @@ const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
 type ConceptWithAuthor = Concept & { author_name: string }
 const { data: concepts, loading, total, fetchData } = useApiList<ConceptWithAuthor>('/api/concepts')
 
+type NamingRow = ExternalNaming & { author_name: string }
+const { data: availableNamings, fetchData: fetchNamings } = useApiList<NamingRow>('/api/namings/external')
+
 const showCreateModal = ref(false)
 const newName = ref('')
 const newDescription = ref('')
+const selectedNamingIds = ref<string[]>([])
 const creating = ref(false)
 
-onMounted(() => fetchData())
+const unlinkedNamings = computed(() =>
+  availableNamings.value
+    .filter((n) => !n.concept_id)
+    .sort((a, b) => a.name.localeCompare(b.name))
+)
+
+onMounted(() => {
+  fetchData()
+  fetchNamings({ per_page: '100', filter: 'standalone' })
+})
+
+function openCreateModal() {
+  newName.value = ''
+  newDescription.value = ''
+  selectedNamingIds.value = []
+  fetchNamings({ per_page: '100', filter: 'standalone' })
+  showCreateModal.value = true
+}
+
+function toggleNaming(id: string) {
+  const idx = selectedNamingIds.value.indexOf(id)
+  if (idx === -1) {
+    selectedNamingIds.value = [...selectedNamingIds.value, id]
+  } else {
+    selectedNamingIds.value = selectedNamingIds.value.filter((v) => v !== id)
+  }
+}
 
 async function handleCreate() {
   if (!newName.value.trim()) return
   creating.value = true
   try {
-    const concept = await apiPost<Concept>('/api/concepts', {
+    const payload: Record<string, unknown> = {
       name: newName.value.trim(),
       description: newDescription.value.trim(),
-    })
+    }
+    if (selectedNamingIds.value.length > 0) {
+      payload.naming_ids = selectedNamingIds.value
+    }
+    const concept = await apiPost<Concept>('/api/concepts', payload)
     showCreateModal.value = false
     newName.value = ''
     newDescription.value = ''
+    selectedNamingIds.value = []
     router.push(`/concepts/${concept.id}`)
   } finally {
     creating.value = false
@@ -51,7 +86,7 @@ async function handleDelete(id: string, name: string) {
   <div class="concepts-view">
     <div class="concepts-view__toolbar">
       <span class="concepts-view__count">{{ total }} concepts</span>
-      <BaseButton v-if="canWrite" @click="showCreateModal = true"> + New Concept </BaseButton>
+      <BaseButton v-if="canWrite" @click="openCreateModal"> + New Concept </BaseButton>
     </div>
 
     <div v-if="loading" class="concepts-view__loading">Loading...</div>
@@ -83,7 +118,9 @@ async function handleDelete(id: string, name: string) {
           <div class="concept-card__footer">
             <span class="concept-card__meta">
               <span class="concept-card__author">by {{ concept.author_name }}</span>
-              <span class="concept-card__date">{{ new Date(concept.created_at).toLocaleDateString() }}</span>
+              <span class="concept-card__date">{{
+                new Date(concept.created_at).toLocaleDateString()
+              }}</span>
             </span>
             <BaseButton
               v-if="canWrite && !concept.used_in_brand_id"
@@ -107,6 +144,29 @@ async function handleDelete(id: string, name: string) {
           placeholder="Theme, mood, visual direction..."
           :rows="4"
         />
+        <div v-if="unlinkedNamings.length > 0" class="concepts-view__field">
+          <label class="concepts-view__label">
+            Link to Naming
+            <span class="concepts-view__label-hint">(optional)</span>
+          </label>
+          <div class="concepts-view__naming-list">
+            <label
+              v-for="naming in unlinkedNamings"
+              :key="naming.id"
+              class="concepts-view__naming-option"
+            >
+              <input
+                type="checkbox"
+                :checked="selectedNamingIds.includes(naming.id)"
+                @change="toggleNaming(naming.id)"
+              />
+              <span class="concepts-view__naming-name">{{ naming.name }}</span>
+              <span v-if="naming.tagline" class="concepts-view__naming-tagline">
+                {{ naming.tagline }}
+              </span>
+            </label>
+          </div>
+        </div>
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
@@ -163,6 +223,59 @@ async function handleDelete(id: string, name: string) {
     display: flex;
     flex-direction: column;
     gap: $spacing-4;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text;
+  }
+
+  &__label-hint {
+    font-weight: $font-weight-normal;
+    color: $color-text-muted;
+  }
+
+  &__naming-list {
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $spacing-2;
+  }
+
+  &__naming-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    padding: $spacing-2;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $color-bg;
+    }
+
+    input[type='checkbox'] {
+      flex-shrink: 0;
+    }
+  }
+
+  &__naming-name {
+    font-weight: $font-weight-medium;
+  }
+
+  &__naming-tagline {
+    color: $color-text-secondary;
+    font-size: $font-size-xs;
   }
 }
 
