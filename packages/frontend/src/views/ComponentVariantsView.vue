@@ -119,7 +119,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       <BaseButton v-if="canWrite" @click="showCreateModal = true">+ New Variant</BaseButton>
     </div>
 
-    <div v-if="canWrite" class="variants-view__ratio-field">
+    <div v-if="canWrite && configRatio !== undefined" class="variants-view__ratio-field">
       <BaseInput
         v-model="aspectRatioInput"
         label="Співвідношення сторін"
