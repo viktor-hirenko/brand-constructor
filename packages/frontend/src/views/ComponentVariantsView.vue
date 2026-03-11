@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared'
 import { COMPONENT_TYPE_ASPECT_RATIOS, parseAspectRatio } from '@brand-constructor/shared'
 import { apiGet, apiPost, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi'
+import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -18,6 +19,15 @@ const typeId = route.params.typeId as string
 const componentType = ref<ComponentType | null>(null)
 const variants = ref<(ComponentVariant & { author_name: string })[]>([])
 const loading = ref(false)
+
+const { sortedData: sortedVariants, setSort: setVariantSort } = useTableSort(variants, 'created_at', 'desc')
+const variantSortOption = ref('created_at:desc')
+
+function onVariantSortChange(value: string) {
+  variantSortOption.value = value
+  const [field, dir] = value.split(':') as [string, 'asc' | 'desc']
+  setVariantSort(field, dir)
+}
 
 const showCreateModal = ref(false)
 const newName = ref('')
@@ -115,7 +125,19 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     </div>
 
     <div v-if="componentType" class="variants-view__header">
-      <h2>{{ componentType.name }} Variants</h2>
+      <div class="variants-view__header-left">
+        <h2>{{ componentType.name }} Variants</h2>
+        <select
+          :value="variantSortOption"
+          class="variants-view__sort-select"
+          @change="onVariantSortChange(($event.target as HTMLSelectElement).value)"
+        >
+          <option value="created_at:desc">Newest first</option>
+          <option value="created_at:asc">Oldest first</option>
+          <option value="name:asc">Name A-Z</option>
+          <option value="name:desc">Name Z-A</option>
+        </select>
+      </div>
       <BaseButton v-if="canWrite" @click="showCreateModal = true">+ New Variant</BaseButton>
     </div>
 
@@ -133,7 +155,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     <div v-if="loading" class="variants-view__loading">Loading...</div>
 
     <div v-else class="variants-view__grid">
-      <div v-for="v in variants" :key="v.id" class="variant-card">
+      <div v-for="v in sortedVariants" :key="v.id" class="variant-card">
         <div class="variant-card__preview">
           <img
             v-if="v.thumbnail_url"
@@ -243,6 +265,20 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       align-items: flex-start;
       gap: $spacing-3;
     }
+  }
+
+  &__header-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+  }
+
+  &__sort-select {
+    padding: $spacing-2 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    background-color: $color-bg-white;
   }
 
   &__ratio-field {

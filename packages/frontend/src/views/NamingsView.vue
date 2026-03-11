@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import type { ExternalNaming, InternalNaming, Concept } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -34,6 +35,20 @@ const { data: concepts, fetchData: fetchConcepts } = useApiList<Concept>('/api/c
 const sortedConcepts = computed(() =>
   [...concepts.value].sort((a, b) => a.name.localeCompare(b.name))
 )
+
+const {
+  sortedData: sortedExternal,
+  sortField: extSortField,
+  sortDirection: extSortDir,
+  toggleSort: toggleExtSort,
+} = useTableSort(externalNamings, 'created_at', 'desc')
+
+const {
+  sortedData: sortedInternal,
+  sortField: intSortField,
+  sortDirection: intSortDir,
+  toggleSort: toggleIntSort,
+} = useTableSort(internalNamings, 'created_at', 'desc')
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
@@ -180,17 +195,48 @@ async function handleDeleteNaming(id: string, name: string) {
     <div v-else class="namings-view__table-wrap">
       <table class="namings-view__table">
         <thead>
-          <tr>
-            <th>Name</th>
-            <th v-if="activeTab === 'external'">Linked Concept</th>
-            <th>Author</th>
-            <th>Created</th>
-            <th v-if="canWrite">Actions</th>
-          </tr>
+          <template v-if="activeTab === 'external'">
+            <tr>
+              <th class="sortable-th" @click="toggleExtSort('name')">
+                Name
+                <span v-if="extSortField === 'name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleExtSort('concept_name')">
+                Linked Concept
+                <span v-if="extSortField === 'concept_name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleExtSort('author_name')">
+                Author
+                <span v-if="extSortField === 'author_name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleExtSort('created_at')">
+                Created
+                <span v-if="extSortField === 'created_at'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th v-if="canWrite">Actions</th>
+            </tr>
+          </template>
+          <template v-else>
+            <tr>
+              <th class="sortable-th" @click="toggleIntSort('name')">
+                Name
+                <span v-if="intSortField === 'name'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleIntSort('author_name')">
+                Author
+                <span v-if="intSortField === 'author_name'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleIntSort('created_at')">
+                Created
+                <span v-if="intSortField === 'created_at'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th v-if="canWrite">Actions</th>
+            </tr>
+          </template>
         </thead>
         <tbody>
           <template v-if="activeTab === 'external'">
-            <tr v-for="n in externalNamings" :key="n.id">
+            <tr v-for="n in sortedExternal" :key="n.id">
               <td class="namings-view__name-cell">
                 <span class="namings-view__name">{{ n.name }}</span>
                 <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
@@ -219,7 +265,7 @@ async function handleDeleteNaming(id: string, name: string) {
             </tr>
           </template>
           <template v-else>
-            <tr v-for="n in internalNamings" :key="n.id">
+            <tr v-for="n in sortedInternal" :key="n.id">
               <td class="namings-view__name-cell">
                 <span class="namings-view__name">{{ n.name }}</span>
                 <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
@@ -411,6 +457,23 @@ async function handleDeleteNaming(id: string, name: string) {
       letter-spacing: 0.05em;
       background-color: $color-bg;
       white-space: nowrap;
+
+      &.sortable-th {
+        cursor: pointer;
+        user-select: none;
+        transition: color $transition-fast;
+
+        &:hover {
+          color: $color-text;
+        }
+      }
+
+      .sort-arrow {
+        display: inline-block;
+        margin-left: 2px;
+        font-size: $font-size-xs;
+        color: $color-primary;
+      }
     }
 
     td {

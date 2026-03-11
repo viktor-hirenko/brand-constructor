@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Concept, ExternalNaming } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
+import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -15,6 +16,15 @@ const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
 
 type ConceptWithAuthor = Concept & { author_name: string }
 const { data: concepts, loading, total, fetchData } = useApiList<ConceptWithAuthor>('/api/concepts')
+
+const { sortedData: sortedConcepts, setSort: setConceptSort } = useTableSort(concepts, 'created_at', 'desc')
+const conceptSortOption = ref('created_at:desc')
+
+function onConceptSortChange(value: string) {
+  conceptSortOption.value = value
+  const [field, dir] = value.split(':') as [string, 'asc' | 'desc']
+  setConceptSort(field, dir)
+}
 
 type NamingRow = ExternalNaming & { author_name: string }
 const { data: availableNamings, fetchData: fetchNamings } = useApiList<NamingRow>('/api/namings/external')
@@ -85,7 +95,19 @@ async function handleDelete(id: string, name: string) {
 <template>
   <div class="concepts-view">
     <div class="concepts-view__toolbar">
-      <span class="concepts-view__count">{{ total }} concepts</span>
+      <div class="concepts-view__toolbar-left">
+        <span class="concepts-view__count">{{ total }} concepts</span>
+        <select
+          :value="conceptSortOption"
+          class="concepts-view__sort-select"
+          @change="onConceptSortChange(($event.target as HTMLSelectElement).value)"
+        >
+          <option value="created_at:desc">Newest first</option>
+          <option value="created_at:asc">Oldest first</option>
+          <option value="name:asc">Name A-Z</option>
+          <option value="name:desc">Name Z-A</option>
+        </select>
+      </div>
       <BaseButton v-if="canWrite" @click="openCreateModal"> + New Concept </BaseButton>
     </div>
 
@@ -97,7 +119,7 @@ async function handleDelete(id: string, name: string) {
 
     <div v-else class="concepts-view__grid">
       <div
-        v-for="concept in concepts"
+        v-for="concept in sortedConcepts"
         :key="concept.id"
         class="concept-card"
         @click="router.push(`/concepts/${concept.id}`)"
@@ -195,9 +217,23 @@ async function handleDelete(id: string, name: string) {
     }
   }
 
+  &__toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+  }
+
   &__count {
     font-size: $font-size-sm;
     color: $color-text-secondary;
+  }
+
+  &__sort-select {
+    padding: $spacing-2 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    background-color: $color-bg-white;
   }
 
   &__loading,

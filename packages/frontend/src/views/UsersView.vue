@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import type { User, UserRole } from '@brand-constructor/shared'
 import { ROLE_LABELS, USER_ROLES } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -10,6 +11,13 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 
 const authStore = useAuthStore()
 const { data: users, loading, fetchData: fetchUsers } = useApiList<User>('/api/users')
+
+const {
+  sortedData: sortedUsers,
+  sortField,
+  sortDirection,
+  toggleSort,
+} = useTableSort(users, 'created_at', 'desc')
 
 const showModal = ref(false)
 const editingUser = ref<User | null>(null)
@@ -124,15 +132,27 @@ async function handleDelete(user: User) {
         <table class="users-view__table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Joined</th>
+              <th class="sortable-th" @click="toggleSort('name')">
+                Name
+                <span v-if="sortField === 'name'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleSort('email')">
+                Email
+                <span v-if="sortField === 'email'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleSort('role')">
+                Role
+                <span v-if="sortField === 'role'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleSort('created_at')">
+                Joined
+                <span v-if="sortField === 'created_at'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="u in users" :key="u.id">
+            <tr v-for="u in sortedUsers" :key="u.id">
               <td class="users-view__name">{{ u.name }}</td>
               <td>{{ u.email }}</td>
               <td>{{ ROLE_LABELS[u.role] || u.role }}</td>
@@ -317,6 +337,23 @@ async function handleDelete(user: User) {
       text-transform: uppercase;
       letter-spacing: 0.05em;
       background-color: $color-bg;
+
+      &.sortable-th {
+        cursor: pointer;
+        user-select: none;
+        transition: color $transition-fast;
+
+        &:hover {
+          color: $color-text;
+        }
+      }
+
+      .sort-arrow {
+        display: inline-block;
+        margin-left: 2px;
+        font-size: $font-size-xs;
+        color: $color-primary;
+      }
     }
 
     td {
