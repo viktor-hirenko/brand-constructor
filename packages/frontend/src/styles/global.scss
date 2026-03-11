@@ -62,3 +62,11 @@ h1 { font-size: $font-size-3xl; }
 h2 { font-size: $font-size-2xl; }
 h3 { font-size: $font-size-xl; }
 h4 { font-size: $font-size-lg; }
+
+table tbody tr {
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: $color-bg;
+  }
+}
