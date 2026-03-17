@@ -18,11 +18,11 @@ bucket_name = "brand-constructor-assets"
 # Development environment
 [vars]
 ENVIRONMENT = "development"
-CORS_ORIGIN = "http://localhost:5173"
+CORS_ORIGINS = "http://localhost:5173,http://localhost:5174"
 
 # Production environment
 [env.production]
-vars = { ENVIRONMENT = "production", CORS_ORIGIN = "https://brand-constructor.pages.dev" }
+vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev" }
 
 [[env.production.d1_databases]]
 binding = "DB"

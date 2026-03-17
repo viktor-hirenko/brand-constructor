@@ -10,6 +10,7 @@ import componentsRoutes from './routes/components'
 import assetsRoutes from './routes/assets'
 import usersRoutes from './routes/users'
 import authRoutes from './routes/auth'
+import brandsRoutes from './routes/brands'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -58,6 +59,7 @@ app.route('/api/pr-packages', prPackagesRoutes)
 app.route('/api/components', componentsRoutes)
 app.route('/api/assets', assetsRoutes)
 app.route('/api/users', usersRoutes)
+app.route('/api/brands', brandsRoutes)
 
 app.notFound(c => {
   return c.json({ success: false, error: 'Not Found' }, 404)

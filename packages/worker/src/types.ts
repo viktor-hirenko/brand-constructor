@@ -2,7 +2,7 @@ export interface Env {
   DB: D1Database
   ASSETS_BUCKET: R2Bucket
   ENVIRONMENT: string
-  CORS_ORIGIN: string
+  CORS_ORIGINS: string
   JWT_SECRET: string
 }
 
