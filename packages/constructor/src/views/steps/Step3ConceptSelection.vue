@@ -21,9 +21,23 @@ const comment = computed({
   set: (val: string) => store.setConcept({ comment: val }),
 });
 
+const selectedMode = computed(() => store.stepData.mode);
+
 onMounted(() => {
   perPage.value = 50;
-  fetchData({ status: 'active' });
+  const params: Record<string, string> = { status: 'active' };
+  if (selectedMode.value) {
+    params.mode = selectedMode.value;
+  }
+  fetchData(params);
+});
+
+watch(selectedMode, (newMode) => {
+  const params: Record<string, string> = { status: 'active' };
+  if (newMode) {
+    params.mode = newMode;
+  }
+  fetchData(params);
 });
 
 watch(hasBrief, (val) => {
@@ -96,7 +110,7 @@ function handleBriefCancel() {
       <p class="text-red-500 mb-3">{{ error }}</p>
       <button
         class="text-primary underline text-sm"
-        @click="fetchData({ status: 'active' })"
+        @click="fetchData({ status: 'active', ...(selectedMode ? { mode: selectedMode } : {}) })"
       >
         Спробувати знову
       </button>

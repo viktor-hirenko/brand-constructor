@@ -2,10 +2,15 @@ import { ENTITY_STATUSES } from '../constants/statuses';
 
 export type NamingStatus = (typeof ENTITY_STATUSES)[keyof typeof ENTITY_STATUSES];
 
+export type DomainAvailabilityStatus = 'available' | 'sold' | 'unknown';
+
 export interface ExternalNaming {
   id: string;
   name: string;
   tagline: string;
+  domain: string | null;
+  price: number | null;
+  availability_status: DomainAvailabilityStatus | null;
   concept_id: string | null;
   status: NamingStatus;
   created_by: string;
@@ -28,6 +33,9 @@ export interface InternalNaming {
 export interface CreateExternalNamingPayload {
   name: string;
   tagline?: string;
+  domain?: string | null;
+  price?: number | null;
+  availability_status?: DomainAvailabilityStatus | null;
   concept_id?: string | null;
 }
 
@@ -39,6 +47,9 @@ export interface CreateInternalNamingPayload {
 export interface UpdateExternalNamingPayload {
   name?: string;
   tagline?: string;
+  domain?: string | null;
+  price?: number | null;
+  availability_status?: DomainAvailabilityStatus | null;
   concept_id?: string | null;
   status?: NamingStatus;
 }

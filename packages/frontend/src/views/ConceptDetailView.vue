@@ -28,6 +28,7 @@ const {
 const isEditing = ref(false)
 const editName = ref('')
 const editDescription = ref('')
+const editMode = ref<'light' | 'dark' | null>(null)
 const uploadingType = ref<string | null>(null)
 
 const visualInputRef = ref<HTMLInputElement | null>(null)
@@ -41,17 +42,24 @@ function startEditing() {
   if (!concept.value) return
   editName.value = concept.value.name
   editDescription.value = concept.value.description
+  editMode.value = concept.value.mode
   isEditing.value = true
 }
 
 async function saveChanges() {
   if (!concept.value || !editName.value.trim()) return
-  await apiPut(`/api/concepts/${concept.value.id}`, {
+  const payload = {
     name: editName.value.trim(),
     description: editDescription.value.trim(),
-  })
-  isEditing.value = false
-  fetchData()
+    mode: editMode.value,
+  }
+  try {
+    const result = await apiPut(`/api/concepts/${concept.value.id}`, payload)
+    isEditing.value = false
+    await fetchData()
+  } catch (err) {
+    alert(`Save failed: ${err instanceof Error ? err.message : 'Unknown error'}\n\nPayload sent: ${JSON.stringify(payload)}`)
+  }
 }
 
 async function handleFileUpload(event: Event, entityType: string) {
@@ -118,6 +126,29 @@ async function handleFileUpload(event: Event, entityType: string) {
         <BaseTextarea v-if="isEditing" v-model="editDescription" :rows="4" />
         <p v-else class="concept-detail__text">
           {{ concept.description || 'No description provided.' }}
+        </p>
+      </div>
+
+      <div class="concept-detail__section">
+        <h3>Mode (Theme)</h3>
+        <div v-if="isEditing" class="concept-detail__mode-options">
+          <label class="concept-detail__mode-option">
+            <input type="radio" :value="null" v-model="editMode" name="editMode" />
+            <span>Not specified</span>
+          </label>
+          <label class="concept-detail__mode-option">
+            <input type="radio" value="light" v-model="editMode" name="editMode" />
+            <span>☀️ Light</span>
+          </label>
+          <label class="concept-detail__mode-option">
+            <input type="radio" value="dark" v-model="editMode" name="editMode" />
+            <span>🌙 Dark</span>
+          </label>
+        </div>
+        <p v-else class="concept-detail__mode-badge">
+          <span v-if="concept.mode === 'light'" class="mode-badge mode-badge--light">☀️ Light</span>
+          <span v-else-if="concept.mode === 'dark'" class="mode-badge mode-badge--dark">🌙 Dark</span>
+          <span v-else class="mode-badge mode-badge--none">Not specified</span>
         </p>
       </div>
 
@@ -298,6 +329,41 @@ async function handleFileUpload(event: Event, entityType: string) {
     flex-wrap: wrap;
     gap: $spacing-2;
   }
+
+  &__mode-options {
+    display: flex;
+    gap: $spacing-4;
+    flex-wrap: wrap;
+  }
+
+  &__mode-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    padding: $spacing-2 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary;
+    }
+
+    &:has(input:checked) {
+      border-color: $color-primary;
+      background-color: rgba($color-primary, 0.05);
+    }
+
+    input[type='radio'] {
+      margin: 0;
+    }
+  }
+
+  &__mode-badge {
+    margin: 0;
+  }
 }
 
 .asset-slot {
@@ -357,5 +423,33 @@ async function handleFileUpload(event: Event, entityType: string) {
   border: 1px solid $color-border;
   border-radius: $radius-full;
   font-size: $font-size-sm;
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-1;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &--light {
+    background-color: #fff9e6;
+    color: #b8860b;
+    border: 1px solid #f0e68c;
+  }
+
+  &--dark {
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+  }
+
+  &--none {
+    background-color: $color-bg;
+    color: $color-text-muted;
+    border: 1px solid $color-border;
+  }
 }
 </style>

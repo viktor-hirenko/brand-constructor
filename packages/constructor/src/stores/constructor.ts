@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { getAuthHeader } from '@/composables/useApi';
 import type {
   BrandStepData,
   BrandBasicsData,
@@ -37,6 +38,7 @@ function getInitialStepData(): BrandStepData {
       comment: '',
       newNamingFeedback: null,
     },
+    previewComment: '',
     marketingPackage: {
       selectedId: null,
       comment: '',
@@ -185,6 +187,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     stepData.value.internalNaming.newNamingFeedback = feedback;
   }
 
+  function setPreviewComment(comment: string) {
+    stepData.value.previewComment = comment;
+  }
+
   function setMarketingPackage(data: Partial<BrandMarketingPackageData>) {
     stepData.value.marketingPackage = {
       ...stepData.value.marketingPackage,
@@ -222,13 +228,17 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     stepData.value.visualComponents.selections = {};
   }
 
+  const _componentConflicts = ref<Array<{ typeA: string; variantA: string; typeB: string; variantB: string }>>([]);
+
   const hasComponentConflicts = computed(() => {
-    return componentConflicts.value.length > 0;
+    return _componentConflicts.value.length > 0;
   });
 
-  const componentConflicts = computed<Array<{ typeA: string; variantA: string; typeB: string; variantB: string }>>(() => {
-    return [];
-  });
+  const componentConflicts = computed(() => _componentConflicts.value);
+
+  function setComponentConflicts(conflicts: Array<{ typeA: string; variantA: string; typeB: string; variantB: string }>) {
+    _componentConflicts.value = conflicts;
+  }
 
   function goToStep(step: number) {
     if (step >= 1 && step <= totalSteps) {
@@ -262,6 +272,81 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     isDraft.value = false;
   }
 
+  const saveError = ref<string | null>(null);
+
+  async function saveBrand(): Promise<boolean> {
+    isSaving.value = true;
+    saveError.value = null;
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const sd = stepData.value;
+
+      const payload = {
+        geo: sd.brandBasics.geo.join(','),
+        launchDate: sd.brandBasics.launchDate,
+        mode: sd.mode,
+        conceptId: sd.concept.selectedId,
+        conceptComment: sd.concept.comment,
+        externalNamingIds: sd.externalNaming.selectedIds,
+        externalNamingComment: sd.externalNaming.comment,
+        internalNamingId: sd.internalNaming.selectedId,
+        internalNamingComment: sd.internalNaming.comment,
+        prPackageId: sd.marketingPackage.selectedId,
+        prPackageComment: sd.marketingPackage.comment,
+        legalLanding: sd.deliverables.legalLanding,
+        partnerLanding: sd.deliverables.partnerLanding,
+        deliverablesComment: sd.deliverables.comment,
+        componentSelections: sd.visualComponents.selections,
+        componentsComment: sd.visualComponents.comment,
+        delegateToDesigners: sd.visualComponents.delegateToDesigners,
+        newConceptBrief: sd.concept.newConceptBrief,
+        stepData: sd,
+        currentStep: currentStep.value,
+      };
+
+      let response: Response;
+
+      if (brandId.value) {
+        response = await fetch(`${apiUrl}/api/brands/${brandId.value}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        response = await fetch(`${apiUrl}/api/brands`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify({ internalName: null }),
+        });
+
+        if (response.ok) {
+          const createResult = await response.json();
+          const newBrandId = createResult.data.id;
+          brandId.value = newBrandId;
+
+          response = await fetch(`${apiUrl}/api/brands/${newBrandId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+            body: JSON.stringify(payload),
+          });
+        }
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save brand');
+      }
+
+      return true;
+    } catch (error) {
+      saveError.value = error instanceof Error ? error.message : 'An error occurred';
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   return {
     brandId,
     currentStep,
@@ -286,6 +371,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setInternalNaming,
     selectInternalNaming,
     setInternalNamingFeedback,
+    setPreviewComment,
     setMarketingPackage,
     setDeliverables,
     setVisualComponents,
@@ -295,9 +381,12 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     resetVisualSelections,
     hasComponentConflicts,
     componentConflicts,
+    setComponentConflicts,
     goToStep,
     nextStep,
     prevStep,
+    saveBrand,
+    saveError,
     reset,
     loadBrand,
   };

@@ -83,6 +83,12 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/constructor/success',
+    name: 'brand-success',
+    component: () => import('@/views/BrandSuccessView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({

@@ -9,12 +9,14 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 const createSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).default(''),
+  mode: z.enum(['light', 'dark']).nullable().optional(),
   naming_ids: z.array(z.string()).max(10).optional(),
 });
 
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
+  mode: z.enum(['light', 'dark']).nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
   visual_url: z.string().nullable().optional(),
   logo_url: z.string().nullable().optional(),
@@ -23,22 +25,31 @@ const updateSchema = z.object({
 
 app.get('/', async (c) => {
   const status = c.req.query('status') || 'active';
+  const mode = c.req.query('mode');
   const page = parseInt(c.req.query('page') || '1');
   const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100);
   const offset = (page - 1) * perPage;
 
+  let whereClause = 'c.status = ?';
+  const params: (string | number)[] = [status];
+
+  if (mode && (mode === 'light' || mode === 'dark')) {
+    whereClause += ' AND c.mode = ?';
+    params.push(mode);
+  }
+
   const countResult = await c.env.DB.prepare(
-    'SELECT COUNT(*) as total FROM concepts WHERE status = ?'
-  ).bind(status).first<{ total: number }>();
+    `SELECT COUNT(*) as total FROM concepts c WHERE ${whereClause}`
+  ).bind(...params).first<{ total: number }>();
 
   const concepts = await c.env.DB.prepare(
     `SELECT c.*, u.name as author_name
      FROM concepts c
      LEFT JOIN users u ON c.created_by = u.id
-     WHERE c.status = ?
+     WHERE ${whereClause}
      ORDER BY c.created_at DESC
      LIMIT ? OFFSET ?`
-  ).bind(status, perPage, offset).all();
+  ).bind(...params, perPage, offset).all();
 
   return c.json({
     success: true,
@@ -89,8 +100,8 @@ app.post('/', requireLibraryAccess('concepts'), async (c) => {
   const id = generateId('con');
 
   await c.env.DB.prepare(
-    'INSERT INTO concepts (id, name, description, created_by) VALUES (?, ?, ?, ?)'
-  ).bind(id, parsed.data.name, parsed.data.description, user.id).run();
+    'INSERT INTO concepts (id, name, description, mode, created_by) VALUES (?, ?, ?, ?, ?)'
+  ).bind(id, parsed.data.name, parsed.data.description, parsed.data.mode || null, user.id).run();
 
   const namingIds = parsed.data.naming_ids?.filter(Boolean) ?? [];
   if (namingIds.length > 0) {

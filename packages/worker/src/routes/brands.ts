@@ -130,7 +130,7 @@ brands.get('/:id', async (c) => {
 brands.post('/', async (c) => {
   const user = c.get('user');
   const body = await c.req.json<CreateBrandPayload>();
-  const id = generateId();
+  const id = generateId('brand');
   const now = new Date().toISOString();
 
   await c.env.DB.prepare(`

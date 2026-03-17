@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useConstructorStore } from '@/stores/constructor';
 import { useApiList, getAssetUrl } from '@/composables/useApi';
@@ -121,16 +121,44 @@ function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }).format(date).replace(/\s*р\.$/, '');
 }
 
+const shareSuccess = ref(false);
+
+const isSaving = computed(() => store.isSaving);
+const saveError = computed(() => store.saveError);
+
 function goToStep(step: number) {
   router.push(`/constructor/step/${step}`);
 }
 
-function handleShare() {
-  // TODO: implement share functionality (copy link, etc.)
+async function handleShare() {
+  if (!store.brandId) {
+    const saved = await store.saveBrand();
+    if (!saved) return;
+  }
+
+  const shareUrl = `${window.location.origin}/constructor/brand/${store.brandId}`;
+
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    shareSuccess.value = true;
+    setTimeout(() => { shareSuccess.value = false; }, 2000);
+  } catch {
+    const textArea = document.createElement('textarea');
+    textArea.value = shareUrl;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    shareSuccess.value = true;
+    setTimeout(() => { shareSuccess.value = false; }, 2000);
+  }
 }
 
-function handleSave() {
-  // TODO: implement save/submit brand via API
+async function handleSave() {
+  const success = await store.saveBrand();
+  if (success) {
+    router.push('/constructor/success');
+  }
 }
 </script>
 
@@ -226,27 +254,38 @@ function handleSave() {
       </button>
     </div>
 
+    <!-- Error message -->
+    <div v-if="saveError" class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+      {{ saveError }}
+    </div>
+
     <!-- Action buttons -->
     <div class="grid grid-cols-2 gap-4 pt-4 border-t border-black/10">
       <button
-        class="flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium"
+        class="flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50"
+        :disabled="isSaving"
         @click="handleShare"
       >
-        <svg class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg v-if="shareSuccess" class="size-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+        <svg v-else class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
           <line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" />
         </svg>
-        Share
+        {{ shareSuccess ? 'Скопійовано!' : 'Share' }}
       </button>
       <button
-        class="flex items-center justify-center gap-2 px-6 py-4 bg-primary text-primary-foreground rounded-xl hover:opacity-90 transition-opacity text-base font-medium"
+        class="flex items-center justify-center gap-2 px-6 py-4 bg-primary text-primary-foreground rounded-xl hover:opacity-90 transition-opacity text-base font-medium disabled:opacity-50"
+        :disabled="isSaving"
         @click="handleSave"
       >
-        <svg class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div v-if="isSaving" class="animate-spin size-5 border-2 border-white border-t-transparent rounded-full" />
+        <svg v-else class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
           <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" /><path d="M7 3v4a1 1 0 0 0 1 1h7" />
         </svg>
-        In work
+        {{ isSaving ? 'Зберігаємо...' : 'In work' }}
       </button>
     </div>
   </div>

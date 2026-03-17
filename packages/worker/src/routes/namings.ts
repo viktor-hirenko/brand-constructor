@@ -9,6 +9,9 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 const createExternalSchema = z.object({
   name: z.string().min(1).max(200),
   tagline: z.string().max(500).optional().default(''),
+  domain: z.string().max(255).nullable().optional(),
+  price: z.number().min(0).nullable().optional(),
+  availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
 });
 
@@ -20,6 +23,9 @@ const createInternalSchema = z.object({
 const updateExternalSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   tagline: z.string().max(500).optional(),
+  domain: z.string().max(255).nullable().optional(),
+  price: z.number().min(0).nullable().optional(),
+  availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
 });
@@ -95,8 +101,17 @@ app.post('/external', requireLibraryAccess('external_namings'), async (c) => {
   const id = generateId('exn');
 
   await c.env.DB.prepare(
-    'INSERT INTO external_namings (id, name, tagline, concept_id, created_by) VALUES (?, ?, ?, ?, ?)'
-  ).bind(id, parsed.data.name, parsed.data.tagline || '', parsed.data.concept_id || null, user.id).run();
+    'INSERT INTO external_namings (id, name, tagline, domain, price, availability_status, concept_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    id,
+    parsed.data.name,
+    parsed.data.tagline || '',
+    parsed.data.domain || null,
+    parsed.data.price ?? null,
+    parsed.data.availability_status || 'unknown',
+    parsed.data.concept_id || null,
+    user.id
+  ).run();
 
   const naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?').bind(id).first();
   return c.json({ success: true, data: naming }, 201);

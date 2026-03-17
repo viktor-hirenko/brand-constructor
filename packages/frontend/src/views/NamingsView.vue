@@ -14,7 +14,10 @@ const canWrite = computed(() => authStore.canWriteLibrary('external_namings'))
 const activeTab = ref<'external' | 'internal'>('external')
 const conceptFilter = ref<string>('all')
 
-type ExternalNamingRow = ExternalNaming & { concept_name: string | null; author_name: string }
+type ExternalNamingRow = ExternalNaming & { 
+  concept_name: string | null
+  author_name: string
+}
 
 const {
   data: externalNamings,
@@ -54,12 +57,18 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const newName = ref('')
 const newTagline = ref('')
+const newDomain = ref('')
+const newPrice = ref<number | null>(null)
+const newAvailabilityStatus = ref<'available' | 'sold' | 'unknown'>('unknown')
 const newConceptId = ref<string | null>(null)
 const creating = ref(false)
 
 const editId = ref('')
 const editName = ref('')
 const editTagline = ref('')
+const editDomain = ref('')
+const editPrice = ref<number | null>(null)
+const editAvailabilityStatus = ref<'available' | 'sold' | 'unknown'>('unknown')
 const editConceptId = ref<string | null>(null)
 const saving = ref(false)
 
@@ -84,6 +93,9 @@ watch([activeTab, conceptFilter], refreshList)
 function openCreateModal() {
   newName.value = ''
   newTagline.value = ''
+  newDomain.value = ''
+  newPrice.value = null
+  newAvailabilityStatus.value = 'unknown'
   newConceptId.value = null
   fetchConcepts({ per_page: '100' })
   showCreateModal.value = true
@@ -97,6 +109,9 @@ async function handleCreate() {
       await apiPost('/api/namings/external', {
         name: newName.value.trim(),
         tagline: newTagline.value.trim(),
+        domain: newDomain.value.trim() || null,
+        price: newPrice.value,
+        availability_status: newAvailabilityStatus.value,
         concept_id: newConceptId.value || null,
       })
     } else {
@@ -118,7 +133,18 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
   editId.value = naming.id
   editName.value = naming.name
   editTagline.value = naming.tagline || ''
-  editConceptId.value = 'concept_id' in naming ? (naming as ExternalNamingRow).concept_id : null
+  if ('concept_id' in naming) {
+    const extNaming = naming as ExternalNamingRow
+    editConceptId.value = extNaming.concept_id
+    editDomain.value = extNaming.domain || ''
+    editPrice.value = extNaming.price ?? null
+    editAvailabilityStatus.value = extNaming.availability_status || 'unknown'
+  } else {
+    editConceptId.value = null
+    editDomain.value = ''
+    editPrice.value = null
+    editAvailabilityStatus.value = 'unknown'
+  }
   fetchConcepts({ per_page: '100' })
   showEditModal.value = true
 }
@@ -134,6 +160,9 @@ async function handleSaveEdit() {
     }
     if (type === 'external') {
       body.concept_id = editConceptId.value || null
+      body.domain = editDomain.value.trim() || null
+      body.price = editPrice.value
+      body.availability_status = editAvailabilityStatus.value
     }
     await apiPut(`/api/namings/${type}/${editId.value}`, body)
     showEditModal.value = false
@@ -201,6 +230,15 @@ async function handleDeleteNaming(id: string, name: string) {
                 Name
                 <span v-if="extSortField === 'name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
               </th>
+              <th class="sortable-th" @click="toggleExtSort('domain')">
+                Domain
+                <span v-if="extSortField === 'domain'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th class="sortable-th" @click="toggleExtSort('price')">
+                Price
+                <span v-if="extSortField === 'price'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+              </th>
+              <th>Status</th>
               <th class="sortable-th" @click="toggleExtSort('concept_name')">
                 Linked Concept
                 <span v-if="extSortField === 'concept_name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
@@ -237,9 +275,21 @@ async function handleDeleteNaming(id: string, name: string) {
         <tbody>
           <template v-if="activeTab === 'external'">
             <tr v-for="n in sortedExternal" :key="n.id">
-              <td class="namings-view__name-cell">
-                <span class="namings-view__name">{{ n.name }}</span>
-                <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+              <td>
+                <div class="namings-view__name-cell">
+                  <span class="namings-view__name">{{ n.name }}</span>
+                  <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+                </div>
+              </td>
+              <td>{{ n.domain || '—' }}</td>
+              <td>{{ n.price != null ? `$${n.price}` : '—' }}</td>
+              <td>
+                <span 
+                  class="namings-view__status-badge" 
+                  :class="`namings-view__status-badge--${n.availability_status || 'unknown'}`"
+                >
+                  {{ n.availability_status === 'available' ? '✓ Available' : n.availability_status === 'sold' ? '✗ Sold' : '? Unknown' }}
+                </span>
               </td>
               <td>{{ n.concept_name || '—' }}</td>
               <td>{{ n.author_name }}</td>
@@ -266,9 +316,11 @@ async function handleDeleteNaming(id: string, name: string) {
           </template>
           <template v-else>
             <tr v-for="n in sortedInternal" :key="n.id">
-              <td class="namings-view__name-cell">
-                <span class="namings-view__name">{{ n.name }}</span>
-                <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+              <td>
+                <div class="namings-view__name-cell">
+                  <span class="namings-view__name">{{ n.name }}</span>
+                  <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+                </div>
               </td>
               <td>{{ n.author_name }}</td>
               <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
@@ -304,13 +356,35 @@ async function handleDeleteNaming(id: string, name: string) {
       <form class="namings-view__form" @submit.prevent="handleCreate">
         <BaseInput v-model="newName" label="Naming" placeholder="Enter naming..." required />
         <BaseInput v-model="newTagline" label="Tagline" placeholder="Short description..." />
-        <div v-if="activeTab === 'external'" class="namings-view__field">
-          <label class="namings-view__label">Link to Concept</label>
-          <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
-            <option :value="null">— No concept —</option>
-            <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
-        </div>
+        <template v-if="activeTab === 'external'">
+          <BaseInput v-model="newDomain" label="Domain" placeholder="e.g. example.com" />
+          <div class="namings-view__field">
+            <label class="namings-view__label">Price ($)</label>
+            <input 
+              type="number" 
+              v-model.number="newPrice" 
+              class="namings-view__number-input"
+              placeholder="e.g. 1500"
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div class="namings-view__field">
+            <label class="namings-view__label">Availability Status</label>
+            <select v-model="newAvailabilityStatus" class="namings-view__select namings-view__select--full">
+              <option value="unknown">Unknown</option>
+              <option value="available">Available</option>
+              <option value="sold">Sold</option>
+            </select>
+          </div>
+          <div class="namings-view__field">
+            <label class="namings-view__label">Link to Concept</label>
+            <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
+              <option :value="null">— No concept —</option>
+              <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+        </template>
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
@@ -328,13 +402,35 @@ async function handleDeleteNaming(id: string, name: string) {
       <form class="namings-view__form" @submit.prevent="handleSaveEdit">
         <BaseInput v-model="editName" label="Naming" placeholder="Enter naming..." required />
         <BaseInput v-model="editTagline" label="Tagline" placeholder="Short description..." />
-        <div v-if="activeTab === 'external'" class="namings-view__field">
-          <label class="namings-view__label">Link to Concept</label>
-          <select v-model="editConceptId" class="namings-view__select namings-view__select--full">
-            <option :value="null">— No concept —</option>
-            <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
-        </div>
+        <template v-if="activeTab === 'external'">
+          <BaseInput v-model="editDomain" label="Domain" placeholder="e.g. example.com" />
+          <div class="namings-view__field">
+            <label class="namings-view__label">Price ($)</label>
+            <input 
+              type="number" 
+              v-model.number="editPrice" 
+              class="namings-view__number-input"
+              placeholder="e.g. 1500"
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div class="namings-view__field">
+            <label class="namings-view__label">Availability Status</label>
+            <select v-model="editAvailabilityStatus" class="namings-view__select namings-view__select--full">
+              <option value="unknown">Unknown</option>
+              <option value="available">Available</option>
+              <option value="sold">Sold</option>
+            </select>
+          </div>
+          <div class="namings-view__field">
+            <label class="namings-view__label">Link to Concept</label>
+            <select v-model="editConceptId" class="namings-view__select namings-view__select--full">
+              <option :value="null">— No concept —</option>
+              <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+        </template>
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="showEditModal = false">Cancel</BaseButton>
@@ -440,9 +536,10 @@ async function handleDeleteNaming(id: string, name: string) {
 
     th,
     td {
-      padding: $spacing-2 $spacing-3;
+      padding: $spacing-3 $spacing-3;
       text-align: left;
       border-bottom: 1px solid $color-border;
+      vertical-align: middle;
     }
 
     tr:last-child td {
@@ -456,7 +553,6 @@ async function handleDeleteNaming(id: string, name: string) {
       text-transform: uppercase;
       letter-spacing: 0.05em;
       background-color: $color-bg;
-      white-space: nowrap;
 
       &.sortable-th {
         cursor: pointer;
@@ -490,6 +586,7 @@ async function handleDeleteNaming(id: string, name: string) {
 
   &__name {
     font-weight: $font-weight-medium;
+    line-height: 1.4;
   }
 
   &__tagline {
@@ -530,6 +627,45 @@ async function handleDeleteNaming(id: string, name: string) {
 
   &__select--full {
     width: 100%;
+  }
+
+  &__number-input {
+    width: 100%;
+    padding: $spacing-2 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    background-color: $color-bg-white;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+    }
+  }
+
+  &__status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-1 $spacing-2;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+
+    &--available {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    &--sold {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    &--unknown {
+      background-color: $color-bg;
+      color: $color-text-muted;
+    }
   }
 }
 </style>

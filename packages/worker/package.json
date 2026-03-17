@@ -7,6 +7,7 @@
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run --outdir=dist",
     "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --env production",
     "type-check": "tsc --noEmit",
     "db:migrate": "wrangler d1 execute brand-constructor-db --local --file=./src/db/schema.sql",
     "db:migrate:remote": "wrangler d1 execute brand-constructor-db --remote --file=./src/db/schema.sql",

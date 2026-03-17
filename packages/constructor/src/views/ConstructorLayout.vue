@@ -26,8 +26,6 @@ const isLastStep = computed(() => currentStep.value === totalSteps);
 const isFullWidth = computed(() => [3, 4, 5, 7, 8].includes(currentStep.value));
 
 interface ExternalNamingPreview extends ExternalNaming {
-  domain?: string | null;
-  price?: number | null;
   price_usd?: number | null;
 }
 
@@ -82,12 +80,20 @@ function goBack() {
   }
 }
 
-function goNext() {
-  if (store.isCurrentStepValid && !isLastStep.value) {
-    let next = currentStep.value + 1;
-    if (next === 4 && store.shouldSkipStep4) next = 5;
-    router.push(`/constructor/step/${next}`);
+async function goNext() {
+  if (!store.isCurrentStepValid) return;
+
+  if (isLastStep.value) {
+    const saved = await store.saveBrand();
+    if (saved) {
+      router.push('/constructor/success');
+    }
+    return;
   }
+
+  let next = currentStep.value + 1;
+  if (next === 4 && store.shouldSkipStep4) next = 5;
+  router.push(`/constructor/step/${next}`);
 }
 
 function getExternalDomain(naming: ExternalNamingPreview | null): string {
@@ -238,7 +244,7 @@ watch(currentStep, (step) => {
 <template>
   <div class="min-h-screen bg-background flex items-center justify-center p-6">
     <div
-      class="w-full max-w-[1311px] h-[calc(100vh-48px)] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
+      class="w-full max-w-[1311px] h-[90vh] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
     >
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div

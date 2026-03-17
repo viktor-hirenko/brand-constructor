@@ -1,9 +1,10 @@
 export type { User, UserRole } from './user'
-export type { Concept, ConceptStatus, CreateConceptPayload, UpdateConceptPayload } from './concept'
+export type { Concept, ConceptStatus, ConceptMode, CreateConceptPayload, UpdateConceptPayload } from './concept'
 export type {
   ExternalNaming,
   InternalNaming,
   NamingStatus,
+  DomainAvailabilityStatus,
   CreateExternalNamingPayload,
   CreateInternalNamingPayload,
   UpdateExternalNamingPayload,

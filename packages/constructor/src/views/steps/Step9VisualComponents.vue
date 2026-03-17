@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useConstructorStore } from '@/stores/constructor';
 import { getAssetUrl, getAuthHeader } from '@/composables/useApi';
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared/types';
@@ -65,7 +65,7 @@ function getVariantNumber(typeId: string, variantId: string): number | null {
 }
 
 const conflicts = computed(() => {
-  const result: Array<{ message: string }> = [];
+  const result: Array<{ message: string; typeA: string; variantA: string; typeB: string; variantB: string }> = [];
   const sel = selections.value;
 
   for (const rule of INCOMPATIBLE_PAIRS) {
@@ -83,6 +83,10 @@ const conflicts = computed(() => {
 
       result.push({
         message: `<b>${typeA?.name || ''}</b> <b>${varA?.name || ''}</b> і <b>${typeB?.name || ''}</b> <b>${varB?.name || ''}</b> конфліктують між собою. Змініть один із варіантів, щоб продовжити.`,
+        typeA: rule.typeIdA,
+        variantA: selA,
+        typeB: rule.typeIdB,
+        variantB: selB,
       });
     }
   }
@@ -90,6 +94,15 @@ const conflicts = computed(() => {
 });
 
 const hasConflicts = computed(() => conflicts.value.length > 0);
+
+watch(conflicts, (newConflicts) => {
+  store.setComponentConflicts(newConflicts.map(c => ({
+    typeA: c.typeA,
+    variantA: c.variantA,
+    typeB: c.typeB,
+    variantB: c.variantB,
+  })));
+}, { immediate: true });
 
 function getSelectedVariantName(typeId: string): string | null {
   const variantId = selections.value[typeId];

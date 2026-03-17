@@ -9,7 +9,10 @@ type BriefKind = 'concept' | 'external' | 'internal' | null;
 const router = useRouter();
 const store = useConstructorStore();
 
-const previewComment = ref('');
+const previewComment = computed({
+  get: () => store.stepData.previewComment,
+  set: (val: string) => store.setPreviewComment(val),
+});
 const activeBrief = ref<BriefKind>(null);
 
 const newConceptBrief = computed<NewConceptBrief | null>(() => store.stepData.concept.newConceptBrief);

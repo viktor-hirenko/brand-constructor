@@ -79,6 +79,7 @@ export interface BrandStepData {
   concept: BrandConceptData
   externalNaming: BrandExternalNamingData
   internalNaming: BrandInternalNamingData
+  previewComment: string
   marketingPackage: BrandMarketingPackageData
   deliverables: BrandDeliverablesData
   visualComponents: BrandVisualComponentsData

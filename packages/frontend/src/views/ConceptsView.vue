@@ -32,6 +32,7 @@ const { data: availableNamings, fetchData: fetchNamings } = useApiList<NamingRow
 const showCreateModal = ref(false)
 const newName = ref('')
 const newDescription = ref('')
+const newMode = ref<'light' | 'dark' | null>(null)
 const selectedNamingIds = ref<string[]>([])
 const creating = ref(false)
 
@@ -49,6 +50,7 @@ onMounted(() => {
 function openCreateModal() {
   newName.value = ''
   newDescription.value = ''
+  newMode.value = null
   selectedNamingIds.value = []
   fetchNamings({ per_page: '100', filter: 'standalone' })
   showCreateModal.value = true
@@ -70,6 +72,7 @@ async function handleCreate() {
     const payload: Record<string, unknown> = {
       name: newName.value.trim(),
       description: newDescription.value.trim(),
+      mode: newMode.value,
     }
     if (selectedNamingIds.value.length > 0) {
       payload.naming_ids = selectedNamingIds.value
@@ -78,6 +81,7 @@ async function handleCreate() {
     showCreateModal.value = false
     newName.value = ''
     newDescription.value = ''
+    newMode.value = null
     selectedNamingIds.value = []
     router.push(`/concepts/${concept.id}`)
   } finally {
@@ -166,6 +170,38 @@ async function handleDelete(id: string, name: string) {
           placeholder="Theme, mood, visual direction..."
           :rows="4"
         />
+        <div class="concepts-view__field">
+          <label class="concepts-view__label">Mode (Theme)</label>
+          <div class="concepts-view__mode-options">
+            <label class="concepts-view__mode-option">
+              <input
+                type="radio"
+                :value="null"
+                v-model="newMode"
+                name="mode"
+              />
+              <span>Not specified</span>
+            </label>
+            <label class="concepts-view__mode-option">
+              <input
+                type="radio"
+                value="light"
+                v-model="newMode"
+                name="mode"
+              />
+              <span>☀️ Light</span>
+            </label>
+            <label class="concepts-view__mode-option">
+              <input
+                type="radio"
+                value="dark"
+                v-model="newMode"
+                name="mode"
+              />
+              <span>🌙 Dark</span>
+            </label>
+          </div>
+        </div>
         <div v-if="unlinkedNamings.length > 0" class="concepts-view__field">
           <label class="concepts-view__label">
             Link to Naming
@@ -312,6 +348,37 @@ async function handleDelete(id: string, name: string) {
   &__naming-tagline {
     color: $color-text-secondary;
     font-size: $font-size-xs;
+  }
+
+  &__mode-options {
+    display: flex;
+    gap: $spacing-4;
+    flex-wrap: wrap;
+  }
+
+  &__mode-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    padding: $spacing-2 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary;
+    }
+
+    &:has(input:checked) {
+      border-color: $color-primary;
+      background-color: rgba($color-primary, 0.05);
+    }
+
+    input[type='radio'] {
+      margin: 0;
+    }
   }
 }
 

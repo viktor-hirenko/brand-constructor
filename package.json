@@ -14,9 +14,10 @@
     "build:frontend": "pnpm --filter @brand-constructor/frontend build",
     "build:constructor": "pnpm --filter @brand-constructor/constructor build",
     "build:worker": "pnpm --filter @brand-constructor/worker build",
-    "deploy": "turbo run build && pnpm deploy:worker && cd packages/frontend && npx wrangler pages deploy dist --project-name brand-constructor",
+    "deploy": "turbo run build && pnpm deploy:worker && pnpm deploy:worker:production && cd packages/frontend && npx wrangler pages deploy dist --project-name brand-constructor",
     "deploy:constructor": "pnpm build:constructor && cd packages/constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
     "deploy:worker": "pnpm --filter @brand-constructor/worker run deploy",
+    "deploy:worker:production": "pnpm --filter @brand-constructor/worker run deploy:production",
     "db:migrate": "pnpm --filter @brand-constructor/worker db:migrate",
     "db:seed": "pnpm --filter @brand-constructor/worker db:seed"
   },

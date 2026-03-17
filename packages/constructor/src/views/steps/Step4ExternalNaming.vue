@@ -22,6 +22,8 @@ const isCommentRequired = computed(() => selectedCount.value > 1);
 
 const showNewModal = ref(false);
 
+const selectedConceptId = computed(() => store.stepData.concept.selectedId);
+
 function toggleNaming(id: string) {
   if (isCreatingNew.value) return;
   store.toggleExternalNaming(id);
@@ -45,8 +47,41 @@ function handleBriefSave(brief: NewNamingBrief) {
   showNewModal.value = false;
 }
 
-function loadNamings() {
-  fetchData({ per_page: '50', status: 'active' });
+async function loadNamings() {
+  const params: Record<string, string> = { per_page: '50', status: 'active' };
+  if (selectedConceptId.value) {
+    params.concept_id = selectedConceptId.value;
+  }
+  await fetchData(params);
+
+  const validIds = new Set(namings.value.map(n => n.id));
+  const staleIds = selectedIds.value.filter(id => !validIds.has(id));
+  if (staleIds.length > 0) {
+    store.setExternalNaming({
+      selectedIds: selectedIds.value.filter(id => validIds.has(id)),
+    });
+  }
+}
+
+function formatPrice(price: number | null): string {
+  if (price === null || price === undefined) return '';
+  return `$${price.toLocaleString()}`;
+}
+
+function getStatusLabel(status: string | null): string {
+  switch (status) {
+    case 'available': return 'Available';
+    case 'sold': return 'Sold';
+    default: return 'Unknown';
+  }
+}
+
+function getStatusClass(status: string | null): string {
+  switch (status) {
+    case 'available': return 'bg-green-100 text-green-800';
+    case 'sold': return 'bg-red-100 text-red-800';
+    default: return 'bg-gray-100 text-gray-600';
+  }
 }
 
 onMounted(loadNamings);
@@ -93,13 +128,29 @@ onMounted(loadNamings);
           ]"
           @click="toggleNaming(naming.id)"
         >
-          <div class="aspect-[2/1] relative flex flex-col items-center justify-center p-3">
-            <h2 class="text-center text-4xl font-medium tracking-[0.37px] text-[#0a0a0a] mb-2">
+          <div class="aspect-[2/1] relative flex flex-col items-center justify-center p-4">
+            <h2 class="text-center text-3xl font-medium tracking-[0.37px] text-[#0a0a0a] mb-1">
               {{ naming.name }}
             </h2>
+            <p v-if="naming.domain" class="text-sm text-primary font-medium mb-1">
+              {{ naming.domain }}
+            </p>
             <p class="text-sm text-muted-foreground text-center tracking-[-0.15px]">
               {{ naming.tagline || '\u00A0' }}
             </p>
+            <!-- Domain info row -->
+            <div v-if="naming.domain || naming.price !== null" class="flex items-center gap-3 mt-2">
+              <span 
+                v-if="naming.availability_status" 
+                class="text-xs px-2 py-0.5 rounded-full font-medium"
+                :class="getStatusClass(naming.availability_status)"
+              >
+                {{ getStatusLabel(naming.availability_status) }}
+              </span>
+              <span v-if="naming.price !== null" class="text-sm font-semibold text-gray-700">
+                {{ formatPrice(naming.price) }}
+              </span>
+            </div>
           </div>
 
           <!-- Checkmark badge -->
