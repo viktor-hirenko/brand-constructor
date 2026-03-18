@@ -131,7 +131,10 @@ function loadPreviewData() {
   fetchInternalNamings(params);
 }
 
-onMounted(loadPreviewData);
+onMounted(() => {
+  loadPreviewData();
+  loadStep9Variants();
+});
 watch(currentStep, loadPreviewData);
 
 const hasStep9Selections = computed(() => {
@@ -168,7 +171,7 @@ async function loadStep9Variants() {
     if (step9VariantsCache.value[typeId]) continue;
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=active`,
+        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants`,
         { headers: getAuthHeader() },
       );
       if (res.ok) {

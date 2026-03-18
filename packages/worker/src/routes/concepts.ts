@@ -31,8 +31,13 @@ app.get('/', async (c) => {
   const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100);
   const offset = (page - 1) * perPage;
 
-  let whereClause = 'c.status = ?';
-  const params: (string | number)[] = [status];
+  let whereClause = '1=1';
+  const params: (string | number)[] = [];
+
+  if (status && status !== 'all') {
+    whereClause += ' AND c.status = ?';
+    params.push(status);
+  }
 
   if (mode && (mode === 'light' || mode === 'dark')) {
     whereClause += ' AND c.mode = ?';

@@ -47,7 +47,7 @@ const routes: RouteRecordRaw[] = [
           deliverables: { legalLanding: false, partnerLanding: false, developmentDeadline: '', comment: '' },
           visualComponents: { selections: {}, delegateToDesigners: false, comment: '' },
         }
-        store.loadBrand(brandId, stepData, brand.currentStep ?? 10, brand.status)
+        store.loadBrand(brandId, stepData, brand.currentStep ?? 10, brand.status, brand.internalName ?? undefined)
         return true
       } catch {
         return { path: '/constructor/step/1' }

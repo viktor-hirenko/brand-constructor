@@ -5,7 +5,8 @@ import { useConstructorStore } from '@/stores/constructor';
 import { useAuthStore } from '@/stores/auth';
 import { useApiList, apiPatch } from '@/composables/useApi';
 import type { Concept, ExternalNaming, InternalNaming, PrPackage, Brand } from '@brand-constructor/shared/types';
-import { usePrintBrand } from '@/composables/usePrintBrand';
+import { usePrintBrand, type PrintBrandData } from '@/composables/usePrintBrand';
+import { getAuthHeader } from '@/composables/useApi';
 
 const router = useRouter();
 const { printBrand } = usePrintBrand();
@@ -24,10 +25,10 @@ onMounted(() => {
   ePerPage.value = 100;
   iPerPage.value = 100;
   pPerPage.value = 100;
-  fetchConcepts({ status: 'active' });
-  fetchExternalNamings({ status: 'active' });
-  fetchInternalNamings({ status: 'active' });
-  fetchPrPackages({ status: 'active' });
+  fetchConcepts({});
+  fetchExternalNamings({});
+  fetchInternalNamings({});
+  fetchPrPackages({});
 });
 
 const basics = computed(() => store.stepData.brandBasics);
@@ -280,6 +281,50 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
   } finally {
     statusActionLoading.value = false;
   }
+}
+
+const COMPONENT_TYPE_LABELS: Record<string, string> = {
+  ct_header: 'Хедер',
+  ct_banners: 'Банери',
+  ct_thumbnails: 'Сабнейли',
+  ct_tabbar: 'Таббар',
+  ct_sidebar: 'Сайдбар',
+  ct_theme: 'Тема',
+};
+
+async function handlePrintBrand() {
+  const selections = store.stepData?.visualComponents?.selections ?? {};
+  const componentLabels: Record<string, string> = {};
+
+  for (const [typeId, variantId] of Object.entries(selections)) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants`,
+        { headers: getAuthHeader() },
+      );
+      if (res.ok) {
+        const json = await res.json();
+        const variants = json.data?.variants || [];
+        const variant = variants.find((v: { id: string; name: string }) => v.id === variantId);
+        componentLabels[typeId] = variant?.name ?? variantId;
+      } else {
+        componentLabels[typeId] = variantId;
+      }
+    } catch {
+      componentLabels[typeId] = variantId;
+    }
+  }
+
+  const data: PrintBrandData = {
+    brandName: store.brandInternalName || 'New Brand',
+    conceptName: selectedConcept.value?.name ?? null,
+    externalNamingNames: selectedExternalNamings.value.map(n => n.name),
+    internalNamingName: selectedInternalNaming.value?.name ?? null,
+    prPackageName: selectedPackage.value?.name ?? null,
+    componentLabels,
+  };
+
+  printBrand(data);
 }
 </script>
 
@@ -549,7 +594,7 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
 
       <button
         class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-black/10 text-foreground rounded-xl hover:bg-black/[0.02] transition-colors text-sm font-medium"
-        @click="printBrand"
+        @click="handlePrintBrand"
       >
         <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" />

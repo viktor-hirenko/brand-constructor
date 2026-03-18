@@ -59,6 +59,7 @@ function getInitialStepData(): BrandStepData {
 
 export const useConstructorStore = defineStore('brand-constructor', () => {
   const brandId = ref<string | null>(null);
+  const brandInternalName = ref<string | null>(null);
   const brandStatus = ref<string>('draft');
   const currentStep = ref(1);
   const stepData = ref<BrandStepData>(getInitialStepData());
@@ -265,14 +266,16 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
 
   function reset() {
     brandId.value = null;
+    brandInternalName.value = null;
     brandStatus.value = 'draft';
     currentStep.value = 1;
     stepData.value = getInitialStepData();
     isDraft.value = true;
   }
 
-  function loadBrand(id: string, data: BrandStepData, step: number, status?: string) {
+  function loadBrand(id: string, data: BrandStepData, step: number, status?: string, internalName?: string) {
     brandId.value = id;
+    brandInternalName.value = internalName ?? null;
     brandStatus.value = status ?? 'draft';
     stepData.value = data;
     currentStep.value = step;
@@ -358,6 +361,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
 
   return {
     brandId,
+    brandInternalName,
     brandStatus,
     currentStep,
     stepData,

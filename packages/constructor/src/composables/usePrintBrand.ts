@@ -1,5 +1,23 @@
 import { useConstructorStore } from '@/stores/constructor';
 
+export interface PrintBrandData {
+  brandName: string;
+  conceptName: string | null;
+  externalNamingNames: string[];
+  internalNamingName: string | null;
+  prPackageName: string | null;
+  componentLabels: Record<string, string>;
+}
+
+const COMPONENT_TYPE_LABELS: Record<string, string> = {
+  ct_header: 'Хедер',
+  ct_banners: 'Банери',
+  ct_thumbnails: 'Сабнейли',
+  ct_tabbar: 'Таббар',
+  ct_sidebar: 'Сайдбар',
+  ct_theme: 'Тема',
+};
+
 export function usePrintBrand() {
   const store = useConstructorStore();
 
@@ -23,9 +41,8 @@ export function usePrintBrand() {
     return `<div class="section"><h2>${esc(title)}</h2><table>${rowsHtml}</table></div>`;
   }
 
-  function generatePrintHtml(): string {
+  function generatePrintHtml(data: PrintBrandData): string {
     const sd = store.stepData;
-    const brandId = store.brandId ?? '—';
     const status = store.brandStatus ?? 'draft';
 
     const STATUS_LABELS: Record<string, string> = {
@@ -39,7 +56,7 @@ export function usePrintBrand() {
     let sections = '';
 
     sections += buildSection('Brand Basics', [
-      { label: 'ID', value: brandId },
+      { label: 'Назва бренду', value: data.brandName },
       { label: 'Статус', value: STATUS_LABELS[status] ?? status },
       { label: 'Географія', value: sd.brandBasics.geo.join(', ') },
       { label: 'Дата запуску', value: formatDate(sd.brandBasics.launchDate) },
@@ -68,9 +85,9 @@ export function usePrintBrand() {
         { label: 'Дедлайн', value: formatDate(b.namingDeadline) },
         { label: 'Додаткова інфо по ГЕО', value: b.additionalGeoInfo ?? '' },
       ]);
-    } else if (sd.concept.selectedId) {
+    } else if (data.conceptName) {
       sections += buildSection('Концепт', [
-        { label: 'ID', value: sd.concept.selectedId },
+        { label: 'Назва', value: data.conceptName },
         { label: 'Коментар', value: sd.concept.comment },
       ]);
     }
@@ -90,9 +107,9 @@ export function usePrintBrand() {
         { label: 'Дедлайн', value: formatDate(b.namingDeadline) },
         { label: 'Додаткова інфо по ГЕО', value: b.additionalGeoInfo },
       ]);
-    } else if (sd.externalNaming.selectedIds.length > 0) {
+    } else if (data.externalNamingNames.length > 0) {
       sections += buildSection('External Naming', [
-        { label: 'Обрані IDs', value: sd.externalNaming.selectedIds.join(', ') },
+        { label: 'Обрані назви', value: data.externalNamingNames.join(', ') },
         { label: 'Коментар', value: sd.externalNaming.comment },
       ]);
     }
@@ -101,17 +118,19 @@ export function usePrintBrand() {
       sections += buildSection('Internal Naming (новий)', [
         { label: 'Що не підійшло', value: sd.internalNaming.newNamingFeedback },
       ]);
-    } else if (sd.internalNaming.selectedId) {
+    } else if (data.internalNamingName) {
       sections += buildSection('Internal Naming', [
-        { label: 'ID', value: sd.internalNaming.selectedId },
+        { label: 'Назва', value: data.internalNamingName },
         { label: 'Коментар', value: sd.internalNaming.comment },
       ]);
     }
 
-    sections += buildSection('PR Package', [
-      { label: 'Обраний пакет ID', value: sd.marketingPackage.selectedId ?? '' },
-      { label: 'Коментар', value: sd.marketingPackage.comment },
-    ]);
+    if (data.prPackageName) {
+      sections += buildSection('PR Package', [
+        { label: 'Обраний пакет', value: data.prPackageName },
+        { label: 'Коментар', value: sd.marketingPackage.comment },
+      ]);
+    }
 
     sections += buildSection('Deliverables', [
       { label: 'Legal Landing', value: sd.deliverables.legalLanding ? 'Так' : 'Ні' },
@@ -124,9 +143,9 @@ export function usePrintBrand() {
     if (sd.visualComponents.delegateToDesigners) {
       vcRows.push({ label: 'Режим', value: 'Делеговано дизайнерам' });
     } else {
-      const sel = sd.visualComponents.selections;
-      for (const [type, variantId] of Object.entries(sel)) {
-        vcRows.push({ label: type, value: variantId });
+      for (const [typeId, variantName] of Object.entries(data.componentLabels)) {
+        const typeLabel = COMPONENT_TYPE_LABELS[typeId] ?? typeId;
+        vcRows.push({ label: typeLabel, value: variantName });
       }
     }
     vcRows.push({ label: 'Коментар', value: sd.visualComponents.comment });
@@ -136,7 +155,7 @@ export function usePrintBrand() {
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Brand Brief — ${esc(brandId)}</title>
+  <title>Brand Brief — ${esc(data.brandName)}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
@@ -155,15 +174,15 @@ export function usePrintBrand() {
   </style>
 </head>
 <body>
-  <h1>Brand Brief</h1>
-  <div class="meta">ID: ${esc(brandId)} | ${new Date().toLocaleDateString('uk-UA')}</div>
+  <h1>Brand Brief — ${esc(data.brandName)}</h1>
+  <div class="meta">${new Date().toLocaleDateString('uk-UA')}</div>
   ${sections}
 </body>
 </html>`;
   }
 
-  function printBrand() {
-    const html = generatePrintHtml();
+  function printBrand(data: PrintBrandData) {
+    const html = generatePrintHtml(data);
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(html);

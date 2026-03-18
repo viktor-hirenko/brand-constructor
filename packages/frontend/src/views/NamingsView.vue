@@ -13,6 +13,7 @@ const canWrite = computed(() => authStore.canWriteLibrary('external_namings'))
 
 const activeTab = ref<'external' | 'internal'>('external')
 const conceptFilter = ref<string>('all')
+const statusFilter = ref<'all' | 'active' | 'used'>('all')
 
 type ExternalNamingRow = ExternalNaming & { 
   concept_name: string | null
@@ -73,7 +74,7 @@ const editConceptId = ref<string | null>(null)
 const saving = ref(false)
 
 function refreshList() {
-  const params: Record<string, string> = {}
+  const params: Record<string, string> = { status: statusFilter.value }
   if (activeTab.value === 'external') {
     if (conceptFilter.value !== 'all') {
       params.filter = conceptFilter.value
@@ -86,9 +87,9 @@ function refreshList() {
 
 onMounted(() => {
   refreshList()
-  fetchConcepts({ per_page: '100' })
+  fetchConcepts({ per_page: '100', status: 'all' })
 })
-watch([activeTab, conceptFilter], refreshList)
+watch([activeTab, conceptFilter, statusFilter], refreshList)
 
 function openCreateModal() {
   newName.value = ''
@@ -172,10 +173,20 @@ async function handleSaveEdit() {
   }
 }
 
-async function handleDeleteNaming(id: string, name: string) {
-  if (!confirm(`Delete naming "${name}"?`)) return
+const showDeleteConfirm = ref(false)
+const deleteTargetId = ref('')
+const deleteTargetName = ref('')
+
+function handleDeleteNaming(id: string, name: string) {
+  deleteTargetId.value = id
+  deleteTargetName.value = name
+  showDeleteConfirm.value = true
+}
+
+async function confirmDeleteNaming() {
   const type = activeTab.value
-  await apiDelete(`/api/namings/${type}/${id}`)
+  await apiDelete(`/api/namings/${type}/${deleteTargetId.value}`)
+  showDeleteConfirm.value = false
   refreshList()
 }
 </script>
@@ -197,6 +208,24 @@ async function handleDeleteNaming(id: string, name: string) {
       >
         Internal Namings
       </button>
+    </div>
+
+    <div class="namings-view__status-tabs">
+      <button
+        class="namings-view__status-tab"
+        :class="{ 'namings-view__status-tab--active': statusFilter === 'all' }"
+        @click="statusFilter = 'all'"
+      >All</button>
+      <button
+        class="namings-view__status-tab"
+        :class="{ 'namings-view__status-tab--active': statusFilter === 'active' }"
+        @click="statusFilter = 'active'"
+      >Available</button>
+      <button
+        class="namings-view__status-tab"
+        :class="{ 'namings-view__status-tab--active': statusFilter === 'used' }"
+        @click="statusFilter = 'used'"
+      >Used</button>
     </div>
 
     <div class="namings-view__toolbar">
@@ -238,7 +267,8 @@ async function handleDeleteNaming(id: string, name: string) {
                 Price
                 <span v-if="extSortField === 'price'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
               </th>
-              <th>Status</th>
+              <th>Availability</th>
+              <th>Usage</th>
               <th class="sortable-th" @click="toggleExtSort('concept_name')">
                 Linked Concept
                 <span v-if="extSortField === 'concept_name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
@@ -260,6 +290,7 @@ async function handleDeleteNaming(id: string, name: string) {
                 Name
                 <span v-if="intSortField === 'name'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
               </th>
+              <th>Usage</th>
               <th class="sortable-th" @click="toggleIntSort('author_name')">
                 Author
                 <span v-if="intSortField === 'author_name'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
@@ -291,6 +322,12 @@ async function handleDeleteNaming(id: string, name: string) {
                   {{ n.availability_status === 'available' ? '✓ Available' : n.availability_status === 'sold' ? '✗ Sold' : '? Unknown' }}
                 </span>
               </td>
+              <td>
+                <span v-if="n.status === 'used'" class="namings-view__usage-badge namings-view__usage-badge--used">
+                  Used
+                </span>
+                <span v-else>—</span>
+              </td>
               <td>{{ n.concept_name || '—' }}</td>
               <td>{{ n.author_name }}</td>
               <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
@@ -321,6 +358,12 @@ async function handleDeleteNaming(id: string, name: string) {
                   <span class="namings-view__name">{{ n.name }}</span>
                   <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
                 </div>
+              </td>
+              <td>
+                <span v-if="n.status === 'used'" class="namings-view__usage-badge namings-view__usage-badge--used">
+                  Used
+                </span>
+                <span v-else>—</span>
               </td>
               <td>{{ n.author_name }}</td>
               <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
@@ -391,6 +434,16 @@ async function handleDeleteNaming(id: string, name: string) {
         <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
           Create
         </BaseButton>
+      </template>
+    </BaseModal>
+
+    <BaseModal v-if="showDeleteConfirm" title="Delete Naming" width="420px" @close="showDeleteConfirm = false">
+      <p class="namings-view__confirm-text">
+        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action cannot be undone.
+      </p>
+      <template #footer>
+        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
+        <BaseButton variant="danger" @click="confirmDeleteNaming">Delete</BaseButton>
       </template>
     </BaseModal>
 
@@ -666,6 +719,56 @@ async function handleDeleteNaming(id: string, name: string) {
       background-color: $color-bg;
       color: $color-text-muted;
     }
+  }
+
+  &__status-tabs {
+    display: flex;
+    gap: $spacing-2;
+    margin-bottom: $spacing-4;
+  }
+
+  &__status-tab {
+    padding: $spacing-1 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: $color-bg-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-bg;
+      color: $color-text;
+    }
+
+    &--active {
+      background: $color-primary;
+      border-color: $color-primary;
+      color: #fff;
+    }
+  }
+
+  &__usage-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-1 $spacing-2;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+
+    &--used {
+      background-color: #e2e3e5;
+      color: #383d41;
+    }
+  }
+
+  &__confirm-text {
+    font-size: $font-size-sm;
+    color: $color-text;
+    line-height: $line-height-normal;
   }
 }
 </style>

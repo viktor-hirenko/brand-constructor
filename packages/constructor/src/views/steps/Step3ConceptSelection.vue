@@ -1,104 +1,106 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useConstructorStore } from '@/stores/constructor';
-import { useApiList, getAssetUrl } from '@/composables/useApi';
-import type { Concept } from '@brand-constructor/shared/types';
-import type { NewConceptBrief } from '@brand-constructor/shared/types';
-import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue';
-import NewConceptModal from '@/components/constructor/NewConceptModal.vue';
+import { ref, computed, onMounted, watch } from 'vue'
+import { useConstructorStore } from '@/stores/constructor'
+import { useApiList, getAssetUrl } from '@/composables/useApi'
+import type { Concept } from '@brand-constructor/shared/types'
+import type { NewConceptBrief } from '@brand-constructor/shared/types'
+import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
+import NewConceptModal from '@/components/constructor/NewConceptModal.vue'
 
-const store = useConstructorStore();
-const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts');
+const store = useConstructorStore()
+const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
 
-const isCreatingNew = ref(false);
-const detailConcept = ref<Concept | null>(null);
-const showNewModal = ref(false);
+const isCreatingNew = ref(false)
+const detailConcept = ref<Concept | null>(null)
+const showNewModal = ref(false)
 
-const selectedId = computed(() => store.stepData.concept.selectedId);
-const hasBrief = computed(() => store.stepData.concept.newConceptBrief !== null);
+const selectedId = computed(() => store.stepData.concept.selectedId)
+const hasBrief = computed(() => store.stepData.concept.newConceptBrief !== null)
 const comment = computed({
   get: () => store.stepData.concept.comment,
   set: (val: string) => store.setConcept({ comment: val }),
-});
+})
 
-const selectedMode = computed(() => store.stepData.mode);
+const selectedMode = computed(() => store.stepData.mode)
 
 onMounted(() => {
-  perPage.value = 50;
-  const params: Record<string, string> = { status: 'active' };
+  perPage.value = 50
+  const params: Record<string, string> = { status: 'active' }
   if (selectedMode.value) {
-    params.mode = selectedMode.value;
+    params.mode = selectedMode.value
   }
-  fetchData(params);
-});
+  fetchData(params)
+})
 
-watch(selectedMode, (newMode) => {
-  const params: Record<string, string> = { status: 'active' };
+watch(selectedMode, newMode => {
+  const params: Record<string, string> = { status: 'active' }
   if (newMode) {
-    params.mode = newMode;
+    params.mode = newMode
   }
-  fetchData(params);
-});
+  fetchData(params)
+})
 
-watch(hasBrief, (val) => {
-  isCreatingNew.value = val;
-}, { immediate: true });
+watch(
+  hasBrief,
+  val => {
+    isCreatingNew.value = val
+  },
+  { immediate: true }
+)
 
 function selectConcept(concept: Concept) {
-  if (isCreatingNew.value) return;
+  if (isCreatingNew.value) return
   if (selectedId.value === concept.id) {
-    store.setConcept({ selectedId: null });
+    store.setConcept({ selectedId: null })
   } else {
-    store.setConcept({ selectedId: concept.id, newConceptBrief: null });
+    store.setConcept({ selectedId: concept.id, newConceptBrief: null })
   }
 }
 
 function openDetail(concept: Concept, event: Event) {
-  event.stopPropagation();
-  detailConcept.value = concept;
+  event.stopPropagation()
+  detailConcept.value = concept
 }
 
 function closeDetail() {
-  detailConcept.value = null;
+  detailConcept.value = null
 }
 
 function selectFromDetail() {
   if (detailConcept.value) {
-    store.setConcept({ selectedId: detailConcept.value.id, newConceptBrief: null });
-    isCreatingNew.value = false;
+    store.setConcept({ selectedId: detailConcept.value.id, newConceptBrief: null })
+    isCreatingNew.value = false
   }
-  closeDetail();
+  closeDetail()
 }
 
 function handleCreateNew() {
   if (isCreatingNew.value) {
-    isCreatingNew.value = false;
-    store.setNewConceptBrief(null);
+    isCreatingNew.value = false
+    store.setNewConceptBrief(null)
   } else {
-    store.setConcept({ selectedId: null });
-    showNewModal.value = true;
+    store.setConcept({ selectedId: null })
+    showNewModal.value = true
   }
 }
 
 function handleBriefSave(brief: NewConceptBrief) {
-  store.setNewConceptBrief(brief);
-  showNewModal.value = false;
-  isCreatingNew.value = true;
+  store.setNewConceptBrief(brief)
+  showNewModal.value = false
+  isCreatingNew.value = true
 }
 
 function handleBriefCancel() {
-  showNewModal.value = false;
+  showNewModal.value = false
   if (!hasBrief.value) {
-    isCreatingNew.value = false;
+    isCreatingNew.value = false
   }
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <p class="text-muted-foreground text-base tracking-[-0.31px]">
-      Виберіть один концепт
-    </p>
+    <p class="text-muted-foreground text-base tracking-[-0.31px]">Виберіть один концепт</p>
 
     <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center py-16">
@@ -140,18 +142,34 @@ function handleBriefCancel() {
               class="w-full h-full object-cover"
               loading="lazy"
             />
-            <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground">
-              <svg class="size-12 opacity-30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div
+              v-else
+              class="w-full h-full flex items-center justify-center text-muted-foreground"
+            >
+              <svg
+                class="size-12 opacity-30"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
                 <circle cx="9" cy="9" r="2" />
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
               </svg>
             </div>
 
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"
+            />
 
             <div class="absolute bottom-0 left-0 right-0 p-3">
-              <h3 class="text-white font-medium text-xl leading-[30px] tracking-[-0.45px]">{{ concept.name }}</h3>
+              <h3 class="text-white font-medium text-xl leading-[30px] tracking-[-0.45px]">
+                {{ concept.name }}
+              </h3>
             </div>
 
             <!-- View detail button (hover) -->
@@ -160,8 +178,19 @@ function handleBriefCancel() {
               class="absolute top-2 right-2 size-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               @click="openDetail(concept, $event)"
             >
-              <svg class="size-4 text-gray-900" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+              <svg
+                class="size-4 text-gray-900"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                />
                 <circle cx="12" cy="12" r="3" />
               </svg>
             </button>
@@ -171,7 +200,15 @@ function handleBriefCancel() {
               v-if="selectedId === concept.id"
               class="absolute top-2 left-2 size-8 rounded-full bg-[#030213] flex items-center justify-center shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)]"
             >
-              <svg class="size-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                class="size-5 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
@@ -183,13 +220,25 @@ function handleBriefCancel() {
       <button
         type="button"
         class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[10px] transition-colors text-base font-medium tracking-[-0.31px] self-start"
-        :class="isCreatingNew
-          ? 'bg-[#030213] text-white hover:opacity-90'
-          : 'bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]'"
+        :class="
+          isCreatingNew
+            ? 'bg-[#030213] text-white hover:opacity-90'
+            : 'bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]'
+        "
         @click="handleCreateNew"
       >
-        <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14" /><path d="M12 5v14" />
+        <svg
+          class="size-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M5 12h14" />
+          <path d="M12 5v14" />
         </svg>
         Create New Concept
       </button>
@@ -203,10 +252,21 @@ function handleBriefCancel() {
     <!-- Коментар (per Figma: icon + label + textarea) -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
-        <svg class="size-4 text-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          class="size-4 text-foreground"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
           <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-          <path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />
+          <path d="M10 9H8" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
         </svg>
         <span class="text-base font-medium text-foreground tracking-[-0.31px]">Коментар</span>
       </div>
@@ -227,10 +287,6 @@ function handleBriefCancel() {
     />
 
     <!-- New Concept Modal -->
-    <NewConceptModal
-      v-if="showNewModal"
-      @save="handleBriefSave"
-      @cancel="handleBriefCancel"
-    />
+    <NewConceptModal v-if="showNewModal" @save="handleBriefSave" @cancel="handleBriefCancel" />
   </div>
 </template>

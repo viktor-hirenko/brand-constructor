@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Concept, ExternalNaming } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
@@ -13,6 +13,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
+const statusFilter = ref<'all' | 'active' | 'used'>('all')
 
 type ConceptWithAuthor = Concept & { author_name: string }
 const { data: concepts, loading, total, fetchData } = useApiList<ConceptWithAuthor>('/api/concepts')
@@ -42,10 +43,16 @@ const unlinkedNamings = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name))
 )
 
+function refreshConcepts() {
+  fetchData({ status: statusFilter.value })
+}
+
 onMounted(() => {
-  fetchData()
+  refreshConcepts()
   fetchNamings({ per_page: '100', filter: 'standalone' })
 })
+
+watch(statusFilter, refreshConcepts)
 
 function openCreateModal() {
   newName.value = ''
@@ -89,15 +96,43 @@ async function handleCreate() {
   }
 }
 
-async function handleDelete(id: string, name: string) {
-  if (!confirm(`Delete concept "${name}"? This action cannot be undone.`)) return
-  await apiDelete(`/api/concepts/${id}`)
-  fetchData()
+const showDeleteConfirm = ref(false)
+const deleteTargetId = ref('')
+const deleteTargetName = ref('')
+
+function handleDelete(id: string, name: string) {
+  deleteTargetId.value = id
+  deleteTargetName.value = name
+  showDeleteConfirm.value = true
+}
+
+async function confirmDelete() {
+  await apiDelete(`/api/concepts/${deleteTargetId.value}`)
+  showDeleteConfirm.value = false
+  refreshConcepts()
 }
 </script>
 
 <template>
   <div class="concepts-view">
+    <div class="concepts-view__status-tabs">
+      <button
+        class="concepts-view__status-tab"
+        :class="{ 'concepts-view__status-tab--active': statusFilter === 'all' }"
+        @click="statusFilter = 'all'"
+      >All</button>
+      <button
+        class="concepts-view__status-tab"
+        :class="{ 'concepts-view__status-tab--active': statusFilter === 'active' }"
+        @click="statusFilter = 'active'"
+      >Available</button>
+      <button
+        class="concepts-view__status-tab"
+        :class="{ 'concepts-view__status-tab--active': statusFilter === 'used' }"
+        @click="statusFilter = 'used'"
+      >Used</button>
+    </div>
+
     <div class="concepts-view__toolbar">
       <div class="concepts-view__toolbar-left">
         <span class="concepts-view__count">{{ total }} concepts</span>
@@ -137,7 +172,13 @@ async function handleDelete(id: string, name: string) {
           <div v-else class="concept-card__placeholder">No visual</div>
         </div>
         <div class="concept-card__body">
-          <h3 class="concept-card__name">{{ concept.name }}</h3>
+          <div class="concept-card__header-row">
+            <h3 class="concept-card__name">{{ concept.name }}</h3>
+            <span
+              v-if="concept.status === 'used'"
+              class="concept-card__usage-badge concept-card__usage-badge--used"
+            >Used</span>
+          </div>
           <p class="concept-card__description">
             {{ concept.description || 'No description' }}
           </p>
@@ -160,6 +201,16 @@ async function handleDelete(id: string, name: string) {
         </div>
       </div>
     </div>
+
+    <BaseModal v-if="showDeleteConfirm" title="Delete Concept" width="420px" @close="showDeleteConfirm = false">
+      <p class="concepts-view__confirm-text">
+        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action cannot be undone.
+      </p>
+      <template #footer>
+        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
+        <BaseButton variant="danger" @click="confirmDelete">Delete</BaseButton>
+      </template>
+    </BaseModal>
 
     <BaseModal v-if="showCreateModal" title="Create New Concept" @close="showCreateModal = false">
       <form class="concepts-view__form" @submit.prevent="handleCreate">
@@ -240,6 +291,35 @@ async function handleDelete(id: string, name: string) {
 @use '@/styles/mixins' as *;
 
 .concepts-view {
+  &__status-tabs {
+    display: flex;
+    gap: $spacing-2;
+    margin-bottom: $spacing-4;
+  }
+
+  &__status-tab {
+    padding: $spacing-1 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: $color-bg-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-bg;
+      color: $color-text;
+    }
+
+    &--active {
+      background: $color-primary;
+      border-color: $color-primary;
+      color: #fff;
+    }
+  }
+
   &__toolbar {
     display: flex;
     align-items: center;
@@ -356,6 +436,12 @@ async function handleDelete(id: string, name: string) {
     flex-wrap: wrap;
   }
 
+  &__confirm-text {
+    font-size: $font-size-sm;
+    color: $color-text;
+    line-height: $line-height-normal;
+  }
+
   &__mode-option {
     display: flex;
     align-items: center;
@@ -421,10 +507,33 @@ async function handleDelete(id: string, name: string) {
     padding: $spacing-4;
   }
 
-  &__name {
+  &__header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-2;
     margin-bottom: $spacing-2;
+  }
+
+  &__name {
     font-size: $font-size-base;
     font-weight: $font-weight-semibold;
+  }
+
+  &__usage-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px $spacing-2;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    &--used {
+      background-color: #e2e3e5;
+      color: #383d41;
+    }
   }
 
   &__description {

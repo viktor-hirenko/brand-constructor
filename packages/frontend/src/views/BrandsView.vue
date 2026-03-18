@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Brand } from '@brand-constructor/shared'
-import { useApiList } from '@/composables/useApi'
+import { useApiList, apiDelete } from '@/composables/useApi'
 import { useTableSort } from '@/composables/useTableSort'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
 type BrandWithAuthor = Brand & { author_name?: string }
 
@@ -25,20 +27,20 @@ const {
 const activeTab = ref<string>('all')
 
 const STATUS_TABS = [
-  { key: 'all', label: 'Усі' },
-  { key: 'draft', label: 'Чернетки' },
-  { key: 'submitted', label: 'На розгляді' },
-  { key: 'approved', label: 'Затверджені' },
-  { key: 'needs_revision', label: 'Доопрацювання' },
-  { key: 'rejected', label: 'Відхилені' },
+  { key: 'all', label: 'All' },
+  { key: 'draft', label: 'Drafts' },
+  { key: 'submitted', label: 'Submitted' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'needs_revision', label: 'Needs Revision' },
+  { key: 'rejected', label: 'Rejected' },
 ]
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Чернетка', cls: 'badge--gray' },
-  submitted: { label: 'На розгляді', cls: 'badge--blue' },
-  approved: { label: 'Затверджено', cls: 'badge--green' },
-  needs_revision: { label: 'Доопрацювання', cls: 'badge--amber' },
-  rejected: { label: 'Відхилено', cls: 'badge--red' },
+  draft: { label: 'Draft', cls: 'badge--gray' },
+  submitted: { label: 'Submitted', cls: 'badge--blue' },
+  approved: { label: 'Approved', cls: 'badge--green' },
+  needs_revision: { label: 'Needs Revision', cls: 'badge--amber' },
+  rejected: { label: 'Rejected', cls: 'badge--red' },
 }
 
 function loadBrands() {
@@ -81,13 +83,33 @@ function formatGeo(geo: string | null): string {
   if (!geo) return '—'
   return geo
 }
+
+const showDeleteConfirm = ref(false)
+const deleteTarget = ref<BrandWithAuthor | null>(null)
+
+function handleDeleteBrand(brand: BrandWithAuthor) {
+  deleteTarget.value = brand
+  showDeleteConfirm.value = true
+}
+
+async function confirmDeleteBrand() {
+  if (!deleteTarget.value) return
+  try {
+    await apiDelete(`/api/brands/${deleteTarget.value.id}`)
+    showDeleteConfirm.value = false
+    deleteTarget.value = null
+    loadBrands()
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Delete failed')
+  }
+}
 </script>
 
 <template>
   <div class="brands-view">
     <div class="brands-view__header">
       <h1 class="brands-view__title">Brands</h1>
-      <span class="brands-view__count">{{ total }} бренд{{ total === 1 ? '' : 'ів' }}</span>
+      <span class="brands-view__count">{{ total }} brand{{ total === 1 ? '' : 's' }}</span>
     </div>
 
     <div class="brands-view__tabs">
@@ -102,10 +124,10 @@ function formatGeo(geo: string | null): string {
       </button>
     </div>
 
-    <div v-if="loading" class="brands-view__loading">Завантаження...</div>
+    <div v-if="loading" class="brands-view__loading">Loading...</div>
 
     <div v-else-if="brands.length === 0" class="brands-view__empty">
-      Немає брендів{{ activeTab !== 'all' ? ' з цим статусом' : '' }}
+      No brands{{ activeTab !== 'all' ? ' with this status' : '' }} found.
     </div>
 
     <div v-else class="brands-view__table-wrap">
@@ -113,11 +135,11 @@ function formatGeo(geo: string | null): string {
         <thead>
           <tr>
             <th class="sortable-th" @click="toggleSort('internalName')">
-              Назва
+              Name
               <span v-if="sortField === 'internalName'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('status')">
-              Статус
+              Status
               <span v-if="sortField === 'status'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('geo')">
@@ -125,13 +147,14 @@ function formatGeo(geo: string | null): string {
               <span v-if="sortField === 'geo'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('launchDate')">
-              Дата запуску
+              Launch Date
               <span v-if="sortField === 'launchDate'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('updatedAt')">
-              Оновлено
+              Updated
               <span v-if="sortField === 'updatedAt'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -155,10 +178,30 @@ function formatGeo(geo: string | null): string {
             <td>{{ formatGeo(brand.geo) }}</td>
             <td>{{ formatDate(brand.launchDate) }}</td>
             <td>{{ formatDate(brand.updatedAt) }}</td>
+            <td class="brands-view__actions" @click.stop>
+              <button
+                v-if="brand.status === 'draft'"
+                class="brands-view__delete-btn"
+                title="Delete"
+                @click="handleDeleteBrand(brand)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <BaseModal v-if="showDeleteConfirm" title="Delete Brand" width="420px" @close="showDeleteConfirm = false">
+      <p class="brands-view__confirm-text">
+        Are you sure you want to delete <strong>"{{ deleteTarget?.internalName || 'this brand' }}"</strong>? This action cannot be undone.
+      </p>
+      <template #footer>
+        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
+        <BaseButton variant="danger" @click="confirmDeleteBrand">Delete</BaseButton>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -295,6 +338,34 @@ function formatGeo(geo: string | null): string {
 
   &__name-cell {
     font-weight: $font-weight-medium;
+  }
+
+  &__actions {
+    white-space: nowrap;
+  }
+
+  &__confirm-text {
+    font-size: $font-size-sm;
+    color: $color-text;
+    line-height: $line-height-normal;
+  }
+
+  &__delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-1;
+    border: none;
+    border-radius: $radius-sm;
+    background: none;
+    color: $color-text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: #b91c1c;
+      background-color: #fee2e2;
+    }
   }
 }
 

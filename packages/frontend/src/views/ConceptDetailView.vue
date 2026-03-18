@@ -58,7 +58,9 @@ async function saveChanges() {
     isEditing.value = false
     await fetchData()
   } catch (err) {
-    alert(`Save failed: ${err instanceof Error ? err.message : 'Unknown error'}\n\nPayload sent: ${JSON.stringify(payload)}`)
+    alert(
+      `Save failed: ${err instanceof Error ? err.message : 'Unknown error'}\n\nPayload sent: ${JSON.stringify(payload)}`
+    )
   }
 }
 
@@ -67,7 +69,8 @@ async function handleFileUpload(event: Event, entityType: string) {
   const file = input.files?.[0]
   if (!file || !concept.value) return
 
-  const ratioInput = entityType === 'concept_visual' ? visualAspectRatio.value : logoAspectRatio.value
+  const ratioInput =
+    entityType === 'concept_visual' ? visualAspectRatio.value : logoAspectRatio.value
   const parsedRatio = parseAspectRatio(ratioInput)
 
   uploadingType.value = entityType
@@ -147,7 +150,9 @@ async function handleFileUpload(event: Event, entityType: string) {
         </div>
         <p v-else class="concept-detail__mode-badge">
           <span v-if="concept.mode === 'light'" class="mode-badge mode-badge--light">☀️ Light</span>
-          <span v-else-if="concept.mode === 'dark'" class="mode-badge mode-badge--dark">🌙 Dark</span>
+          <span v-else-if="concept.mode === 'dark'" class="mode-badge mode-badge--dark"
+            >🌙 Dark</span
+          >
           <span v-else class="mode-badge mode-badge--none">Not specified</span>
         </p>
       </div>
@@ -218,7 +223,6 @@ async function handleFileUpload(event: Event, entityType: string) {
               </BaseButton>
             </template>
           </div>
-
         </div>
       </div>
 

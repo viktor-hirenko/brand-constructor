@@ -73,13 +73,26 @@ app.get('/types/:typeId/variants', async (c) => {
     return c.json({ success: false, error: 'Component type not found' }, 404);
   }
 
-  const variants = await c.env.DB.prepare(
-    `SELECT cv.*, u.name as author_name
+  let variantQuery: string;
+  let variantParams: (string | number)[];
+
+  if (status === 'all') {
+    variantQuery = `SELECT cv.*, u.name as author_name
+     FROM component_variants cv
+     LEFT JOIN users u ON cv.created_by = u.id
+     WHERE cv.component_type_id = ?
+     ORDER BY cv.variant_number ASC`;
+    variantParams = [typeId];
+  } else {
+    variantQuery = `SELECT cv.*, u.name as author_name
      FROM component_variants cv
      LEFT JOIN users u ON cv.created_by = u.id
      WHERE cv.component_type_id = ? AND cv.status = ?
-     ORDER BY cv.variant_number ASC`
-  ).bind(typeId, status).all();
+     ORDER BY cv.variant_number ASC`;
+    variantParams = [typeId, status];
+  }
+
+  const variants = await c.env.DB.prepare(variantQuery).bind(...variantParams).all();
 
   return c.json({ success: true, data: { type, variants: variants.results } });
 });

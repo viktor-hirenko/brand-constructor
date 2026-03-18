@@ -47,8 +47,13 @@ app.get('/external', async (c) => {
   const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100);
   const offset = (page - 1) * perPage;
 
-  let where = 'en.status = ?';
-  const params: (string | number)[] = [status];
+  let where = '1=1';
+  const params: (string | number)[] = [];
+
+  if (status && status !== 'all') {
+    where += ' AND en.status = ?';
+    params.push(status);
+  }
 
   if (conceptId) {
     where += ' AND en.concept_id = ?';
@@ -191,8 +196,13 @@ app.get('/internal', async (c) => {
   const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100);
   const offset = (page - 1) * perPage;
 
-  let where = 'n.status = ?';
-  const params: (string | number)[] = [status];
+  let where = '1=1';
+  const params: (string | number)[] = [];
+
+  if (status && status !== 'all') {
+    where += ' AND n.status = ?';
+    params.push(status);
+  }
 
   if (availableForBrand) {
     where += ' AND (n.used_in_brand_id IS NULL OR n.used_in_brand_id = ?)';

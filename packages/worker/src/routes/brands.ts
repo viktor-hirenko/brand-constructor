@@ -499,10 +499,19 @@ brands.patch('/:id/status', async (c) => {
 brands.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const user = c.get('user');
+  const isAdmin = user.role === 'admin' || user.role === 'head_dhc';
 
-  const existing = await c.env.DB.prepare(
-    'SELECT * FROM brands WHERE id = ? AND created_by = ?'
-  ).bind(id, user.id).first<BrandRow>();
+  let existing: BrandRow | null;
+
+  if (isAdmin) {
+    existing = await c.env.DB.prepare(
+      'SELECT * FROM brands WHERE id = ?'
+    ).bind(id).first<BrandRow>();
+  } else {
+    existing = await c.env.DB.prepare(
+      'SELECT * FROM brands WHERE id = ? AND created_by = ?'
+    ).bind(id, user.id).first<BrandRow>();
+  }
 
   if (!existing) {
     return c.json({ success: false, error: 'Brand not found' }, 404);
@@ -511,6 +520,19 @@ brands.delete('/:id', async (c) => {
   if (existing.status !== 'draft') {
     return c.json({ success: false, error: 'Only draft brands can be deleted' }, 400);
   }
+
+  await c.env.DB.prepare(
+    "UPDATE concepts SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+  ).bind(id).run();
+  await c.env.DB.prepare(
+    "UPDATE external_namings SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+  ).bind(id).run();
+  await c.env.DB.prepare(
+    "UPDATE internal_namings SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+  ).bind(id).run();
+  await c.env.DB.prepare(
+    "UPDATE component_variants SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+  ).bind(id).run();
 
   await c.env.DB.prepare('DELETE FROM brands WHERE id = ?').bind(id).run();
 

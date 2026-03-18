@@ -2,13 +2,26 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useConstructorStore } from '@/stores/constructor';
-import { usePrintBrand } from '@/composables/usePrintBrand';
+import { usePrintBrand, type PrintBrandData } from '@/composables/usePrintBrand';
 
 const router = useRouter();
 const store = useConstructorStore();
 const { printBrand } = usePrintBrand();
 
 const brandId = computed(() => store.brandId ?? '—');
+const brandDisplayName = computed(() => store.brandInternalName || 'New Brand');
+
+function handlePrintBrand() {
+  const data: PrintBrandData = {
+    brandName: brandDisplayName.value,
+    conceptName: null,
+    externalNamingNames: [],
+    internalNamingName: null,
+    prPackageName: null,
+    componentLabels: {},
+  };
+  printBrand(data);
+}
 const createdDate = computed(() => {
   return new Intl.DateTimeFormat('uk-UA', {
     day: 'numeric',
@@ -44,8 +57,8 @@ function handleGoHome() {
 
         <div class="bg-muted/50 rounded-xl p-6 mb-8 text-left space-y-3">
           <div class="flex justify-between items-center">
-            <span class="text-sm text-muted-foreground">ID брифу</span>
-            <span class="text-sm font-mono font-medium">{{ brandId }}</span>
+            <span class="text-sm text-muted-foreground">Назва брифу</span>
+            <span class="text-sm font-medium">{{ brandDisplayName }}</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-sm text-muted-foreground">Дата створення</span>
@@ -63,7 +76,7 @@ function handleGoHome() {
           </button>
           <button
             class="w-full h-[50px] border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium flex items-center justify-center gap-2"
-            @click="printBrand"
+            @click="handlePrintBrand"
           >
             <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" />
