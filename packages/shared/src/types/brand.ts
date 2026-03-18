@@ -27,6 +27,7 @@ export interface NewConceptBrief {
   domainZones: string[]
   domainBudget: number | null
   namingDeadline: string
+  additionalGeoInfo: string
 }
 
 export interface NewNamingBrief {

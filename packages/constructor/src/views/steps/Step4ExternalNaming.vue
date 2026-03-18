@@ -24,9 +24,13 @@ const showNewModal = ref(false);
 
 const selectedConceptId = computed(() => store.stepData.concept.selectedId);
 
-function toggleNaming(id: string) {
-  if (isCreatingNew.value) return;
-  store.toggleExternalNaming(id);
+function isSold(naming: ExternalNaming): boolean {
+  return naming.availability_status === 'sold';
+}
+
+function toggleNaming(naming: ExternalNaming) {
+  if (isCreatingNew.value || isSold(naming)) return;
+  store.toggleExternalNaming(naming.id);
 }
 
 function isSelected(id: string): boolean {
@@ -118,15 +122,17 @@ onMounted(loadNamings);
         <div
           v-for="naming in namings"
           :key="naming.id"
-          class="relative rounded-[14px] overflow-hidden border-2 transition-all cursor-pointer bg-white"
+          class="relative rounded-[14px] overflow-hidden border-2 transition-all bg-white"
           :class="[
-            isSelected(naming.id)
-              ? 'border-[#030213] shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]'
-              : isCreatingNew
-                ? 'border-black/10 opacity-40 cursor-not-allowed'
-                : 'border-black/10 hover:border-primary/50',
+            isSold(naming)
+              ? 'border-black/10 opacity-40 cursor-not-allowed'
+              : isSelected(naming.id)
+                ? 'border-[#030213] shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)] cursor-pointer'
+                : isCreatingNew
+                  ? 'border-black/10 opacity-40 cursor-not-allowed'
+                  : 'border-black/10 hover:border-primary/50 cursor-pointer',
           ]"
-          @click="toggleNaming(naming.id)"
+          @click="toggleNaming(naming)"
         >
           <div class="aspect-[2/1] relative flex flex-col items-center justify-center p-4">
             <h2 class="text-center text-3xl font-medium tracking-[0.37px] text-[#0a0a0a] mb-1">

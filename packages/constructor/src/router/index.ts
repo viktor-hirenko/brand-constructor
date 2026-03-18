@@ -58,6 +58,19 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor',
     component: () => import('@/views/ConstructorLayout.vue'),
     meta: { requiresAuth: true },
+    beforeEnter: (to) => {
+      const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/);
+      if (!stepMatch) return true;
+
+      const targetStep = parseInt(stepMatch[1]);
+      if (targetStep <= 1) return true;
+
+      const store = useConstructorStore();
+      if (targetStep > store.currentStep) {
+        return { path: `/constructor/step/${store.currentStep}` };
+      }
+      return true;
+    },
     children: [
       {
         path: '',

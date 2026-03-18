@@ -2,9 +2,11 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useConstructorStore } from '@/stores/constructor';
+import { usePrintBrand } from '@/composables/usePrintBrand';
 
 const router = useRouter();
 const store = useConstructorStore();
+const { printBrand } = usePrintBrand();
 
 const brandId = computed(() => store.brandId ?? '—');
 const createdDate = computed(() => {
@@ -53,7 +55,23 @@ function handleGoHome() {
 
         <div class="flex flex-col gap-3">
           <button
+            v-if="store.brandId"
             class="w-full h-[50px] bg-primary text-primary-foreground rounded-[10px] hover:opacity-90 transition-all text-base font-medium"
+            @click="router.push(`/constructor/brand/${store.brandId}`)"
+          >
+            Переглянути бриф
+          </button>
+          <button
+            class="w-full h-[50px] border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium flex items-center justify-center gap-2"
+            @click="printBrand"
+          >
+            <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" />
+            </svg>
+            Завантажити PDF
+          </button>
+          <button
+            class="w-full h-[50px] border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
             @click="handleNewBrief"
           >
             Створити новий бриф

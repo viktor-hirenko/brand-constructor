@@ -70,6 +70,7 @@ const conceptBriefItems = computed(() => {
     { label: 'Доменні зони', value: newConceptBrief.value.domainZones.length > 0 ? newConceptBrief.value.domainZones.join(', ') : '—' },
     { label: 'Бюджет домена', value: formatBudget(newConceptBrief.value.domainBudget) },
     { label: 'Дедлайн', value: formatDate(newConceptBrief.value.namingDeadline) },
+    { label: 'Додаткова інформація по ГЕО', value: fallbackValue(newConceptBrief.value.additionalGeoInfo) },
   ];
 });
 

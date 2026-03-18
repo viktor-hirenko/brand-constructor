@@ -210,10 +210,17 @@ brands.post('/', async (c) => {
   const id = generateId('brand');
   const now = new Date().toISOString();
 
+  let internalName = parsed.data.internalName || null;
+  if (!internalName) {
+    const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM brands').first<{ count: number }>();
+    const brandNumber = (countResult?.count ?? 0) + 1;
+    internalName = `New Brand #${brandNumber}`;
+  }
+
   await c.env.DB.prepare(`
     INSERT INTO brands (id, internal_name, status, created_by, current_step, created_at, updated_at)
     VALUES (?, ?, 'draft', ?, 1, ?, ?)
-  `).bind(id, parsed.data.internalName || null, user.id, now, now).run();
+  `).bind(id, internalName, user.id, now, now).run();
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>();
 
@@ -415,17 +422,49 @@ brands.patch('/:id/status', async (c) => {
   if (targetStatus === 'approved') {
     const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>();
 
-    if (brand?.concept_id) {
-      await c.env.DB.prepare(
-        "UPDATE concepts SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-      ).bind(id, brand.concept_id).run();
-    }
+    const ceoSel: Record<string, string> = (() => {
+      try { return JSON.parse(brand?.ceo_selections || '{}'); }
+      catch { return {}; }
+    })();
 
-    const extIds: string[] = (() => {
+    const finalConceptId = ceoSel.concept || brand?.concept_id || null;
+    const finalExtIds: string[] = (() => {
+      if (ceoSel.externalNaming) return [ceoSel.externalNaming];
       try { return JSON.parse(brand?.external_naming_ids || '[]'); }
       catch { return []; }
     })();
-    for (const extId of extIds) {
+    const finalIntId = ceoSel.internalNaming || brand?.internal_naming_id || null;
+
+    if (finalConceptId !== brand?.concept_id || ceoSel.externalNaming || ceoSel.internalNaming) {
+      const brandUpdates: string[] = ['updated_at = datetime(\'now\')'];
+      const brandValues: (string | null)[] = [];
+      if (ceoSel.concept) {
+        brandUpdates.push('concept_id = ?');
+        brandValues.push(finalConceptId);
+      }
+      if (ceoSel.externalNaming) {
+        brandUpdates.push('external_naming_ids = ?');
+        brandValues.push(JSON.stringify(finalExtIds));
+      }
+      if (ceoSel.internalNaming) {
+        brandUpdates.push('internal_naming_id = ?');
+        brandValues.push(finalIntId);
+      }
+      if (brandValues.length > 0) {
+        brandValues.push(id);
+        await c.env.DB.prepare(
+          `UPDATE brands SET ${brandUpdates.join(', ')} WHERE id = ?`
+        ).bind(...brandValues).run();
+      }
+    }
+
+    if (finalConceptId) {
+      await c.env.DB.prepare(
+        "UPDATE concepts SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+      ).bind(id, finalConceptId).run();
+    }
+
+    for (const extId of finalExtIds) {
       if (extId) {
         await c.env.DB.prepare(
           "UPDATE external_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
@@ -433,10 +472,10 @@ brands.patch('/:id/status', async (c) => {
       }
     }
 
-    if (brand?.internal_naming_id) {
+    if (finalIntId) {
       await c.env.DB.prepare(
         "UPDATE internal_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-      ).bind(id, brand.internal_naming_id).run();
+      ).bind(id, finalIntId).run();
     }
 
     const componentSelections: Record<string, string> = (() => {

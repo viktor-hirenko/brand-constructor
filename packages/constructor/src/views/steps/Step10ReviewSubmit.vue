@@ -5,8 +5,10 @@ import { useConstructorStore } from '@/stores/constructor';
 import { useAuthStore } from '@/stores/auth';
 import { useApiList, apiPatch } from '@/composables/useApi';
 import type { Concept, ExternalNaming, InternalNaming, PrPackage, Brand } from '@brand-constructor/shared/types';
+import { usePrintBrand } from '@/composables/usePrintBrand';
 
 const router = useRouter();
+const { printBrand } = usePrintBrand();
 const store = useConstructorStore();
 const authStore = useAuthStore();
 
@@ -544,6 +546,16 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
           {{ isSaving ? 'Зберігаємо...' : draftSaved ? 'Збережено!' : 'Зберегти як чернетку' }}
         </button>
       </div>
+
+      <button
+        class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-black/10 text-foreground rounded-xl hover:bg-black/[0.02] transition-colors text-sm font-medium"
+        @click="printBrand"
+      >
+        <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" />
+        </svg>
+        Завантажити PDF
+      </button>
     </div>
   </div>
 </template>
