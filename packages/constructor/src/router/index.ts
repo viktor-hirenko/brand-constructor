@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useConstructorStore } from '@/stores/constructor'
+import { apiGet } from '@/composables/useApi'
+import type { Brand } from '@brand-constructor/shared/types'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -11,6 +14,45 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
+  },
+  {
+    path: '/constructor/brand/:id',
+    name: 'brand-view',
+    component: () => import('@/views/ConstructorLayout.vue'),
+    meta: { requiresAuth: true, step: 10, title: 'Save', subtitle: 'Фінальний огляд' },
+    children: [
+      {
+        path: '',
+        name: 'brand-view-review',
+        component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
+        meta: { step: 10, title: 'Save', subtitle: 'Фінальний огляд' },
+      },
+    ],
+    beforeEnter: async (to) => {
+      const brandId = to.params.id as string
+      const store = useConstructorStore()
+
+      if (store.brandId === brandId) return true
+
+      try {
+        const brand = await apiGet<Brand>(`/api/brands/${brandId}`)
+        const stepData = brand.stepData ?? {
+          brandBasics: { geo: brand.geo ? brand.geo.split(',') : [], launchDate: brand.launchDate ?? '', linkedProduct: '', comment: '' },
+          mode: brand.mode ?? null,
+          concept: { selectedId: brand.conceptId ?? null, comment: brand.conceptComment ?? '', newConceptBrief: null },
+          externalNaming: { selectedIds: brand.externalNamingIds ?? [], comment: brand.externalNamingComment ?? '', newNamingBrief: null },
+          internalNaming: { selectedId: brand.internalNamingId ?? null, comment: '', newNamingFeedback: null },
+          previewComment: '',
+          marketingPackage: { selectedId: brand.prPackageId ?? null, comment: '' },
+          deliverables: { legalLanding: false, partnerLanding: false, developmentDeadline: '', comment: '' },
+          visualComponents: { selections: {}, delegateToDesigners: false, comment: '' },
+        }
+        store.loadBrand(brandId, stepData, brand.currentStep ?? 10, brand.status)
+        return true
+      } catch {
+        return { path: '/constructor/step/1' }
+      }
+    },
   },
   {
     path: '/constructor',

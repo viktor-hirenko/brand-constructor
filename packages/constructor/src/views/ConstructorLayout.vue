@@ -24,6 +24,7 @@ const progressPercent = computed(() => Math.round((currentStep.value / totalStep
 const isFirstStep = computed(() => currentStep.value === 1);
 const isLastStep = computed(() => currentStep.value === totalSteps);
 const isFullWidth = computed(() => [3, 4, 5, 7, 8].includes(currentStep.value));
+const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'));
 
 interface ExternalNamingPreview extends ExternalNaming {
   price_usd?: number | null;
@@ -81,6 +82,7 @@ function goBack() {
 }
 
 async function goNext() {
+  if (isViewMode.value) return;
   if (!store.isCurrentStepValid) return;
 
   if (isLastStep.value) {
@@ -120,9 +122,13 @@ function loadPreviewData() {
   conceptsPerPage.value = 100;
   externalPerPage.value = 100;
   internalPerPage.value = 100;
-  fetchConcepts({ status: 'active' });
-  fetchExternalNamings({ status: 'active' });
-  fetchInternalNamings({ status: 'active' });
+  const params: Record<string, string> = { status: 'active' };
+  if (store.brandId) {
+    params.available_for_brand = store.brandId;
+  }
+  fetchConcepts(params);
+  fetchExternalNamings(params);
+  fetchInternalNamings(params);
 }
 
 onMounted(loadPreviewData);
@@ -279,7 +285,7 @@ watch(currentStep, (step) => {
           <RouterView />
         </div>
 
-        <div class="shrink-0 px-12 py-6 border-t border-border">
+        <div v-if="!isViewMode" class="shrink-0 px-12 py-6 border-t border-border">
           <div class="flex items-start gap-3">
             <button
               v-if="!isFirstStep"
@@ -289,11 +295,12 @@ watch(currentStep, (step) => {
               Назад
             </button>
             <button
+              v-if="!isLastStep"
               :disabled="!store.isCurrentStepValid"
               class="h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
               @click="goNext"
             >
-              {{ isLastStep ? 'Завершено' : 'Далі' }}
+              Далі
             </button>
           </div>
         </div>

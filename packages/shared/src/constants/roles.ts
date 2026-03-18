@@ -30,3 +30,9 @@ export const LIBRARY_WRITE_PERMISSIONS: Record<string, string[]> = {
 };
 
 export const ADMIN_ROLES = [USER_ROLES.ADMIN, USER_ROLES.HEAD_DHC] as const;
+
+export const BRAND_APPROVAL_ROLES = [
+  USER_ROLES.ADMIN,
+  USER_ROLES.HEAD_DHC,
+  USER_ROLES.CPO_CEO,
+] as const;

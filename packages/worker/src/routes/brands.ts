@@ -1,13 +1,55 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import type { Env, Variables } from '../types';
 import { generateId } from '../utils/id';
-import type {
-  Brand,
-  BrandStatus,
-  CreateBrandPayload,
-  UpdateBrandPayload,
-  UpdateBrandStatusPayload,
-} from '@brand-constructor/shared/types';
+import { BRAND_APPROVAL_ROLES } from '@brand-constructor/shared';
+import type { Brand, BrandStatus } from '@brand-constructor/shared/types';
+
+const VALID_STATUSES: BrandStatus[] = ['draft', 'submitted', 'needs_revision', 'approved', 'rejected'];
+
+const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
+  draft: ['submitted'],
+  submitted: ['approved', 'needs_revision', 'rejected'],
+  needs_revision: ['submitted'],
+  approved: [],
+  rejected: [],
+};
+
+const createBrandSchema = z.object({
+  internalName: z.string().max(300).nullish(),
+});
+
+const updateBrandSchema = z.object({
+  internalName: z.string().max(300).nullish(),
+  geo: z.string().max(500).optional(),
+  launchDate: z.string().max(30).optional(),
+  mode: z.enum(['light', 'dark']).nullish(),
+  conceptId: z.string().max(100).nullish(),
+  conceptComment: z.string().max(5000).optional(),
+  externalNamingIds: z.array(z.string().max(100)).max(3).optional(),
+  externalNamingComment: z.string().max(5000).optional(),
+  internalNamingId: z.string().max(100).nullish(),
+  internalNamingComment: z.string().max(5000).optional(),
+  prPackageId: z.string().max(100).nullish(),
+  prPackageComment: z.string().max(5000).optional(),
+  legalLanding: z.boolean().optional(),
+  partnerLanding: z.boolean().optional(),
+  deliverablesComment: z.string().max(5000).optional(),
+  componentSelections: z.record(z.string()).optional(),
+  componentsComment: z.string().max(5000).optional(),
+  delegateToDesigners: z.boolean().optional(),
+  newConceptBrief: z.any().nullish(),
+  developmentDeadline: z.string().max(30).optional(),
+  newNamingBrief: z.any().nullish(),
+  stepData: z.any().optional(),
+  currentStep: z.number().int().min(1).max(10).optional(),
+});
+
+const updateStatusSchema = z.object({
+  status: z.enum(['draft', 'submitted', 'needs_revision', 'approved', 'rejected']),
+  ceoComments: z.record(z.string()).optional(),
+  ceoSelections: z.record(z.string()).optional(),
+});
 
 interface BrandRow {
   id: string;
@@ -34,6 +76,8 @@ interface BrandRow {
   new_concept_brief: string | null;
   ceo_comments: string | null;
   ceo_selections: string | null;
+  development_deadline: string | null;
+  new_naming_brief: string | null;
   step_data: string | null;
   current_step: number;
   created_at: string;
@@ -66,6 +110,8 @@ function rowToBrand(row: BrandRow): Brand {
     newConceptBrief: row.new_concept_brief ? JSON.parse(row.new_concept_brief) : null,
     ceoComments: row.ceo_comments ? JSON.parse(row.ceo_comments) : null,
     ceoSelections: row.ceo_selections ? JSON.parse(row.ceo_selections) : null,
+    developmentDeadline: row.development_deadline,
+    newNamingBrief: row.new_naming_brief ? JSON.parse(row.new_naming_brief) : null,
     stepData: row.step_data ? JSON.parse(row.step_data) : null,
     currentStep: row.current_step,
     createdAt: row.created_at,
@@ -82,8 +128,17 @@ brands.get('/', async (c) => {
   const status = c.req.query('status');
   const offset = (page - 1) * perPage;
 
-  let query = 'SELECT * FROM brands WHERE created_by = ?';
-  const params: (string | number)[] = [user.id];
+  const canSeeAll = (BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role);
+
+  let query: string;
+  const params: (string | number)[] = [];
+
+  if (canSeeAll) {
+    query = 'SELECT * FROM brands WHERE 1=1';
+  } else {
+    query = 'SELECT * FROM brands WHERE created_by = ?';
+    params.push(user.id);
+  }
 
   if (status) {
     query += ' AND status = ?';
@@ -95,12 +150,21 @@ brands.get('/', async (c) => {
 
   const result = await c.env.DB.prepare(query).bind(...params).all<BrandRow>();
 
-  let countQuery = 'SELECT COUNT(*) as count FROM brands WHERE created_by = ?';
-  const countParams: string[] = [user.id];
+  let countQuery: string;
+  const countParams: (string | number)[] = [];
+
+  if (canSeeAll) {
+    countQuery = 'SELECT COUNT(*) as count FROM brands WHERE 1=1';
+  } else {
+    countQuery = 'SELECT COUNT(*) as count FROM brands WHERE created_by = ?';
+    countParams.push(user.id);
+  }
+
   if (status) {
     countQuery += ' AND status = ?';
     countParams.push(status);
   }
+
   const countResult = await c.env.DB.prepare(countQuery).bind(...countParams).first<{ count: number }>();
 
   return c.json({
@@ -115,10 +179,17 @@ brands.get('/', async (c) => {
 brands.get('/:id', async (c) => {
   const id = c.req.param('id');
   const user = c.get('user');
+  const canSeeAll = (BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role);
 
-  const row = await c.env.DB.prepare(
-    'SELECT * FROM brands WHERE id = ? AND created_by = ?'
-  ).bind(id, user.id).first<BrandRow>();
+  let row: BrandRow | null;
+
+  if (canSeeAll) {
+    row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>();
+  } else {
+    row = await c.env.DB.prepare(
+      'SELECT * FROM brands WHERE id = ? AND created_by = ?'
+    ).bind(id, user.id).first<BrandRow>();
+  }
 
   if (!row) {
     return c.json({ success: false, error: 'Brand not found' }, 404);
@@ -129,14 +200,20 @@ brands.get('/:id', async (c) => {
 
 brands.post('/', async (c) => {
   const user = c.get('user');
-  const body = await c.req.json<CreateBrandPayload>();
+  const body = await c.req.json();
+  const parsed = createBrandSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors }, 400);
+  }
+
   const id = generateId('brand');
   const now = new Date().toISOString();
 
   await c.env.DB.prepare(`
     INSERT INTO brands (id, internal_name, status, created_by, current_step, created_at, updated_at)
     VALUES (?, ?, 'draft', ?, 1, ?, ?)
-  `).bind(id, body.internalName || null, user.id, now, now).run();
+  `).bind(id, parsed.data.internalName || null, user.id, now, now).run();
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>();
 
@@ -146,7 +223,14 @@ brands.post('/', async (c) => {
 brands.put('/:id', async (c) => {
   const id = c.req.param('id');
   const user = c.get('user');
-  const body = await c.req.json<UpdateBrandPayload>();
+  const rawBody = await c.req.json();
+  const parsed = updateBrandSchema.safeParse(rawBody);
+
+  if (!parsed.success) {
+    return c.json({ success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors }, 400);
+  }
+
+  const body = parsed.data;
 
   const existing = await c.env.DB.prepare(
     'SELECT * FROM brands WHERE id = ? AND created_by = ?'
@@ -161,7 +245,7 @@ brands.put('/:id', async (c) => {
 
   if (body.internalName !== undefined) {
     updates.push('internal_name = ?');
-    values.push(body.internalName);
+    values.push(body.internalName ?? null);
   }
   if (body.geo !== undefined) {
     updates.push('geo = ?');
@@ -173,11 +257,11 @@ brands.put('/:id', async (c) => {
   }
   if (body.mode !== undefined) {
     updates.push('mode = ?');
-    values.push(body.mode);
+    values.push(body.mode ?? null);
   }
   if (body.conceptId !== undefined) {
     updates.push('concept_id = ?');
-    values.push(body.conceptId);
+    values.push(body.conceptId ?? null);
   }
   if (body.conceptComment !== undefined) {
     updates.push('concept_comment = ?');
@@ -193,7 +277,7 @@ brands.put('/:id', async (c) => {
   }
   if (body.internalNamingId !== undefined) {
     updates.push('internal_naming_id = ?');
-    values.push(body.internalNamingId);
+    values.push(body.internalNamingId ?? null);
   }
   if (body.internalNamingComment !== undefined) {
     updates.push('internal_naming_comment = ?');
@@ -201,7 +285,7 @@ brands.put('/:id', async (c) => {
   }
   if (body.prPackageId !== undefined) {
     updates.push('pr_package_id = ?');
-    values.push(body.prPackageId);
+    values.push(body.prPackageId ?? null);
   }
   if (body.prPackageComment !== undefined) {
     updates.push('pr_package_comment = ?');
@@ -233,7 +317,15 @@ brands.put('/:id', async (c) => {
   }
   if (body.newConceptBrief !== undefined) {
     updates.push('new_concept_brief = ?');
-    values.push(JSON.stringify(body.newConceptBrief));
+    values.push(body.newConceptBrief != null ? JSON.stringify(body.newConceptBrief) : null);
+  }
+  if (body.developmentDeadline !== undefined) {
+    updates.push('development_deadline = ?');
+    values.push(body.developmentDeadline);
+  }
+  if (body.newNamingBrief !== undefined) {
+    updates.push('new_naming_brief = ?');
+    values.push(body.newNamingBrief != null ? JSON.stringify(body.newNamingBrief) : null);
   }
   if (body.stepData !== undefined) {
     updates.push('step_data = ?');
@@ -263,7 +355,16 @@ brands.put('/:id', async (c) => {
 
 brands.patch('/:id/status', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json<UpdateBrandStatusPayload>();
+  const user = c.get('user');
+  const rawBody = await c.req.json();
+  const parsed = updateStatusSchema.safeParse(rawBody);
+
+  if (!parsed.success) {
+    return c.json({ success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors }, 400);
+  }
+
+  const body = parsed.data;
+  const targetStatus = body.status as BrandStatus;
 
   const existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>();
 
@@ -271,8 +372,30 @@ brands.patch('/:id/status', async (c) => {
     return c.json({ success: false, error: 'Brand not found' }, 404);
   }
 
+  const currentStatus = existing.status as BrandStatus;
+  const allowedTransitions = STATUS_TRANSITIONS[currentStatus] ?? [];
+
+  if (!allowedTransitions.includes(targetStatus)) {
+    return c.json({
+      success: false,
+      error: `Invalid status transition: ${currentStatus} → ${targetStatus}`,
+    }, 400);
+  }
+
+  if (targetStatus === 'submitted') {
+    if (existing.created_by !== user.id) {
+      return c.json({ success: false, error: 'Only the brand owner can submit for review' }, 403);
+    }
+  }
+
+  if (['approved', 'needs_revision', 'rejected'].includes(targetStatus)) {
+    if (!(BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)) {
+      return c.json({ success: false, error: 'Forbidden: only CPO/CEO, Admin, or Head DHC can approve/reject brands' }, 403);
+    }
+  }
+
   const updates: string[] = ['status = ?', 'updated_at = ?'];
-  const values: (string | number | null)[] = [body.status, new Date().toISOString()];
+  const values: (string | number | null)[] = [targetStatus, new Date().toISOString()];
 
   if (body.ceoComments !== undefined) {
     updates.push('ceo_comments = ?');
@@ -288,6 +411,46 @@ brands.patch('/:id/status', async (c) => {
   await c.env.DB.prepare(
     `UPDATE brands SET ${updates.join(', ')} WHERE id = ?`
   ).bind(...values).run();
+
+  if (targetStatus === 'approved') {
+    const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>();
+
+    if (brand?.concept_id) {
+      await c.env.DB.prepare(
+        "UPDATE concepts SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+      ).bind(id, brand.concept_id).run();
+    }
+
+    const extIds: string[] = (() => {
+      try { return JSON.parse(brand?.external_naming_ids || '[]'); }
+      catch { return []; }
+    })();
+    for (const extId of extIds) {
+      if (extId) {
+        await c.env.DB.prepare(
+          "UPDATE external_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+        ).bind(id, extId).run();
+      }
+    }
+
+    if (brand?.internal_naming_id) {
+      await c.env.DB.prepare(
+        "UPDATE internal_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+      ).bind(id, brand.internal_naming_id).run();
+    }
+
+    const componentSelections: Record<string, string> = (() => {
+      try { return JSON.parse(brand?.component_selections || '{}'); }
+      catch { return {}; }
+    })();
+    for (const variantId of Object.values(componentSelections)) {
+      if (variantId) {
+        await c.env.DB.prepare(
+          "UPDATE component_variants SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+        ).bind(id, variantId).run();
+      }
+    }
+  }
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>();
 

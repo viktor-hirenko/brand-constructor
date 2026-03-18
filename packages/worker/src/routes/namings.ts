@@ -42,6 +42,7 @@ app.get('/external', async (c) => {
   const status = c.req.query('status') || 'active';
   const conceptId = c.req.query('concept_id');
   const filter = c.req.query('filter'); // 'all' | 'linked' | 'standalone'
+  const availableForBrand = c.req.query('available_for_brand');
   const page = parseInt(c.req.query('page') || '1');
   const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100);
   const offset = (page - 1) * perPage;
@@ -56,6 +57,11 @@ app.get('/external', async (c) => {
     where += ' AND en.concept_id IS NOT NULL';
   } else if (filter === 'standalone') {
     where += ' AND en.concept_id IS NULL';
+  }
+
+  if (availableForBrand) {
+    where += ' AND (en.used_in_brand_id IS NULL OR en.used_in_brand_id = ?)';
+    params.push(availableForBrand);
   }
 
   const countResult = await c.env.DB.prepare(
@@ -180,22 +186,31 @@ app.delete('/external/:id', requireLibraryAccess('external_namings'), async (c) 
 
 app.get('/internal', async (c) => {
   const status = c.req.query('status') || 'active';
+  const availableForBrand = c.req.query('available_for_brand');
   const page = parseInt(c.req.query('page') || '1');
   const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100);
   const offset = (page - 1) * perPage;
 
+  let where = 'n.status = ?';
+  const params: (string | number)[] = [status];
+
+  if (availableForBrand) {
+    where += ' AND (n.used_in_brand_id IS NULL OR n.used_in_brand_id = ?)';
+    params.push(availableForBrand);
+  }
+
   const countResult = await c.env.DB.prepare(
-    'SELECT COUNT(*) as total FROM internal_namings WHERE status = ?'
-  ).bind(status).first<{ total: number }>();
+    `SELECT COUNT(*) as total FROM internal_namings n WHERE ${where}`
+  ).bind(...params).first<{ total: number }>();
 
   const namings = await c.env.DB.prepare(
     `SELECT n.*, u.name as author_name
      FROM internal_namings n
      LEFT JOIN users u ON n.created_by = u.id
-     WHERE n.status = ?
+     WHERE ${where}
      ORDER BY n.created_at DESC
      LIMIT ? OFFSET ?`
-  ).bind(status, perPage, offset).all();
+  ).bind(...params, perPage, offset).all();
 
   return c.json({
     success: true,

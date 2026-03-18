@@ -28,6 +28,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { label: 'Brands', path: '/brands', icon: '&#9830;' },
   { label: 'Concepts', path: '/concepts', icon: '&#9672;' },
   { label: 'Namings', path: '/namings', icon: '&#9998;' },
   { label: 'PR Packages', path: '/pr-packages', icon: '&#9733;' },

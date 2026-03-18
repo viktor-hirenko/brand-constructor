@@ -110,6 +110,8 @@ export interface Brand {
   newConceptBrief: NewConceptBrief | null
   ceoComments: Record<string, string> | null
   ceoSelections: Record<string, string> | null
+  developmentDeadline: string | null
+  newNamingBrief: NewNamingBrief | null
   stepData: BrandStepData | null
   currentStep: number
   createdAt: string
@@ -140,6 +142,8 @@ export interface UpdateBrandPayload {
   componentsComment?: string
   delegateToDesigners?: boolean
   newConceptBrief?: NewConceptBrief
+  developmentDeadline?: string
+  newNamingBrief?: NewNamingBrief
   stepData?: BrandStepData
   currentStep?: number
 }

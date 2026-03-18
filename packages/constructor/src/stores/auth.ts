@@ -42,6 +42,20 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => user.value !== null);
 
+  const userRole = computed(() => user.value?.role ?? null);
+
+  const isCeoOrAdmin = computed(() => {
+    const role = userRole.value;
+    return role === 'cpo_ceo' || role === 'admin' || role === 'head_dhc';
+  });
+
+  const isAdmin = computed(() => {
+    const role = userRole.value;
+    return role === 'admin' || role === 'head_dhc';
+  });
+
+  const isProductOwner = computed(() => userRole.value === 'product_owner');
+
   async function loginWithGoogle(credential: string): Promise<void> {
     loading.value = true;
     try {
@@ -90,6 +104,10 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     loading,
     isAuthenticated,
+    userRole,
+    isCeoOrAdmin,
+    isAdmin,
+    isProductOwner,
     loginWithGoogle,
     logout,
     fetchCurrentUser,

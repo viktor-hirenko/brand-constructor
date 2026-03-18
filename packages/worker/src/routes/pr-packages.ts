@@ -145,6 +145,14 @@ app.delete('/:id', requireLibraryAccess('pr_packages'), async (c) => {
     return c.json({ success: false, error: 'PR package not found' }, 404);
   }
 
+  const usedInBrand = await c.env.DB.prepare(
+    'SELECT id FROM brands WHERE pr_package_id = ? LIMIT 1'
+  ).bind(id).first();
+
+  if (usedInBrand) {
+    return c.json({ success: false, error: 'Cannot delete: PR package is used in a brand' }, 409);
+  }
+
   await c.env.DB.prepare('DELETE FROM pr_packages WHERE id = ?').bind(id).run();
   return c.json({ success: true, data: { deleted: true } });
 });

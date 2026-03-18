@@ -1,13 +1,48 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useConstructorStore } from '@/stores/constructor';
-import type { NewConceptBrief, NewNamingBrief } from '@brand-constructor/shared/types';
+import { useApiList } from '@/composables/useApi';
+import type { NewConceptBrief, NewNamingBrief, Concept, ExternalNaming, InternalNaming } from '@brand-constructor/shared/types';
 
 type BriefKind = 'concept' | 'external' | 'internal' | null;
 
 const router = useRouter();
 const store = useConstructorStore();
+
+const { data: concepts, fetchData: fetchConcepts, perPage: cPerPage } = useApiList<Concept>('/api/concepts');
+const { data: externalNamings, fetchData: fetchExternalNamings, perPage: ePerPage } = useApiList<ExternalNaming>('/api/namings/external');
+const { data: internalNamings, fetchData: fetchInternalNamings, perPage: iPerPage } = useApiList<InternalNaming>('/api/namings/internal');
+
+onMounted(() => {
+  cPerPage.value = 100;
+  ePerPage.value = 100;
+  iPerPage.value = 100;
+  fetchConcepts({ status: 'active' });
+  fetchExternalNamings({ status: 'active' });
+  fetchInternalNamings({ status: 'active' });
+});
+
+const selectedConcept = computed(() => {
+  const id = store.stepData.concept.selectedId;
+  return id ? concepts.value.find(c => c.id === id) ?? null : null;
+});
+
+const selectedExternalNamingsList = computed(() => {
+  const ids = store.stepData.externalNaming.selectedIds;
+  return ids
+    .map(id => externalNamings.value.find(n => n.id === id))
+    .filter((n): n is ExternalNaming => n != null);
+});
+
+const selectedInternalNaming = computed(() => {
+  const id = store.stepData.internalNaming.selectedId;
+  return id ? internalNamings.value.find(n => n.id === id) ?? null : null;
+});
+
+const hasLibrarySelections = computed(() =>
+  selectedConcept.value != null || selectedExternalNamingsList.value.length > 0 || selectedInternalNaming.value != null
+);
 
 const previewComment = computed({
   get: () => store.stepData.previewComment,
@@ -113,6 +148,77 @@ function formatDate(value: string): string {
       </p>
     </div>
 
+    <!-- Library selections -->
+    <template v-if="hasLibrarySelections">
+      <div
+        v-if="selectedConcept"
+        class="rounded-[14px] border border-black/10 bg-white p-4 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]"
+      >
+        <div class="flex items-start gap-3">
+          <img
+            v-if="selectedConcept.preview_url"
+            :src="selectedConcept.preview_url"
+            class="size-12 rounded-lg object-cover flex-shrink-0"
+            alt=""
+          />
+          <div class="flex-1 min-w-0">
+            <p class="text-xs text-muted-foreground mb-0.5">Концепт з бібліотеки</p>
+            <p class="text-base font-medium text-foreground truncate">{{ selectedConcept.name }}</p>
+            <p v-if="selectedConcept.description" class="text-sm text-muted-foreground line-clamp-2 mt-1">{{ selectedConcept.description }}</p>
+          </div>
+        </div>
+        <div class="mt-3">
+          <button
+            type="button"
+            class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
+            @click="goToStep(3)"
+          >
+            Редагувати
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="selectedExternalNamingsList.length > 0"
+        class="rounded-[14px] border border-black/10 bg-white p-4 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]"
+      >
+        <p class="text-xs text-muted-foreground mb-1">Зовнішні назви з бібліотеки</p>
+        <div class="space-y-2">
+          <div v-for="naming in selectedExternalNamingsList" :key="naming.id" class="flex items-center gap-2">
+            <span class="text-base font-medium text-foreground">{{ naming.name }}</span>
+            <span v-if="naming.domain" class="text-xs text-muted-foreground">({{ naming.domain }})</span>
+          </div>
+        </div>
+        <div class="mt-3">
+          <button
+            type="button"
+            class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
+            @click="goToStep(4)"
+          >
+            Редагувати
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="selectedInternalNaming"
+        class="rounded-[14px] border border-black/10 bg-white p-4 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]"
+      >
+        <p class="text-xs text-muted-foreground mb-0.5">Внутрішня назва з бібліотеки</p>
+        <p class="text-base font-medium text-foreground">{{ selectedInternalNaming.name }}</p>
+        <div class="mt-3">
+          <button
+            type="button"
+            class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
+            @click="goToStep(5)"
+          >
+            Редагувати
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Briefs for new items -->
     <div
       v-if="newConceptBrief"
       class="rounded-[14px] border border-black/10 bg-white p-4 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]"

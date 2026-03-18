@@ -59,6 +59,7 @@ function getInitialStepData(): BrandStepData {
 
 export const useConstructorStore = defineStore('brand-constructor', () => {
   const brandId = ref<string | null>(null);
+  const brandStatus = ref<string>('draft');
   const currentStep = ref(1);
   const stepData = ref<BrandStepData>(getInitialStepData());
   const isDraft = ref(true);
@@ -258,15 +259,21 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     }
   }
 
+  function setBrandStatus(status: string) {
+    brandStatus.value = status;
+  }
+
   function reset() {
     brandId.value = null;
+    brandStatus.value = 'draft';
     currentStep.value = 1;
     stepData.value = getInitialStepData();
     isDraft.value = true;
   }
 
-  function loadBrand(id: string, data: BrandStepData, step: number) {
+  function loadBrand(id: string, data: BrandStepData, step: number, status?: string) {
     brandId.value = id;
+    brandStatus.value = status ?? 'draft';
     stepData.value = data;
     currentStep.value = step;
     isDraft.value = false;
@@ -301,6 +308,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
         componentsComment: sd.visualComponents.comment,
         delegateToDesigners: sd.visualComponents.delegateToDesigners,
         newConceptBrief: sd.concept.newConceptBrief,
+        developmentDeadline: sd.deliverables.developmentDeadline || undefined,
+        newNamingBrief: sd.externalNaming.newNamingBrief,
         stepData: sd,
         currentStep: currentStep.value,
       };
@@ -349,6 +358,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
 
   return {
     brandId,
+    brandStatus,
     currentStep,
     stepData,
     isDraft,
@@ -387,6 +397,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     prevStep,
     saveBrand,
     saveError,
+    setBrandStatus,
     reset,
     loadBrand,
   };

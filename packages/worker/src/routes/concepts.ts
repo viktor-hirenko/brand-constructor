@@ -26,6 +26,7 @@ const updateSchema = z.object({
 app.get('/', async (c) => {
   const status = c.req.query('status') || 'active';
   const mode = c.req.query('mode');
+  const availableForBrand = c.req.query('available_for_brand');
   const page = parseInt(c.req.query('page') || '1');
   const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100);
   const offset = (page - 1) * perPage;
@@ -36,6 +37,11 @@ app.get('/', async (c) => {
   if (mode && (mode === 'light' || mode === 'dark')) {
     whereClause += ' AND c.mode = ?';
     params.push(mode);
+  }
+
+  if (availableForBrand) {
+    whereClause += ' AND (c.used_in_brand_id IS NULL OR c.used_in_brand_id = ?)';
+    params.push(availableForBrand);
   }
 
   const countResult = await c.env.DB.prepare(
