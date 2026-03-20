@@ -14,6 +14,7 @@ const isCreatingNew = ref(false)
 const detailConcept = ref<Concept | null>(null)
 const showNewModal = ref(false)
 const showBriefActions = ref(false)
+const showBriefPreview = ref(false)
 
 const selectedId = computed(() => store.stepData.concept.selectedId)
 const hasBrief = computed(() => store.stepData.concept.newConceptBrief !== null)
@@ -90,10 +91,36 @@ function handleCreateNew() {
   }
 }
 
+function handleViewBrief() {
+  showBriefActions.value = false
+  showBriefPreview.value = true
+}
+
 function handleEditBrief() {
   showBriefActions.value = false
   showNewModal.value = true
 }
+
+const briefPreviewItems = computed(() => {
+  const b = store.stepData.concept.newConceptBrief
+  if (!b) return []
+  return [
+    { label: 'Чи це концепт для нового ГЕО?', value: b.isNewGeo === null ? '—' : b.isNewGeo ? 'Так' : 'Ні' },
+    { label: 'Інформація по ГЕО', value: b.geoInfo.trim() || '—' },
+    { label: 'Потрібен Research GEO?', value: b.needsGeoResearch === null ? '—' : b.needsGeoResearch ? 'Так' : 'Ні' },
+    { label: 'Опис, що не підійшло', value: b.conceptFeedback.trim() || '—' },
+    { label: 'Інформація по гравцям від команди Трафіку', value: b.trafficTeamInfo.trim() || '—' },
+    { label: 'Ключові конкуренти', value: b.competitors.trim() || '—' },
+    { label: 'Чи важливо зберегти звʼязок з іншими продуктами?', value: b.keepProductConnection === null ? '—' : b.keepProductConnection ? 'Так' : 'Ні' },
+    { label: 'З якими продуктами', value: b.connectedProducts.trim() || '—' },
+    { label: 'Мова створення назви', value: b.namingLanguage || '—' },
+    { label: 'Бажані слова / приставки', value: b.desiredWordsInName.trim() || '—' },
+    { label: 'Доменні зони', value: b.domainZones.length > 0 ? b.domainZones.join(', ') : '—' },
+    { label: 'Бюджет домена', value: b.domainBudget != null ? `$${b.domainBudget}` : '—' },
+    { label: 'Дедлайн', value: b.namingDeadline || '—' },
+    { label: 'Додаткова інформація по ГЕО', value: b.additionalGeoInfo.trim() || '—' },
+  ]
+})
 
 function handleDeleteBrief() {
   showBriefActions.value = false
@@ -287,6 +314,13 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
           <button
             type="button"
             class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
+            @click="handleViewBrief"
+          >
+            Переглянути бриф
+          </button>
+          <button
+            type="button"
+            class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
             @click="handleEditBrief"
           >
             Редагувати бриф
@@ -345,6 +379,56 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
     />
 
     <!-- New Concept Modal -->
-    <NewConceptModal v-if="showNewModal" @save="handleBriefSave" @cancel="handleBriefCancel" />
+    <NewConceptModal
+      v-if="showNewModal"
+      :initial-data="store.stepData.concept.newConceptBrief"
+      @save="handleBriefSave"
+      @cancel="handleBriefCancel"
+    />
+
+    <!-- Brief Preview Modal -->
+    <Teleport to="body">
+      <div v-if="showBriefPreview" class="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showBriefPreview = false" />
+        <div
+          class="relative bg-white rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] w-full max-w-[760px] mx-4 max-h-[85vh] flex flex-col"
+        >
+          <div class="flex items-center justify-between p-6 border-b border-black/10">
+            <h3 class="text-xl font-medium text-foreground">Бриф нового концепту</h3>
+            <button
+              type="button"
+              class="size-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
+              @click="showBriefPreview = false"
+            >
+              <svg class="size-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="p-6 overflow-y-auto flex-1">
+            <div v-for="item in briefPreviewItems" :key="item.label" class="mb-4">
+              <p class="text-sm text-muted-foreground mb-1">{{ item.label }}</p>
+              <p class="text-base text-foreground whitespace-pre-wrap">{{ item.value }}</p>
+            </div>
+          </div>
+          <div class="p-6 border-t border-black/10 flex justify-end gap-3">
+            <button
+              type="button"
+              class="h-10 px-4 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
+              @click="showBriefPreview = false"
+            >
+              Закрити
+            </button>
+            <button
+              type="button"
+              class="h-10 px-4 rounded-[10px] bg-[#030213] text-white text-sm font-medium hover:opacity-90 transition-all"
+              @click="showBriefPreview = false; handleEditBrief()"
+            >
+              Редагувати
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

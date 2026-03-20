@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
+const props = defineProps<{
+  initialFeedback?: string | null
+}>()
+
 const emit = defineEmits<{
   save: [feedback: string];
   cancel: [];
 }>();
 
-const feedback = ref('');
+const isEditMode = !!props.initialFeedback
+const feedback = ref(props.initialFeedback ?? '');
 
 const isValid = computed(() => feedback.value.trim() !== '');
 
@@ -31,7 +36,7 @@ function handleSave() {
         <!-- Header -->
         <div class="flex items-center justify-between px-8 pt-8 pb-4">
           <h2 class="text-xl font-medium text-[#0a0a0a] tracking-[-0.45px]">
-            Замовити нову внутрішню назву
+            {{ isEditMode ? 'Редагування брифу назви' : 'Замовити нову внутрішню назву' }}
           </h2>
           <button
             class="size-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"

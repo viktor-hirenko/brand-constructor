@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
@@ -23,6 +23,7 @@ const selectedId = computed(() => store.stepData.internalNaming.selectedId)
 const isCreatingNew = computed(() => store.stepData.internalNaming.newNamingFeedback !== null)
 
 const showNewModal = ref(false)
+const showBriefActions = ref(false)
 
 function selectNaming(id: string) {
   if (isCreatingNew.value) return
@@ -31,11 +32,21 @@ function selectNaming(id: string) {
 
 function handleCreateNew() {
   if (isCreatingNew.value) {
-    if (confirm('Видалити бриф нової внутрішньої назви?')) {
-      store.setInternalNamingFeedback(null)
-    }
+    showBriefActions.value = !showBriefActions.value
   } else {
     showNewModal.value = true
+  }
+}
+
+function handleEditBrief() {
+  showBriefActions.value = false
+  showNewModal.value = true
+}
+
+function handleDeleteBrief() {
+  showBriefActions.value = false
+  if (confirm('Видалити бриф нової внутрішньої назви? Дані буде втрачено.')) {
+    store.setInternalNamingFeedback(null)
   }
 }
 
@@ -43,6 +54,12 @@ function handleFeedbackSave(feedback: string) {
   store.setInternalNamingFeedback(feedback)
   store.setInternalNaming({ selectedId: null })
   showNewModal.value = false
+}
+
+function closeBriefActions(e: MouseEvent) {
+  if (showBriefActions.value && !(e.target as Element)?.closest('.relative.self-start')) {
+    showBriefActions.value = false
+  }
 }
 
 function loadNamings() {
@@ -53,7 +70,11 @@ function loadNamings() {
   fetchData(params)
 }
 
-onMounted(loadNamings)
+onMounted(() => {
+  loadNamings()
+  document.addEventListener('click', closeBriefActions)
+})
+onUnmounted(() => document.removeEventListener('click', closeBriefActions))
 </script>
 
 <template>
@@ -142,32 +163,57 @@ onMounted(loadNamings)
       </div>
     </template>
 
-    <!-- Create New Internal Naming button -->
-    <button
-      type="button"
-      class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[10px] transition-colors text-base font-medium tracking-[-0.31px] self-start"
-      :class="
-        isCreatingNew
-          ? 'bg-[#030213] text-white hover:opacity-90'
-          : 'bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]'
-      "
-      @click="handleCreateNew"
-    >
-      <svg
-        class="size-4"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+    <!-- Create New Internal Naming button / Brief created state -->
+    <div class="relative self-start">
+      <button
+        v-if="!isCreatingNew"
+        type="button"
+        class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[10px] transition-colors text-base font-medium tracking-[-0.31px] bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]"
+        @click="handleCreateNew"
       >
-        <path d="M5 12h14" />
-        <path d="M12 5v14" />
-      </svg>
-      {{ isCreatingNew ? 'Видалити бриф назви' : 'Create New Internal Name' }}
-    </button>
+        <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14" />
+          <path d="M12 5v14" />
+        </svg>
+        Create New Internal Name
+      </button>
+
+      <button
+        v-else
+        type="button"
+        class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[10px] transition-colors text-base font-medium tracking-[-0.31px] bg-[#030213] text-white hover:opacity-90"
+        @click="handleCreateNew"
+      >
+        <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+        Бриф назви створено
+        <svg class="size-3 ml-1 transition-transform" :class="showBriefActions ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      <!-- Dropdown actions -->
+      <div
+        v-if="showBriefActions"
+        class="absolute top-full left-0 mt-1 w-56 bg-white rounded-[10px] shadow-[0px_10px_38px_-10px_rgba(22,23,24,0.35),0px_10px_20px_-15px_rgba(22,23,24,0.2)] border border-black/10 py-1 z-50"
+      >
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
+          @click="handleEditBrief"
+        >
+          Редагувати бриф
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+          @click="handleDeleteBrief"
+        >
+          Видалити бриф
+        </button>
+      </div>
+    </div>
 
     <!-- Коментар -->
     <div class="flex flex-col gap-2">
@@ -201,6 +247,7 @@ onMounted(loadNamings)
     <!-- New Internal Naming Modal -->
     <NewInternalNamingModal
       v-if="showNewModal"
+      :initial-feedback="store.stepData.internalNaming.newNamingFeedback"
       @save="handleFeedbackSave"
       @cancel="showNewModal = false"
     />

@@ -3,6 +3,10 @@ import { reactive, computed, ref } from 'vue'
 import type { NewConceptBrief } from '@brand-constructor/shared/types'
 import DatePicker from '@/components/constructor/DatePicker.vue'
 
+const props = defineProps<{
+  initialData?: NewConceptBrief | null
+}>()
+
 const emit = defineEmits<{
   save: [brief: NewConceptBrief]
   cancel: []
@@ -44,25 +48,28 @@ const DOMAIN_ZONES = [
   '.online',
 ]
 
+const init = props.initialData
+
 const form = reactive<NewConceptBrief>({
-  isNewGeo: null,
-  geoInfo: '',
-  needsGeoResearch: null,
-  conceptFeedback: '',
-  trafficTeamInfo: '',
-  competitors: '',
-  keepProductConnection: null,
-  connectedProducts: '',
-  namingLanguage: '',
-  desiredWordsInName: '',
-  domainZones: [],
-  domainBudget: null,
-  namingDeadline: '',
-  additionalGeoInfo: '',
+  isNewGeo: init?.isNewGeo ?? null,
+  geoInfo: init?.geoInfo ?? '',
+  needsGeoResearch: init?.needsGeoResearch ?? null,
+  conceptFeedback: init?.conceptFeedback ?? '',
+  trafficTeamInfo: init?.trafficTeamInfo ?? '',
+  competitors: init?.competitors ?? '',
+  keepProductConnection: init?.keepProductConnection ?? null,
+  connectedProducts: init?.connectedProducts ?? '',
+  namingLanguage: init?.namingLanguage ?? '',
+  desiredWordsInName: init?.desiredWordsInName ?? '',
+  domainZones: init?.domainZones ? [...init.domainZones] : [],
+  domainBudget: init?.domainBudget ?? null,
+  namingDeadline: init?.namingDeadline ?? '',
+  additionalGeoInfo: init?.additionalGeoInfo ?? '',
 })
 
+const isEditMode = !!init
 const todayISO = new Date().toISOString().split('T')[0]
-const budgetStr = ref('')
+const budgetStr = ref(init?.domainBudget != null ? String(init.domainBudget) : '')
 
 const isValid = computed(() => {
   return (
@@ -107,7 +114,7 @@ function handleSave() {
           class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0"
         >
           <h2 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
-            Створення нового концепту
+            {{ isEditMode ? 'Редагування брифу концепту' : 'Створення нового концепту' }}
           </h2>
           <button
             type="button"
