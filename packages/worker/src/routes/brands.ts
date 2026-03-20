@@ -2,6 +2,17 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import type { Env, Variables } from '../types'
 import { generateId } from '../utils/id'
+import {
+  sendSlackMessage,
+  buildStrategyMessage,
+  buildPrMarketingMessage,
+  buildProductDesignMessage,
+  buildSubmittedMessage,
+  buildResubmittedMessage,
+  buildNeedsRevisionMessage,
+  buildApprovedWorkflowMessage,
+  type BrandNotificationData,
+} from '../utils/slack'
 import { BRAND_APPROVAL_ROLES } from '@brand-constructor/shared'
 import type { Brand, BrandStatus } from '@brand-constructor/shared/types'
 
@@ -16,7 +27,7 @@ const VALID_STATUSES: BrandStatus[] = [
 const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
   draft: ['submitted'],
   submitted: ['approved', 'needs_revision', 'rejected'],
-  needs_revision: ['submitted'],
+  needs_revision: ['submitted', 'approved'],
   approved: [],
   rejected: [],
 }
@@ -144,6 +155,63 @@ function rowToBrand(row: BrandRow): Brand {
     currentStep: row.current_step,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+async function collectBrandNotificationData(
+  db: D1Database,
+  brand: BrandRow,
+  constructorUrl: string,
+  ceoSelectionsOverride?: Record<string, string>
+): Promise<BrandNotificationData> {
+  const ceoSel = ceoSelectionsOverride ?? (() => {
+    try { return JSON.parse(brand.ceo_selections || '{}') } catch { return {} }
+  })()
+
+  const finalConceptId = ceoSel.concept || brand.concept_id || null
+  const finalExtIds: string[] = (() => {
+    if (ceoSel.externalNaming) return [ceoSel.externalNaming]
+    try { return JSON.parse(brand.external_naming_ids || '[]') } catch { return [] }
+  })()
+  const finalIntId = ceoSel.internalNaming || brand.internal_naming_id || null
+
+  const [conceptRow, intNamingRow, prPackageRow] = await Promise.all([
+    finalConceptId
+      ? db.prepare('SELECT name FROM concepts WHERE id = ?').bind(finalConceptId).first<{ name: string }>()
+      : null,
+    finalIntId
+      ? db.prepare('SELECT name FROM internal_namings WHERE id = ?').bind(finalIntId).first<{ name: string }>()
+      : null,
+    brand.pr_package_id
+      ? db.prepare('SELECT name FROM pr_packages WHERE id = ?').bind(brand.pr_package_id).first<{ name: string }>()
+      : null,
+  ])
+
+  let extNamingNames: string[] = []
+  if (finalExtIds.length > 0) {
+    const placeholders = finalExtIds.map(() => '?').join(',')
+    const extRows = await db
+      .prepare(`SELECT name FROM external_namings WHERE id IN (${placeholders})`)
+      .bind(...finalExtIds)
+      .all<{ name: string }>()
+    extNamingNames = extRows.results.map(r => r.name)
+  }
+
+  return {
+    brandId: brand.id,
+    internalName: brand.internal_name || brand.id,
+    geo: brand.geo || null,
+    launchDate: brand.launch_date || null,
+    mode: brand.mode || null,
+    conceptName: conceptRow?.name || null,
+    externalNamingNames: extNamingNames,
+    internalNamingName: intNamingRow?.name || null,
+    prPackageName: prPackageRow?.name || null,
+    legalLanding: Boolean(brand.legal_landing),
+    partnerLanding: Boolean(brand.partner_landing),
+    delegateToDesigners: Boolean(brand.delegate_to_designers),
+    developmentDeadline: brand.development_deadline || null,
+    constructorUrl,
   }
 }
 
@@ -524,111 +592,170 @@ brands.patch('/:id/status', async c => {
     .bind(...values)
     .run()
 
+  if ((targetStatus === 'submitted' || targetStatus === 'needs_revision') && c.env.SLACK_BOT_TOKEN) {
+    try {
+      const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
+        .bind(id)
+        .first<BrandRow>()
+
+      if (brand) {
+        const notificationData = await collectBrandNotificationData(
+          c.env.DB, brand, c.env.CONSTRUCTOR_URL ?? ''
+        )
+
+        if (targetStatus === 'submitted') {
+          const isResubmit = currentStatus === 'needs_revision'
+          const message = isResubmit
+            ? buildResubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
+            : buildSubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
+          c.executionCtx.waitUntil(sendSlackMessage(c.env.SLACK_BOT_TOKEN, message))
+        } else {
+          const ceoCommentsData = body.ceoComments ?? {}
+          const ceoSelectionsData = body.ceoSelections ?? {}
+          const resolvedSelections: Record<string, string> = {}
+
+          if (ceoSelectionsData.concept) {
+            const row = await c.env.DB.prepare('SELECT name FROM concepts WHERE id = ?')
+              .bind(ceoSelectionsData.concept).first<{ name: string }>()
+            if (row) resolvedSelections.concept = row.name
+          }
+          if (ceoSelectionsData.externalNaming) {
+            const row = await c.env.DB.prepare('SELECT name FROM external_namings WHERE id = ?')
+              .bind(ceoSelectionsData.externalNaming).first<{ name: string }>()
+            if (row) resolvedSelections.externalNaming = row.name
+          }
+          if (ceoSelectionsData.internalNaming) {
+            const row = await c.env.DB.prepare('SELECT name FROM internal_namings WHERE id = ?')
+              .bind(ceoSelectionsData.internalNaming).first<{ name: string }>()
+            if (row) resolvedSelections.internalNaming = row.name
+          }
+
+          const message = buildNeedsRevisionMessage(
+            c.env.SLACK_CHANNEL_APPROVALS, notificationData, ceoCommentsData,
+            Object.keys(resolvedSelections).length > 0 ? resolvedSelections : undefined
+          )
+          c.executionCtx.waitUntil(sendSlackMessage(c.env.SLACK_BOT_TOKEN, message))
+        }
+      }
+    } catch (err) {
+      console.error('Slack notification error (submitted/needs_revision):', err)
+    }
+  }
+
   if (targetStatus === 'approved') {
     const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
       .bind(id)
       .first<BrandRow>()
 
-    const ceoSel: Record<string, string> = (() => {
-      try {
-        return JSON.parse(brand?.ceo_selections || '{}')
-      } catch {
-        return {}
-      }
-    })()
+    if (brand) {
+      const ceoSel: Record<string, string> = (() => {
+        try { return JSON.parse(brand.ceo_selections || '{}') } catch { return {} }
+      })()
 
-    const finalConceptId = ceoSel.concept || brand?.concept_id || null
-    const finalExtIds: string[] = (() => {
-      if (ceoSel.externalNaming) return [ceoSel.externalNaming]
-      try {
-        return JSON.parse(brand?.external_naming_ids || '[]')
-      } catch {
-        return []
-      }
-    })()
-    const finalIntId = ceoSel.internalNaming || brand?.internal_naming_id || null
+      const finalConceptId = ceoSel.concept || brand.concept_id || null
+      const finalExtIds: string[] = (() => {
+        if (ceoSel.externalNaming) return [ceoSel.externalNaming]
+        try { return JSON.parse(brand.external_naming_ids || '[]') } catch { return [] }
+      })()
+      const finalIntId = ceoSel.internalNaming || brand.internal_naming_id || null
 
-    const componentSelections: Record<string, string> = (() => {
-      try {
-        return JSON.parse(brand?.component_selections || '{}')
-      } catch {
-        return {}
-      }
-    })()
+      const componentSelections: Record<string, string> = (() => {
+        try { return JSON.parse(brand.component_selections || '{}') } catch { return {} }
+      })()
 
-    const batchStatements: ReturnType<typeof c.env.DB.prepare>[] = []
+      const batchStatements: ReturnType<typeof c.env.DB.prepare>[] = []
 
-    if (finalConceptId !== brand?.concept_id || ceoSel.externalNaming || ceoSel.internalNaming) {
-      const brandUpdates: string[] = ["updated_at = datetime('now')"]
-      const brandValues: (string | null)[] = []
-      if (ceoSel.concept) {
-        brandUpdates.push('concept_id = ?')
-        brandValues.push(finalConceptId)
-      }
-      if (ceoSel.externalNaming) {
-        brandUpdates.push('external_naming_ids = ?')
-        brandValues.push(JSON.stringify(finalExtIds))
-      }
-      if (ceoSel.internalNaming) {
-        brandUpdates.push('internal_naming_id = ?')
-        brandValues.push(finalIntId)
-      }
-      if (brandValues.length > 0) {
-        brandValues.push(id)
-        batchStatements.push(
-          c.env.DB.prepare(`UPDATE brands SET ${brandUpdates.join(', ')} WHERE id = ?`).bind(
-            ...brandValues
+      if (finalConceptId !== brand.concept_id || ceoSel.externalNaming || ceoSel.internalNaming) {
+        const brandUpdates: string[] = ["updated_at = datetime('now')"]
+        const brandValues: (string | null)[] = []
+        if (ceoSel.concept) {
+          brandUpdates.push('concept_id = ?')
+          brandValues.push(finalConceptId)
+        }
+        if (ceoSel.externalNaming) {
+          brandUpdates.push('external_naming_ids = ?')
+          brandValues.push(JSON.stringify(finalExtIds))
+        }
+        if (ceoSel.internalNaming) {
+          brandUpdates.push('internal_naming_id = ?')
+          brandValues.push(finalIntId)
+        }
+        if (brandValues.length > 0) {
+          brandValues.push(id)
+          batchStatements.push(
+            c.env.DB.prepare(`UPDATE brands SET ${brandUpdates.join(', ')} WHERE id = ?`).bind(
+              ...brandValues
+            )
           )
-        )
+        }
       }
-    }
 
-    if (finalConceptId) {
-      batchStatements.push(
-        c.env.DB.prepare(
-          "UPDATE concepts SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-        ).bind(id, finalConceptId)
-      )
-    }
-
-    for (const extId of finalExtIds) {
-      if (extId) {
+      if (finalConceptId) {
         batchStatements.push(
           c.env.DB.prepare(
-            "UPDATE external_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-          ).bind(id, extId)
+            "UPDATE concepts SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+          ).bind(id, finalConceptId)
         )
       }
-    }
 
-    if (finalIntId) {
-      batchStatements.push(
-        c.env.DB.prepare(
-          "UPDATE internal_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-        ).bind(id, finalIntId)
-      )
-    }
+      for (const extId of finalExtIds) {
+        if (extId) {
+          batchStatements.push(
+            c.env.DB.prepare(
+              "UPDATE external_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+            ).bind(id, extId)
+          )
+        }
+      }
 
-    for (const variantId of Object.values(componentSelections)) {
-      if (variantId) {
+      if (finalIntId) {
         batchStatements.push(
           c.env.DB.prepare(
-            "UPDATE component_variants SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-          ).bind(id, variantId)
+            "UPDATE internal_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+          ).bind(id, finalIntId)
         )
       }
-    }
 
-    if (brand?.pr_package_id) {
-      batchStatements.push(
-        c.env.DB.prepare(
-          "UPDATE pr_packages SET used_in_brand_id = ?, updated_at = datetime('now') WHERE id = ?"
-        ).bind(id, brand.pr_package_id)
-      )
-    }
+      for (const variantId of Object.values(componentSelections)) {
+        if (variantId) {
+          batchStatements.push(
+            c.env.DB.prepare(
+              "UPDATE component_variants SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
+            ).bind(id, variantId)
+          )
+        }
+      }
 
-    if (batchStatements.length > 0) {
-      await c.env.DB.batch(batchStatements)
+      if (brand.pr_package_id) {
+        batchStatements.push(
+          c.env.DB.prepare(
+            "UPDATE pr_packages SET used_in_brand_id = ?, updated_at = datetime('now') WHERE id = ?"
+          ).bind(id, brand.pr_package_id)
+        )
+      }
+
+      if (batchStatements.length > 0) {
+        await c.env.DB.batch(batchStatements)
+      }
+
+      if (c.env.SLACK_BOT_TOKEN) {
+        try {
+          const notificationData = await collectBrandNotificationData(
+            c.env.DB, brand, c.env.CONSTRUCTOR_URL ?? '', ceoSel
+          )
+          const token = c.env.SLACK_BOT_TOKEN
+          c.executionCtx.waitUntil(
+            Promise.allSettled([
+              sendSlackMessage(token, buildStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, notificationData)),
+              sendSlackMessage(token, buildPrMarketingMessage(c.env.SLACK_CHANNEL_PR, notificationData)),
+              sendSlackMessage(token, buildProductDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)),
+              sendSlackMessage(token, buildApprovedWorkflowMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)),
+            ])
+          )
+        } catch (err) {
+          console.error('Slack notification error (approved):', err)
+        }
+      }
     }
   }
 

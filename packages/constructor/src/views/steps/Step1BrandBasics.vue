@@ -1,34 +1,34 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useConstructorStore } from '@/stores/constructor';
-import GeoMultiSelect from '@/components/constructor/GeoMultiSelect.vue';
-import DatePicker from '@/components/constructor/DatePicker.vue';
+import { computed, ref } from 'vue'
+import { useConstructorStore } from '@/stores/constructor'
+import GeoMultiSelect from '@/components/constructor/GeoMultiSelect.vue'
+import DatePicker from '@/components/constructor/DatePicker.vue'
 
-const store = useConstructorStore();
+const store = useConstructorStore()
 
-const touched = ref({ geo: false, launchDate: false });
+const touched = ref({ geo: false, launchDate: false })
 
-const todayISO = new Date().toISOString().split('T')[0];
+const todayISO = new Date().toISOString().split('T')[0]
 
 const geo = computed({
   get: () => store.stepData.brandBasics.geo,
   set: (val: string[]) => store.setBrandBasics({ geo: val }),
-});
+})
 
 const launchDate = computed({
   get: () => store.stepData.brandBasics.launchDate,
   set: (val: string) => store.setBrandBasics({ launchDate: val }),
-});
+})
 
 const linkedProduct = computed({
   get: () => store.stepData.brandBasics.linkedProduct,
   set: (val: string) => store.setBrandBasics({ linkedProduct: val }),
-});
+})
 
 const comment = computed({
   get: () => store.stepData.brandBasics.comment,
   set: (val: string) => store.setBrandBasics({ comment: val }),
-});
+})
 </script>
 
 <template>
@@ -72,14 +72,19 @@ const comment = computed({
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M8 2v4" /><path d="M16 2v4" />
+          <path d="M8 2v4" />
+          <path d="M16 2v4" />
           <rect width="18" height="18" x="3" y="4" rx="2" />
           <path d="M3 10h18" />
         </svg>
         <span class="font-medium text-base">Плануєма дата запуску</span>
         <span class="text-error text-sm">*</span>
       </label>
-      <DatePicker v-model="launchDate" :min-date="todayISO" @update:model-value="touched.launchDate = true" />
+      <DatePicker
+        v-model="launchDate"
+        :min-date="todayISO"
+        @update:model-value="touched.launchDate = true"
+      />
       <p v-if="touched.launchDate && !launchDate" class="text-red-500 text-sm mt-1">
         Вкажіть дату запуску
       </p>
@@ -100,7 +105,9 @@ const comment = computed({
         >
           <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
           <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-          <path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />
+          <path d="M10 9H8" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
         </svg>
         <span class="font-medium text-base">Звʼязок з іншим продуктом (якщо є)</span>
       </label>
@@ -127,7 +134,9 @@ const comment = computed({
         >
           <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
           <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-          <path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />
+          <path d="M10 9H8" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
         </svg>
         <span class="font-medium text-base">Коментар</span>
         <span class="text-sm text-muted-foreground">(необовʼязково)</span>

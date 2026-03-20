@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, reactive } from 'vue'
+import { computed, onMounted, ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
@@ -109,10 +109,13 @@ interface SummaryItem {
     | 'layers'
     | 'sparkles'
   step: number
+  comment?: string
 }
 
 const summaryItems = computed<SummaryItem[]>(() => {
   const items: SummaryItem[] = []
+
+  const basicsComment = basics.value.comment?.trim() || ''
 
   if (basics.value.geo.length > 0) {
     items.push({
@@ -121,6 +124,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'basics',
       icon: 'globe',
       step: 1,
+      comment: basicsComment,
     })
   }
   if (basics.value.launchDate) {
@@ -157,6 +161,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'concept',
       icon: 'palette',
       step: 3,
+      comment: store.stepData.concept.comment?.trim() || '',
     })
   } else if (isNewConcept.value) {
     items.push({
@@ -165,6 +170,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'concept',
       icon: 'palette',
       step: 3,
+      comment: store.stepData.concept.comment?.trim() || '',
     })
   }
   if (selectedExternalNamings.value.length > 0) {
@@ -174,6 +180,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'externalNaming',
       icon: 'tag',
       step: 4,
+      comment: store.stepData.externalNaming.comment?.trim() || '',
     })
   } else if (isNewNaming.value) {
     items.push({
@@ -182,6 +189,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'externalNaming',
       icon: 'tag',
       step: 4,
+      comment: store.stepData.externalNaming.comment?.trim() || '',
     })
   }
   if (selectedInternalNaming.value) {
@@ -191,6 +199,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'internalNaming',
       icon: 'briefcase',
       step: 5,
+      comment: store.stepData.internalNaming.comment?.trim() || '',
     })
   } else if (internalFeedback.value) {
     items.push({
@@ -199,6 +208,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'internalNaming',
       icon: 'briefcase',
       step: 5,
+      comment: store.stepData.internalNaming.comment?.trim() || '',
     })
   }
   if (selectedPackage.value) {
@@ -208,8 +218,12 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'marketingPackage',
       icon: 'package',
       step: 7,
+      comment: store.stepData.marketingPackage.comment?.trim() || '',
     })
   }
+
+  const deliverablesComment = deliverables.value.comment?.trim() || ''
+
   if (deliverables.value.legalLanding) {
     items.push({
       label: 'Юридичний лендінг',
@@ -217,6 +231,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'deliverables',
       icon: 'scale',
       step: 8,
+      comment: deliverablesComment,
     })
   }
   if (deliverables.value.partnerLanding) {
@@ -235,6 +250,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'visualComponents',
       icon: 'sparkles',
       step: 9,
+      comment: visualComponents.value.comment?.trim() || '',
     })
   } else if (componentSelectionCount.value > 0) {
     items.push({
@@ -243,6 +259,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'visualComponents',
       icon: 'layers',
       step: 9,
+      comment: visualComponents.value.comment?.trim() || '',
     })
   }
 
@@ -289,6 +306,28 @@ const showCeoReview = computed(
     (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
 )
 
+const CEO_COMMENT_SECTION_LABELS: Record<string, string> = {
+  concept: 'Концепт',
+  externalNaming: 'Зовнішня назва',
+  internalNaming: 'Внутрішня назва',
+  marketingPackage: 'PR пакет',
+  deliverables: 'Deliverables',
+  visualComponents: 'Візуальні компоненти',
+  general: 'Загальний коментар',
+}
+
+const hasCeoComments = computed(() => {
+  const comments = store.brandCeoComments
+  if (!comments) return false
+  return Object.values(comments).some(v => v.trim().length > 0)
+})
+
+const hasCeoSelections = computed(() => {
+  const selections = store.brandCeoSelections
+  if (!selections) return false
+  return Object.values(selections).some(v => v && v.trim().length > 0)
+})
+
 const showCeoLibraryModal = ref(false)
 const ceoLibraryType = ref<'concept' | 'externalNaming' | 'internalNaming'>('concept')
 const ceoSelections = reactive<Record<string, string>>({})
@@ -300,7 +339,6 @@ function openCeoLibrary(type: 'concept' | 'externalNaming' | 'internalNaming') {
 
 function selectCeoAlternative(type: string, id: string) {
   ceoSelections[type] = id
-  showCeoLibraryModal.value = false
 }
 
 const ceoLibraryItems = computed(() => {
@@ -331,6 +369,32 @@ const ceoComments = reactive<Record<string, string>>({
   visualComponents: '',
   general: '',
 })
+
+watch(
+  () => store.brandCeoComments,
+  (comments) => {
+    if (comments) {
+      for (const [key, value] of Object.entries(comments)) {
+        if (key in ceoComments) {
+          ceoComments[key] = value
+        }
+      }
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => store.brandCeoSelections,
+  (selections) => {
+    if (selections) {
+      for (const [key, value] of Object.entries(selections)) {
+        ceoSelections[key] = value
+      }
+    }
+  },
+  { immediate: true }
+)
 
 const CEO_COMMENT_SECTIONS = [
   { key: 'concept', label: 'Концепт' },
@@ -414,6 +478,24 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
     }
     await apiPatch<Brand>(`/api/brands/${store.brandId}/status`, payload)
     store.setBrandStatus(newStatus)
+
+    if (newStatus === 'needs_revision') {
+      store.setSuccessType('needs_revision')
+      router.push('/constructor/success')
+      return
+    }
+
+    if (newStatus === 'approved') {
+      store.setSuccessType('approved')
+      router.push('/constructor/success')
+      return
+    }
+
+    if (newStatus === 'submitted') {
+      store.setSuccessType('submitted')
+      router.push('/constructor/success')
+      return
+    }
   } catch (err) {
     statusActionError.value = err instanceof Error ? err.message : 'Помилка зміни статусу'
   } finally {
@@ -516,7 +598,7 @@ async function handlePrintBrand() {
         :key="item.label"
         class="w-full p-4 bg-[#f3f3f5] border border-black/10 rounded-lg"
       >
-        <div class="flex items-start gap-3 mb-3">
+        <div class="flex items-start gap-3">
           <!-- Globe -->
           <svg
             v-if="item.icon === 'globe'"
@@ -759,12 +841,16 @@ async function handlePrintBrand() {
           <div class="flex-1 min-w-0">
             <p class="text-sm text-muted-foreground mb-1">{{ item.label }}</p>
             <p class="text-sm line-clamp-3">{{ item.value }}</p>
+            <p v-if="item.comment" class="text-xs text-muted-foreground mt-1.5 italic">
+              Коментар: {{ item.comment }}
+            </p>
           </div>
         </div>
 
         <button
+          v-if="!isCeoView"
           type="button"
-          class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
+          class="mt-3 h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
           @click="goToStep(item.step)"
         >
           Редагувати
@@ -896,11 +982,17 @@ async function handlePrintBrand() {
         v-if="showCeoLibraryModal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       >
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-black/10">
-            <h3 class="text-base font-semibold">{{ ceoLibraryTitle }}</h3>
+        <div
+          class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 h-[520px] max-h-[80vh] flex flex-col overflow-hidden"
+        >
+          <!-- Header: per NewConceptModal/NewNamingModal -->
+          <div
+            class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0"
+          >
+            <h3 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">{{ ceoLibraryTitle }}</h3>
             <button
-              class="text-muted-foreground hover:text-foreground transition-colors"
+              type="button"
+              class="size-10 rounded-full bg-[#ececf0] flex items-center justify-center hover:bg-[#dddde2] transition-colors"
               @click="showCeoLibraryModal = false"
             >
               <svg
@@ -917,70 +1009,159 @@ async function handlePrintBrand() {
               </svg>
             </button>
           </div>
-          <div class="flex gap-2 px-6 pt-4">
-            <button
-              class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              :class="
-                ceoLibraryType === 'concept'
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              "
-              @click="ceoLibraryType = 'concept'"
+
+          <!-- Scroll container: таби sticky всередині, щоб при скролі залишались поверх -->
+          <div class="flex-1 min-h-0 overflow-y-auto">
+            <div
+              class="sticky top-0 z-10 flex gap-2 px-6 py-3 bg-white border-b border-black/10"
             >
-              Концепти
-            </button>
-            <button
-              class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              :class="
-                ceoLibraryType === 'externalNaming'
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              "
-              @click="ceoLibraryType = 'externalNaming'"
-            >
-              Зовнішні назви
-            </button>
-            <button
-              class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              :class="
-                ceoLibraryType === 'internalNaming'
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              "
-              @click="ceoLibraryType = 'internalNaming'"
-            >
-              Внутрішні назви
-            </button>
-          </div>
-          <div class="flex-1 overflow-y-auto px-6 py-4 space-y-2">
-            <button
-              v-for="item in ceoLibraryItems"
-              :key="item.id"
-              class="w-full text-left px-4 py-3 rounded-lg border transition-colors"
-              :class="
-                ceoSelections[ceoLibraryType] === item.id
-                  ? 'border-primary bg-primary/5 text-primary'
-                  : 'border-black/10 hover:bg-gray-50'
-              "
-              @click="selectCeoAlternative(ceoLibraryType, item.id)"
-            >
-              <span class="text-sm font-medium">{{ item.name }}</span>
-              <span
-                v-if="ceoSelections[ceoLibraryType] === item.id"
-                class="ml-2 text-xs text-primary"
-                >Обрано</span
+              <button
+                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                :class="
+                  ceoLibraryType === 'concept'
+                    ? 'bg-[#030213] text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                "
+                @click="ceoLibraryType = 'concept'"
               >
-            </button>
-            <p
-              v-if="ceoLibraryItems.length === 0"
-              class="text-center text-sm text-muted-foreground py-8"
+                Концепти
+              </button>
+              <button
+                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                :class="
+                  ceoLibraryType === 'externalNaming'
+                    ? 'bg-[#030213] text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                "
+                @click="ceoLibraryType = 'externalNaming'"
+              >
+                Зовнішні назви
+              </button>
+              <button
+                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                :class="
+                  ceoLibraryType === 'internalNaming'
+                    ? 'bg-[#030213] text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                "
+                @click="ceoLibraryType = 'internalNaming'"
+              >
+                Внутрішні назви
+              </button>
+            </div>
+            <div class="px-6 py-4 space-y-2">
+              <button
+                v-for="item in ceoLibraryItems"
+                :key="item.id"
+                class="w-full text-left px-4 py-3 rounded-lg border transition-colors"
+                :class="
+                  ceoSelections[ceoLibraryType] === item.id
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-black/10 hover:bg-gray-50'
+                "
+                @click="selectCeoAlternative(ceoLibraryType, item.id)"
+              >
+                <span class="text-sm font-medium">{{ item.name }}</span>
+                <span
+                  v-if="ceoSelections[ceoLibraryType] === item.id"
+                  class="ml-2 text-xs text-primary"
+                  >Обрано</span
+                >
+              </button>
+              <p
+                v-if="ceoLibraryItems.length === 0"
+                class="text-center text-sm text-muted-foreground py-8"
+              >
+                Немає доступних елементів
+              </p>
+            </div>
+          </div>
+
+          <!-- Footer: per NewConceptModal/NewNamingModal -->
+          <div
+            class="flex items-center justify-end px-6 pt-[17px] pb-4 border-t border-black/10 shrink-0"
+          >
+            <button
+              type="button"
+              class="h-[46px] px-6 bg-[#030213] text-white rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] hover:opacity-90 transition-all"
+              @click="showCeoLibraryModal = false"
             >
-              Немає доступних елементів
-            </p>
+              Закрити
+            </button>
           </div>
         </div>
       </div>
     </Teleport>
+
+    <!-- CEO Comments Display (when brand returned for revision) -->
+    <div
+      v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoComments"
+      class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2"
+    >
+      <div class="flex items-center gap-2 mb-1">
+        <svg
+          class="size-5 text-amber-600 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </svg>
+        <h4 class="text-sm font-semibold text-amber-800">Коментарі CEO</h4>
+      </div>
+      <div
+        v-for="(comment, key) in store.brandCeoComments"
+        :key="key"
+        class="text-sm text-amber-900"
+      >
+        <template v-if="comment && comment.trim()">
+          <span class="font-medium">{{ CEO_COMMENT_SECTION_LABELS[key] ?? key }}:</span>
+          {{ comment }}
+        </template>
+      </div>
+    </div>
+
+    <!-- CEO Selections Display for PO (when brand returned for revision) -->
+    <div
+      v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoSelections"
+      class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2"
+    >
+      <div class="flex items-center gap-2 mb-1">
+        <svg
+          class="size-5 text-blue-600 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"
+          />
+        </svg>
+        <h4 class="text-sm font-semibold text-blue-800">Альтернативи CEO</h4>
+      </div>
+      <ul class="list-disc list-inside space-y-0.5 text-sm text-blue-900">
+        <li v-if="store.brandCeoSelections?.concept">
+          Концепт:
+          {{ concepts.find(c => c.id === store.brandCeoSelections!.concept)?.name ?? store.brandCeoSelections!.concept }}
+        </li>
+        <li v-if="store.brandCeoSelections?.externalNaming">
+          Зовн. назва:
+          {{ externalNamings.find(n => n.id === store.brandCeoSelections!.externalNaming)?.name ?? store.brandCeoSelections!.externalNaming }}
+        </li>
+        <li v-if="store.brandCeoSelections?.internalNaming">
+          Внутр. назва:
+          {{ internalNamings.find(n => n.id === store.brandCeoSelections!.internalNaming)?.name ?? store.brandCeoSelections!.internalNaming }}
+        </li>
+      </ul>
+    </div>
 
     <!-- PO Action Buttons -->
     <div v-if="!showCeoReview" class="space-y-3 pt-4 border-t border-black/10">
@@ -1006,86 +1187,45 @@ async function handlePrintBrand() {
         {{ statusActionLoading ? 'Відправляємо...' : 'Відправити на розгляд' }}
       </button>
 
-      <div class="grid grid-cols-2 gap-4">
-        <button
-          class="flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50"
-          :disabled="isSaving"
-          @click="handleShare"
+      <button
+        class="flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50 w-full"
+        :disabled="isSaving"
+        @click="handleShare"
+      >
+        <svg
+          v-if="shareSuccess"
+          class="size-5 text-green-600"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <svg
-            v-if="shareSuccess"
-            class="size-5 text-green-600"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          <svg
-            v-else
-            class="size-5"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" x2="15.42" y1="13.51" y2="17.49" />
-            <line x1="15.41" x2="8.59" y1="6.51" y2="10.49" />
-          </svg>
-          {{ shareSuccess ? 'Скопійовано!' : 'Share' }}
-        </button>
-        <button
-          class="flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50"
-          :disabled="isSaving"
-          @click="handleSaveDraft"
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+        <svg
+          v-else
+          class="size-5"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <div
-            v-if="isSaving"
-            class="animate-spin size-5 border-2 border-foreground border-t-transparent rounded-full"
-          />
-          <svg
-            v-else-if="draftSaved"
-            class="size-5 text-green-600"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          <svg
-            v-else
-            class="size-5"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path
-              d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
-            />
-            <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
-            <path d="M7 3v4a1 1 0 0 0 1 1h7" />
-          </svg>
-          {{ isSaving ? 'Зберігаємо...' : draftSaved ? 'Збережено!' : 'Зберегти як чернетку' }}
-        </button>
-      </div>
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.59" x2="15.42" y1="13.51" y2="17.49" />
+          <line x1="15.41" x2="8.59" y1="6.51" y2="10.49" />
+        </svg>
+        {{ shareSuccess ? 'Скопійовано!' : 'Share' }}
+      </button>
+      <!-- "Зберегти як чернетку" hidden: not in v2 PRD, no Slack notification or return flow for drafts -->
+      
 
       <button
         class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-black/10 text-foreground rounded-xl hover:bg-black/[0.02] transition-colors text-sm font-medium"

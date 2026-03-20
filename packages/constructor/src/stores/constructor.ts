@@ -63,6 +63,9 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   const brandId = ref<string | null>(null)
   const brandInternalName = ref<string | null>(null)
   const brandStatus = ref<string>('draft')
+  const brandCeoComments = ref<Record<string, string> | null>(null)
+  const brandCeoSelections = ref<Record<string, string> | null>(null)
+  const successType = ref<'saved' | 'submitted' | 'needs_revision' | 'approved'>('saved')
   const currentStep = ref(1)
   const stepData = ref<BrandStepData>(getInitialStepData())
   const isDraft = ref(true)
@@ -323,6 +326,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     brandId.value = null
     brandInternalName.value = null
     brandStatus.value = 'draft'
+    brandCeoComments.value = null
+    brandCeoSelections.value = null
     currentStep.value = 1
     stepData.value = getInitialStepData()
     isDraft.value = true
@@ -335,14 +340,22 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     data: BrandStepData,
     step: number,
     status?: string,
-    internalName?: string
+    internalName?: string,
+    ceoComments?: Record<string, string> | null,
+    ceoSelections?: Record<string, string> | null
   ) {
     brandId.value = id
     brandInternalName.value = internalName ?? null
     brandStatus.value = status ?? 'draft'
+    brandCeoComments.value = ceoComments ?? null
+    brandCeoSelections.value = ceoSelections ?? null
     stepData.value = data
     currentStep.value = step
     isDraft.value = false
+  }
+
+  function setSuccessType(type: 'saved' | 'submitted' | 'needs_revision' | 'approved') {
+    successType.value = type
   }
 
   const saveError = ref<string | null>(null)
@@ -394,17 +407,25 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
           headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
           body: JSON.stringify({ internalName: null, ...payload }),
         })
-
-        if (response.ok) {
-          const createResult = await response.json()
-          brandId.value = createResult.data.id
-          clearDraftFromStorage()
-        }
       }
 
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to save brand')
+      }
+
+      const result = await response.json()
+      if (result.data) {
+        if (!brandId.value && result.data.id) {
+          brandId.value = result.data.id
+          clearDraftFromStorage()
+        }
+        if (result.data.status) {
+          brandStatus.value = result.data.status
+        }
+        if (result.data.internalName) {
+          brandInternalName.value = result.data.internalName
+        }
       }
 
       return true
@@ -459,6 +480,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     saveBrand,
     saveError,
     setBrandStatus,
+    brandCeoComments,
+    brandCeoSelections,
+    successType,
+    setSuccessType,
     returnToStep,
     setReturnToStep,
     reset,

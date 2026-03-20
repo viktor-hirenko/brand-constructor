@@ -1,24 +1,48 @@
 <script setup lang="ts">
-import { reactive, computed, ref } from 'vue';
-import type { NewConceptBrief } from '@brand-constructor/shared/types';
-import DatePicker from '@/components/constructor/DatePicker.vue';
+import { reactive, computed, ref } from 'vue'
+import type { NewConceptBrief } from '@brand-constructor/shared/types'
+import DatePicker from '@/components/constructor/DatePicker.vue'
 
 const emit = defineEmits<{
-  save: [brief: NewConceptBrief];
-  cancel: [];
-}>();
+  save: [brief: NewConceptBrief]
+  cancel: []
+}>()
 
 const LANGUAGES = [
-  'English', 'German', 'Portuguese', 'Spanish', 'French',
-  'Italian', 'Turkish', 'Arabic', 'Hindi', 'Japanese',
-  'Chinese', 'Korean', 'Russian', 'Ukrainian',
-];
+  'English',
+  'German',
+  'Portuguese',
+  'Spanish',
+  'French',
+  'Italian',
+  'Turkish',
+  'Arabic',
+  'Hindi',
+  'Japanese',
+  'Chinese',
+  'Korean',
+  'Russian',
+  'Ukrainian',
+]
 
 const DOMAIN_ZONES = [
-  '.com', '.net', '.io', '.co', '.org', '.bet',
-  '.casino', '.games', '.play', '.fun', '.win',
-  '.app', '.gg', '.club', '.live', '.online',
-];
+  '.com',
+  '.net',
+  '.io',
+  '.co',
+  '.org',
+  '.bet',
+  '.casino',
+  '.games',
+  '.play',
+  '.fun',
+  '.win',
+  '.app',
+  '.gg',
+  '.club',
+  '.live',
+  '.online',
+]
 
 const form = reactive<NewConceptBrief>({
   isNewGeo: null,
@@ -35,34 +59,34 @@ const form = reactive<NewConceptBrief>({
   domainBudget: null,
   namingDeadline: '',
   additionalGeoInfo: '',
-});
+})
 
-const todayISO = new Date().toISOString().split('T')[0];
-const budgetStr = ref('');
+const todayISO = new Date().toISOString().split('T')[0]
+const budgetStr = ref('')
 
 const isValid = computed(() => {
-  return form.trafficTeamInfo.trim() !== '' && form.namingDeadline !== '';
-});
+  return form.trafficTeamInfo.trim() !== '' && form.namingDeadline !== ''
+})
 
 function toggleDomainZone(zone: string) {
-  const idx = form.domainZones.indexOf(zone);
+  const idx = form.domainZones.indexOf(zone)
   if (idx === -1) {
-    form.domainZones.push(zone);
+    form.domainZones.push(zone)
   } else {
-    form.domainZones.splice(idx, 1);
+    form.domainZones.splice(idx, 1)
   }
 }
 
 function handleBudgetInput(e: Event) {
-  const val = (e.target as HTMLInputElement).value;
-  budgetStr.value = val;
-  const num = parseFloat(val);
-  form.domainBudget = isNaN(num) ? null : num;
+  const val = (e.target as HTMLInputElement).value
+  budgetStr.value = val
+  const num = parseFloat(val)
+  form.domainBudget = isNaN(num) ? null : num
 }
 
 function handleSave() {
-  if (!isValid.value) return;
-  emit('save', { ...form, domainZones: [...form.domainZones] });
+  if (!isValid.value) return
+  emit('save', { ...form, domainZones: [...form.domainZones] })
 }
 </script>
 
@@ -71,9 +95,13 @@ function handleSave() {
     <div class="fixed inset-0 z-[9999] flex items-center justify-center">
       <div class="absolute inset-0 bg-black/50" @click="emit('cancel')" />
 
-      <div class="relative bg-white rounded-[16px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] w-[672px] max-h-[85vh] flex flex-col">
+      <div
+        class="relative bg-white rounded-[16px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] w-[672px] max-h-[85vh] flex flex-col"
+      >
         <!-- Header: per Figma h-[73px], border-b, title + close button -->
-        <div class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0">
+        <div
+          class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0"
+        >
           <h2 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
             Створення нового концепту
           </h2>
@@ -82,8 +110,17 @@ function handleSave() {
             class="size-10 rounded-full bg-[#ececf0] flex items-center justify-center hover:bg-[#dddde2] transition-colors"
             @click="emit('cancel')"
           >
-            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+            <svg
+              class="size-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
             </svg>
           </button>
         </div>
@@ -91,7 +128,6 @@ function handleSave() {
         <!-- Scrollable form -->
         <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6">
           <div class="flex flex-col gap-6">
-
             <!-- 1. Чи це концепт для Нового ГЕО? -->
             <div class="flex flex-col gap-3">
               <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
@@ -101,9 +137,11 @@ function handleSave() {
                 <button
                   type="button"
                   class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
-                  :class="form.isNewGeo === true
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                    : 'border-black/10 text-[#0a0a0a] hover:border-black/20'"
+                  :class="
+                    form.isNewGeo === true
+                      ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
+                      : 'border-black/10 text-[#0a0a0a] hover:border-black/20'
+                  "
                   @click="form.isNewGeo = true"
                 >
                   Так
@@ -111,9 +149,11 @@ function handleSave() {
                 <button
                   type="button"
                   class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
-                  :class="form.isNewGeo === false
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                    : 'border-black/10 text-[#0a0a0a] hover:border-black/20'"
+                  :class="
+                    form.isNewGeo === false
+                      ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
+                      : 'border-black/10 text-[#0a0a0a] hover:border-black/20'
+                  "
                   @click="form.isNewGeo = false"
                 >
                   Ні
@@ -143,9 +183,11 @@ function handleSave() {
                 <button
                   type="button"
                   class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
-                  :class="form.needsGeoResearch === true
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                    : 'border-black/10 text-[#0a0a0a] hover:border-black/20'"
+                  :class="
+                    form.needsGeoResearch === true
+                      ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
+                      : 'border-black/10 text-[#0a0a0a] hover:border-black/20'
+                  "
                   @click="form.needsGeoResearch = true"
                 >
                   Так
@@ -153,9 +195,11 @@ function handleSave() {
                 <button
                   type="button"
                   class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
-                  :class="form.needsGeoResearch === false
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                    : 'border-black/10 text-[#0a0a0a] hover:border-black/20'"
+                  :class="
+                    form.needsGeoResearch === false
+                      ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
+                      : 'border-black/10 text-[#0a0a0a] hover:border-black/20'
+                  "
                   @click="form.needsGeoResearch = false"
                 >
                   Ні
@@ -198,9 +242,11 @@ function handleSave() {
                 <button
                   type="button"
                   class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
-                  :class="form.keepProductConnection === true
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                    : 'border-black/10 text-[#0a0a0a] hover:border-black/20'"
+                  :class="
+                    form.keepProductConnection === true
+                      ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
+                      : 'border-black/10 text-[#0a0a0a] hover:border-black/20'
+                  "
                   @click="form.keepProductConnection = true"
                 >
                   Так
@@ -208,9 +254,11 @@ function handleSave() {
                 <button
                   type="button"
                   class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
-                  :class="form.keepProductConnection === false
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                    : 'border-black/10 text-[#0a0a0a] hover:border-black/20'"
+                  :class="
+                    form.keepProductConnection === false
+                      ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
+                      : 'border-black/10 text-[#0a0a0a] hover:border-black/20'
+                  "
                   @click="form.keepProductConnection = false"
                 >
                   Ні
@@ -265,9 +313,11 @@ function handleSave() {
                   :key="zone"
                   type="button"
                   class="px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all"
-                  :class="form.domainZones.includes(zone)
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                    : 'border-black/10 hover:border-black/20 text-[#0a0a0a]'"
+                  :class="
+                    form.domainZones.includes(zone)
+                      ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
+                      : 'border-black/10 hover:border-black/20 text-[#0a0a0a]'
+                  "
                   @click="toggleDomainZone(zone)"
                 >
                   {{ zone }}
@@ -328,7 +378,9 @@ function handleSave() {
         </div>
 
         <!-- Footer: per Figma - right-aligned, gap-12px, border-t -->
-        <div class="flex items-start justify-end gap-3 px-6 pt-[17px] pb-4 border-t border-black/10 shrink-0">
+        <div
+          class="flex items-start justify-end gap-3 px-6 pt-[17px] pb-4 border-t border-black/10 shrink-0"
+        >
           <button
             type="button"
             class="h-[46px] px-6 border border-black/10 rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a] hover:bg-black/[0.02] transition-all"

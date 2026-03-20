@@ -182,11 +182,15 @@ async function confirmDelete() {
         <div class="package-card__footer">
           <div class="package-card__meta">
             <span class="package-card__author">by {{ pkg.author_name }}</span>
-            <span class="package-card__date">{{ new Date(pkg.created_at).toLocaleDateString() }}</span>
+            <span class="package-card__date">{{
+              new Date(pkg.created_at).toLocaleDateString()
+            }}</span>
           </div>
           <div v-if="canWrite" class="package-card__actions">
             <BaseButton variant="secondary" size="sm" @click.stop="openEdit(pkg)">Edit</BaseButton>
-            <BaseButton variant="danger" size="sm" @click.stop="handleDelete(pkg.id, pkg.name)">Delete</BaseButton>
+            <BaseButton variant="danger" size="sm" @click.stop="handleDelete(pkg.id, pkg.name)"
+              >Delete</BaseButton
+            >
           </div>
         </div>
       </div>
@@ -300,11 +304,7 @@ async function confirmDelete() {
       </template>
     </BaseModal>
 
-    <BaseModal
-      v-if="deleteTarget"
-      title="Delete PR Package"
-      @close="deleteTarget = null"
-    >
+    <BaseModal v-if="deleteTarget" title="Delete PR Package" @close="deleteTarget = null">
       <p>Delete PR package "{{ deleteTarget?.name }}"?</p>
       <template #footer>
         <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>

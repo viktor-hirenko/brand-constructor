@@ -145,19 +145,27 @@ async function confirmDelete() {
             <tr>
               <th class="sortable-th" @click="toggleSort('name')">
                 Name
-                <span v-if="sortField === 'name'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="sortField === 'name'" class="sort-arrow">{{
+                  sortDirection === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleSort('email')">
                 Email
-                <span v-if="sortField === 'email'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="sortField === 'email'" class="sort-arrow">{{
+                  sortDirection === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleSort('role')">
                 Role
-                <span v-if="sortField === 'role'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="sortField === 'role'" class="sort-arrow">{{
+                  sortDirection === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleSort('created_at')">
                 Joined
-                <span v-if="sortField === 'created_at'" class="sort-arrow">{{ sortDirection === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="sortField === 'created_at'" class="sort-arrow">{{
+                  sortDirection === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th>Actions</th>
             </tr>
@@ -274,15 +282,13 @@ async function confirmDelete() {
         </template>
       </BaseModal>
 
-      <BaseModal
-        v-if="deleteTarget"
-        title="Delete User"
-        @close="deleteTarget = null"
-      >
+      <BaseModal v-if="deleteTarget" title="Delete User" @close="deleteTarget = null">
         <p>Delete user "{{ deleteTarget?.name }}" ({{ deleteTarget?.email }})?</p>
         <template #footer>
           <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>
-          <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Delete</BaseButton>
+          <BaseButton variant="danger" :loading="deleting" @click="confirmDelete"
+            >Delete</BaseButton
+          >
         </template>
       </BaseModal>
     </template>

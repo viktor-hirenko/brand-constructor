@@ -18,7 +18,11 @@ const statusFilter = ref<'all' | 'active' | 'used'>('all')
 type ConceptWithAuthor = Concept & { author_name: string; brand_name: string | null }
 const { data: concepts, loading, total, fetchData } = useApiList<ConceptWithAuthor>('/api/concepts')
 
-const { sortedData: sortedConcepts, setSort: setConceptSort } = useTableSort(concepts, 'created_at', 'desc')
+const { sortedData: sortedConcepts, setSort: setConceptSort } = useTableSort(
+  concepts,
+  'created_at',
+  'desc'
+)
 const conceptSortOption = ref('created_at:desc')
 
 function onConceptSortChange(value: string) {
@@ -28,7 +32,8 @@ function onConceptSortChange(value: string) {
 }
 
 type NamingRow = ExternalNaming & { author_name: string }
-const { data: availableNamings, fetchData: fetchNamings } = useApiList<NamingRow>('/api/namings/external')
+const { data: availableNamings, fetchData: fetchNamings } =
+  useApiList<NamingRow>('/api/namings/external')
 
 const showCreateModal = ref(false)
 const newName = ref('')
@@ -38,9 +43,7 @@ const selectedNamingIds = ref<string[]>([])
 const creating = ref(false)
 
 const unlinkedNamings = computed(() =>
-  availableNamings.value
-    .filter((n) => !n.concept_id)
-    .sort((a, b) => a.name.localeCompare(b.name))
+  availableNamings.value.filter(n => !n.concept_id).sort((a, b) => a.name.localeCompare(b.name))
 )
 
 function refreshConcepts() {
@@ -68,7 +71,7 @@ function toggleNaming(id: string) {
   if (idx === -1) {
     selectedNamingIds.value = [...selectedNamingIds.value, id]
   } else {
-    selectedNamingIds.value = selectedNamingIds.value.filter((v) => v !== id)
+    selectedNamingIds.value = selectedNamingIds.value.filter(v => v !== id)
   }
 }
 
@@ -127,17 +130,23 @@ async function confirmDelete() {
         class="concepts-view__status-tab"
         :class="{ 'concepts-view__status-tab--active': statusFilter === 'all' }"
         @click="statusFilter = 'all'"
-      >All</button>
+      >
+        All
+      </button>
       <button
         class="concepts-view__status-tab"
         :class="{ 'concepts-view__status-tab--active': statusFilter === 'active' }"
         @click="statusFilter = 'active'"
-      >Available</button>
+      >
+        Available
+      </button>
       <button
         class="concepts-view__status-tab"
         :class="{ 'concepts-view__status-tab--active': statusFilter === 'used' }"
         @click="statusFilter = 'used'"
-      >Used</button>
+      >
+        Used
+      </button>
     </div>
 
     <div class="concepts-view__toolbar">
@@ -184,7 +193,8 @@ async function confirmDelete() {
             <span
               v-if="concept.status === 'used'"
               class="concept-card__usage-badge concept-card__usage-badge--used"
-            >Used in {{ concept.brand_name || '—' }}</span>
+              >Used in {{ concept.brand_name || '—' }}</span
+            >
           </div>
           <p class="concept-card__description">
             {{ concept.description || 'No description' }}
@@ -209,9 +219,15 @@ async function confirmDelete() {
       </div>
     </div>
 
-    <BaseModal v-if="showDeleteConfirm" title="Delete Concept" width="420px" @close="showDeleteConfirm = false">
+    <BaseModal
+      v-if="showDeleteConfirm"
+      title="Delete Concept"
+      width="420px"
+      @close="showDeleteConfirm = false"
+    >
       <p class="concepts-view__confirm-text">
-        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action cannot be undone.
+        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action
+        cannot be undone.
       </p>
       <template #footer>
         <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
@@ -232,30 +248,15 @@ async function confirmDelete() {
           <label class="concepts-view__label">Mode (Theme)</label>
           <div class="concepts-view__mode-options">
             <label class="concepts-view__mode-option">
-              <input
-                type="radio"
-                :value="null"
-                v-model="newMode"
-                name="mode"
-              />
+              <input type="radio" :value="null" v-model="newMode" name="mode" />
               <span>Not specified</span>
             </label>
             <label class="concepts-view__mode-option">
-              <input
-                type="radio"
-                value="light"
-                v-model="newMode"
-                name="mode"
-              />
+              <input type="radio" value="light" v-model="newMode" name="mode" />
               <span>☀️ Light</span>
             </label>
             <label class="concepts-view__mode-option">
-              <input
-                type="radio"
-                value="dark"
-                v-model="newMode"
-                name="mode"
-              />
+              <input type="radio" value="dark" v-model="newMode" name="mode" />
               <span>🌙 Dark</span>
             </label>
           </div>

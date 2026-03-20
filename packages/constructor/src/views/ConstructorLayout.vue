@@ -28,7 +28,12 @@ watch(
   { immediate: true }
 )
 
-const stepTitle = computed(() => (route.meta.title as string) || '')
+const stepTitle = computed(() => {
+  if (currentStep.value === 10 && store.brandInternalName) {
+    return store.brandInternalName
+  }
+  return (route.meta.title as string) || ''
+})
 const stepSubtitle = computed(() => (route.meta.subtitle as string) || '')
 const totalSteps = 10
 const progressPercent = computed(() => Math.round((currentStep.value / totalSteps) * 100))

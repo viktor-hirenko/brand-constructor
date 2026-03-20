@@ -15,7 +15,7 @@ const activeTab = ref<'external' | 'internal'>('external')
 const conceptFilter = ref<string>('all')
 const statusFilter = ref<'all' | 'active' | 'used'>('all')
 
-type ExternalNamingRow = ExternalNaming & { 
+type ExternalNamingRow = ExternalNaming & {
   concept_name: string | null
   author_name: string
   brand_name: string | null
@@ -33,7 +33,9 @@ const {
   loading: intLoading,
   total: intTotal,
   fetchData: fetchInternal,
-} = useApiList<InternalNaming & { author_name: string; brand_name: string | null }>('/api/namings/internal')
+} = useApiList<InternalNaming & { author_name: string; brand_name: string | null }>(
+  '/api/namings/internal'
+)
 
 const { data: concepts, fetchData: fetchConcepts } = useApiList<Concept>('/api/concepts')
 
@@ -223,17 +225,23 @@ async function confirmDeleteNaming() {
         class="namings-view__status-tab"
         :class="{ 'namings-view__status-tab--active': statusFilter === 'all' }"
         @click="statusFilter = 'all'"
-      >All</button>
+      >
+        All
+      </button>
       <button
         class="namings-view__status-tab"
         :class="{ 'namings-view__status-tab--active': statusFilter === 'active' }"
         @click="statusFilter = 'active'"
-      >Available</button>
+      >
+        Available
+      </button>
       <button
         class="namings-view__status-tab"
         :class="{ 'namings-view__status-tab--active': statusFilter === 'used' }"
         @click="statusFilter = 'used'"
-      >Used</button>
+      >
+        Used
+      </button>
     </div>
 
     <div class="namings-view__toolbar">
@@ -265,29 +273,41 @@ async function confirmDeleteNaming() {
             <tr>
               <th class="sortable-th" @click="toggleExtSort('name')">
                 Name
-                <span v-if="extSortField === 'name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="extSortField === 'name'" class="sort-arrow">{{
+                  extSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('domain')">
                 Domain
-                <span v-if="extSortField === 'domain'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="extSortField === 'domain'" class="sort-arrow">{{
+                  extSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('price')">
                 Price
-                <span v-if="extSortField === 'price'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="extSortField === 'price'" class="sort-arrow">{{
+                  extSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th>Availability</th>
               <th>Usage</th>
               <th class="sortable-th" @click="toggleExtSort('concept_name')">
                 Linked Concept
-                <span v-if="extSortField === 'concept_name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="extSortField === 'concept_name'" class="sort-arrow">{{
+                  extSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('author_name')">
                 Author
-                <span v-if="extSortField === 'author_name'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="extSortField === 'author_name'" class="sort-arrow">{{
+                  extSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('created_at')">
                 Created
-                <span v-if="extSortField === 'created_at'" class="sort-arrow">{{ extSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="extSortField === 'created_at'" class="sort-arrow">{{
+                  extSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th v-if="canWrite">Actions</th>
             </tr>
@@ -296,16 +316,22 @@ async function confirmDeleteNaming() {
             <tr>
               <th class="sortable-th" @click="toggleIntSort('name')">
                 Name
-                <span v-if="intSortField === 'name'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="intSortField === 'name'" class="sort-arrow">{{
+                  intSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th>Usage</th>
               <th class="sortable-th" @click="toggleIntSort('author_name')">
                 Author
-                <span v-if="intSortField === 'author_name'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="intSortField === 'author_name'" class="sort-arrow">{{
+                  intSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th class="sortable-th" @click="toggleIntSort('created_at')">
                 Created
-                <span v-if="intSortField === 'created_at'" class="sort-arrow">{{ intSortDir === 'asc' ? '\u2191' : '\u2193' }}</span>
+                <span v-if="intSortField === 'created_at'" class="sort-arrow">{{
+                  intSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
               </th>
               <th v-if="canWrite">Actions</th>
             </tr>
@@ -323,15 +349,24 @@ async function confirmDeleteNaming() {
               <td>{{ n.domain || '—' }}</td>
               <td>{{ n.price != null ? `$${n.price}` : '—' }}</td>
               <td>
-                <span 
-                  class="namings-view__status-badge" 
+                <span
+                  class="namings-view__status-badge"
                   :class="`namings-view__status-badge--${n.availability_status || 'unknown'}`"
                 >
-                  {{ n.availability_status === 'available' ? '✓ Available' : n.availability_status === 'sold' ? '✗ Sold' : '? Unknown' }}
+                  {{
+                    n.availability_status === 'available'
+                      ? '✓ Available'
+                      : n.availability_status === 'sold'
+                        ? '✗ Sold'
+                        : '? Unknown'
+                  }}
                 </span>
               </td>
               <td>
-                <span v-if="n.status === 'used'" class="namings-view__usage-badge namings-view__usage-badge--used">
+                <span
+                  v-if="n.status === 'used'"
+                  class="namings-view__usage-badge namings-view__usage-badge--used"
+                >
                   Used in {{ n.brand_name || '—' }}
                 </span>
                 <span v-else>—</span>
@@ -368,7 +403,10 @@ async function confirmDeleteNaming() {
                 </div>
               </td>
               <td>
-                <span v-if="n.status === 'used'" class="namings-view__usage-badge namings-view__usage-badge--used">
+                <span
+                  v-if="n.status === 'used'"
+                  class="namings-view__usage-badge namings-view__usage-badge--used"
+                >
                   Used in {{ n.brand_name || '—' }}
                 </span>
                 <span v-else>—</span>
@@ -411,9 +449,9 @@ async function confirmDeleteNaming() {
           <BaseInput v-model="newDomain" label="Domain" placeholder="e.g. example.com" />
           <div class="namings-view__field">
             <label class="namings-view__label">Price ($)</label>
-            <input 
-              type="number" 
-              v-model.number="newPrice" 
+            <input
+              type="number"
+              v-model.number="newPrice"
               class="namings-view__number-input"
               placeholder="e.g. 1500"
               min="0"
@@ -422,7 +460,10 @@ async function confirmDeleteNaming() {
           </div>
           <div class="namings-view__field">
             <label class="namings-view__label">Availability Status</label>
-            <select v-model="newAvailabilityStatus" class="namings-view__select namings-view__select--full">
+            <select
+              v-model="newAvailabilityStatus"
+              class="namings-view__select namings-view__select--full"
+            >
               <option value="unknown">Unknown</option>
               <option value="available">Available</option>
               <option value="sold">Sold</option>
@@ -445,9 +486,15 @@ async function confirmDeleteNaming() {
       </template>
     </BaseModal>
 
-    <BaseModal v-if="showDeleteConfirm" title="Delete Naming" width="420px" @close="showDeleteConfirm = false">
+    <BaseModal
+      v-if="showDeleteConfirm"
+      title="Delete Naming"
+      width="420px"
+      @close="showDeleteConfirm = false"
+    >
       <p class="namings-view__confirm-text">
-        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action cannot be undone.
+        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action
+        cannot be undone.
       </p>
       <template #footer>
         <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
@@ -467,9 +514,9 @@ async function confirmDeleteNaming() {
           <BaseInput v-model="editDomain" label="Domain" placeholder="e.g. example.com" />
           <div class="namings-view__field">
             <label class="namings-view__label">Price ($)</label>
-            <input 
-              type="number" 
-              v-model.number="editPrice" 
+            <input
+              type="number"
+              v-model.number="editPrice"
               class="namings-view__number-input"
               placeholder="e.g. 1500"
               min="0"
@@ -478,7 +525,10 @@ async function confirmDeleteNaming() {
           </div>
           <div class="namings-view__field">
             <label class="namings-view__label">Availability Status</label>
-            <select v-model="editAvailabilityStatus" class="namings-view__select namings-view__select--full">
+            <select
+              v-model="editAvailabilityStatus"
+              class="namings-view__select namings-view__select--full"
+            >
               <option value="unknown">Unknown</option>
               <option value="available">Available</option>
               <option value="sold">Sold</option>

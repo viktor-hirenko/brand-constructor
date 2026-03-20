@@ -19,10 +19,15 @@ bucket_name = "brand-constructor-assets"
 [vars]
 ENVIRONMENT = "development"
 CORS_ORIGINS = "http://localhost:5173,http://localhost:5174"
+CONSTRUCTOR_URL = "http://localhost:5174"
+SLACK_CHANNEL_STRATEGY = "C0ANN1XJSTS"
+SLACK_CHANNEL_PR = "C0AMCBX3DEK"
+SLACK_CHANNEL_DESIGN = "C0AMTR5FLTC"
+SLACK_CHANNEL_APPROVALS = "C0AMSELFLJJ"
 
 # Production environment
 [env.production]
-vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev" }
+vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev", CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev", SLACK_CHANNEL_STRATEGY = "C0ANN1XJSTS", SLACK_CHANNEL_PR = "C0AMCBX3DEK", SLACK_CHANNEL_DESIGN = "C0AMTR5FLTC", SLACK_CHANNEL_APPROVALS = "C0AMSELFLJJ" }
 
 [[env.production.d1_databases]]
 binding = "DB"

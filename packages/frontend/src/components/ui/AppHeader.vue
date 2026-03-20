@@ -25,11 +25,7 @@ const pageTitle = computed(() => {
 
 <template>
   <header class="app-header">
-    <button
-      class="app-header__burger"
-      aria-label="Open menu"
-      @click="emit('toggle-sidebar')"
-    >
+    <button class="app-header__burger" aria-label="Open menu" @click="emit('toggle-sidebar')">
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />

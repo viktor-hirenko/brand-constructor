@@ -4,6 +4,12 @@ export interface Env {
   ENVIRONMENT: string
   CORS_ORIGINS: string
   JWT_SECRET: string
+  CONSTRUCTOR_URL: string
+  SLACK_BOT_TOKEN: string
+  SLACK_CHANNEL_STRATEGY: string
+  SLACK_CHANNEL_PR: string
+  SLACK_CHANNEL_DESIGN: string
+  SLACK_CHANNEL_APPROVALS: string
 }
 
 export interface AuthUser {

@@ -1,70 +1,80 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue'
 
 const props = defineProps<{
-  minDate?: string;
-}>();
+  minDate?: string
+}>()
 
-const model = defineModel<string>({ required: true });
+const model = defineModel<string>({ required: true })
 
-const isOpen = ref(false);
-const triggerRef = ref<HTMLButtonElement | null>(null);
-const popoverStyle = ref({ top: '0px', left: '0px' });
+const isOpen = ref(false)
+const triggerRef = ref<HTMLButtonElement | null>(null)
+const popoverStyle = ref({ top: '0px', left: '0px' })
 
 const MONTH_NAMES = [
-  'січень', 'лютий', 'березень', 'квітень', 'травень', 'червень',
-  'липень', 'серпень', 'вересень', 'жовтень', 'листопад', 'грудень',
-];
-const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'нд'];
+  'січень',
+  'лютий',
+  'березень',
+  'квітень',
+  'травень',
+  'червень',
+  'липень',
+  'серпень',
+  'вересень',
+  'жовтень',
+  'листопад',
+  'грудень',
+]
+const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'нд']
 
-const today = new Date();
-today.setHours(0, 0, 0, 0);
+const today = new Date()
+today.setHours(0, 0, 0, 0)
 
-const viewYear = ref(today.getFullYear());
-const viewMonth = ref(today.getMonth());
+const viewYear = ref(today.getFullYear())
+const viewMonth = ref(today.getMonth())
 
-watch(isOpen, (open) => {
+watch(isOpen, open => {
   if (open && model.value) {
-    const d = new Date(model.value + 'T00:00:00');
-    viewYear.value = d.getFullYear();
-    viewMonth.value = d.getMonth();
+    const d = new Date(model.value + 'T00:00:00')
+    viewYear.value = d.getFullYear()
+    viewMonth.value = d.getMonth()
   } else if (open) {
-    viewYear.value = today.getFullYear();
-    viewMonth.value = today.getMonth();
+    viewYear.value = today.getFullYear()
+    viewMonth.value = today.getMonth()
   }
-});
+})
 
-const monthLabel = computed(() => `${MONTH_NAMES[viewMonth.value]} ${viewYear.value}`);
+const monthLabel = computed(() => `${MONTH_NAMES[viewMonth.value]} ${viewYear.value}`)
 
 interface DayCell {
-  date: Date;
-  day: number;
-  isOutside: boolean;
-  isToday: boolean;
-  isSelected: boolean;
-  dateStr: string;
+  date: Date
+  day: number
+  isOutside: boolean
+  isToday: boolean
+  isSelected: boolean
+  dateStr: string
 }
 
 const calendarDays = computed((): DayCell[][] => {
-  const year = viewYear.value;
-  const month = viewMonth.value;
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
+  const year = viewYear.value
+  const month = viewMonth.value
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
 
-  let startDow = firstDay.getDay();
-  if (startDow === 0) startDow = 7;
-  const prefixDays = startDow - 1;
+  let startDow = firstDay.getDay()
+  if (startDow === 0) startDow = 7
+  const prefixDays = startDow - 1
 
-  const totalDays = lastDay.getDate();
-  const totalCells = Math.ceil((prefixDays + totalDays) / 7) * 7;
+  const totalDays = lastDay.getDate()
+  const totalCells = Math.ceil((prefixDays + totalDays) / 7) * 7
 
-  const weeks: DayCell[][] = [];
-  let week: DayCell[] = [];
+  const weeks: DayCell[][] = []
+  let week: DayCell[] = []
 
   for (let i = 0; i < totalCells; i++) {
-    const date = new Date(year, month, 1 - prefixDays + i);
-    const dateStr = formatISO(date);
-    const isOutside = date.getMonth() !== month;
+    const date = new Date(year, month, 1 - prefixDays + i)
+    const dateStr = formatISO(date)
+    const isOutside = date.getMonth() !== month
 
     week.push({
       date,
@@ -73,95 +83,95 @@ const calendarDays = computed((): DayCell[][] => {
       isToday: dateStr === formatISO(today),
       isSelected: dateStr === model.value,
       dateStr,
-    });
+    })
 
     if (week.length === 7) {
-      weeks.push(week);
-      week = [];
+      weeks.push(week)
+      week = []
     }
   }
 
-  return weeks;
-});
+  return weeks
+})
 
 function formatISO(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function formatDisplay(dateStr: string): string {
-  if (!dateStr) return '';
-  const d = new Date(dateStr + 'T00:00:00');
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T00:00:00')
   const formatted = new Intl.DateTimeFormat('uk-UA', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(d);
-  return formatted.replace(/\s*р\.$/, '');
+  }).format(d)
+  return formatted.replace(/\s*р\.$/, '')
 }
 
 function prevMonth() {
   if (viewMonth.value === 0) {
-    viewMonth.value = 11;
-    viewYear.value--;
+    viewMonth.value = 11
+    viewYear.value--
   } else {
-    viewMonth.value--;
+    viewMonth.value--
   }
 }
 
 function nextMonth() {
   if (viewMonth.value === 11) {
-    viewMonth.value = 0;
-    viewYear.value++;
+    viewMonth.value = 0
+    viewYear.value++
   } else {
-    viewMonth.value++;
+    viewMonth.value++
   }
 }
 
 const minDateObj = computed(() => {
-  if (!props.minDate) return null;
-  const d = new Date(props.minDate + 'T00:00:00');
-  d.setHours(0, 0, 0, 0);
-  return d;
-});
+  if (!props.minDate) return null
+  const d = new Date(props.minDate + 'T00:00:00')
+  d.setHours(0, 0, 0, 0)
+  return d
+})
 
 function isDayDisabled(cell: DayCell): boolean {
-  if (!minDateObj.value) return false;
-  return cell.date < minDateObj.value;
+  if (!minDateObj.value) return false
+  return cell.date < minDateObj.value
 }
 
 function selectDay(cell: DayCell) {
-  if (isDayDisabled(cell)) return;
-  model.value = cell.dateStr;
-  isOpen.value = false;
+  if (isDayDisabled(cell)) return
+  model.value = cell.dateStr
+  isOpen.value = false
 }
 
 function updatePopoverPosition() {
-  if (!triggerRef.value) return;
-  const rect = triggerRef.value.getBoundingClientRect();
-  const popoverHeight = 340;
-  const spaceBelow = window.innerHeight - rect.bottom;
+  if (!triggerRef.value) return
+  const rect = triggerRef.value.getBoundingClientRect()
+  const popoverHeight = 340
+  const spaceBelow = window.innerHeight - rect.bottom
 
   if (spaceBelow >= popoverHeight + 8) {
     popoverStyle.value = {
       top: `${rect.bottom + 6}px`,
       left: `${rect.left}px`,
-    };
+    }
   } else {
     popoverStyle.value = {
       top: `${rect.top - popoverHeight - 6}px`,
       left: `${rect.left}px`,
-    };
+    }
   }
 }
 
 async function toggle() {
-  isOpen.value = !isOpen.value;
+  isOpen.value = !isOpen.value
   if (isOpen.value) {
-    await nextTick();
-    updatePopoverPosition();
+    await nextTick()
+    updatePopoverPosition()
   }
 }
 </script>
@@ -189,7 +199,8 @@ async function toggle() {
         stroke-linecap="round"
         stroke-linejoin="round"
       >
-        <path d="M8 2v4" /><path d="M16 2v4" />
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
         <rect width="18" height="18" x="3" y="4" rx="2" />
         <path d="M3 10h18" />
       </svg>
@@ -198,11 +209,7 @@ async function toggle() {
     <!-- Teleported to body to escape overflow clipping -->
     <Teleport to="body">
       <!-- Backdrop -->
-      <div
-        v-if="isOpen"
-        class="fixed inset-0 z-[9998]"
-        @click="isOpen = false"
-      />
+      <div v-if="isOpen" class="fixed inset-0 z-[9998]" @click="isOpen = false" />
 
       <!-- Calendar popover -->
       <Transition
@@ -229,7 +236,16 @@ async function toggle() {
               aria-label="Попередній місяць"
               @click="prevMonth"
             >
-              <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                class="h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
@@ -239,7 +255,16 @@ async function toggle() {
               aria-label="Наступний місяць"
               @click="nextMonth"
             >
-              <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                class="h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </button>
