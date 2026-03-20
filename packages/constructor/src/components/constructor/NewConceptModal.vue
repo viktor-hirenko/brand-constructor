@@ -65,7 +65,11 @@ const todayISO = new Date().toISOString().split('T')[0]
 const budgetStr = ref('')
 
 const isValid = computed(() => {
-  return form.trafficTeamInfo.trim() !== '' && form.namingDeadline !== ''
+  return (
+    form.conceptFeedback.trim() !== '' &&
+    form.trafficTeamInfo.trim() !== '' &&
+    form.namingDeadline !== ''
+  )
 })
 
 function toggleDomainZone(zone: string) {
@@ -352,7 +356,7 @@ function handleSave() {
             <!-- 12. Опишіть, що вам не підійшло -->
             <div class="flex flex-col gap-3">
               <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
-                12. Опишіть, що вам не підійшло в запропонованих концептах
+                12. Опишіть, що вам не підійшло в запропонованих концептах <span class="text-red-500">*</span>
               </label>
               <textarea
                 v-model="form.conceptFeedback"

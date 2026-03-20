@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, getAssetUrl } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
@@ -13,6 +13,7 @@ const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concep
 const isCreatingNew = ref(false)
 const detailConcept = ref<Concept | null>(null)
 const showNewModal = ref(false)
+const showBriefActions = ref(false)
 
 const selectedId = computed(() => store.stepData.concept.selectedId)
 const hasBrief = computed(() => store.stepData.concept.newConceptBrief !== null)
@@ -82,11 +83,23 @@ function selectFromDetail() {
 
 function handleCreateNew() {
   if (isCreatingNew.value) {
-    isCreatingNew.value = false
-    store.setNewConceptBrief(null)
+    showBriefActions.value = !showBriefActions.value
   } else {
     store.setConcept({ selectedId: null })
     showNewModal.value = true
+  }
+}
+
+function handleEditBrief() {
+  showBriefActions.value = false
+  showNewModal.value = true
+}
+
+function handleDeleteBrief() {
+  showBriefActions.value = false
+  if (confirm('Видалити бриф нового концепту? Дані буде втрачено.')) {
+    store.setNewConceptBrief(null)
+    isCreatingNew.value = false
   }
 }
 
@@ -102,6 +115,15 @@ function handleBriefCancel() {
     isCreatingNew.value = false
   }
 }
+
+function closeBriefActions(e: MouseEvent) {
+  if (showBriefActions.value && !(e.target as Element)?.closest('.relative.self-start')) {
+    showBriefActions.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', closeBriefActions))
+onUnmounted(() => document.removeEventListener('click', closeBriefActions))
 </script>
 
 <template>
@@ -227,32 +249,57 @@ function handleBriefCancel() {
         </div>
       </div>
 
-      <!-- Create New Concept button (NOT full-width, per Figma w-[209px]) -->
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[10px] transition-colors text-base font-medium tracking-[-0.31px] self-start"
-        :class="
-          isCreatingNew
-            ? 'bg-[#030213] text-white hover:opacity-90'
-            : 'bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]'
-        "
-        @click="handleCreateNew"
-      >
-        <svg
-          class="size-4"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+      <!-- Create New Concept button / Brief created state -->
+      <div class="relative self-start">
+        <button
+          v-if="!isCreatingNew"
+          type="button"
+          class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[10px] transition-colors text-base font-medium tracking-[-0.31px] bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]"
+          @click="handleCreateNew"
         >
-          <path d="M5 12h14" />
-          <path d="M12 5v14" />
-        </svg>
-        Create New Concept
-      </button>
+          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+            <path d="M12 5v14" />
+          </svg>
+          Create New Concept
+        </button>
+
+        <button
+          v-else
+          type="button"
+          class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[10px] transition-colors text-base font-medium tracking-[-0.31px] bg-[#030213] text-white hover:opacity-90"
+          @click="handleCreateNew"
+        >
+          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Бриф концепту створено
+          <svg class="size-3 ml-1 transition-transform" :class="showBriefActions ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+
+        <!-- Dropdown actions -->
+        <div
+          v-if="showBriefActions"
+          class="absolute top-full left-0 mt-1 w-56 bg-white rounded-[10px] shadow-[0px_10px_38px_-10px_rgba(22,23,24,0.35),0px_10px_20px_-15px_rgba(22,23,24,0.2)] border border-black/10 py-1 z-50"
+        >
+          <button
+            type="button"
+            class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
+            @click="handleEditBrief"
+          >
+            Редагувати бриф
+          </button>
+          <button
+            type="button"
+            class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            @click="handleDeleteBrief"
+          >
+            Видалити бриф
+          </button>
+        </div>
+      </div>
 
       <!-- Empty state -->
       <div v-if="concepts.length === 0 && !loading" class="text-center py-8 text-muted-foreground">

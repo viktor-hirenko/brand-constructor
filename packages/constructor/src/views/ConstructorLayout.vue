@@ -874,60 +874,7 @@ watch(currentStep, step => {
             </div>
           </div>
 
-          <!-- Briefs for new items (not from library) - view only, no edit -->
-          <div
-            v-if="
-              store.stepData.concept.newConceptBrief ||
-              store.stepData.externalNaming.newNamingBrief ||
-              store.stepData.internalNaming.newNamingFeedback
-            "
-            class="mt-6 flex flex-col gap-4"
-          >
-            <!-- New concept brief -->
-            <div
-              v-if="store.stepData.concept.newConceptBrief"
-              class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5"
-            >
-              <p class="text-sm font-medium text-foreground mb-3">Бриф нового концепту</p>
-              <button
-                type="button"
-                class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
-                @click="openLayoutBrief('concept')"
-              >
-                Переглянути бриф
-              </button>
-            </div>
-
-            <!-- New external naming brief -->
-            <div
-              v-if="store.stepData.externalNaming.newNamingBrief"
-              class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5"
-            >
-              <p class="text-sm font-medium text-foreground mb-3">Бриф нового External Naming</p>
-              <button
-                type="button"
-                class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
-                @click="openLayoutBrief('external')"
-              >
-                Переглянути бриф
-              </button>
-            </div>
-
-            <!-- New internal naming brief -->
-            <div
-              v-if="store.stepData.internalNaming.newNamingFeedback && !selectedInternalNaming"
-              class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5"
-            >
-              <p class="text-sm font-medium text-foreground mb-3">Бриф нової Internal Naming</p>
-              <button
-                type="button"
-                class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
-                @click="openLayoutBrief('internal')"
-              >
-                Переглянути бриф
-              </button>
-            </div>
-          </div>
+          <!-- Brief cards for new items moved to left panel (Step6BrandPreview) to avoid duplication -->
         </template>
 
         <!-- Step 9 Preview: iPhone with layered Visual Components -->

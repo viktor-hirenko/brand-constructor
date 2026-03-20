@@ -7,6 +7,15 @@ const store = useConstructorStore()
 
 const brandDisplayName = computed(() => store.brandInternalName || 'New Brand')
 
+const hasNewBriefs = computed(() => {
+  const sd = store.stepData
+  return (
+    sd?.concept?.newConceptBrief != null ||
+    sd?.externalNaming?.newNamingBrief != null ||
+    sd?.internalNaming?.newNamingFeedback != null
+  )
+})
+
 interface SuccessConfig {
   title: string
   subtitle: string
@@ -23,13 +32,15 @@ const successConfig = computed<SuccessConfig>(() => {
   switch (store.successType) {
     case 'submitted':
       return {
-        title: 'Бриф відправлено на розгляд!',
-        subtitle: 'CEO отримає повідомлення у Slack та зможе переглянути бриф.',
+        title: hasNewBriefs.value ? 'Бриф відправлено в роботу!' : 'Бриф відправлено на розгляд!',
+        subtitle: hasNewBriefs.value
+          ? 'Повідомлення надіслано командам у Slack. Команди отримали деталі брифу.'
+          : 'CEO отримає повідомлення у Slack та зможе переглянути бриф.',
         iconBg: 'bg-blue-100',
         iconColor: 'text-blue-600',
         dateLabel: 'Дата відправки',
         showStatus: true,
-        statusLabel: 'На розгляді',
+        statusLabel: hasNewBriefs.value ? 'В роботі' : 'На розгляді',
         statusColor: 'text-blue-600',
         showCreateNew: true,
       }
@@ -183,6 +194,12 @@ function handleGoHome() {
             @click="handleNewBrief"
           >
             Створити новий бриф
+          </button>
+          <button
+            class="w-full h-[50px] text-muted-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
+            @click="handleGoHome"
+          >
+            Повернутись на головну
           </button>
         </div>
       </div>

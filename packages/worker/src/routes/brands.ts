@@ -11,6 +11,10 @@ import {
   buildResubmittedMessage,
   buildNeedsRevisionMessage,
   buildApprovedWorkflowMessage,
+  buildNewBriefsApprovalMessage,
+  buildNewBriefsStrategyMessage,
+  buildNewBriefsPrMessage,
+  buildNewBriefsDesignMessage,
   type BrandNotificationData,
 } from '../utils/slack'
 import { BRAND_APPROVAL_ROLES } from '@brand-constructor/shared'
@@ -604,11 +608,29 @@ brands.patch('/:id/status', async c => {
         )
 
         if (targetStatus === 'submitted') {
-          const isResubmit = currentStatus === 'needs_revision'
-          const message = isResubmit
-            ? buildResubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
-            : buildSubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
-          c.executionCtx.waitUntil(sendSlackMessage(c.env.SLACK_BOT_TOKEN, message))
+          const hasNewBriefs = brand.new_concept_brief != null || brand.new_naming_brief != null
+
+          if (hasNewBriefs) {
+            const token = c.env.SLACK_BOT_TOKEN
+            c.executionCtx.waitUntil(
+              Promise.allSettled([
+                sendSlackMessage(token,
+                  buildNewBriefsApprovalMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData, brand)),
+                sendSlackMessage(token,
+                  buildNewBriefsStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, notificationData, brand)),
+                sendSlackMessage(token,
+                  buildNewBriefsPrMessage(c.env.SLACK_CHANNEL_PR, notificationData)),
+                sendSlackMessage(token,
+                  buildNewBriefsDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)),
+              ])
+            )
+          } else {
+            const isResubmit = currentStatus === 'needs_revision'
+            const message = isResubmit
+              ? buildResubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
+              : buildSubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
+            c.executionCtx.waitUntil(sendSlackMessage(c.env.SLACK_BOT_TOKEN, message))
+          }
         } else {
           const ceoCommentsData = body.ceoComments ?? {}
           const ceoSelectionsData = body.ceoSelections ?? {}

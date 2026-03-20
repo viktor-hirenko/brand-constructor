@@ -272,6 +272,146 @@ export function buildNeedsRevisionMessage(
   }
 }
 
+// --- Scenario B: submitted with new briefs (CEO not involved) ---
+
+export interface BrandRowForSlack {
+  id: string
+  internal_name: string | null
+  new_concept_brief: string | null
+  new_naming_brief: string | null
+}
+
+function parseJson<T>(raw: string | null): T | null {
+  if (!raw) return null
+  try { return JSON.parse(raw) } catch { return null }
+}
+
+export function buildNewBriefsApprovalMessage(
+  channel: string,
+  data: BrandNotificationData,
+  brand: BrandRowForSlack
+): SlackMessage {
+  const conceptBrief = parseJson<Record<string, unknown>>(brand.new_concept_brief)
+  const namingBrief = parseJson<Record<string, unknown>>(brand.new_naming_brief)
+
+  const orderItems: string[] = []
+  if (conceptBrief) orderItems.push('новий концепт')
+  if (namingBrief) orderItems.push('новий external naming')
+
+  const header = `:rocket: Бриф відправлено в роботу: *${data.internalName}*`
+  const lines = [
+    header,
+    '',
+    field('GEO', data.geo),
+    field('Дата запуску', data.launchDate),
+    field('Нові замовлення', orderItems.join(', ')),
+    '',
+    '_Бриф містить нові замовлення. CEO-ревью не потрібне._',
+  ]
+
+  return {
+    channel,
+    text: `Бриф відправлено в роботу: ${data.internalName}`,
+    blocks: buildBlocks(lines, data.brandId, data.constructorUrl),
+  }
+}
+
+export function buildNewBriefsStrategyMessage(
+  channel: string,
+  data: BrandNotificationData,
+  brand: BrandRowForSlack
+): SlackMessage {
+  const conceptBrief = parseJson<Record<string, unknown>>(brand.new_concept_brief)
+  const namingBrief = parseJson<Record<string, unknown>>(brand.new_naming_brief)
+
+  const header = `:memo: Нове замовлення для *${data.internalName}*`
+  const lines = [
+    header,
+    '',
+    field('GEO', data.geo),
+    field('Дата запуску', data.launchDate),
+    field('Режим', data.mode),
+  ]
+
+  if (conceptBrief) {
+    lines.push('', '*--- Бриф нового концепту ---*')
+    lines.push(field('Що не підійшло', conceptBrief.conceptFeedback as string))
+    lines.push(field('Інфо від трафік-команди', conceptBrief.trafficTeamInfo as string))
+    lines.push(field('Конкуренти', conceptBrief.competitors as string))
+    lines.push(field('Мова назви', conceptBrief.namingLanguage as string))
+    lines.push(field('Бажані слова в назві', conceptBrief.desiredWordsInName as string))
+    const zones = conceptBrief.domainZones as string[] | undefined
+    if (zones && zones.length > 0) lines.push(field('Доменні зони', zones.join(', ')))
+    lines.push(field('Бюджет домена', conceptBrief.domainBudget != null ? `$${conceptBrief.domainBudget}` : null))
+    lines.push(field('Дедлайн', conceptBrief.namingDeadline as string))
+    if (conceptBrief.isNewGeo != null) lines.push(field('Новий ГЕО', conceptBrief.isNewGeo ? 'Так' : 'Ні'))
+    lines.push(field('Інфо про ГЕО', conceptBrief.geoInfo as string))
+    lines.push(field('Додаткова інфо по ГЕО', conceptBrief.additionalGeoInfo as string))
+  }
+
+  if (namingBrief) {
+    lines.push('', '*--- Бриф нового External Naming ---*')
+    lines.push(field('Що не підійшло', namingBrief.namingFeedback as string))
+    lines.push(field('Інфо від трафік-команди', namingBrief.trafficTeamInfo as string))
+    lines.push(field('Конкуренти', namingBrief.competitors as string))
+    lines.push(field('Дедлайн', namingBrief.namingDeadline as string))
+  }
+
+  return {
+    channel,
+    text: `Нове замовлення: ${data.internalName}`,
+    blocks: buildBlocks(lines, data.brandId, data.constructorUrl),
+  }
+}
+
+export function buildNewBriefsPrMessage(
+  channel: string,
+  data: BrandNotificationData
+): SlackMessage {
+  const header = `:memo: Новий бриф відправлено в роботу: *${data.internalName}*`
+  const lines = [
+    header,
+    '',
+    field('GEO', data.geo),
+    field('Дата запуску', data.launchDate),
+    field('PR-пакет', data.prPackageName),
+    '',
+    '_Бриф містить нові замовлення (не з бібліотеки)._',
+  ]
+
+  return {
+    channel,
+    text: `Новий бриф в роботу: ${data.internalName}`,
+    blocks: buildBlocks(lines, data.brandId, data.constructorUrl),
+  }
+}
+
+export function buildNewBriefsDesignMessage(
+  channel: string,
+  data: BrandNotificationData
+): SlackMessage {
+  const header = `:memo: Новий бриф відправлено в роботу: *${data.internalName}*`
+  const lines = [
+    header,
+    '',
+    field('GEO', data.geo),
+    field('Дата запуску', data.launchDate),
+    field('Режим', data.mode),
+    boolField('Legal Landing', data.legalLanding),
+    boolField('Partner Landing', data.partnerLanding),
+    boolField('Делегувати дизайнерам', data.delegateToDesigners),
+    field('Дедлайн розробки', data.developmentDeadline),
+    '',
+    '_Бриф містить нові замовлення (не з бібліотеки)._',
+  ]
+
+  return {
+    channel,
+    text: `Новий бриф в роботу: ${data.internalName}`,
+    blocks: buildBlocks(lines, data.brandId, data.constructorUrl),
+  }
+}
+
 export function buildApprovedWorkflowMessage(
   channel: string,
   data: BrandNotificationData

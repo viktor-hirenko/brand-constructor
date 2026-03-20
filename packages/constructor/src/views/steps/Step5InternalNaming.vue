@@ -31,7 +31,9 @@ function selectNaming(id: string) {
 
 function handleCreateNew() {
   if (isCreatingNew.value) {
-    store.setInternalNamingFeedback(null)
+    if (confirm('Видалити бриф нової внутрішньої назви?')) {
+      store.setInternalNamingFeedback(null)
+    }
   } else {
     showNewModal.value = true
   }
@@ -164,7 +166,7 @@ onMounted(loadNamings)
         <path d="M5 12h14" />
         <path d="M12 5v14" />
       </svg>
-      {{ isCreatingNew ? 'Скасувати замовлення' : 'Create New Internal Name' }}
+      {{ isCreatingNew ? 'Видалити бриф назви' : 'Create New Internal Name' }}
     </button>
 
     <!-- Коментар -->

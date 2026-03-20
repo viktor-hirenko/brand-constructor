@@ -328,6 +328,14 @@ const hasCeoSelections = computed(() => {
   return Object.values(selections).some(v => v && v.trim().length > 0)
 })
 
+function hasCeoCommentForSection(item: SummaryItem): boolean {
+  if (brandStatus.value !== 'needs_revision') return false
+  const comments = store.brandCeoComments
+  if (!comments) return false
+  const comment = comments[item.sectionKey]
+  return !!comment && comment.trim().length > 0
+}
+
 const showCeoLibraryModal = ref(false)
 const ceoLibraryType = ref<'concept' | 'externalNaming' | 'internalNaming'>('concept')
 const ceoSelections = reactive<Record<string, string>>({})
@@ -596,7 +604,8 @@ async function handlePrintBrand() {
       <div
         v-for="item in summaryItems"
         :key="item.label"
-        class="w-full p-4 bg-[#f3f3f5] border border-black/10 rounded-lg"
+        class="w-full p-4 rounded-lg border"
+        :class="hasCeoCommentForSection(item) ? 'bg-amber-50 border-amber-200' : 'bg-[#f3f3f5] border-black/10'"
       >
         <div class="flex items-start gap-3">
           <!-- Globe -->
@@ -1184,7 +1193,7 @@ async function handlePrintBrand() {
           <path d="m22 2-7 20-4-9-9-4Z" />
           <path d="M22 2 11 13" />
         </svg>
-        {{ statusActionLoading ? 'Відправляємо...' : 'Відправити на розгляд' }}
+        {{ statusActionLoading ? 'Відправляємо...' : hasNewBrief ? 'Відправити в роботу' : 'Відправити на розгляд' }}
       </button>
 
       <button
