@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 
+const props = defineProps<{
+  minDate?: string;
+}>();
+
 const model = defineModel<string>({ required: true });
 
 const isOpen = ref(false);
@@ -116,7 +120,20 @@ function nextMonth() {
   }
 }
 
+const minDateObj = computed(() => {
+  if (!props.minDate) return null;
+  const d = new Date(props.minDate + 'T00:00:00');
+  d.setHours(0, 0, 0, 0);
+  return d;
+});
+
+function isDayDisabled(cell: DayCell): boolean {
+  if (!minDateObj.value) return false;
+  return cell.date < minDateObj.value;
+}
+
 function selectDay(cell: DayCell) {
+  if (isDayDisabled(cell)) return;
   model.value = cell.dateStr;
   isOpen.value = false;
 }
@@ -254,14 +271,17 @@ async function toggle() {
                     type="button"
                     class="h-9 w-9 p-0 font-normal rounded-md transition-colors"
                     :class="[
-                      cell.isSelected
-                        ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
-                        : cell.isToday && !cell.isOutside
-                          ? 'bg-accent text-accent-foreground'
-                          : cell.isOutside
-                            ? 'text-muted-foreground opacity-50 hover:bg-accent/50'
-                            : 'hover:bg-accent hover:text-accent-foreground',
+                      isDayDisabled(cell)
+                        ? 'text-muted-foreground opacity-30 cursor-not-allowed'
+                        : cell.isSelected
+                          ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+                          : cell.isToday && !cell.isOutside
+                            ? 'bg-accent text-accent-foreground'
+                            : cell.isOutside
+                              ? 'text-muted-foreground opacity-50 hover:bg-accent/50'
+                              : 'hover:bg-accent hover:text-accent-foreground',
                     ]"
+                    :disabled="isDayDisabled(cell)"
                     @click="selectDay(cell)"
                   >
                     {{ cell.day }}

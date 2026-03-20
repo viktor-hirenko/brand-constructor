@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useConstructorStore } from '@/stores/constructor';
 import GeoMultiSelect from '@/components/constructor/GeoMultiSelect.vue';
 import DatePicker from '@/components/constructor/DatePicker.vue';
 
 const store = useConstructorStore();
+
+const touched = ref({ geo: false, launchDate: false });
+
+const todayISO = new Date().toISOString().split('T')[0];
 
 const geo = computed({
   get: () => store.stepData.brandBasics.geo,
@@ -49,7 +53,10 @@ const comment = computed({
         <span class="font-medium text-base">GEO (Географія)</span>
         <span class="text-error text-sm">*</span>
       </label>
-      <GeoMultiSelect v-model="geo" />
+      <GeoMultiSelect v-model="geo" @update:model-value="touched.geo = true" />
+      <p v-if="touched.geo && geo.length === 0" class="text-red-500 text-sm mt-1">
+        Оберіть хоча б одну ГЕО
+      </p>
     </div>
 
     <!-- Launch Date -->
@@ -72,7 +79,10 @@ const comment = computed({
         <span class="font-medium text-base">Плануєма дата запуску</span>
         <span class="text-error text-sm">*</span>
       </label>
-      <DatePicker v-model="launchDate" />
+      <DatePicker v-model="launchDate" :min-date="todayISO" @update:model-value="touched.launchDate = true" />
+      <p v-if="touched.launchDate && !launchDate" class="text-red-500 text-sm mt-1">
+        Вкажіть дату запуску
+      </p>
     </div>
 
     <!-- Linked Product -->

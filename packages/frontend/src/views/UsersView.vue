@@ -39,6 +39,9 @@ const roleOptions = Object.entries(USER_ROLES).map(([, value]) => ({
 const showRolesInfo = ref(false)
 const rolesInfoRef = ref<HTMLElement | null>(null)
 
+const deleteTarget = ref<User | null>(null)
+const deleting = ref(false)
+
 interface RolePermission {
   role: string
   canWrite: string
@@ -103,13 +106,21 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(user: User) {
-  if (!confirm(`Delete user "${user.name}" (${user.email})?`)) return
+function handleDelete(user: User) {
+  deleteTarget.value = user
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
+  deleting.value = true
   try {
-    await apiDelete(`/api/users/${user.id}`)
+    await apiDelete(`/api/users/${deleteTarget.value.id}`)
+    deleteTarget.value = null
     fetchUsers()
   } catch (err) {
     alert(err instanceof Error ? err.message : 'Failed to delete user')
+  } finally {
+    deleting.value = false
   }
 }
 </script>
@@ -260,6 +271,18 @@ async function handleDelete(user: User) {
           <BaseButton :disabled="!form.name.trim() || !form.email.trim()" @click="handleSubmit">
             {{ submitLabel }}
           </BaseButton>
+        </template>
+      </BaseModal>
+
+      <BaseModal
+        v-if="deleteTarget"
+        title="Delete User"
+        @close="deleteTarget = null"
+      >
+        <p>Delete user "{{ deleteTarget?.name }}" ({{ deleteTarget?.email }})?</p>
+        <template #footer>
+          <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>
+          <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Delete</BaseButton>
         </template>
       </BaseModal>
     </template>

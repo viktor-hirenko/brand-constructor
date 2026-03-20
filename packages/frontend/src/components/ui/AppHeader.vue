@@ -10,6 +10,7 @@ const route = useRoute()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
+    brands: 'Brands',
     concepts: 'Concepts Library',
     'concept-detail': 'Concept Details',
     namings: 'Namings Library',

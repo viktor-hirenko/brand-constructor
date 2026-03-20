@@ -144,6 +144,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/BrandSuccessView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    redirect: '/',
+  },
 ]
 
 const router = createRouter({

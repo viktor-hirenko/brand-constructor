@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared'
 import { COMPONENT_TYPE_ASPECT_RATIOS, parseAspectRatio } from '@brand-constructor/shared'
@@ -17,10 +17,15 @@ const canWrite = computed(() => authStore.canWriteLibrary('component_variants'))
 
 const typeId = route.params.typeId as string
 const componentType = ref<ComponentType | null>(null)
-const variants = ref<(ComponentVariant & { author_name: string })[]>([])
+const variants = ref<(ComponentVariant & { author_name: string; brand_name: string | null })[]>([])
 const loading = ref(false)
+const statusFilter = ref<'all' | 'active' | 'used'>('all')
 
-const { sortedData: sortedVariants, setSort: setVariantSort } = useTableSort(variants, 'created_at', 'desc')
+const { sortedData: sortedVariants, setSort: setVariantSort } = useTableSort(
+  variants,
+  'created_at',
+  'desc'
+)
 const variantSortOption = ref('created_at:desc')
 
 function onVariantSortChange(value: string) {
@@ -35,6 +40,9 @@ const creating = ref(false)
 
 const lightboxUrl = ref<string | null>(null)
 const lightboxAlt = ref('')
+
+const deleteTarget = ref<{ id: string; name: string } | null>(null)
+const deleting = ref(false)
 
 const uploadingIds = ref<Set<string>>(new Set())
 const uploadInputRefs = ref<Map<string, HTMLInputElement>>(new Map())
@@ -55,9 +63,10 @@ function triggerUpload(variantId: string) {
 async function fetchVariants() {
   loading.value = true
   try {
-    const result = await apiGet<{ type: ComponentType; variants: (ComponentVariant & { author_name: string })[] }>(
-      `/api/components/types/${typeId}/variants`
-    )
+    const result = await apiGet<{
+      type: ComponentType
+      variants: (ComponentVariant & { author_name: string; brand_name: string | null })[]
+    }>(`/api/components/types/${typeId}/variants?status=${statusFilter.value}`)
     componentType.value = result.type
     variants.value = result.variants
   } catch (err) {
@@ -68,6 +77,7 @@ async function fetchVariants() {
 }
 
 onMounted(fetchVariants)
+watch(statusFilter, fetchVariants)
 
 async function handleCreate() {
   if (!newName.value.trim()) return
@@ -82,10 +92,20 @@ async function handleCreate() {
   }
 }
 
-async function handleDelete(id: string, name: string) {
-  if (!confirm(`Delete variant "${name}"?`)) return
-  await apiDelete(`/api/components/variants/${id}`)
-  fetchVariants()
+function handleDelete(id: string, name: string) {
+  deleteTarget.value = { id, name }
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await apiDelete(`/api/components/variants/${deleteTarget.value.id}`)
+    deleteTarget.value = null
+    fetchVariants()
+  } finally {
+    deleting.value = false
+  }
 }
 
 async function handleUploadThumbnail(event: Event, variantId: string) {
@@ -122,6 +142,30 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       <BaseButton variant="ghost" size="sm" @click="router.push('/components')">
         &larr; Back to Components
       </BaseButton>
+    </div>
+
+    <div class="variants-view__status-tabs">
+      <button
+        class="variants-view__status-tab"
+        :class="{ 'variants-view__status-tab--active': statusFilter === 'all' }"
+        @click="statusFilter = 'all'"
+      >
+        All
+      </button>
+      <button
+        class="variants-view__status-tab"
+        :class="{ 'variants-view__status-tab--active': statusFilter === 'active' }"
+        @click="statusFilter = 'active'"
+      >
+        Available
+      </button>
+      <button
+        class="variants-view__status-tab"
+        :class="{ 'variants-view__status-tab--active': statusFilter === 'used' }"
+        @click="statusFilter = 'used'"
+      >
+        Used
+      </button>
     </div>
 
     <div v-if="componentType" class="variants-view__header">
@@ -162,7 +206,10 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             :src="getAssetUrl(v.thumbnail_url)"
             :alt="v.name"
             class="variant-card__img"
-            @click="lightboxUrl = getAssetUrl(v.thumbnail_url); lightboxAlt = v.name"
+            @click="
+              lightboxUrl = getAssetUrl(v.thumbnail_url)
+              lightboxAlt = v.name
+            "
           />
           <div v-else class="variant-card__placeholder">
             <svg
@@ -193,10 +240,14 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
         />
 
         <div class="variant-card__body">
-          <h4 class="variant-card__name">{{ v.name }}</h4>
+          <div class="variant-card__header-row">
+            <h4 class="variant-card__name">{{ v.name }}</h4>
+          </div>
           <div class="variant-card__meta">
             <span class="variant-card__author">by {{ v.author_name }}</span>
-            <span class="variant-card__date">{{ new Date(v.created_at).toLocaleDateString() }}</span>
+            <span class="variant-card__date">{{
+              new Date(v.created_at).toLocaleDateString()
+            }}</span>
           </div>
           <div v-if="canWrite" class="variant-card__actions">
             <BaseButton
@@ -243,6 +294,14 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
         >
       </template>
     </BaseModal>
+
+    <BaseModal v-if="deleteTarget" title="Delete Variant" @close="deleteTarget = null">
+      <p>Delete variant "{{ deleteTarget?.name }}"?</p>
+      <template #footer>
+        <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>
+        <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Delete</BaseButton>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -250,6 +309,35 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
 @use '@/styles/mixins' as *;
 
 .variants-view {
+  &__status-tabs {
+    display: flex;
+    gap: $spacing-2;
+    margin-bottom: $spacing-4;
+  }
+
+  &__status-tab {
+    padding: $spacing-1 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: $color-bg-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-bg;
+      color: $color-text;
+    }
+
+    &--active {
+      background: $color-primary;
+      border-color: $color-primary;
+      color: #fff;
+    }
+  }
+
   &__back {
     margin-bottom: $spacing-4;
   }
@@ -364,10 +452,17 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     padding: $spacing-4;
   }
 
+  &__header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-2;
+    margin-bottom: $spacing-1;
+  }
+
   &__name {
     font-size: $font-size-base;
     font-weight: $font-weight-semibold;
-    margin-bottom: $spacing-1;
   }
 
   &__meta {

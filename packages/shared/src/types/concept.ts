@@ -13,6 +13,7 @@ export interface Concept {
   visual_url: string | null
   logo_url: string | null
   preview_url: string | null
+  preview_url_web: string | null
   created_by: string
   used_in_brand_id: string | null
   created_at: string
@@ -34,4 +35,5 @@ export interface UpdateConceptPayload {
   visual_url?: string | null
   logo_url?: string | null
   preview_url?: string | null
+  preview_url_web?: string | null
 }

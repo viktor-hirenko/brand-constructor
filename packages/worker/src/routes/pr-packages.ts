@@ -112,6 +112,10 @@ app.put('/:id', requireLibraryAccess('pr_packages'), async (c) => {
     return c.json({ success: false, error: 'PR package not found' }, 404);
   }
 
+  if (existing.used_in_brand_id) {
+    return c.json({ success: false, error: 'Cannot edit: PR package is used in an approved brand' }, 409);
+  }
+
   const updates: string[] = [];
   const values: (string | null)[] = [];
 
@@ -145,12 +149,16 @@ app.delete('/:id', requireLibraryAccess('pr_packages'), async (c) => {
     return c.json({ success: false, error: 'PR package not found' }, 404);
   }
 
+  if (existing.used_in_brand_id) {
+    return c.json({ success: false, error: 'Cannot delete: PR package is used in an approved brand' }, 409);
+  }
+
   const usedInBrand = await c.env.DB.prepare(
     'SELECT id FROM brands WHERE pr_package_id = ? LIMIT 1'
   ).bind(id).first();
 
   if (usedInBrand) {
-    return c.json({ success: false, error: 'Cannot delete: PR package is used in a brand' }, 409);
+    return c.json({ success: false, error: 'Cannot delete: PR package is referenced by a brand' }, 409);
   }
 
   await c.env.DB.prepare('DELETE FROM pr_packages WHERE id = ?').bind(id).run();

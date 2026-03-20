@@ -35,7 +35,7 @@ app.get('/types', async (c) => {
   const typesWithCounts = await Promise.all(
     types.results.map(async (t) => {
       const count = await c.env.DB.prepare(
-        "SELECT COUNT(*) as total FROM component_variants WHERE component_type_id = ? AND status = 'active'"
+        "SELECT COUNT(*) as total FROM component_variants WHERE component_type_id = ?"
       ).bind(t.id).first<{ total: number }>();
       return { ...t, variant_count: count?.total || 0 };
     })
@@ -77,16 +77,18 @@ app.get('/types/:typeId/variants', async (c) => {
   let variantParams: (string | number)[];
 
   if (status === 'all') {
-    variantQuery = `SELECT cv.*, u.name as author_name
+    variantQuery = `SELECT cv.*, u.name as author_name, COALESCE(b.internal_name, cv.used_in_brand_id) as brand_name
      FROM component_variants cv
      LEFT JOIN users u ON cv.created_by = u.id
+     LEFT JOIN brands b ON cv.used_in_brand_id = b.id
      WHERE cv.component_type_id = ?
      ORDER BY cv.variant_number ASC`;
     variantParams = [typeId];
   } else {
-    variantQuery = `SELECT cv.*, u.name as author_name
+    variantQuery = `SELECT cv.*, u.name as author_name, COALESCE(b.internal_name, cv.used_in_brand_id) as brand_name
      FROM component_variants cv
      LEFT JOIN users u ON cv.created_by = u.id
+     LEFT JOIN brands b ON cv.used_in_brand_id = b.id
      WHERE cv.component_type_id = ? AND cv.status = ?
      ORDER BY cv.variant_number ASC`;
     variantParams = [typeId, status];

@@ -17,7 +17,7 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 app.use('*', logger())
 app.use('*', createCorsMiddleware())
 
-// Security headers on all responses
+// Security + cache headers on all responses
 app.use('*', async (c, next) => {
   await next()
   c.res.headers.set('X-Content-Type-Options', 'nosniff')
@@ -28,6 +28,11 @@ app.use('*', async (c, next) => {
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self' https://accounts.google.com https://apis.google.com; frame-src https://accounts.google.com; connect-src 'self' https://oauth2.googleapis.com https://accounts.google.com"
   )
+  const path = new URL(c.req.url).pathname
+  if (path.startsWith('/api/') && !path.includes('/assets/')) {
+    c.res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    c.res.headers.set('Pragma', 'no-cache')
+  }
 })
 
 app.get('/api/health', c => {

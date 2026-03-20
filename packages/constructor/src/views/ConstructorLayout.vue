@@ -1,253 +1,385 @@
 <script setup lang="ts">
-import { computed, watch, ref, onMounted } from 'vue';
-import { RouterView, useRoute, useRouter } from 'vue-router';
-import { useConstructorStore } from '@/stores/constructor';
-import { useApiList, getAssetUrl, getAuthHeader } from '@/composables/useApi';
-import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue';
-import type { Concept, ExternalNaming, InternalNaming, ComponentVariant } from '@brand-constructor/shared/types';
+import { computed, watch, ref, onMounted } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
+import { useConstructorStore } from '@/stores/constructor'
+import { useApiList, getAssetUrl, getAuthHeader } from '@/composables/useApi'
+import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
+import type {
+  Concept,
+  ExternalNaming,
+  InternalNaming,
+  ComponentVariant,
+} from '@brand-constructor/shared/types'
 
-const route = useRoute();
-const router = useRouter();
-const store = useConstructorStore();
+const route = useRoute()
+const router = useRouter()
+const store = useConstructorStore()
 
-const currentStep = computed(() => (route.meta.step as number) || 1);
+const currentStep = computed(() => (route.meta.step as number) || 1)
 
-watch(currentStep, (step) => {
-  store.goToStep(step);
-}, { immediate: true });
+watch(
+  currentStep,
+  step => {
+    store.goToStep(step)
+    if (store.returnToStep && step === store.returnToStep) {
+      store.setReturnToStep(null)
+    }
+  },
+  { immediate: true }
+)
 
-const stepTitle = computed(() => (route.meta.title as string) || '');
-const stepSubtitle = computed(() => (route.meta.subtitle as string) || '');
-const totalSteps = 10;
-const progressPercent = computed(() => Math.round((currentStep.value / totalSteps) * 100));
+const stepTitle = computed(() => (route.meta.title as string) || '')
+const stepSubtitle = computed(() => (route.meta.subtitle as string) || '')
+const totalSteps = 10
+const progressPercent = computed(() => Math.round((currentStep.value / totalSteps) * 100))
 
-const isFirstStep = computed(() => currentStep.value === 1);
-const isLastStep = computed(() => currentStep.value === totalSteps);
-const isFullWidth = computed(() => [3, 4, 5, 7, 8].includes(currentStep.value));
-const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'));
+const isFirstStep = computed(() => currentStep.value === 1)
+const isLastStep = computed(() => currentStep.value === totalSteps)
+const isFullWidth = computed(() => [3, 4, 5, 7, 8].includes(currentStep.value))
+const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'))
 
 interface ExternalNamingPreview extends ExternalNaming {
-  price_usd?: number | null;
+  price_usd?: number | null
 }
 
-const detailConcept = ref<Concept | null>(null);
+const detailConcept = ref<Concept | null>(null)
 
-const { data: concepts, fetchData: fetchConcepts, perPage: conceptsPerPage } = useApiList<Concept>('/api/concepts');
-const { data: externalNamings, fetchData: fetchExternalNamings, perPage: externalPerPage } =
-  useApiList<ExternalNamingPreview>('/api/namings/external');
-const { data: internalNamings, fetchData: fetchInternalNamings, perPage: internalPerPage } =
-  useApiList<InternalNaming>('/api/namings/internal');
+type LayoutBriefKind = 'concept' | 'external' | 'internal' | null
+const activeBrief = ref<LayoutBriefKind>(null)
 
-const brandBasics = computed(() => store.stepData?.brandBasics);
-const hasGeo = computed(() => (brandBasics.value?.geo?.length ?? 0) > 0);
-const hasDate = computed(() => (brandBasics.value?.launchDate ?? '') !== '');
-const hasLinkedProduct = computed(() => (brandBasics.value?.linkedProduct ?? '').trim() !== '');
+function openLayoutBrief(kind: Exclude<LayoutBriefKind, null>) {
+  activeBrief.value = kind
+}
+
+function closeLayoutBrief() {
+  activeBrief.value = null
+}
+
+function formatBool(val: boolean | null | undefined): string {
+  return val ? 'Так' : 'Ні'
+}
+
+function fallbackValue(val: string | null | undefined): string {
+  return val && val.trim() !== '' ? val : '—'
+}
+
+function formatBudget(val: number | null | undefined): string {
+  if (val == null || !Number.isFinite(val)) return '—'
+  return `$${val}`
+}
+
+const conceptBriefItems = computed(() => {
+  const b = store.stepData.concept.newConceptBrief
+  if (!b) return []
+  return [
+    { label: 'Чи це концепт для нового ГЕО?', value: formatBool(b.isNewGeo) },
+    { label: 'Інформація по ГЕО', value: fallbackValue(b.geoInfo) },
+    { label: 'Потрібен Research GEO?', value: formatBool(b.needsGeoResearch) },
+    { label: 'Опис, що не підійшло', value: fallbackValue(b.conceptFeedback) },
+    { label: 'Інформація по гравцям від команди Трафіку', value: fallbackValue(b.trafficTeamInfo) },
+    { label: 'Ключові конкуренти', value: fallbackValue(b.competitors) },
+    {
+      label: 'Чи важливо зберегти звʼязок з іншими продуктами?',
+      value: formatBool(b.keepProductConnection),
+    },
+    { label: 'З якими продуктами', value: fallbackValue(b.connectedProducts) },
+    { label: 'Мова створення назви', value: fallbackValue(b.namingLanguage) },
+    { label: 'Бажані слова / приставки', value: fallbackValue(b.desiredWordsInName) },
+    { label: 'Доменні зони', value: b.domainZones?.length > 0 ? b.domainZones.join(', ') : '—' },
+    { label: 'Бюджет домена', value: formatBudget(b.domainBudget) },
+    { label: 'Дедлайн', value: b.namingDeadline ? formatDate(b.namingDeadline) : '—' },
+    { label: 'Додаткова інформація по ГЕО', value: fallbackValue(b.additionalGeoInfo) },
+  ]
+})
+
+const externalBriefItems = computed(() => {
+  const b = store.stepData.externalNaming.newNamingBrief
+  if (!b) return []
+  return [
+    { label: 'Чи це нове ГЕО?', value: formatBool(b.isNewGeo) },
+    {
+      label: 'Опис, що не підійшло в запропонованих неймінгах',
+      value: fallbackValue(b.namingFeedback),
+    },
+    { label: 'Інформація по гравцям від команди Трафіку', value: fallbackValue(b.trafficTeamInfo) },
+    { label: 'Потрібен Brand Research GEO?', value: formatBool(b.needsGeoResearch) },
+    { label: 'Мова створення назви', value: fallbackValue(b.namingLanguage) },
+    { label: 'Бажані слова / приставки', value: fallbackValue(b.desiredWordsInName) },
+    { label: 'Доменні зони', value: b.domainZones?.length > 0 ? b.domainZones.join(', ') : '—' },
+    { label: 'Яких слів слід уникати', value: fallbackValue(b.wordsToAvoid) },
+    { label: 'Бюджет домена', value: formatBudget(b.domainBudget) },
+    { label: 'Дедлайн', value: b.namingDeadline ? formatDate(b.namingDeadline) : '—' },
+    { label: 'Додаткова інформація по ГЕО', value: fallbackValue(b.additionalGeoInfo) },
+  ]
+})
+
+const internalBriefItems = computed(() => {
+  const feedback = store.stepData.internalNaming.newNamingFeedback
+  if (!feedback) return []
+  return [{ label: 'Опис, що не підійшло в запропонованих неймінгах', value: feedback }]
+})
+
+function getLayoutBriefTitle(kind: LayoutBriefKind): string {
+  if (kind === 'concept') return 'Бриф нового концепту'
+  if (kind === 'external') return 'Бриф нового External Naming'
+  if (kind === 'internal') return 'Бриф нової Internal Naming'
+  return ''
+}
+
+const activeBriefItems = computed(() => {
+  if (activeBrief.value === 'concept') return conceptBriefItems.value
+  if (activeBrief.value === 'external') return externalBriefItems.value
+  if (activeBrief.value === 'internal') return internalBriefItems.value
+  return []
+})
+
+const {
+  data: concepts,
+  fetchData: fetchConcepts,
+  perPage: conceptsPerPage,
+} = useApiList<Concept>('/api/concepts')
+const {
+  data: externalNamings,
+  fetchData: fetchExternalNamings,
+  perPage: externalPerPage,
+} = useApiList<ExternalNamingPreview>('/api/namings/external')
+const {
+  data: internalNamings,
+  fetchData: fetchInternalNamings,
+  perPage: internalPerPage,
+} = useApiList<InternalNaming>('/api/namings/internal')
+
+const brandBasics = computed(() => store.stepData?.brandBasics)
+const hasGeo = computed(() => (brandBasics.value?.geo?.length ?? 0) > 0)
+const hasDate = computed(() => (brandBasics.value?.launchDate ?? '') !== '')
+const hasLinkedProduct = computed(() => (brandBasics.value?.linkedProduct ?? '').trim() !== '')
 
 const selectedConcept = computed(() => {
-  const id = store.stepData?.concept?.selectedId;
-  if (!id) return null;
-  return concepts.value.find((item) => item.id === id) ?? null;
-});
+  const id = store.stepData?.concept?.selectedId
+  if (!id) return null
+  return concepts.value.find(item => item.id === id) ?? null
+})
 
 const selectedExternalNamings = computed(() => {
-  const ids = store.stepData?.externalNaming?.selectedIds ?? [];
+  const ids = store.stepData?.externalNaming?.selectedIds ?? []
   return ids
-    .map((id) => externalNamings.value.find((item) => item.id === id))
-    .filter((item): item is ExternalNamingPreview => item != null);
-});
+    .map(id => externalNamings.value.find(item => item.id === id))
+    .filter((item): item is ExternalNamingPreview => item != null)
+})
 
 const selectedInternalNaming = computed(() => {
-  const id = store.stepData?.internalNaming?.selectedId;
-  if (!id) return null;
-  return internalNamings.value.find((item) => item.id === id) ?? null;
-});
+  const id = store.stepData?.internalNaming?.selectedId
+  if (!id) return null
+  return internalNamings.value.find(item => item.id === id) ?? null
+})
 
 function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  const date = new Date(dateStr + 'T00:00:00');
+  if (!dateStr) return ''
+  const date = new Date(dateStr + 'T00:00:00')
   const formatted = new Intl.DateTimeFormat('uk-UA', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(date);
-  return formatted.replace(/\s*р\.$/, '');
+  }).format(date)
+  return formatted.replace(/\s*р\.$/, '')
 }
 
 function goBack() {
   if (!isFirstStep.value) {
-    let prev = currentStep.value - 1;
-    if (prev === 4 && store.shouldSkipStep4) prev = 3;
-    router.push(`/constructor/step/${prev}`);
+    let prev = currentStep.value - 1
+    if (prev === 4 && store.shouldSkipStep4) prev = 3
+    router.push(`/constructor/step/${prev}`)
   }
 }
 
 async function goNext() {
-  if (isViewMode.value) return;
-  if (!store.isCurrentStepValid) return;
+  if (isViewMode.value) return
+  if (!store.isCurrentStepValid) return
 
   if (isLastStep.value) {
-    const saved = await store.saveBrand();
+    const saved = await store.saveBrand()
     if (saved) {
-      router.push('/constructor/success');
+      router.push('/constructor/success')
     }
-    return;
+    return
   }
 
-  let next = currentStep.value + 1;
-  if (next === 4 && store.shouldSkipStep4) next = 5;
-  router.push(`/constructor/step/${next}`);
+  let next = currentStep.value + 1
+  if (next === 4 && store.shouldSkipStep4) next = 5
+  router.push(`/constructor/step/${next}`)
+}
+
+function handleReturnToPreview() {
+  const target = store.returnToStep
+  store.setReturnToStep(null)
+  if (target) {
+    router.push(`/constructor/step/${target}`)
+  }
 }
 
 function getExternalDomain(naming: ExternalNamingPreview | null): string {
-  if (!naming) return '—';
-  if (naming.domain && naming.domain.trim() !== '') return naming.domain;
-  return `${naming.name.toLowerCase().replace(/\s+/g, '')}.com`;
+  if (!naming) return '—'
+  if (naming.domain && naming.domain.trim() !== '') return naming.domain
+  return `${naming.name.toLowerCase().replace(/\s+/g, '')}.com`
 }
 
 function getExternalPrice(naming: ExternalNamingPreview | null): string {
-  if (!naming) return '—';
-  const price = naming.price_usd ?? naming.price;
-  if (typeof price === 'number' && Number.isFinite(price)) return `$${price}`;
-  return '—';
+  if (!naming) return '—'
+  const price = naming.price_usd ?? naming.price
+  if (typeof price === 'number' && Number.isFinite(price)) return `$${price}`
+  return '—'
 }
 
 function openConceptDetails() {
   if (selectedConcept.value) {
-    detailConcept.value = selectedConcept.value;
+    detailConcept.value = selectedConcept.value
   }
 }
 
 function loadPreviewData() {
-  if (currentStep.value !== 6 && currentStep.value !== 10) return;
-  conceptsPerPage.value = 100;
-  externalPerPage.value = 100;
-  internalPerPage.value = 100;
-  const params: Record<string, string> = { status: 'active' };
+  if (currentStep.value !== 6 && currentStep.value !== 10) return
+  conceptsPerPage.value = 100
+  externalPerPage.value = 100
+  internalPerPage.value = 100
+  const params: Record<string, string> = { status: 'active' }
   if (store.brandId) {
-    params.available_for_brand = store.brandId;
+    params.available_for_brand = store.brandId
   }
-  fetchConcepts(params);
-  fetchExternalNamings(params);
-  fetchInternalNamings(params);
+  fetchConcepts(params)
+  fetchExternalNamings(params)
+  fetchInternalNamings(params)
 }
 
 onMounted(() => {
-  loadPreviewData();
-  loadStep9Variants();
-});
-watch(currentStep, loadPreviewData);
+  loadPreviewData()
+  loadStep9Variants()
+})
+watch(currentStep, loadPreviewData)
 
 const hasStep9Selections = computed(() => {
-  return Object.keys(store.stepData?.visualComponents?.selections ?? {}).length > 0;
-});
+  return Object.keys(store.stepData?.visualComponents?.selections ?? {}).length > 0
+})
 
-const step9VariantsCache = ref<Record<string, ComponentVariant[]>>({});
-const step9SidebarVisible = ref(true);
+const step9VariantsCache = ref<Record<string, ComponentVariant[]>>({})
+const step9SidebarVisible = ref(true)
 
 interface ComponentSlot {
-  left: string;
-  top: string;
-  width: string;
-  height: string;
-  zIndex: number;
-  contain?: boolean;
+  left: string
+  top: string
+  width: string
+  height: string
+  zIndex: number
+  contain?: boolean
 }
 
 const COMPONENT_SLOTS: Record<string, ComponentSlot> = {
-  ct_header:     { left: '0px', top: '33.75px', width: '290.25px', height: '48px', zIndex: 20 },
-  ct_banners:    { left: '12px', top: '81.75px', width: '278.25px', height: '144px', zIndex: 19 },
+  ct_header: { left: '0px', top: '33.75px', width: '290.25px', height: '48px', zIndex: 20 },
+  ct_banners: { left: '12px', top: '81.75px', width: '278.25px', height: '144px', zIndex: 19 },
   ct_thumbnails: { left: '12px', top: '394.5px', width: '270px', height: '126px', zIndex: 18 },
-  ct_tabbar:     { left: '0px', top: '557.25px', width: '289.5px', height: '57px', zIndex: 17 },
-  ct_sidebar:    { left: '0px', top: '0px', width: '288.75px', height: '614.25px', zIndex: 30, contain: true },
-  ct_theme:      { left: '0px', top: '0px', width: '288.75px', height: '614.25px', zIndex: 5 },
-};
+  ct_tabbar: { left: '0px', top: '557.25px', width: '289.5px', height: '57px', zIndex: 17 },
+  ct_sidebar: {
+    left: '0px',
+    top: '0px',
+    width: '288.75px',
+    height: '614.25px',
+    zIndex: 30,
+    contain: true,
+  },
+  ct_theme: { left: '0px', top: '0px', width: '288.75px', height: '614.25px', zIndex: 5 },
+}
 
 async function loadStep9Variants() {
-  const selections = store.stepData?.visualComponents?.selections ?? {};
-  const typeIds = Object.keys(selections);
-  if (typeIds.length === 0) return;
+  const selections = store.stepData?.visualComponents?.selections ?? {}
+  const typeIds = Object.keys(selections)
+  if (typeIds.length === 0) return
 
   for (const typeId of typeIds) {
-    if (step9VariantsCache.value[typeId]) continue;
+    if (step9VariantsCache.value[typeId]) continue
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants`,
-        { headers: getAuthHeader() },
-      );
+        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
+        { headers: getAuthHeader() }
+      )
       if (res.ok) {
-        const json = await res.json();
-        step9VariantsCache.value[typeId] = json.data?.variants || [];
+        const json = await res.json()
+        step9VariantsCache.value[typeId] = json.data?.variants || []
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
 }
 
 function getStep9PreviewUrl(typeId: string): string | null {
-  const variantId = store.stepData?.visualComponents?.selections?.[typeId];
-  if (!variantId) return null;
-  const variants = step9VariantsCache.value[typeId] || [];
-  const variant = variants.find(v => v.id === variantId);
-  if (!variant) return null;
-  const url = variant.preview_url || variant.thumbnail_url;
-  if (!url) return null;
-  return url.startsWith('http') ? url : getAssetUrl(url);
+  const variantId = store.stepData?.visualComponents?.selections?.[typeId]
+  if (!variantId) return null
+  const variants = step9VariantsCache.value[typeId] || []
+  const variant = variants.find(v => v.id === variantId)
+  if (!variant) return null
+  const url = variant.preview_url || variant.thumbnail_url
+  if (!url) return null
+  return url.startsWith('http') ? url : getAssetUrl(url)
 }
 
 function buildLayers(hideSidebar: boolean) {
-  const selections = store.stepData?.visualComponents?.selections ?? {};
-  const layers: Array<{ typeId: string; url: string; slot: ComponentSlot }> = [];
+  const selections = store.stepData?.visualComponents?.selections ?? {}
+  const layers: Array<{ typeId: string; url: string; slot: ComponentSlot }> = []
   for (const [typeId, _variantId] of Object.entries(selections)) {
-    if (typeId.includes('sidebar') && hideSidebar) continue;
-    const slot = COMPONENT_SLOTS[typeId];
-    const url = getStep9PreviewUrl(typeId);
+    if (typeId.includes('sidebar') && hideSidebar) continue
+    const slot = COMPONENT_SLOTS[typeId]
+    const url = getStep9PreviewUrl(typeId)
     if (slot && url) {
-      layers.push({ typeId, url, slot });
+      layers.push({ typeId, url, slot })
     }
   }
-  return layers.sort((a, b) => a.slot.zIndex - b.slot.zIndex);
+  return layers.sort((a, b) => a.slot.zIndex - b.slot.zIndex)
 }
 
-const step9SelectedLayers = computed(() => buildLayers(!step9SidebarVisible.value));
-const step10SelectedLayers = computed(() => buildLayers(true));
+const step9SelectedLayers = computed(() => buildLayers(!step9SidebarVisible.value))
+const step10SelectedLayers = computed(() => buildLayers(true))
 
 const hasSidebarSelected = computed(() => {
-  const selections = store.stepData?.visualComponents?.selections ?? {};
-  return Object.keys(selections).some(id => id.includes('sidebar'));
-});
+  const selections = store.stepData?.visualComponents?.selections ?? {}
+  return Object.keys(selections).some(id => id.includes('sidebar'))
+})
 
 function toggleSidebarPreview() {
-  step9SidebarVisible.value = !step9SidebarVisible.value;
+  step9SidebarVisible.value = !step9SidebarVisible.value
 }
 
-const prevSelections = ref<Record<string, string>>({});
+const prevSelections = ref<Record<string, string>>({})
 
-watch(() => store.stepData?.visualComponents?.selections, (newSel) => {
-  if (currentStep.value === 9) loadStep9Variants();
+watch(
+  () => store.stepData?.visualComponents?.selections,
+  newSel => {
+    if (currentStep.value === 9) loadStep9Variants()
 
-  const sel = (newSel ?? {}) as Record<string, string>;
-  const sidebarKey = Object.keys(sel).find(k => k.includes('sidebar'));
-  const prevSidebarKey = Object.keys(prevSelections.value).find(k => k.includes('sidebar'));
+    const sel = (newSel ?? {}) as Record<string, string>
+    const sidebarKey = Object.keys(sel).find(k => k.includes('sidebar'))
+    const prevSidebarKey = Object.keys(prevSelections.value).find(k => k.includes('sidebar'))
 
-  const sidebarChanged = sidebarKey && sel[sidebarKey] !== prevSelections.value[sidebarKey ?? ''];
-  const nonSidebarChanged = Object.keys(sel).some(k =>
-    !k.includes('sidebar') && sel[k] !== prevSelections.value[k],
-  ) || Object.keys(prevSelections.value).some(k =>
-    !k.includes('sidebar') && prevSelections.value[k] !== sel[k],
-  );
+    const sidebarChanged = sidebarKey && sel[sidebarKey] !== prevSelections.value[sidebarKey ?? '']
+    const nonSidebarChanged =
+      Object.keys(sel).some(k => !k.includes('sidebar') && sel[k] !== prevSelections.value[k]) ||
+      Object.keys(prevSelections.value).some(
+        k => !k.includes('sidebar') && prevSelections.value[k] !== sel[k]
+      )
 
-  if (sidebarChanged) {
-    step9SidebarVisible.value = true;
-  } else if (nonSidebarChanged) {
-    step9SidebarVisible.value = false;
-  }
+    if (sidebarChanged) {
+      step9SidebarVisible.value = true
+    } else if (nonSidebarChanged) {
+      step9SidebarVisible.value = false
+    }
 
-  prevSelections.value = { ...sel };
-}, { deep: true });
+    prevSelections.value = { ...sel }
+  },
+  { deep: true }
+)
 
-watch(currentStep, (step) => {
-  if (step === 9) loadStep9Variants();
-  if (step === 10) loadStep9Variants();
-});
+watch(currentStep, step => {
+  if (step === 9) loadStep9Variants()
+  if (step === 10) loadStep9Variants()
+})
 </script>
 
 <template>
@@ -256,10 +388,7 @@ watch(currentStep, (step) => {
       class="w-full max-w-[1311px] h-[90vh] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
     >
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
-      <div
-        :class="isFullWidth ? 'w-full' : 'w-[42%]'"
-        class="bg-muted/30 flex flex-col min-h-0"
-      >
+      <div :class="isFullWidth ? 'w-full' : 'w-[42%]'" class="bg-muted/30 flex flex-col min-h-0">
         <div class="flex-1 overflow-y-auto px-12 pt-5 pb-6">
           <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-1">
             {{ stepTitle }}
@@ -289,7 +418,29 @@ watch(currentStep, (step) => {
         </div>
 
         <div v-if="!isViewMode" class="shrink-0 px-12 py-6 border-t border-border">
-          <div class="flex items-start gap-3">
+          <div v-if="store.returnToStep" class="flex items-center gap-3">
+            <button
+              class="h-[50px] px-6 bg-[#030213] text-white rounded-[10px] hover:opacity-90 transition-all text-base font-medium flex items-center gap-2"
+              @click="handleReturnToPreview"
+            >
+              <svg
+                class="size-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 14 4 9l5-5" />
+                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" />
+              </svg>
+              Повернутись
+            </button>
+          </div>
+
+          <div v-else class="flex items-center gap-3">
             <button
               v-if="!isFirstStep"
               class="h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
@@ -311,7 +462,6 @@ watch(currentStep, (step) => {
 
       <!-- Right Panel: Preview (hidden on full-width steps) -->
       <div v-if="!isFullWidth" class="w-[58%] bg-white pt-12 px-12 pb-12 overflow-y-auto">
-
         <!-- Step 1 Preview -->
         <template v-if="currentStep === 1">
           <div v-if="hasGeo || hasDate || hasLinkedProduct" class="flex flex-col gap-6">
@@ -320,8 +470,19 @@ watch(currentStep, (step) => {
               class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
             >
               <div class="flex items-center gap-3 mb-4">
-                <div class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg class="size-6 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div
+                  class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
+                >
+                  <svg
+                    class="size-6 text-primary"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
                     <path d="M2 12h20" />
@@ -339,9 +500,21 @@ watch(currentStep, (step) => {
               class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
             >
               <div class="flex items-center gap-3 mb-4">
-                <div class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg class="size-6 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M8 2v4" /><path d="M16 2v4" />
+                <div
+                  class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
+                >
+                  <svg
+                    class="size-6 text-primary"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 2v4" />
+                    <path d="M16 2v4" />
                     <rect width="18" height="18" x="3" y="4" rx="2" />
                     <path d="M3 10h18" />
                   </svg>
@@ -358,11 +531,24 @@ watch(currentStep, (step) => {
               class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
             >
               <div class="flex items-center gap-3 mb-4">
-                <div class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg class="size-6 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div
+                  class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
+                >
+                  <svg
+                    class="size-6 text-primary"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
                     <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                    <path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />
+                    <path d="M10 9H8" />
+                    <path d="M16 13H8" />
+                    <path d="M16 17H8" />
                   </svg>
                 </div>
                 <h3 class="text-lg font-medium tracking-[-0.44px]">Опис бренду</h3>
@@ -397,47 +583,93 @@ watch(currentStep, (step) => {
         <!-- Step 2 Preview: Mode -->
         <template v-else-if="currentStep === 2">
           <div v-if="store.stepData?.mode" class="flex flex-col gap-6">
-            <div class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8">
+            <div
+              class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
+            >
               <div class="flex items-center gap-3 mb-6">
-                <svg v-if="store.stepData.mode === 'dark'" class="size-8 text-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  v-if="store.stepData.mode === 'dark'"
+                  class="size-8 text-foreground"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                 </svg>
-                <svg v-else class="size-8 text-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  v-else
+                  class="size-8 text-foreground"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2" /><path d="M12 20v2" />
-                  <path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" />
-                  <path d="M2 12h2" /><path d="M20 12h2" />
-                  <path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="m4.93 4.93 1.41 1.41" />
+                  <path d="m17.66 17.66 1.41 1.41" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="m6.34 17.66-1.41 1.41" />
+                  <path d="m19.07 4.93-1.41 1.41" />
                 </svg>
                 <h3 class="text-xl font-medium tracking-[-0.45px]">
                   {{ store.stepData.mode === 'dark' ? 'Dark Mode' : 'Light Mode' }}
                 </h3>
               </div>
               <p class="text-muted-foreground text-base tracking-[-0.31px] mb-6">
-                {{ store.stepData.mode === 'dark'
-                  ? 'Ваш бренд використовує темну тему - сучасний та елегантний підхід'
-                  : 'Ваш бренд використовує світлу тему - чистий та легкий підхід'
+                {{
+                  store.stepData.mode === 'dark'
+                    ? 'Ваш бренд використовує темну тему - сучасний та елегантний підхід'
+                    : 'Ваш бренд використовує світлу тему - чистий та легкий підхід'
                 }}
               </p>
               <div class="flex gap-4">
                 <div
                   class="flex-1 h-[124px] rounded-[14px] border-2 p-6"
-                  :class="store.stepData.mode === 'dark'
-                    ? 'bg-[#101828] border-[#364153]'
-                    : 'bg-[#f8f9fa] border-[#e5e7eb]'"
+                  :class="
+                    store.stepData.mode === 'dark'
+                      ? 'bg-[#101828] border-[#364153]'
+                      : 'bg-[#f8f9fa] border-[#e5e7eb]'
+                  "
                 >
-                  <div class="h-4 rounded w-24 mb-3" :class="store.stepData.mode === 'dark' ? 'bg-[#364153]' : 'bg-[#d1d5db]'" />
-                  <div class="h-3 rounded w-full mb-2" :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'" />
-                  <div class="h-3 rounded w-3/4" :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'" />
+                  <div
+                    class="h-4 rounded w-24 mb-3"
+                    :class="store.stepData.mode === 'dark' ? 'bg-[#364153]' : 'bg-[#d1d5db]'"
+                  />
+                  <div
+                    class="h-3 rounded w-full mb-2"
+                    :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'"
+                  />
+                  <div
+                    class="h-3 rounded w-3/4"
+                    :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'"
+                  />
                 </div>
                 <div
                   class="flex-1 h-[124px] rounded-[14px] border-2 p-6"
-                  :class="store.stepData.mode === 'dark'
-                    ? 'bg-[#101828] border-[#364153]'
-                    : 'bg-[#f8f9fa] border-[#e5e7eb]'"
+                  :class="
+                    store.stepData.mode === 'dark'
+                      ? 'bg-[#101828] border-[#364153]'
+                      : 'bg-[#f8f9fa] border-[#e5e7eb]'
+                  "
                 >
-                  <div class="size-12 rounded-full mb-3" :class="store.stepData.mode === 'dark' ? 'bg-[#364153]' : 'bg-[#d1d5db]'" />
-                  <div class="h-3 rounded w-20" :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'" />
+                  <div
+                    class="size-12 rounded-full mb-3"
+                    :class="store.stepData.mode === 'dark' ? 'bg-[#364153]' : 'bg-[#d1d5db]'"
+                  />
+                  <div
+                    class="h-3 rounded w-20"
+                    :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'"
+                  />
                 </div>
               </div>
             </div>
@@ -446,14 +678,36 @@ watch(currentStep, (step) => {
           <div v-else class="flex items-center justify-center h-96">
             <div class="text-center text-muted-foreground">
               <div class="flex gap-4 justify-center mb-4">
-                <svg class="size-16 opacity-30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  class="size-16 opacity-30"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2" /><path d="M12 20v2" />
-                  <path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" />
-                  <path d="M2 12h2" /><path d="M20 12h2" />
-                  <path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="m4.93 4.93 1.41 1.41" />
+                  <path d="m17.66 17.66 1.41 1.41" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="m6.34 17.66-1.41 1.41" />
+                  <path d="m19.07 4.93-1.41 1.41" />
                 </svg>
-                <svg class="size-16 opacity-30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  class="size-16 opacity-30"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                 </svg>
               </div>
@@ -465,7 +719,9 @@ watch(currentStep, (step) => {
         <!-- Step 6 Preview -->
         <template v-else-if="currentStep === 6">
           <!-- Brand card (Figma base + REDO) -->
-          <div class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] flex">
+          <div
+            class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] flex"
+          >
             <!-- Concept image -->
             <div class="w-[192px] h-[192px] rounded-[10px] overflow-hidden bg-muted shrink-0 m-6">
               <img
@@ -475,8 +731,20 @@ watch(currentStep, (step) => {
                 class="w-full h-full object-cover"
                 loading="lazy"
               />
-              <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground">
-                <svg class="size-10 opacity-30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center text-muted-foreground"
+              >
+                <svg
+                  class="size-10 opacity-30"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
                   <circle cx="9" cy="9" r="2" />
                   <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
@@ -486,145 +754,173 @@ watch(currentStep, (step) => {
 
             <!-- Right info column -->
             <div class="flex-1 flex flex-col justify-center py-6 pr-6 gap-3">
-              <!-- REDO 1: Concept name + buttons -->
+              <!-- Concept (no edit button) -->
               <div v-if="selectedConcept">
                 <p class="text-xs text-muted-foreground mb-1 leading-4">Концепт</p>
-                <p class="text-base font-medium text-foreground leading-6 tracking-[-0.31px] mb-2">{{ selectedConcept.name }}</p>
-                <div class="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                    @click="openConceptDetails"
-                  >
-                    Переглянути деталі
-                  </button>
-                  <button
-                    type="button"
-                    class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                    @click="router.push('/constructor/step/3')"
-                  >
-                    Редагувати
-                  </button>
-                </div>
+                <p class="text-base font-medium text-foreground leading-6 tracking-[-0.31px] mb-2">
+                  {{ selectedConcept.name }}
+                </p>
+                <button
+                  type="button"
+                  class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
+                  @click="openConceptDetails"
+                >
+                  Переглянути деталі
+                </button>
               </div>
 
-              <!-- REDO 1: External naming(s) with domain -->
-              <template v-if="selectedExternalNamings.length > 0">
-                <div v-for="(naming, idx) in selectedExternalNamings" :key="naming.id">
-                  <div class="flex items-center gap-2 mb-1">
-                    <svg class="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-                    </svg>
-                    <span class="text-xs text-muted-foreground leading-4">Зовнішня назва{{ selectedExternalNamings.length > 1 ? ` ${idx + 1}` : '' }}</span>
-                  </div>
-                  <div class="flex flex-wrap items-center gap-2 mb-1">
-                    <p class="text-base font-medium text-foreground leading-6 tracking-[-0.31px]">{{ naming.name }}</p>
-                    <span v-if="getExternalDomain(naming) !== '—'" class="text-sm text-muted-foreground">{{ getExternalDomain(naming) }}</span>
-                    <span v-if="getExternalPrice(naming) !== '—'" class="text-sm text-muted-foreground">{{ getExternalPrice(naming) }}</span>
-                  </div>
-                  <button
-                    type="button"
-                    class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                    @click="router.push('/constructor/step/4')"
+              <!-- External naming(s) - single header, grouped list -->
+              <div v-if="selectedExternalNamings.length > 0">
+                <div class="flex items-center gap-2 mb-1">
+                  <svg
+                    class="size-4 text-muted-foreground"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
-                    Редагувати
-                  </button>
+                    <path
+                      d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"
+                    />
+                    <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+                  </svg>
+                  <span class="text-xs text-muted-foreground leading-4">
+                    {{ selectedExternalNamings.length === 1 ? 'Зовнішня назва' : 'Зовнішні назви' }}
+                  </span>
                 </div>
-              </template>
+                <div class="space-y-1">
+                  <div
+                    v-for="naming in selectedExternalNamings"
+                    :key="naming.id"
+                    class="flex flex-wrap items-center gap-2"
+                  >
+                    <p class="text-base font-medium text-foreground leading-6 tracking-[-0.31px]">
+                      {{ naming.name }}
+                    </p>
+                    <span
+                      v-if="getExternalDomain(naming) !== '—'"
+                      class="text-sm text-muted-foreground"
+                      >{{ getExternalDomain(naming) }}</span
+                    >
+                    <span
+                      v-if="getExternalPrice(naming) !== '—'"
+                      class="text-sm text-muted-foreground"
+                      >{{ getExternalPrice(naming) }}</span
+                    >
+                  </div>
+                </div>
+              </div>
               <div v-else>
                 <div class="flex items-center gap-2 mb-1">
-                  <svg class="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+                  <svg
+                    class="size-4 text-muted-foreground"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"
+                    />
+                    <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
                   </svg>
                   <span class="text-xs text-muted-foreground leading-4">Зовнішня назва</span>
                 </div>
-                <p class="text-base font-medium text-muted-foreground leading-6 tracking-[-0.31px]">—</p>
+                <p class="text-base font-medium text-muted-foreground leading-6 tracking-[-0.31px]">
+                  —
+                </p>
               </div>
 
-              <!-- Internal naming + REDO 2: Редагувати -->
+              <!-- Internal naming -->
               <div>
                 <div class="flex items-center gap-2 mb-1">
-                  <svg class="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /><rect width="20" height="14" x="2" y="6" rx="2" />
+                  <svg
+                    class="size-4 text-muted-foreground"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                    <rect width="20" height="14" x="2" y="6" rx="2" />
                   </svg>
                   <span class="text-xs text-muted-foreground leading-4">Внутрішня назва</span>
                 </div>
-                <p class="text-base font-medium leading-6 tracking-[-0.31px] mb-1" :class="selectedInternalNaming ? 'text-foreground' : 'text-muted-foreground'">
-                  {{ selectedInternalNaming?.name || store.stepData.internalNaming.newNamingFeedback || '—' }}
-                </p>
-                <button
-                  v-if="selectedInternalNaming || store.stepData.internalNaming.newNamingFeedback"
-                  type="button"
-                  class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                  @click="router.push('/constructor/step/5')"
+                <p
+                  class="text-base font-medium leading-6 tracking-[-0.31px]"
+                  :class="selectedInternalNaming ? 'text-foreground' : 'text-muted-foreground'"
                 >
-                  Редагувати
-                </button>
+                  {{
+                    selectedInternalNaming?.name ||
+                    store.stepData.internalNaming.newNamingFeedback ||
+                    '—'
+                  }}
+                </p>
               </div>
             </div>
           </div>
 
-          <!-- REDO 3: Briefs for new items (not from library) -->
-          <div v-if="store.stepData.concept.newConceptBrief || store.stepData.externalNaming.newNamingBrief || store.stepData.internalNaming.newNamingFeedback" class="mt-6 flex flex-col gap-4">
+          <!-- Briefs for new items (not from library) - view only, no edit -->
+          <div
+            v-if="
+              store.stepData.concept.newConceptBrief ||
+              store.stepData.externalNaming.newNamingBrief ||
+              store.stepData.internalNaming.newNamingFeedback
+            "
+            class="mt-6 flex flex-col gap-4"
+          >
             <!-- New concept brief -->
-            <div v-if="store.stepData.concept.newConceptBrief" class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5">
+            <div
+              v-if="store.stepData.concept.newConceptBrief"
+              class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5"
+            >
               <p class="text-sm font-medium text-foreground mb-3">Бриф нового концепту</p>
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
-                  @click="detailConcept = null"
-                >
-                  Переглянути бриф
-                </button>
-                <button
-                  type="button"
-                  class="h-8 px-4 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                  @click="router.push('/constructor/step/3')"
-                >
-                  Редагувати
-                </button>
-              </div>
+              <button
+                type="button"
+                class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
+                @click="openLayoutBrief('concept')"
+              >
+                Переглянути бриф
+              </button>
             </div>
 
             <!-- New external naming brief -->
-            <div v-if="store.stepData.externalNaming.newNamingBrief" class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5">
+            <div
+              v-if="store.stepData.externalNaming.newNamingBrief"
+              class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5"
+            >
               <p class="text-sm font-medium text-foreground mb-3">Бриф нового External Naming</p>
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
-                >
-                  Переглянути бриф
-                </button>
-                <button
-                  type="button"
-                  class="h-8 px-4 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                  @click="router.push('/constructor/step/4')"
-                >
-                  Редагувати
-                </button>
-              </div>
+              <button
+                type="button"
+                class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
+                @click="openLayoutBrief('external')"
+              >
+                Переглянути бриф
+              </button>
             </div>
 
             <!-- New internal naming brief -->
-            <div v-if="store.stepData.internalNaming.newNamingFeedback && !selectedInternalNaming" class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5">
+            <div
+              v-if="store.stepData.internalNaming.newNamingFeedback && !selectedInternalNaming"
+              class="bg-[#f3f3f5] border border-black/10 rounded-[14px] p-5"
+            >
               <p class="text-sm font-medium text-foreground mb-3">Бриф нової Internal Naming</p>
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
-                >
-                  Переглянути бриф
-                </button>
-                <button
-                  type="button"
-                  class="h-8 px-4 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                  @click="router.push('/constructor/step/5')"
-                >
-                  Редагувати
-                </button>
-              </div>
+              <button
+                type="button"
+                class="h-8 px-4 rounded-[10px] bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-all"
+                @click="openLayoutBrief('internal')"
+              >
+                Переглянути бриф
+              </button>
             </div>
           </div>
         </template>
@@ -633,38 +929,60 @@ watch(currentStep, (step) => {
         <template v-else-if="currentStep === 9">
           <div class="flex flex-col items-center justify-center h-full">
             <div class="flex items-center gap-2 mb-6 text-muted-foreground">
-              <svg class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                class="size-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
                 <path d="M12 18h.01" />
               </svg>
               <span class="text-sm">iPhone 16 Plus Preview</span>
             </div>
-            <div class="relative" style="width: 311.25px; height: 632.25px;">
+            <div class="relative" style="width: 311.25px; height: 632.25px">
               <!-- iPhone frame -->
-              <div class="absolute inset-0" style="z-index: 0;">
+              <div class="absolute inset-0" style="z-index: 0">
                 <img
                   src="/assets/iphone-16-plus-light.png"
                   alt="iPhone frame"
                   class="object-cover"
-                  style="width: 311.25px; height: 632.25px;"
+                  style="width: 311.25px; height: 632.25px"
                 />
               </div>
               <!-- Screen content area -->
-              <div class="absolute overflow-hidden" style="left: 9px; top: 9px; width: 288.75px; height: 614.25px; z-index: 10;">
+              <div
+                class="absolute overflow-hidden"
+                style="left: 9px; top: 9px; width: 288.75px; height: 614.25px; z-index: 10"
+              >
                 <!-- Empty state -->
                 <div
                   v-if="!hasStep9Selections"
                   class="h-full flex items-center justify-center p-6 text-center bg-white/90 backdrop-blur-sm rounded-[40px]"
                 >
                   <div>
-                    <svg class="size-12 text-muted-foreground mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                      class="size-12 text-muted-foreground mx-auto mb-3"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
                       <path d="M12 18h.01" />
                     </svg>
                     <p class="text-sm text-muted-foreground">
-                      {{ store.stepData.visualComponents.delegateToDesigners
-                        ? 'Вибір компонентів делеговано дизайнерам'
-                        : 'Оберіть компоненти щоб побачити превʼю'
+                      {{
+                        store.stepData.visualComponents.delegateToDesigners
+                          ? 'Вибір компонентів делеговано дизайнерам'
+                          : 'Оберіть компоненти щоб побачити превʼю'
                       }}
                     </p>
                   </div>
@@ -687,7 +1005,11 @@ watch(currentStep, (step) => {
                     <img
                       :src="layer.url"
                       :alt="layer.typeId"
-                      :class="layer.slot.contain ? 'w-full h-full object-contain' : 'w-full h-full object-cover'"
+                      :class="
+                        layer.slot.contain
+                          ? 'w-full h-full object-contain'
+                          : 'w-full h-full object-cover'
+                      "
                     />
                   </div>
                   <!-- Sidebar close button (REDO) -->
@@ -698,10 +1020,31 @@ watch(currentStep, (step) => {
                     :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
                     @click="toggleSidebarPreview"
                   >
-                    <svg v-if="step9SidebarVisible" class="size-4 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                    <svg
+                      v-if="step9SidebarVisible"
+                      class="size-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M18 6 6 18" />
+                      <path d="m6 6 12 12" />
                     </svg>
-                    <svg v-else class="size-4 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                      v-else
+                      class="size-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <rect width="18" height="18" x="3" y="3" rx="2" />
                       <path d="M9 3v18" />
                     </svg>
@@ -725,34 +1068,84 @@ watch(currentStep, (step) => {
                   class="w-full h-full object-cover"
                   loading="lazy"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <svg class="size-10 opacity-30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                <div
+                  v-else
+                  class="w-full h-full flex items-center justify-center text-muted-foreground"
+                >
+                  <svg
+                    class="size-10 opacity-30"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                   </svg>
                 </div>
               </div>
               <div class="flex-1 flex flex-col justify-center space-y-4">
                 <div class="flex flex-col gap-3">
-                  <div v-if="selectedExternalNamings.length > 0 || store.stepData.externalNaming.newNamingBrief">
+                  <div
+                    v-if="
+                      selectedExternalNamings.length > 0 ||
+                      store.stepData.externalNaming.newNamingBrief
+                    "
+                  >
                     <div class="flex items-center gap-2 mb-2">
-                      <svg class="size-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+                      <svg
+                        class="size-4 text-primary"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"
+                        />
+                        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
                       </svg>
                       <span class="text-xs text-muted-foreground">Зовнішня назва</span>
                     </div>
                     <p class="font-medium text-lg">
-                      {{ selectedExternalNamings.length > 0 ? selectedExternalNamings.map(n => n.name).join(', ') : 'Новий неймінг (бриф)' }}
+                      {{
+                        selectedExternalNamings.length > 0
+                          ? selectedExternalNamings.map(n => n.name).join(', ')
+                          : 'Новий неймінг (бриф)'
+                      }}
                     </p>
                   </div>
-                  <div v-if="selectedInternalNaming || store.stepData.internalNaming.newNamingFeedback">
+                  <div
+                    v-if="selectedInternalNaming || store.stepData.internalNaming.newNamingFeedback"
+                  >
                     <div class="flex items-center gap-2 mb-2">
-                      <svg class="size-4 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /><rect width="20" height="14" x="2" y="6" rx="2" />
+                      <svg
+                        class="size-4 text-primary"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                        <rect width="20" height="14" x="2" y="6" rx="2" />
                       </svg>
                       <span class="text-xs text-muted-foreground">Внутрішня назва</span>
                     </div>
                     <p class="font-medium">
-                      {{ selectedInternalNaming?.name || store.stepData.internalNaming.newNamingFeedback }}
+                      {{
+                        selectedInternalNaming?.name ||
+                        store.stepData.internalNaming.newNamingFeedback
+                      }}
                     </p>
                   </div>
                 </div>
@@ -761,21 +1154,33 @@ watch(currentStep, (step) => {
 
             <!-- iPhone mockup -->
             <div class="flex flex-col items-center">
-              <div class="relative" style="width: 207.5px; height: 421.5px;">
+              <div class="relative" style="width: 207.5px; height: 421.5px">
                 <img
                   src="/assets/iphone-16-plus-light.png"
                   alt="iPhone frame"
                   class="absolute inset-0 object-cover"
-                  style="width: 207.5px; height: 421.5px; z-index: 0;"
+                  style="width: 207.5px; height: 421.5px; z-index: 0"
                 />
-                <div class="absolute overflow-hidden" style="left: 6px; top: 6px; width: 192.5px; height: 409.5px; z-index: 10;">
+                <div
+                  class="absolute overflow-hidden"
+                  style="left: 6px; top: 6px; width: 192.5px; height: 409.5px; z-index: 10"
+                >
                   <div
                     v-if="!hasStep9Selections"
                     class="h-full flex items-center justify-center p-4 text-center bg-white/90 backdrop-blur-sm rounded-[27px]"
                   >
                     <p class="text-xs text-muted-foreground">Оберіть компоненти на кроці 9</p>
                   </div>
-                  <div v-else class="relative w-full h-full overflow-hidden rounded-[40px]" style="transform: scale(0.667); transform-origin: top left; width: 288.75px; height: 614.25px;">
+                  <div
+                    v-else
+                    class="relative w-full h-full overflow-hidden rounded-[40px]"
+                    style="
+                      transform: scale(0.667);
+                      transform-origin: top left;
+                      width: 288.75px;
+                      height: 614.25px;
+                    "
+                  >
                     <div
                       v-for="layer in step10SelectedLayers"
                       :key="layer.typeId"
@@ -791,7 +1196,11 @@ watch(currentStep, (step) => {
                       <img
                         :src="layer.url"
                         :alt="layer.typeId"
-                        :class="layer.slot.contain ? 'w-full h-full object-contain' : 'w-full h-full object-cover'"
+                        :class="
+                          layer.slot.contain
+                            ? 'w-full h-full object-contain'
+                            : 'w-full h-full object-cover'
+                        "
                       />
                     </div>
                   </div>
@@ -815,9 +1224,13 @@ watch(currentStep, (step) => {
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-                <path d="M20 3v4" /><path d="M22 5h-4" />
-                <path d="M4 17v2" /><path d="M5 18H3" />
+                <path
+                  d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
+                />
+                <path d="M20 3v4" />
+                <path d="M22 5h-4" />
+                <path d="M4 17v2" />
+                <path d="M5 18H3" />
               </svg>
               <p>Превʼю буде доступне після реалізації цього кроку</p>
             </div>
@@ -828,9 +1241,74 @@ watch(currentStep, (step) => {
       <ConceptDetailOverlay
         v-if="detailConcept"
         :concept="detailConcept"
+        :show-select-button="false"
         @close="detailConcept = null"
         @select="router.push('/constructor/step/3')"
       />
     </div>
   </div>
+
+  <!-- Brief modal for right panel preview -->
+  <Teleport to="body">
+    <div v-if="activeBrief" class="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeLayoutBrief" />
+      <div
+        class="relative bg-white rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] w-full max-w-[760px] mx-4 max-h-[85vh] flex flex-col"
+      >
+        <div class="flex items-center justify-between p-6 border-b border-black/10">
+          <h3 class="text-xl font-medium text-foreground">
+            {{ getLayoutBriefTitle(activeBrief) }}
+          </h3>
+          <button
+            type="button"
+            class="size-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
+            @click="closeLayoutBrief"
+          >
+            <svg
+              class="size-5 text-muted-foreground"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1">
+          <div v-for="item in activeBriefItems" :key="item.label" class="mb-4">
+            <p class="text-sm text-muted-foreground mb-1">{{ item.label }}</p>
+            <p class="text-base text-foreground whitespace-pre-wrap">{{ item.value }}</p>
+          </div>
+        </div>
+        <div class="p-6 border-t border-black/10 flex justify-end gap-3">
+          <button
+            type="button"
+            class="h-10 px-4 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
+            @click="closeLayoutBrief"
+          >
+            Закрити
+          </button>
+          <button
+            type="button"
+            class="h-10 px-4 rounded-[10px] bg-[#030213] text-white text-sm font-medium hover:opacity-90 transition-all"
+            @click="
+              () => {
+                store.setReturnToStep(currentStep)
+                router.push(
+                  `/constructor/step/${activeBrief === 'concept' ? 3 : activeBrief === 'external' ? 4 : 5}`
+                )
+                closeLayoutBrief()
+              }
+            "
+          >
+            Редагувати
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>

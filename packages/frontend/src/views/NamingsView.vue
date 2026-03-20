@@ -18,6 +18,7 @@ const statusFilter = ref<'all' | 'active' | 'used'>('all')
 type ExternalNamingRow = ExternalNaming & { 
   concept_name: string | null
   author_name: string
+  brand_name: string | null
 }
 
 const {
@@ -32,7 +33,7 @@ const {
   loading: intLoading,
   total: intTotal,
   fetchData: fetchInternal,
-} = useApiList<InternalNaming & { author_name: string }>('/api/namings/internal')
+} = useApiList<InternalNaming & { author_name: string; brand_name: string | null }>('/api/namings/internal')
 
 const { data: concepts, fetchData: fetchConcepts } = useApiList<Concept>('/api/concepts')
 
@@ -183,11 +184,18 @@ function handleDeleteNaming(id: string, name: string) {
   showDeleteConfirm.value = true
 }
 
+const deleteError = ref<string | null>(null)
+
 async function confirmDeleteNaming() {
-  const type = activeTab.value
-  await apiDelete(`/api/namings/${type}/${deleteTargetId.value}`)
-  showDeleteConfirm.value = false
-  refreshList()
+  deleteError.value = null
+  try {
+    const type = activeTab.value
+    await apiDelete(`/api/namings/${type}/${deleteTargetId.value}`)
+    showDeleteConfirm.value = false
+    refreshList()
+  } catch (e) {
+    deleteError.value = e instanceof Error ? e.message : 'Failed to delete naming'
+  }
 }
 </script>
 
@@ -324,7 +332,7 @@ async function confirmDeleteNaming() {
               </td>
               <td>
                 <span v-if="n.status === 'used'" class="namings-view__usage-badge namings-view__usage-badge--used">
-                  Used
+                  Used in {{ n.brand_name || '—' }}
                 </span>
                 <span v-else>—</span>
               </td>
@@ -361,7 +369,7 @@ async function confirmDeleteNaming() {
               </td>
               <td>
                 <span v-if="n.status === 'used'" class="namings-view__usage-badge namings-view__usage-badge--used">
-                  Used
+                  Used in {{ n.brand_name || '—' }}
                 </span>
                 <span v-else>—</span>
               </td>

@@ -29,6 +29,9 @@ onMounted(() => {
   if (selectedMode.value) {
     params.mode = selectedMode.value
   }
+  if (store.brandId) {
+    params.available_for_brand = store.brandId
+  }
   fetchData(params)
 })
 
@@ -36,6 +39,9 @@ watch(selectedMode, newMode => {
   const params: Record<string, string> = { status: 'active' }
   if (newMode) {
     params.mode = newMode
+  }
+  if (store.brandId) {
+    params.available_for_brand = store.brandId
   }
   fetchData(params)
 })
@@ -172,27 +178,32 @@ function handleBriefCancel() {
               </h3>
             </div>
 
-            <!-- View detail button (hover) -->
+            <!-- View detail button -->
             <button
               v-if="!isCreatingNew"
-              class="absolute top-2 right-2 size-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              type="button"
+              class="group absolute top-0 right-0 p-3 cursor-pointer"
               @click="openDetail(concept, $event)"
             >
-              <svg
-                class="size-4 text-gray-900"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              <span
+                class="size-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center transition-all duration-200 shadow-[0px_3px_12px_rgba(0,0,0,0.4),0px_1px_4px_rgba(0,0,0,0.3)] group-hover:bg-white group-hover:shadow-[0px_6px_20px_rgba(0,0,0,0.45),0px_2px_8px_rgba(0,0,0,0.35)] group-hover:scale-110 hover:!scale-125"
               >
-                <path
-                  d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
-                />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+                <svg
+                  class="size-4 text-gray-900"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                  />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
             </button>
 
             <!-- Selected checkmark (top-left per Figma) -->

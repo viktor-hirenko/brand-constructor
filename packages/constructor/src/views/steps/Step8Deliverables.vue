@@ -5,6 +5,8 @@ import DatePicker from '@/components/constructor/DatePicker.vue'
 
 const store = useConstructorStore()
 
+const todayISO = new Date().toISOString().split('T')[0]
+
 const legalLanding = computed({
   get: () => store.stepData.deliverables.legalLanding,
   set: (val: boolean) => store.setDeliverables({ legalLanding: val }),
@@ -149,7 +151,7 @@ const isDeadlineRequired = computed(() => hasAnythingEnabled.value)
           <span v-if="isDeadlineRequired" class="text-red-500">*</span>
         </span>
       </div>
-      <DatePicker v-model="developmentDeadline" />
+      <DatePicker v-model="developmentDeadline" :min-date="todayISO" />
       <p v-if="isDeadlineRequired && !developmentDeadline" class="text-xs text-red-500">
         Дедлайн є обовʼязковим, якщо увімкнено хоча б одну опцію
       </p>

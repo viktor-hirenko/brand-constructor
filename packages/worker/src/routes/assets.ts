@@ -80,6 +80,9 @@ app.post('/upload', async (c) => {
   } else if (entityType === 'concept_logo') {
     await c.env.DB.prepare("UPDATE concepts SET logo_url = ?, updated_at = datetime('now') WHERE id = ?")
       .bind(fileUrl, entityId).run();
+  } else if (entityType === 'concept_preview_web') {
+    await c.env.DB.prepare("UPDATE concepts SET preview_url_web = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(fileUrl, entityId).run();
   } else if (entityType === 'component_thumbnail') {
     await c.env.DB.prepare("UPDATE component_variants SET thumbnail_url = ?, updated_at = datetime('now') WHERE id = ?")
       .bind(fileUrl, entityId).run();
@@ -107,10 +110,30 @@ app.get('/:entityType/:entityId/:fileName', async (c) => {
 
 app.delete('/:id', async (c) => {
   const id = c.req.param('id');
+  const user = c.get('user');
 
   const asset = await c.env.DB.prepare('SELECT * FROM assets WHERE id = ?').bind(id).first();
   if (!asset) {
     return c.json({ success: false, error: 'Asset not found' }, 404);
+  }
+
+  const isAdmin = (['admin', 'head_dhc'] as string[]).includes(user.role);
+  if (!isAdmin) {
+    const entityType = asset.entity_type as string;
+    const entityId = asset.entity_id as string;
+
+    let isOwner = false;
+    if (entityType.startsWith('concept_')) {
+      const entity = await c.env.DB.prepare('SELECT created_by FROM concepts WHERE id = ?').bind(entityId).first();
+      isOwner = entity?.created_by === user.id;
+    } else if (entityType === 'component_thumbnail') {
+      const entity = await c.env.DB.prepare('SELECT created_by FROM component_variants WHERE id = ?').bind(entityId).first();
+      isOwner = entity?.created_by === user.id;
+    }
+
+    if (!isOwner) {
+      return c.json({ success: false, error: 'Forbidden: you can only delete your own assets' }, 403);
+    }
   }
 
   const r2Key = (asset.file_url as string).replace('/api/assets/', '');

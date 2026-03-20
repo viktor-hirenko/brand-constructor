@@ -37,6 +37,7 @@ const form = reactive<NewConceptBrief>({
   additionalGeoInfo: '',
 });
 
+const todayISO = new Date().toISOString().split('T')[0];
 const budgetStr = ref('');
 
 const isValid = computed(() => {
@@ -295,7 +296,7 @@ function handleSave() {
               <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
                 11. Дедлайн розробки назви і концепту <span class="text-red-500">*</span>
               </label>
-              <DatePicker v-model="form.namingDeadline" />
+              <DatePicker v-model="form.namingDeadline" :min-date="todayISO" />
             </div>
 
             <!-- 12. Опишіть, що вам не підійшло -->

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS concepts (
   visual_url TEXT,
   logo_url TEXT,
   preview_url TEXT,
+  preview_url_web TEXT,
   created_by TEXT NOT NULL,
   used_in_brand_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS pr_packages (
   expenses TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'active',
   created_by TEXT NOT NULL,
+  used_in_brand_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (created_by) REFERENCES users(id)

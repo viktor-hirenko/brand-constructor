@@ -111,7 +111,10 @@ function getVariantNumber(typeId: string, variantId: string): number | null {
 
 const conflicts = computed(() => {
   const result: Array<{
-    message: string
+    typeAName: string
+    variantAName: string
+    typeBName: string
+    variantBName: string
     typeA: string
     variantA: string
     typeB: string
@@ -133,7 +136,10 @@ const conflicts = computed(() => {
       const varB = variantsByType.value[rule.typeIdB]?.find(v => v.id === selB)
 
       result.push({
-        message: `<b>${typeA?.name || ''}</b> <b>${varA?.name || ''}</b> і <b>${typeB?.name || ''}</b> <b>${varB?.name || ''}</b> конфліктують між собою. Змініть один із варіантів, щоб продовжити.`,
+        typeAName: typeA?.name || '',
+        variantAName: varA?.name || '',
+        typeBName: typeB?.name || '',
+        variantBName: varB?.name || '',
         typeA: rule.typeIdA,
         variantA: selA,
         typeB: rule.typeIdB,
@@ -248,12 +254,15 @@ async function loadVariantsForType(typeId: string) {
   loadingVariants.value[typeId] = true
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=active`,
+      `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
       { headers: getAuthHeader() }
     )
     if (response.ok) {
       const json = await response.json()
-      variantsByType.value[typeId] = json.data?.variants || []
+      const variants: ComponentVariant[] = (json.data?.variants || []).filter(
+        (v: ComponentVariant) => v.status !== 'archived' && v.status !== 'draft'
+      )
+      variantsByType.value[typeId] = variants.sort((a, b) => a.name.localeCompare(b.name))
     }
   } catch {
     variantsByType.value[typeId] = []
@@ -374,7 +383,7 @@ onMounted(loadComponentTypes)
               v-if="
                 selections[type.id] &&
                 hasConflicts &&
-                conflicts.some(c => c.message.includes(type.name))
+                conflicts.some(c => c.typeAName === type.name || c.typeBName === type.name)
               "
               class="size-5 text-[#d97706]"
               xmlns="http://www.w3.org/2000/svg"
@@ -530,8 +539,12 @@ onMounted(loadComponentTypes)
           v-for="(conflict, idx) in conflicts"
           :key="idx"
           class="text-base text-foreground/80 tracking-[-0.31px] leading-6"
-          v-html="conflict.message"
-        />
+        >
+          <span class="font-bold">{{ conflict.typeAName }} {{ conflict.variantAName }}</span>
+          і
+          <span class="font-bold">{{ conflict.typeBName }} {{ conflict.variantBName }}</span>
+          конфліктують між собою. Змініть один із варіантів, щоб продовжити.
+        </p>
       </div>
     </div>
 

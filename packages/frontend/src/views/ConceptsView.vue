@@ -15,7 +15,7 @@ const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
 const statusFilter = ref<'all' | 'active' | 'used'>('all')
 
-type ConceptWithAuthor = Concept & { author_name: string }
+type ConceptWithAuthor = Concept & { author_name: string; brand_name: string | null }
 const { data: concepts, loading, total, fetchData } = useApiList<ConceptWithAuthor>('/api/concepts')
 
 const { sortedData: sortedConcepts, setSort: setConceptSort } = useTableSort(concepts, 'created_at', 'desc')
@@ -106,10 +106,17 @@ function handleDelete(id: string, name: string) {
   showDeleteConfirm.value = true
 }
 
+const deleteError = ref<string | null>(null)
+
 async function confirmDelete() {
-  await apiDelete(`/api/concepts/${deleteTargetId.value}`)
-  showDeleteConfirm.value = false
-  refreshConcepts()
+  deleteError.value = null
+  try {
+    await apiDelete(`/api/concepts/${deleteTargetId.value}`)
+    showDeleteConfirm.value = false
+    refreshConcepts()
+  } catch (e) {
+    deleteError.value = e instanceof Error ? e.message : 'Failed to delete concept'
+  }
 }
 </script>
 
@@ -177,7 +184,7 @@ async function confirmDelete() {
             <span
               v-if="concept.status === 'used'"
               class="concept-card__usage-badge concept-card__usage-badge--used"
-            >Used</span>
+            >Used in {{ concept.brand_name || '—' }}</span>
           </div>
           <p class="concept-card__description">
             {{ concept.description || 'No description' }}

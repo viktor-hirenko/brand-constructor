@@ -17,12 +17,11 @@ const {
   fetchData: fetchBrands,
 } = useApiList<BrandWithAuthor>('/api/brands')
 
-const {
-  sortedData,
-  sortField,
-  sortDirection,
-  toggleSort,
-} = useTableSort(brands, 'updatedAt', 'desc')
+const { sortedData, sortField, sortDirection, toggleSort } = useTableSort(
+  brands,
+  'updatedAt',
+  'desc'
+)
 
 const activeTab = ref<string>('all')
 
@@ -136,23 +135,33 @@ async function confirmDeleteBrand() {
           <tr>
             <th class="sortable-th" @click="toggleSort('internalName')">
               Name
-              <span v-if="sortField === 'internalName'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              <span v-if="sortField === 'internalName'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('status')">
               Status
-              <span v-if="sortField === 'status'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              <span v-if="sortField === 'status'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('geo')">
               GEO
-              <span v-if="sortField === 'geo'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              <span v-if="sortField === 'geo'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('launchDate')">
               Launch Date
-              <span v-if="sortField === 'launchDate'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              <span v-if="sortField === 'launchDate'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
             </th>
             <th class="sortable-th" @click="toggleSort('updatedAt')">
               Updated
-              <span v-if="sortField === 'updatedAt'" class="sort-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              <span v-if="sortField === 'updatedAt'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
             </th>
             <th>Actions</th>
           </tr>
@@ -168,10 +177,7 @@ async function confirmDeleteBrand() {
               {{ brand.internalName || brand.id.substring(0, 12) + '...' }}
             </td>
             <td>
-              <span
-                class="badge"
-                :class="STATUS_BADGES[brand.status]?.cls ?? 'badge--gray'"
-              >
+              <span class="badge" :class="STATUS_BADGES[brand.status]?.cls ?? 'badge--gray'">
                 {{ STATUS_BADGES[brand.status]?.label ?? brand.status }}
               </span>
             </td>
@@ -180,12 +186,25 @@ async function confirmDeleteBrand() {
             <td>{{ formatDate(brand.updatedAt) }}</td>
             <td class="brands-view__actions" @click.stop>
               <button
-                v-if="brand.status === 'draft'"
                 class="brands-view__delete-btn"
                 title="Delete"
                 @click="handleDeleteBrand(brand)"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
               </button>
             </td>
           </tr>
@@ -193,9 +212,16 @@ async function confirmDeleteBrand() {
       </table>
     </div>
 
-    <BaseModal v-if="showDeleteConfirm" title="Delete Brand" width="420px" @close="showDeleteConfirm = false">
+    <BaseModal
+      v-if="showDeleteConfirm"
+      title="Delete Brand"
+      width="420px"
+      @close="showDeleteConfirm = false"
+    >
       <p class="brands-view__confirm-text">
-        Are you sure you want to delete <strong>"{{ deleteTarget?.internalName || 'this brand' }}"</strong>? This action cannot be undone.
+        Are you sure you want to delete
+        <strong>"{{ deleteTarget?.internalName || 'this brand' }}"</strong>? This action cannot be
+        undone.
       </p>
       <template #footer>
         <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>

@@ -11,6 +11,7 @@ export interface PrPackage {
   expenses: string;
   status: string;
   created_by: string;
+  used_in_brand_id: string | null;
   created_at: string;
   updated_at: string;
 }

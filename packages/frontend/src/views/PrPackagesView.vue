@@ -24,6 +24,9 @@ const showCreateModal = ref(false)
 const editingPkg = ref<PrPackage | null>(null)
 const viewingPkg = ref<PrPackage | null>(null)
 
+const deleteTarget = ref<{ id: string; name: string } | null>(null)
+const deleting = ref(false)
+
 const form = ref({
   number: 0,
   name: '',
@@ -123,10 +126,20 @@ function openCreate() {
   showCreateModal.value = true
 }
 
-async function handleDelete(id: string, name: string) {
-  if (!confirm(`Delete PR package "${name}"?`)) return
-  await apiDelete(`/api/pr-packages/${id}`)
-  fetchPackages()
+function handleDelete(id: string, name: string) {
+  deleteTarget.value = { id, name }
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await apiDelete(`/api/pr-packages/${deleteTarget.value.id}`)
+    deleteTarget.value = null
+    fetchPackages()
+  } finally {
+    deleting.value = false
+  }
 }
 </script>
 
@@ -284,6 +297,18 @@ async function handleDelete(id: string, name: string) {
         <BaseButton :disabled="!form.name.trim()" @click="handleSave">
           {{ editingPkg ? 'Save Changes' : 'Create Package' }}
         </BaseButton>
+      </template>
+    </BaseModal>
+
+    <BaseModal
+      v-if="deleteTarget"
+      title="Delete PR Package"
+      @close="deleteTarget = null"
+    >
+      <p>Delete PR package "{{ deleteTarget?.name }}"?</p>
+      <template #footer>
+        <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>
+        <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Delete</BaseButton>
       </template>
     </BaseModal>
   </div>
