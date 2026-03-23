@@ -32,20 +32,27 @@ const routes: RouteRecordRaw[] = [
       const brandId = to.params.id as string
       const store = useConstructorStore()
 
-      if (store.brandId === brandId) return true
-
       try {
         const brand = await apiGet<Brand>(`/api/brands/${brandId}`)
         const stepData = brand.stepData ?? {
           brandBasics: { geo: brand.geo ? brand.geo.split(',') : [], launchDate: brand.launchDate ?? '', linkedProduct: '', comment: '' },
           mode: brand.mode ?? null,
-          concept: { selectedId: brand.conceptId ?? null, comment: brand.conceptComment ?? '', newConceptBrief: null },
-          externalNaming: { selectedIds: brand.externalNamingIds ?? [], comment: brand.externalNamingComment ?? '', newNamingBrief: null },
-          internalNaming: { selectedId: brand.internalNamingId ?? null, comment: '', newNamingFeedback: null },
+          concept: { selectedId: brand.conceptId ?? null, comment: brand.conceptComment ?? '', newConceptBrief: brand.newConceptBrief ?? null },
+          externalNaming: { selectedIds: brand.externalNamingIds ?? [], comment: brand.externalNamingComment ?? '', newNamingBrief: brand.newNamingBrief ?? null },
+          internalNaming: { selectedId: brand.internalNamingId ?? null, comment: brand.internalNamingComment ?? '', newNamingFeedback: null },
           previewComment: '',
-          marketingPackage: { selectedId: brand.prPackageId ?? null, comment: '' },
-          deliverables: { legalLanding: false, partnerLanding: false, developmentDeadline: '', comment: '' },
-          visualComponents: { selections: {}, delegateToDesigners: false, comment: '' },
+          marketingPackage: { selectedId: brand.prPackageId ?? null, comment: brand.prPackageComment ?? '' },
+          deliverables: {
+            legalLanding: brand.legalLanding ?? false,
+            partnerLanding: brand.partnerLanding ?? false,
+            developmentDeadline: brand.developmentDeadline ?? '',
+            comment: brand.deliverablesComment ?? '',
+          },
+          visualComponents: {
+            selections: brand.componentSelections ?? {},
+            delegateToDesigners: brand.delegateToDesigners ?? false,
+            comment: brand.componentsComment ?? '',
+          },
         }
         store.loadBrand(brandId, stepData, brand.currentStep ?? 10, brand.status, brand.internalName ?? undefined, brand.ceoComments ?? undefined, brand.ceoSelections ?? undefined)
         return true

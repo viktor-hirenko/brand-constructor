@@ -11,11 +11,11 @@ import type {
   PrPackage,
   Brand,
 } from '@brand-constructor/shared/types'
-import { usePrintBrand, type PrintBrandData } from '@/composables/usePrintBrand'
+import { usePrintBrand, type PrintBrandData, type ComponentTypeInfo } from '@/composables/usePrintBrand'
 import { getAuthHeader } from '@/composables/useApi'
 
 const router = useRouter()
-const { printBrand } = usePrintBrand()
+const { downloadPdf } = usePrintBrand()
 const store = useConstructorStore()
 const authStore = useAuthStore()
 
@@ -300,10 +300,17 @@ const hasNewBrief = computed(() => {
 })
 
 const showCeoReview = computed(
-  () =>
-    isCeoView.value &&
-    !hasNewBrief.value &&
-    (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
+  () => isCeoView.value && !hasNewBrief.value && brandStatus.value === 'submitted'
+)
+
+const showPoSubmitButton = computed(
+  () => !isCeoView.value && (brandStatus.value === 'draft' || brandStatus.value === 'needs_revision')
+)
+
+const showShareButton = computed(() => !isCeoView.value && brandStatus.value === 'draft')
+
+const showPdfButton = computed(
+  () => brandStatus.value === 'draft' || brandStatus.value === 'approved'
 )
 
 const CEO_COMMENT_SECTION_LABELS: Record<string, string> = {
@@ -511,48 +518,70 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
   }
 }
 
-const COMPONENT_TYPE_LABELS: Record<string, string> = {
-  ct_header: 'Хедер',
-  ct_banners: 'Банери',
-  ct_thumbnails: 'Сабнейли',
-  ct_tabbar: 'Таббар',
-  ct_sidebar: 'Сайдбар',
-  ct_theme: 'Тема',
-}
+const isPdfLoading = ref(false)
 
 async function handlePrintBrand() {
-  const selections = store.stepData?.visualComponents?.selections ?? {}
-  const componentLabels: Record<string, string> = {}
+  isPdfLoading.value = true
+  try {
+    const selections = store.stepData?.visualComponents?.selections ?? {}
+    const componentTypes: Record<string, ComponentTypeInfo> = {}
 
-  for (const [typeId, variantId] of Object.entries(selections)) {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants`,
-        { headers: getAuthHeader() }
-      )
-      if (res.ok) {
-        const json = await res.json()
-        const variants = json.data?.variants || []
-        const variant = variants.find((v: { id: string; name: string }) => v.id === variantId)
-        componentLabels[typeId] = variant?.name ?? variantId
-      } else {
-        componentLabels[typeId] = variantId
+    const fetchPromises = Object.entries(selections).map(async ([typeId, variantId]) => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants`,
+          { headers: getAuthHeader() }
+        )
+        if (res.ok) {
+          const json = await res.json()
+          const typeName = json.data?.type?.name ?? 'Невідомий тип'
+          const variants = json.data?.variants || []
+          const variant = variants.find((v: { id: string; name: string }) => v.id === variantId)
+          componentTypes[typeId] = { typeName, variantName: variant?.name ?? 'Невідомий варіант' }
+        } else {
+          componentTypes[typeId] = { typeName: 'Невідомий тип', variantName: 'Невідомий варіант' }
+        }
+      } catch {
+        componentTypes[typeId] = { typeName: 'Невідомий тип', variantName: 'Невідомий варіант' }
       }
-    } catch {
-      componentLabels[typeId] = variantId
+    })
+    await Promise.all(fetchPromises)
+
+    const ceoSelectionsResolved: Record<string, string> = {}
+    if (store.brandCeoSelections) {
+      for (const [key, id] of Object.entries(store.brandCeoSelections)) {
+        if (!id?.trim()) continue
+        if (key === 'concept') {
+          ceoSelectionsResolved[key] = concepts.value.find(c => c.id === id)?.name ?? id
+        } else if (key === 'externalNaming') {
+          ceoSelectionsResolved[key] = externalNamings.value.find(n => n.id === id)?.name ?? id
+        } else if (key === 'internalNaming') {
+          ceoSelectionsResolved[key] = internalNamings.value.find(n => n.id === id)?.name ?? id
+        }
+      }
     }
-  }
 
-  const data: PrintBrandData = {
-    brandName: store.brandInternalName || 'New Brand',
-    conceptName: selectedConcept.value?.name ?? null,
-    externalNamingNames: selectedExternalNamings.value.map(n => n.name),
-    internalNamingName: selectedInternalNaming.value?.name ?? null,
-    prPackageName: selectedPackage.value?.name ?? null,
-    componentLabels,
-  }
+    const brandName = store.brandInternalName
+      || selectedExternalNamings.value[0]?.name
+      || selectedConcept.value?.name
+      || 'Brand Brief'
 
-  printBrand(data)
+    const data: PrintBrandData = {
+      brandName,
+      conceptName: selectedConcept.value?.name ?? null,
+      externalNamingNames: selectedExternalNamings.value.map(n => n.name),
+      internalNamingName: selectedInternalNaming.value?.name ?? null,
+      prPackageName: selectedPackage.value?.name ?? null,
+      componentTypes,
+      ceoComments: store.brandCeoComments,
+      ceoSelections: Object.keys(ceoSelectionsResolved).length > 0 ? ceoSelectionsResolved : null,
+      previewComment: store.stepData.previewComment || undefined,
+    }
+
+    await downloadPdf(data)
+  } finally {
+    isPdfLoading.value = false
+  }
 }
 </script>
 
@@ -1172,11 +1201,10 @@ async function handlePrintBrand() {
       </ul>
     </div>
 
-    <!-- PO Action Buttons -->
-    <div v-if="!showCeoReview" class="space-y-3 pt-4 border-t border-black/10">
-      <!-- Submit for Review (only for draft / needs_revision) -->
+    <!-- Action Buttons -->
+    <div v-if="showPoSubmitButton || showShareButton || showPdfButton" class="space-y-3 pt-4 border-t border-black/10">
       <button
-        v-if="brandStatus === 'draft' || brandStatus === 'needs_revision'"
+        v-if="showPoSubmitButton"
         class="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
         :disabled="statusActionLoading || isSaving"
         @click="handleStatusChange('submitted')"
@@ -1197,6 +1225,7 @@ async function handlePrintBrand() {
       </button>
 
       <button
+        v-if="showShareButton"
         class="flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50 w-full"
         :disabled="isSaving"
         @click="handleShare"
@@ -1233,14 +1262,15 @@ async function handlePrintBrand() {
         </svg>
         {{ shareSuccess ? 'Скопійовано!' : 'Share' }}
       </button>
-      <!-- "Зберегти як чернетку" hidden: not in v2 PRD, no Slack notification or return flow for drafts -->
-      
 
       <button
-        class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-black/10 text-foreground rounded-xl hover:bg-black/[0.02] transition-colors text-sm font-medium"
+        v-if="showPdfButton"
+        class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-black/10 text-foreground rounded-xl hover:bg-black/[0.02] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        :disabled="isPdfLoading"
         @click="handlePrintBrand"
       >
         <svg
+          v-if="!isPdfLoading"
           class="size-4"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -1254,7 +1284,18 @@ async function handlePrintBrand() {
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" x2="12" y1="15" y2="3" />
         </svg>
-        Завантажити PDF
+        <svg
+          v-else
+          class="size-4 animate-spin"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+        {{ isPdfLoading ? 'Генерація PDF...' : 'Завантажити PDF' }}
       </button>
     </div>
   </div>

@@ -182,7 +182,7 @@ function handleGoHome() {
 
         <div class="flex flex-col gap-3">
           <button
-            v-if="store.brandId"
+            v-if="store.brandId && store.successType !== 'submitted' && store.successType !== 'needs_revision' && store.successType !== 'approved'"
             class="w-full h-[50px] bg-primary text-primary-foreground rounded-[10px] hover:opacity-90 transition-all text-base font-medium"
             @click="router.push(`/constructor/brand/${store.brandId}`)"
           >

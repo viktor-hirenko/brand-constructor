@@ -1,22 +1,39 @@
 import { useConstructorStore } from '@/stores/constructor';
 
+export interface ComponentTypeInfo {
+  typeName: string;
+  variantName: string;
+}
+
 export interface PrintBrandData {
   brandName: string;
   conceptName: string | null;
   externalNamingNames: string[];
   internalNamingName: string | null;
   prPackageName: string | null;
-  componentLabels: Record<string, string>;
+  componentTypes: Record<string, ComponentTypeInfo>;
+  ceoComments?: Record<string, string> | null;
+  ceoSelections?: Record<string, string> | null;
+  previewComment?: string;
 }
 
-const COMPONENT_TYPE_LABELS: Record<string, string> = {
-  ct_header: 'Хедер',
-  ct_banners: 'Банери',
-  ct_thumbnails: 'Сабнейли',
-  ct_tabbar: 'Таббар',
-  ct_sidebar: 'Сайдбар',
-  ct_theme: 'Тема',
+const CEO_SECTION_LABELS: Record<string, string> = {
+  concept: 'Концепт',
+  externalNaming: 'Зовнішня назва',
+  internalNaming: 'Внутрішня назва',
+  marketingPackage: 'PR пакет',
+  deliverables: 'Deliverables',
+  visualComponents: 'Візуальні компоненти',
+  general: 'Загальний коментар',
 };
+
+const S = {
+  section: 'margin-bottom:24px;break-inside:avoid',
+  h2: 'font-size:16px;font-weight:600;padding:8px 0;border-bottom:2px solid #e5e5e5;margin:0 0 8px 0',
+  table: 'width:100%;border-collapse:collapse',
+  tdLabel: 'padding:6px 0;font-size:14px;vertical-align:top;width:40%;color:#666',
+  tdValue: 'padding:6px 0;font-size:14px;vertical-align:top;width:60%;color:#1a1a1a',
+} as const;
 
 export function usePrintBrand() {
   const store = useConstructorStore();
@@ -35,13 +52,16 @@ export function usePrintBrand() {
   function buildSection(title: string, rows: Array<{ label: string; value: string }>): string {
     const rowsHtml = rows
       .filter(r => r.value && r.value !== '—')
-      .map(r => `<tr><td class="label">${esc(r.label)}</td><td class="value">${esc(r.value)}</td></tr>`)
+      .map(
+        r =>
+          `<tr><td style="${S.tdLabel}">${esc(r.label)}</td><td style="${S.tdValue}">${esc(r.value)}</td></tr>`
+      )
       .join('');
     if (!rowsHtml) return '';
-    return `<div class="section"><h2>${esc(title)}</h2><table>${rowsHtml}</table></div>`;
+    return `<div style="${S.section}"><h2 style="${S.h2}">${esc(title)}</h2><table style="${S.table}">${rowsHtml}</table></div>`;
   }
 
-  function generatePrintHtml(data: PrintBrandData): string {
+  function generatePrintContent(data: PrintBrandData): string {
     const sd = store.stepData;
     const status = store.brandStatus ?? 'draft';
 
@@ -125,6 +145,12 @@ export function usePrintBrand() {
       ]);
     }
 
+    if (data.previewComment) {
+      sections += buildSection('Brand Preview', [
+        { label: 'Коментар до прев\'ю', value: data.previewComment },
+      ]);
+    }
+
     if (data.prPackageName) {
       sections += buildSection('PR Package', [
         { label: 'Обраний пакет', value: data.prPackageName },
@@ -143,54 +169,91 @@ export function usePrintBrand() {
     if (sd.visualComponents.delegateToDesigners) {
       vcRows.push({ label: 'Режим', value: 'Делеговано дизайнерам' });
     } else {
-      for (const [typeId, variantName] of Object.entries(data.componentLabels)) {
-        const typeLabel = COMPONENT_TYPE_LABELS[typeId] ?? typeId;
-        vcRows.push({ label: typeLabel, value: variantName });
+      for (const [, info] of Object.entries(data.componentTypes)) {
+        vcRows.push({ label: info.typeName, value: info.variantName });
       }
     }
     vcRows.push({ label: 'Коментар', value: sd.visualComponents.comment });
     sections += buildSection('Visual Components', vcRows);
 
+    if (data.ceoComments && Object.values(data.ceoComments).some(v => v?.trim())) {
+      const ceoRows = Object.entries(data.ceoComments)
+        .filter(([, v]) => v?.trim())
+        .map(([key, value]) => ({
+          label: CEO_SECTION_LABELS[key] ?? key,
+          value: value,
+        }));
+      sections += buildSection('Коментарі CEO', ceoRows);
+    }
+
+    if (data.ceoSelections && Object.values(data.ceoSelections).some(v => v?.trim())) {
+      const selRows = Object.entries(data.ceoSelections)
+        .filter(([, v]) => v?.trim())
+        .map(([key, value]) => ({
+          label: CEO_SECTION_LABELS[key] ?? key,
+          value: value,
+        }));
+      sections += buildSection('Альтернативи CEO', selRows);
+    }
+
+    return `<h1 style="font-size:24px;margin:0 0 8px 0;color:#1a1a1a">Brand Brief &mdash; ${esc(data.brandName)}</h1>
+<div style="font-size:13px;color:#666;margin-bottom:32px">${new Date().toLocaleDateString('uk-UA')}</div>
+${sections}`;
+  }
+
+  function generatePrintHtml(data: PrintBrandData): string {
+    const content = generatePrintContent(data);
     return `<!DOCTYPE html>
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
   <title>Brand Brief — ${esc(data.brandName)}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-    h1 { font-size: 24px; margin-bottom: 8px; }
-    .meta { font-size: 13px; color: #666; margin-bottom: 32px; }
-    .section { margin-bottom: 24px; break-inside: avoid; }
-    .section h2 { font-size: 16px; font-weight: 600; padding: 8px 0; border-bottom: 2px solid #e5e5e5; margin-bottom: 8px; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 6px 0; font-size: 14px; vertical-align: top; }
-    td.label { width: 40%; color: #666; }
-    td.value { width: 60%; }
-    @media print {
-      body { padding: 20px; }
-      .section { break-inside: avoid; }
-    }
-  </style>
 </head>
-<body>
-  <h1>Brand Brief — ${esc(data.brandName)}</h1>
-  <div class="meta">${new Date().toLocaleDateString('uk-UA')}</div>
-  ${sections}
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:40px;color:#1a1a1a;max-width:800px;margin:0 auto">
+  ${content}
 </body>
 </html>`;
   }
 
-  function printBrand(data: PrintBrandData) {
-    const html = generatePrintHtml(data);
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+  async function downloadPdf(data: PrintBrandData) {
+    const content = generatePrintContent(data);
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText =
+      'position:fixed;inset:0;z-index:99999;background:white;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML =
+      '<p style="font-size:18px;color:#999;font-family:sans-serif">Генерація PDF...</p>';
+    document.body.appendChild(overlay);
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText =
+      'position:fixed;left:0;top:0;width:800px;z-index:99998;background:white;padding:40px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#1a1a1a;line-height:1.4';
+    wrapper.innerHTML = content;
+    document.body.appendChild(wrapper);
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      await html2pdf()
+        .set({
+          margin: [10, 10, 10, 10],
+          filename: 'Brand-Brief.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(wrapper)
+        .save();
+    } finally {
+      document.body.removeChild(wrapper);
+      document.body.removeChild(overlay);
+      document.body.style.overflow = prevOverflow;
+    }
   }
 
-  return { printBrand };
+  return { downloadPdf, generatePrintHtml };
 }
