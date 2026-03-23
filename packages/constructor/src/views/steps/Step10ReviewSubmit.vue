@@ -468,7 +468,7 @@ async function handleSaveDraft() {
 }
 
 async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_revision') {
-  if (!store.brandId) {
+  if (newStatus === 'submitted') {
     const saved = await store.saveBrand()
     if (!saved) return
   }

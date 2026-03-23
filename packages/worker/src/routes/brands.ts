@@ -581,6 +581,11 @@ brands.patch('/:id/status', async c => {
   const updates: string[] = ['status = ?', 'updated_at = ?']
   const values: (string | number | null)[] = [targetStatus, new Date().toISOString()]
 
+  if (targetStatus === 'submitted' && currentStatus === 'needs_revision') {
+    updates.push('ceo_comments = ?', 'ceo_selections = ?')
+    values.push(null, null)
+  }
+
   if (body.ceoComments !== undefined) {
     updates.push('ceo_comments = ?')
     values.push(JSON.stringify(body.ceoComments))
