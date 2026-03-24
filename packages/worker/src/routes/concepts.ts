@@ -20,6 +20,10 @@ const updateSchema = z.object({
   status: z.enum(['active', 'archived', 'draft']).optional(),
   visual_url: z.string().nullable().optional(),
   logo_url: z.string().nullable().optional(),
+  graphic_url_2: z.string().nullable().optional(),
+  gallery_url_1: z.string().nullable().optional(),
+  gallery_url_2: z.string().nullable().optional(),
+  gallery_url_3: z.string().nullable().optional(),
   preview_url: z.string().nullable().optional(),
   preview_url_web: z.string().nullable().optional(),
 })

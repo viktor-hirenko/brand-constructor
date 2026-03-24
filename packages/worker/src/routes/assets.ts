@@ -107,6 +107,36 @@ app.post('/upload', async c => {
     )
       .bind(fileUrl, entityId)
       .run()
+  } else if (entityType === 'concept_graphic_2') {
+    await c.env.DB.prepare(
+      "UPDATE concepts SET graphic_url_2 = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+      .bind(fileUrl, entityId)
+      .run()
+  } else if (entityType === 'concept_gallery_1') {
+    await c.env.DB.prepare(
+      "UPDATE concepts SET gallery_url_1 = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+      .bind(fileUrl, entityId)
+      .run()
+  } else if (entityType === 'concept_gallery_2') {
+    await c.env.DB.prepare(
+      "UPDATE concepts SET gallery_url_2 = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+      .bind(fileUrl, entityId)
+      .run()
+  } else if (entityType === 'concept_gallery_3') {
+    await c.env.DB.prepare(
+      "UPDATE concepts SET gallery_url_3 = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+      .bind(fileUrl, entityId)
+      .run()
+  } else if (entityType === 'concept_preview_mobile') {
+    await c.env.DB.prepare(
+      "UPDATE concepts SET preview_url = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+      .bind(fileUrl, entityId)
+      .run()
   } else if (entityType === 'concept_preview_web') {
     await c.env.DB.prepare(
       "UPDATE concepts SET preview_url_web = ?, updated_at = datetime('now') WHERE id = ?"

@@ -12,6 +12,10 @@ export interface Concept {
   status: ConceptStatus
   visual_url: string | null
   logo_url: string | null
+  graphic_url_2: string | null
+  gallery_url_1: string | null
+  gallery_url_2: string | null
+  gallery_url_3: string | null
   preview_url: string | null
   preview_url_web: string | null
   created_by: string
@@ -34,6 +38,10 @@ export interface UpdateConceptPayload {
   status?: ConceptStatus
   visual_url?: string | null
   logo_url?: string | null
+  graphic_url_2?: string | null
+  gallery_url_1?: string | null
+  gallery_url_2?: string | null
+  gallery_url_3?: string | null
   preview_url?: string | null
   preview_url_web?: string | null
 }

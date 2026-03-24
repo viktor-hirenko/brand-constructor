@@ -33,6 +33,13 @@ const uploadingType = ref<string | null>(null)
 
 const visualInputRef = ref<HTMLInputElement | null>(null)
 const logoInputRef = ref<HTMLInputElement | null>(null)
+const graphic2InputRef = ref<HTMLInputElement | null>(null)
+const gallery1InputRef = ref<HTMLInputElement | null>(null)
+const gallery2InputRef = ref<HTMLInputElement | null>(null)
+const gallery3InputRef = ref<HTMLInputElement | null>(null)
+const mobilePreviewInputRef = ref<HTMLInputElement | null>(null)
+const webPreviewInputRef = ref<HTMLInputElement | null>(null)
+
 const visualAspectRatio = ref('')
 const logoAspectRatio = ref('')
 
@@ -70,7 +77,8 @@ async function handleFileUpload(event: Event, entityType: string) {
   if (!file || !concept.value) return
 
   const ratioInput =
-    entityType === 'concept_visual' ? visualAspectRatio.value : logoAspectRatio.value
+    entityType === 'concept_visual' ? visualAspectRatio.value : 
+    entityType === 'concept_logo' ? logoAspectRatio.value : ''
   const parsedRatio = parseAspectRatio(ratioInput)
 
   uploadingType.value = entityType
@@ -193,7 +201,7 @@ async function handleFileUpload(event: Event, entityType: string) {
           </div>
 
           <div class="asset-slot">
-            <span class="asset-slot__label">Logo</span>
+            <span class="asset-slot__label">Logo (Graphic 1)</span>
             <div class="asset-slot__preview asset-slot__preview--square">
               <img v-if="concept.logo_url" :src="getAssetUrl(concept.logo_url)" alt="Logo" />
               <span v-else class="asset-slot__empty-text">No logo uploaded</span>
@@ -220,6 +228,186 @@ async function handleFileUpload(event: Event, entityType: string) {
                 @click="logoInputRef?.click()"
               >
                 {{ concept.logo_url ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
+          </div>
+
+          <div class="asset-slot">
+            <span class="asset-slot__label">Graphic Element 2</span>
+            <div class="asset-slot__preview asset-slot__preview--square">
+              <img
+                v-if="concept.graphic_url_2"
+                :src="getAssetUrl(concept.graphic_url_2)"
+                alt="Graphic 2"
+              />
+              <span v-else class="asset-slot__empty-text">No graphic 2 uploaded</span>
+            </div>
+            <template v-if="canWrite">
+              <input
+                ref="graphic2InputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_graphic_2')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_graphic_2'"
+                :disabled="uploadingType !== null"
+                @click="graphic2InputRef?.click()"
+              >
+                {{ concept.graphic_url_2 ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
+          </div>
+
+          <div class="asset-slot">
+            <span class="asset-slot__label">Gallery Image 1</span>
+            <div class="asset-slot__preview">
+              <img
+                v-if="concept.gallery_url_1"
+                :src="getAssetUrl(concept.gallery_url_1)"
+                alt="Gallery 1"
+              />
+              <span v-else class="asset-slot__empty-text">No gallery 1 uploaded</span>
+            </div>
+            <template v-if="canWrite">
+              <input
+                ref="gallery1InputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_gallery_1')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_gallery_1'"
+                :disabled="uploadingType !== null"
+                @click="gallery1InputRef?.click()"
+              >
+                {{ concept.gallery_url_1 ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
+          </div>
+
+          <div class="asset-slot">
+            <span class="asset-slot__label">Gallery Image 2</span>
+            <div class="asset-slot__preview">
+              <img
+                v-if="concept.gallery_url_2"
+                :src="getAssetUrl(concept.gallery_url_2)"
+                alt="Gallery 2"
+              />
+              <span v-else class="asset-slot__empty-text">No gallery 2 uploaded</span>
+            </div>
+            <template v-if="canWrite">
+              <input
+                ref="gallery2InputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_gallery_2')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_gallery_2'"
+                :disabled="uploadingType !== null"
+                @click="gallery2InputRef?.click()"
+              >
+                {{ concept.gallery_url_2 ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
+          </div>
+
+          <div class="asset-slot">
+            <span class="asset-slot__label">Gallery Image 3</span>
+            <div class="asset-slot__preview">
+              <img
+                v-if="concept.gallery_url_3"
+                :src="getAssetUrl(concept.gallery_url_3)"
+                alt="Gallery 3"
+              />
+              <span v-else class="asset-slot__empty-text">No gallery 3 uploaded</span>
+            </div>
+            <template v-if="canWrite">
+              <input
+                ref="gallery3InputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_gallery_3')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_gallery_3'"
+                :disabled="uploadingType !== null"
+                @click="gallery3InputRef?.click()"
+              >
+                {{ concept.gallery_url_3 ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
+          </div>
+
+          <div class="asset-slot">
+            <span class="asset-slot__label">Mobile Preview</span>
+            <div class="asset-slot__preview">
+              <img
+                v-if="concept.preview_url"
+                :src="getAssetUrl(concept.preview_url)"
+                alt="Mobile Preview"
+              />
+              <span v-else class="asset-slot__empty-text">No mobile preview uploaded</span>
+            </div>
+            <template v-if="canWrite">
+              <input
+                ref="mobilePreviewInputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_preview_mobile')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_preview_mobile'"
+                :disabled="uploadingType !== null"
+                @click="mobilePreviewInputRef?.click()"
+              >
+                {{ concept.preview_url ? 'Change image' : 'Upload image' }}
+              </BaseButton>
+            </template>
+          </div>
+
+          <div class="asset-slot">
+            <span class="asset-slot__label">Web Preview</span>
+            <div class="asset-slot__preview">
+              <img
+                v-if="concept.preview_url_web"
+                :src="getAssetUrl(concept.preview_url_web)"
+                alt="Web Preview"
+              />
+              <span v-else class="asset-slot__empty-text">No web preview uploaded</span>
+            </div>
+            <template v-if="canWrite">
+              <input
+                ref="webPreviewInputRef"
+                type="file"
+                accept="image/png,image/svg+xml"
+                class="asset-slot__file-input"
+                @change="e => handleFileUpload(e, 'concept_preview_web')"
+              />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="uploadingType === 'concept_preview_web'"
+                :disabled="uploadingType !== null"
+                @click="webPreviewInputRef?.click()"
+              >
+                {{ concept.preview_url_web ? 'Change image' : 'Upload image' }}
               </BaseButton>
             </template>
           </div>
