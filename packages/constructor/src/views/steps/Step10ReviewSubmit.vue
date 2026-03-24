@@ -54,6 +54,7 @@ onMounted(() => {
   fetchExternalNamings(brandFilter)
   fetchInternalNamings(brandFilter)
   fetchPrPackages(brandFilter)
+  loadComponentSelectionDetails()
 })
 
 const basics = computed(() => store.stepData.brandBasics)
@@ -93,6 +94,36 @@ const componentSelectionCount = computed(
   () => Object.keys(visualComponents.value.selections).length
 )
 
+const componentSelectionDetails = ref<Record<string, { typeName: string; variantName: string }>>({})
+
+async function loadComponentSelectionDetails() {
+  const selections = store.stepData?.visualComponents?.selections ?? {}
+  if (Object.keys(selections).length === 0) return
+
+  const result: Record<string, { typeName: string; variantName: string }> = {}
+  const promises = Object.entries(selections).map(async ([typeId, variantId]) => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
+        { headers: getAuthHeader() },
+      )
+      if (res.ok) {
+        const json = await res.json()
+        const typeName = json.data?.type?.name ?? typeId
+        const variants = json.data?.variants || []
+        const variant = variants.find((v: { id: string; name: string }) => v.id === variantId)
+        result[typeId] = { typeName, variantName: variant?.name ?? variantId }
+      } else {
+        result[typeId] = { typeName: typeId, variantName: variantId }
+      }
+    } catch {
+      result[typeId] = { typeName: typeId, variantName: variantId }
+    }
+  })
+  await Promise.all(promises)
+  componentSelectionDetails.value = result
+}
+
 interface SummaryItem {
   label: string
   value: string
@@ -101,6 +132,7 @@ interface SummaryItem {
     | 'globe'
     | 'calendar'
     | 'file-text'
+    | 'message'
     | 'sun'
     | 'moon'
     | 'palette'
@@ -122,17 +154,16 @@ const summaryItems = computed<SummaryItem[]>(() => {
 
   if (basics.value.geo.length > 0) {
     items.push({
-      label: 'Географія',
+      label: 'GEO',
       value: basics.value.geo.join(', '),
       sectionKey: 'basics',
       icon: 'globe',
       step: 1,
-      comment: basicsComment,
     })
   }
   if (basics.value.launchDate) {
     items.push({
-      label: 'Дата запуску',
+      label: 'Плануєма дата запуску',
       value: formatDate(basics.value.launchDate),
       sectionKey: 'basics',
       icon: 'calendar',
@@ -141,16 +172,25 @@ const summaryItems = computed<SummaryItem[]>(() => {
   }
   if (basics.value.linkedProduct) {
     items.push({
-      label: 'Опис',
+      label: 'Звʼязок з іншим продуктом',
       value: basics.value.linkedProduct,
       sectionKey: 'basics',
       icon: 'file-text',
       step: 1,
     })
   }
+  if (basicsComment) {
+    items.push({
+      label: 'Коментар',
+      value: basicsComment,
+      sectionKey: 'basics',
+      icon: 'message',
+      step: 1,
+    })
+  }
   if (mode.value) {
     items.push({
-      label: 'Тема',
+      label: 'Mode',
       value: mode.value === 'dark' ? 'Dark Mode' : 'Light Mode',
       sectionKey: 'mode',
       icon: mode.value === 'dark' ? 'moon' : 'sun',
@@ -159,7 +199,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
   }
   if (selectedConcept.value) {
     items.push({
-      label: 'Концепт',
+      label: 'Concept',
       value: selectedConcept.value.name,
       sectionKey: 'concept',
       icon: 'palette',
@@ -168,7 +208,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
     })
   } else if (isNewConcept.value) {
     items.push({
-      label: 'Концепт',
+      label: 'Concept',
       value: 'Новий концепт (бриф)',
       sectionKey: 'concept',
       icon: 'palette',
@@ -178,7 +218,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
   }
   if (selectedExternalNamings.value.length > 0) {
     items.push({
-      label: 'Зовнішня назва',
+      label: 'External Naming',
       value: selectedExternalNamings.value.map(n => n.name).join(', '),
       sectionKey: 'externalNaming',
       icon: 'tag',
@@ -187,7 +227,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
     })
   } else if (isNewNaming.value) {
     items.push({
-      label: 'Зовнішня назва',
+      label: 'External Naming',
       value: 'Новий неймінг (бриф)',
       sectionKey: 'externalNaming',
       icon: 'tag',
@@ -197,7 +237,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
   }
   if (selectedInternalNaming.value) {
     items.push({
-      label: 'Внутрішня назва',
+      label: 'Internal Naming',
       value: selectedInternalNaming.value.name,
       sectionKey: 'internalNaming',
       icon: 'briefcase',
@@ -206,7 +246,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
     })
   } else if (internalFeedback.value) {
     items.push({
-      label: 'Внутрішня назва',
+      label: 'Internal Naming',
       value: internalFeedback.value,
       sectionKey: 'internalNaming',
       icon: 'briefcase',
@@ -216,7 +256,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
   }
   if (selectedPackage.value) {
     items.push({
-      label: 'Пакет',
+      label: 'Marketing Package',
       value: selectedPackage.value.name,
       sectionKey: 'marketingPackage',
       icon: 'package',
@@ -229,7 +269,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
 
   if (deliverables.value.legalLanding) {
     items.push({
-      label: 'Юридичний лендінг',
+      label: 'Legal Landing',
       value: 'Так',
       sectionKey: 'deliverables',
       icon: 'scale',
@@ -239,16 +279,26 @@ const summaryItems = computed<SummaryItem[]>(() => {
   }
   if (deliverables.value.partnerLanding) {
     items.push({
-      label: 'Партнерський продукт',
+      label: 'Partner Landing',
       value: 'Так',
       sectionKey: 'deliverables',
       icon: 'handshake',
       step: 8,
     })
   }
+  const devDeadline = deliverables.value.developmentDeadline?.trim() ?? ''
+  if (devDeadline) {
+    items.push({
+      label: 'Дедлайн розробки',
+      value: formatDate(devDeadline),
+      sectionKey: 'deliverables',
+      icon: 'calendar',
+      step: 8,
+    })
+  }
   if (visualComponents.value.delegateToDesigners) {
     items.push({
-      label: 'Візуальні компоненти',
+      label: 'Visual Components',
       value: 'Делеговано дизайнерам',
       sectionKey: 'visualComponents',
       icon: 'sparkles',
@@ -256,9 +306,14 @@ const summaryItems = computed<SummaryItem[]>(() => {
       comment: visualComponents.value.comment?.trim() || '',
     })
   } else if (componentSelectionCount.value > 0) {
+    const lines = Object.keys(visualComponents.value.selections)
+      .map(typeId => {
+        const info = componentSelectionDetails.value[typeId]
+        return info ? `${info.typeName}: ${info.variantName}` : typeId
+      })
     items.push({
-      label: 'Візуальні компоненти',
-      value: `${componentSelectionCount.value} обрано`,
+      label: 'Visual Components',
+      value: lines.join('\n') || `${componentSelectionCount.value} обрано`,
       sectionKey: 'visualComponents',
       icon: 'layers',
       step: 9,
@@ -310,19 +365,21 @@ const showPoSubmitButton = computed(
   () => !isCeoView.value && (brandStatus.value === 'draft' || brandStatus.value === 'needs_revision')
 )
 
-const showShareButton = computed(() => !isCeoView.value && brandStatus.value === 'draft')
+const showShareButton = computed(
+  () => !isCeoView.value && (brandStatus.value === 'needs_revision' || brandStatus.value === 'approved')
+)
 
 const showPdfButton = computed(
-  () => brandStatus.value === 'draft' || brandStatus.value === 'approved'
+  () => brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision' || brandStatus.value === 'approved' || brandStatus.value === 'rejected'
 )
 
 const CEO_COMMENT_SECTION_LABELS: Record<string, string> = {
-  concept: 'Концепт',
-  externalNaming: 'Зовнішня назва',
-  internalNaming: 'Внутрішня назва',
+  concept: 'Concept',
+  externalNaming: 'External Naming',
+  internalNaming: 'Internal Naming',
   marketingPackage: 'PR пакет',
   deliverables: 'Deliverables',
-  visualComponents: 'Візуальні компоненти',
+  visualComponents: 'Visual Components',
   general: 'Загальний коментар',
 }
 
@@ -415,12 +472,12 @@ watch(
 )
 
 const CEO_COMMENT_SECTIONS = [
-  { key: 'concept', label: 'Концепт' },
-  { key: 'externalNaming', label: 'Зовнішня назва' },
-  { key: 'internalNaming', label: 'Внутрішня назва' },
+  { key: 'concept', label: 'Concept' },
+  { key: 'externalNaming', label: 'External Naming' },
+  { key: 'internalNaming', label: 'Internal Naming' },
   { key: 'marketingPackage', label: 'PR пакет' },
   { key: 'deliverables', label: 'Deliverables' },
-  { key: 'visualComponents', label: 'Візуальні компоненти' },
+  { key: 'visualComponents', label: 'Visual Components' },
   { key: 'general', label: 'Загальний коментар' },
 ]
 
@@ -532,7 +589,7 @@ async function handlePrintBrand() {
     const fetchPromises = Object.entries(selections).map(async ([typeId, variantId]) => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants`,
+          `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
           { headers: getAuthHeader() }
         )
         if (res.ok) {
@@ -634,8 +691,8 @@ async function handlePrintBrand() {
     <!-- Summary items -->
     <div class="space-y-3 max-h-[350px] overflow-y-auto pr-2">
       <div
-        v-for="item in summaryItems"
-        :key="item.label"
+        v-for="(item, idx) in summaryItems"
+        :key="`${item.label}-${item.step}-${idx}`"
         class="w-full p-4 rounded-lg border"
         :class="hasCeoCommentForSection(item) ? 'bg-amber-50 border-amber-200' : 'bg-[#f3f3f5] border-black/10'"
       >
@@ -690,6 +747,20 @@ async function handlePrintBrand() {
             <path d="M10 9H8" />
             <path d="M16 13H8" />
             <path d="M16 17H8" />
+          </svg>
+          <!-- Message (comment) -->
+          <svg
+            v-else-if="item.icon === 'message'"
+            class="size-5 text-primary flex-shrink-0 mt-0.5"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
           </svg>
           <!-- Sun -->
           <svg
@@ -881,7 +952,7 @@ async function handlePrintBrand() {
 
           <div class="flex-1 min-w-0">
             <p class="text-sm text-muted-foreground mb-1">{{ item.label }}</p>
-            <p class="text-sm line-clamp-3">{{ item.value }}</p>
+            <p class="text-sm whitespace-pre-line">{{ item.value }}</p>
             <p v-if="item.comment" class="text-xs text-muted-foreground mt-1.5 italic">
               Коментар: {{ item.comment }}
             </p>

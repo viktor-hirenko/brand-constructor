@@ -173,10 +173,6 @@ app.put('/variants/:id', requireLibraryAccess('component_variants'), async c => 
     return c.json({ success: false, error: 'Component variant not found' }, 404)
   }
 
-  if (existing.status === 'used') {
-    return c.json({ success: false, error: 'Cannot modify a variant used in a brand' }, 409)
-  }
-
   const updates: string[] = []
   const values: (string | null | number)[] = []
 
@@ -212,10 +208,6 @@ app.delete('/variants/:id', requireLibraryAccess('component_variants'), async c 
     .first()
   if (!existing) {
     return c.json({ success: false, error: 'Component variant not found' }, 404)
-  }
-
-  if (existing.used_in_brand_id) {
-    return c.json({ success: false, error: 'Cannot delete a variant used in a brand' }, 409)
   }
 
   await c.env.DB.prepare('DELETE FROM component_variants WHERE id = ?').bind(id).run()

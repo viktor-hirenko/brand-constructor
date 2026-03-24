@@ -19,7 +19,7 @@ const typeId = route.params.typeId as string
 const componentType = ref<ComponentType | null>(null)
 const variants = ref<(ComponentVariant & { author_name: string; brand_name: string | null })[]>([])
 const loading = ref(false)
-const statusFilter = ref<'all' | 'active' | 'used'>('all')
+const statusFilter = ref<'all' | 'active'>('all')
 
 const { sortedData: sortedVariants, setSort: setVariantSort } = useTableSort(
   variants,
@@ -159,13 +159,6 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       >
         Available
       </button>
-      <button
-        class="variants-view__status-tab"
-        :class="{ 'variants-view__status-tab--active': statusFilter === 'used' }"
-        @click="statusFilter = 'used'"
-      >
-        Used
-      </button>
     </div>
 
     <div v-if="componentType" class="variants-view__header">
@@ -248,7 +241,6 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
           </div>
           <div v-if="canWrite" class="variant-card__actions">
             <BaseButton
-              v-if="!v.used_in_brand_id"
               variant="secondary"
               size="sm"
               :loading="uploadingIds.has(v.id)"
@@ -257,7 +249,6 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
               {{ v.thumbnail_url ? 'Change image' : 'Upload image' }}
             </BaseButton>
             <BaseButton
-              v-if="!v.used_in_brand_id"
               variant="danger"
               size="sm"
               @click="handleDelete(v.id, v.name)"

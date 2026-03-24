@@ -743,16 +743,6 @@ brands.patch('/:id/status', async c => {
         )
       }
 
-      for (const variantId of Object.values(componentSelections)) {
-        if (variantId) {
-          batchStatements.push(
-            c.env.DB.prepare(
-              "UPDATE component_variants SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-            ).bind(id, variantId)
-          )
-        }
-      }
-
       if (brand.pr_package_id) {
         batchStatements.push(
           c.env.DB.prepare(
@@ -827,12 +817,6 @@ brands.delete('/:id', async c => {
   )
     .bind(id)
     .run()
-  await c.env.DB.prepare(
-    "UPDATE component_variants SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
-  )
-    .bind(id)
-    .run()
-
   await c.env.DB.prepare('DELETE FROM brands WHERE id = ?').bind(id).run()
 
   return c.json({ success: true, data: null })
