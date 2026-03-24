@@ -206,10 +206,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             :src="getAssetUrl(v.thumbnail_url)"
             :alt="v.name"
             class="variant-card__img"
-            @click="
-              lightboxUrl = getAssetUrl(v.thumbnail_url)
-              lightboxAlt = v.name
-            "
+            @click="lightboxUrl = getAssetUrl(v.thumbnail_url); lightboxAlt = v.name"
           />
           <div v-else class="variant-card__placeholder">
             <svg

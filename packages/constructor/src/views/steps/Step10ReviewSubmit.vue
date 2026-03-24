@@ -47,10 +47,13 @@ onMounted(() => {
   ePerPage.value = 100
   iPerPage.value = 100
   pPerPage.value = 100
-  fetchConcepts({})
-  fetchExternalNamings({})
-  fetchInternalNamings({})
-  fetchPrPackages({})
+  const brandFilter: Record<string, string> = store.brandId
+    ? { available_for_brand: store.brandId }
+    : {}
+  fetchConcepts(brandFilter)
+  fetchExternalNamings(brandFilter)
+  fetchInternalNamings(brandFilter)
+  fetchPrPackages(brandFilter)
 })
 
 const basics = computed(() => store.stepData.brandBasics)
