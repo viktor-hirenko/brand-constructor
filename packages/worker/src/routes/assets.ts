@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
 import { generateId } from '../utils/id'
-import { detectFileType, extractPngDimensions, validateAsset } from '../utils/asset-validation'
+import { detectFileType, extractPngDimensions, extractJpegDimensions, extractWebpDimensions, validateAsset } from '../utils/asset-validation'
 import { buildR2Key, getContentType } from '../utils/r2'
 import type { AssetEntityType } from '@brand-constructor/shared'
 
@@ -34,7 +34,7 @@ app.post('/upload', async c => {
 
   if (!fileType) {
     return c.json(
-      { success: false, error: 'Unsupported file type. Only PNG and SVG are allowed.' },
+      { success: false, error: 'Unsupported file type. Allowed: PNG, SVG, JPEG, WebP.' },
       400
     )
   }
@@ -42,6 +42,10 @@ app.post('/upload', async c => {
   let meta = null
   if (fileType === 'png') {
     meta = extractPngDimensions(buffer)
+  } else if (fileType === 'jpg') {
+    meta = extractJpegDimensions(buffer)
+  } else if (fileType === 'webp') {
+    meta = extractWebpDimensions(buffer)
   }
 
   // Parse optional aspect_ratio override from user input

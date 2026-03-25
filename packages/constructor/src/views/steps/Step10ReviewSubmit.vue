@@ -11,7 +11,11 @@ import type {
   PrPackage,
   Brand,
 } from '@brand-constructor/shared/types'
-import { usePrintBrand, type PrintBrandData, type ComponentTypeInfo } from '@/composables/usePrintBrand'
+import {
+  usePrintBrand,
+  type PrintBrandData,
+  type ComponentTypeInfo,
+} from '@/composables/usePrintBrand'
 import { getAuthHeader } from '@/composables/useApi'
 
 const router = useRouter()
@@ -105,7 +109,7 @@ async function loadComponentSelectionDetails() {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
-        { headers: getAuthHeader() },
+        { headers: getAuthHeader() }
       )
       if (res.ok) {
         const json = await res.json()
@@ -306,11 +310,10 @@ const summaryItems = computed<SummaryItem[]>(() => {
       comment: visualComponents.value.comment?.trim() || '',
     })
   } else if (componentSelectionCount.value > 0) {
-    const lines = Object.keys(visualComponents.value.selections)
-      .map(typeId => {
-        const info = componentSelectionDetails.value[typeId]
-        return info ? `${info.typeName}: ${info.variantName}` : typeId
-      })
+    const lines = Object.keys(visualComponents.value.selections).map(typeId => {
+      const info = componentSelectionDetails.value[typeId]
+      return info ? `${info.typeName}: ${info.variantName}` : typeId
+    })
     items.push({
       label: 'Visual Components',
       value: lines.join('\n') || `${componentSelectionCount.value} обрано`,
@@ -362,15 +365,21 @@ const showCeoReview = computed(
 )
 
 const showPoSubmitButton = computed(
-  () => !isCeoView.value && (brandStatus.value === 'draft' || brandStatus.value === 'needs_revision')
+  () =>
+    !isCeoView.value && (brandStatus.value === 'draft' || brandStatus.value === 'needs_revision')
 )
 
 const showShareButton = computed(
-  () => !isCeoView.value && (brandStatus.value === 'needs_revision' || brandStatus.value === 'approved')
+  () =>
+    !isCeoView.value && (brandStatus.value === 'needs_revision' || brandStatus.value === 'approved')
 )
 
 const showPdfButton = computed(
-  () => brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision' || brandStatus.value === 'approved' || brandStatus.value === 'rejected'
+  () =>
+    brandStatus.value === 'submitted' ||
+    brandStatus.value === 'needs_revision' ||
+    brandStatus.value === 'approved' ||
+    brandStatus.value === 'rejected'
 )
 
 const CEO_COMMENT_SECTION_LABELS: Record<string, string> = {
@@ -447,7 +456,7 @@ const ceoComments = reactive<Record<string, string>>({
 
 watch(
   () => store.brandCeoComments,
-  (comments) => {
+  comments => {
     if (comments) {
       for (const [key, value] of Object.entries(comments)) {
         if (key in ceoComments) {
@@ -461,7 +470,7 @@ watch(
 
 watch(
   () => store.brandCeoSelections,
-  (selections) => {
+  selections => {
     if (selections) {
       for (const [key, value] of Object.entries(selections)) {
         ceoSelections[key] = value
@@ -621,10 +630,11 @@ async function handlePrintBrand() {
       }
     }
 
-    const brandName = store.brandInternalName
-      || selectedExternalNamings.value[0]?.name
-      || selectedConcept.value?.name
-      || 'Brand Brief'
+    const brandName =
+      store.brandInternalName ||
+      selectedExternalNamings.value[0]?.name ||
+      selectedConcept.value?.name ||
+      'Brand Brief'
 
     const data: PrintBrandData = {
       brandName,
@@ -694,7 +704,11 @@ async function handlePrintBrand() {
         v-for="(item, idx) in summaryItems"
         :key="`${item.label}-${item.step}-${idx}`"
         class="w-full p-4 rounded-lg border"
-        :class="hasCeoCommentForSection(item) ? 'bg-amber-50 border-amber-200' : 'bg-[#f3f3f5] border-black/10'"
+        :class="
+          hasCeoCommentForSection(item)
+            ? 'bg-amber-50 border-amber-200'
+            : 'bg-[#f3f3f5] border-black/10'
+        "
       >
         <div class="flex items-start gap-3">
           <!-- Globe -->
@@ -1101,7 +1115,9 @@ async function handlePrintBrand() {
           <div
             class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0"
           >
-            <h3 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">{{ ceoLibraryTitle }}</h3>
+            <h3 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
+              {{ ceoLibraryTitle }}
+            </h3>
             <button
               type="button"
               class="size-10 rounded-full bg-[#ececf0] flex items-center justify-center hover:bg-[#dddde2] transition-colors"
@@ -1124,9 +1140,7 @@ async function handlePrintBrand() {
 
           <!-- Scroll container: таби sticky всередині, щоб при скролі залишались поверх -->
           <div class="flex-1 min-h-0 overflow-y-auto">
-            <div
-              class="sticky top-0 z-10 flex gap-2 px-6 py-3 bg-white border-b border-black/10"
-            >
+            <div class="sticky top-0 z-10 flex gap-2 px-6 py-3 bg-white border-b border-black/10">
               <button
                 class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                 :class="
@@ -1262,21 +1276,33 @@ async function handlePrintBrand() {
       <ul class="list-disc list-inside space-y-0.5 text-sm text-blue-900">
         <li v-if="store.brandCeoSelections?.concept">
           Концепт:
-          {{ concepts.find(c => c.id === store.brandCeoSelections!.concept)?.name ?? store.brandCeoSelections!.concept }}
+          {{
+            concepts.find(c => c.id === store.brandCeoSelections!.concept)?.name ??
+            store.brandCeoSelections!.concept
+          }}
         </li>
         <li v-if="store.brandCeoSelections?.externalNaming">
           Зовн. назва:
-          {{ externalNamings.find(n => n.id === store.brandCeoSelections!.externalNaming)?.name ?? store.brandCeoSelections!.externalNaming }}
+          {{
+            externalNamings.find(n => n.id === store.brandCeoSelections!.externalNaming)?.name ??
+            store.brandCeoSelections!.externalNaming
+          }}
         </li>
         <li v-if="store.brandCeoSelections?.internalNaming">
           Внутр. назва:
-          {{ internalNamings.find(n => n.id === store.brandCeoSelections!.internalNaming)?.name ?? store.brandCeoSelections!.internalNaming }}
+          {{
+            internalNamings.find(n => n.id === store.brandCeoSelections!.internalNaming)?.name ??
+            store.brandCeoSelections!.internalNaming
+          }}
         </li>
       </ul>
     </div>
 
     <!-- Action Buttons -->
-    <div v-if="showPoSubmitButton || showShareButton || showPdfButton" class="space-y-3 pt-4 border-t border-black/10">
+    <div
+      v-if="showPoSubmitButton || showShareButton || showPdfButton"
+      class="space-y-3 pt-4 border-t border-black/10"
+    >
       <button
         v-if="showPoSubmitButton"
         class="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
@@ -1295,7 +1321,13 @@ async function handlePrintBrand() {
           <path d="m22 2-7 20-4-9-9-4Z" />
           <path d="M22 2 11 13" />
         </svg>
-        {{ statusActionLoading ? 'Відправляємо...' : hasNewBrief ? 'Відправити в роботу' : 'Відправити на розгляд' }}
+        {{
+          statusActionLoading
+            ? 'Відправляємо...'
+            : hasNewBrief
+              ? 'Відправити в роботу'
+              : 'Відправити на розгляд'
+        }}
       </button>
 
       <button

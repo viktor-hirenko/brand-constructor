@@ -15,11 +15,15 @@ export const ASSET_ENTITY_TYPES = {
 export const ASSET_FILE_TYPES = {
   PNG: 'png',
   SVG: 'svg',
+  JPG: 'jpg',
+  WEBP: 'webp',
 } as const;
 
 export const MAX_FILE_SIZES = {
   png: 10 * 1024 * 1024, // 10MB
   svg: 2 * 1024 * 1024, // 2MB
+  jpg: 10 * 1024 * 1024, // 10MB
+  webp: 10 * 1024 * 1024, // 10MB
 } as const;
 
 /**
@@ -107,7 +111,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
   {
     entity_type: 'concept_gallery_1',
     asset_slot: 'gallery_1',
-    allowed_types: ['png', 'svg'],
+    allowed_types: ['png', 'jpg', 'webp'],
     aspect_ratio: 0,
     aspect_ratio_tolerance: 0,
     min_width: 300,
@@ -117,7 +121,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
   {
     entity_type: 'concept_gallery_2',
     asset_slot: 'gallery_2',
-    allowed_types: ['png', 'svg'],
+    allowed_types: ['png', 'jpg', 'webp'],
     aspect_ratio: 0,
     aspect_ratio_tolerance: 0,
     min_width: 300,
@@ -127,7 +131,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
   {
     entity_type: 'concept_gallery_3',
     asset_slot: 'gallery_3',
-    allowed_types: ['png', 'svg'],
+    allowed_types: ['png', 'jpg', 'webp'],
     aspect_ratio: 0,
     aspect_ratio_tolerance: 0,
     min_width: 300,
@@ -137,7 +141,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
   {
     entity_type: 'concept_preview_mobile',
     asset_slot: 'preview_mobile',
-    allowed_types: ['png', 'svg'],
+    allowed_types: ['png', 'jpg', 'webp'],
     aspect_ratio: 0,
     aspect_ratio_tolerance: 0,
     min_width: 300,
@@ -147,7 +151,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
   {
     entity_type: 'concept_preview_web',
     asset_slot: 'preview_web',
-    allowed_types: ['png', 'svg'],
+    allowed_types: ['png', 'jpg', 'webp'],
     aspect_ratio: 0,
     aspect_ratio_tolerance: 0,
     min_width: 600,

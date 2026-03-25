@@ -106,14 +106,11 @@ const emit = defineEmits<{
           </div>
 
           <!-- Галерея зображень -->
-          <div
-            v-if="concept.gallery_url_1 || concept.gallery_url_2 || concept.gallery_url_3"
-            class="mb-10"
-          >
+          <div v-if="concept.gallery_url_1 || concept.gallery_url_2" class="mb-10">
             <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-6">
               Галерея зображень
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div v-if="concept.gallery_url_1" class="w-full rounded-2xl overflow-hidden">
                 <img
                   :src="getAssetUrl(concept.gallery_url_1)"
@@ -130,39 +127,21 @@ const emit = defineEmits<{
                   loading="lazy"
                 />
               </div>
-              <div v-if="concept.gallery_url_3" class="w-full rounded-2xl overflow-hidden">
-                <img
-                  :src="getAssetUrl(concept.gallery_url_3)"
-                  alt="Gallery image 3"
-                  class="w-full object-contain"
-                  loading="lazy"
-                />
-              </div>
             </div>
           </div>
 
           <!-- Графічні елементи -->
-          <div v-if="concept.logo_url || concept.graphic_url_2" class="mb-10">
+          <div v-if="concept.logo_url" class="mb-10">
             <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-6">
               Графічні елементи
             </h3>
-            <div class="flex flex-col gap-6">
-              <div v-if="concept.logo_url" class="w-full rounded-2xl overflow-hidden">
-                <img
-                  :src="getAssetUrl(concept.logo_url)"
-                  alt="Graphic element 1"
-                  class="w-full object-contain"
-                  loading="lazy"
-                />
-              </div>
-              <div v-if="concept.graphic_url_2" class="w-full rounded-2xl overflow-hidden">
-                <img
-                  :src="getAssetUrl(concept.graphic_url_2)"
-                  alt="Graphic element 2"
-                  class="w-full object-contain"
-                  loading="lazy"
-                />
-              </div>
+            <div class="w-full rounded-2xl overflow-hidden">
+              <img
+                :src="getAssetUrl(concept.logo_url)"
+                alt="Logo"
+                class="w-full object-contain"
+                loading="lazy"
+              />
             </div>
           </div>
 

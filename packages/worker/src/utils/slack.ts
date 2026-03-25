@@ -102,10 +102,7 @@ function buildBlocks(lines: string[], brandId: string, constructorUrl: string): 
 
 // --- Approved: team-specific messages (existing) ---
 
-export function buildStrategyMessage(
-  channel: string,
-  data: BrandNotificationData
-): SlackMessage {
+export function buildStrategyMessage(channel: string, data: BrandNotificationData): SlackMessage {
   const header = `:white_check_mark: Бренд затверджено: *${data.internalName}*`
   const lines = [
     header,
@@ -173,10 +170,7 @@ export function buildProductDesignMessage(
 
 // --- Workflow messages for bc-approvals ---
 
-export function buildSubmittedMessage(
-  channel: string,
-  data: BrandNotificationData
-): SlackMessage {
+export function buildSubmittedMessage(channel: string, data: BrandNotificationData): SlackMessage {
   const header = `:new: Новий бриф відправлено на розгляд: *${data.internalName}*`
   const lines = [
     header,
@@ -257,12 +251,8 @@ export function buildNeedsRevisionMessage(
     field('GEO', data.geo),
     field('Дата запуску', data.launchDate),
     '',
-    ...(commentLines.length > 0
-      ? ['*Коментарі CEO:*', ...commentLines]
-      : []),
-    ...(selectionLines.length > 0
-      ? ['', '*Альтернативи CEO:*', ...selectionLines]
-      : []),
+    ...(commentLines.length > 0 ? ['*Коментарі CEO:*', ...commentLines] : []),
+    ...(selectionLines.length > 0 ? ['', '*Альтернативи CEO:*', ...selectionLines] : []),
   ]
 
   return {
@@ -283,7 +273,11 @@ export interface BrandRowForSlack {
 
 function parseJson<T>(raw: string | null): T | null {
   if (!raw) return null
-  try { return JSON.parse(raw) } catch { return null }
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
 }
 
 export function buildNewBriefsApprovalMessage(
@@ -342,9 +336,15 @@ export function buildNewBriefsStrategyMessage(
     lines.push(field('Бажані слова в назві', conceptBrief.desiredWordsInName as string))
     const zones = conceptBrief.domainZones as string[] | undefined
     if (zones && zones.length > 0) lines.push(field('Доменні зони', zones.join(', ')))
-    lines.push(field('Бюджет домена', conceptBrief.domainBudget != null ? `$${conceptBrief.domainBudget}` : null))
+    lines.push(
+      field(
+        'Бюджет домена',
+        conceptBrief.domainBudget != null ? `$${conceptBrief.domainBudget}` : null
+      )
+    )
     lines.push(field('Дедлайн', conceptBrief.namingDeadline as string))
-    if (conceptBrief.isNewGeo != null) lines.push(field('Новий ГЕО', conceptBrief.isNewGeo ? 'Так' : 'Ні'))
+    if (conceptBrief.isNewGeo != null)
+      lines.push(field('Новий ГЕО', conceptBrief.isNewGeo ? 'Так' : 'Ні'))
     lines.push(field('Інфо про ГЕО', conceptBrief.geoInfo as string))
     lines.push(field('Додаткова інфо по ГЕО', conceptBrief.additionalGeoInfo as string))
   }

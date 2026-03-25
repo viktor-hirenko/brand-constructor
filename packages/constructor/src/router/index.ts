@@ -28,20 +28,40 @@ const routes: RouteRecordRaw[] = [
         meta: { step: 10, title: 'Save', subtitle: 'Фінальний огляд' },
       },
     ],
-    beforeEnter: async (to) => {
+    beforeEnter: async to => {
       const brandId = to.params.id as string
       const store = useConstructorStore()
 
       try {
         const brand = await apiGet<Brand>(`/api/brands/${brandId}`)
         const stepData = brand.stepData ?? {
-          brandBasics: { geo: brand.geo ? brand.geo.split(',') : [], launchDate: brand.launchDate ?? '', linkedProduct: '', comment: '' },
+          brandBasics: {
+            geo: brand.geo ? brand.geo.split(',') : [],
+            launchDate: brand.launchDate ?? '',
+            linkedProduct: '',
+            comment: '',
+          },
           mode: brand.mode ?? null,
-          concept: { selectedId: brand.conceptId ?? null, comment: brand.conceptComment ?? '', newConceptBrief: brand.newConceptBrief ?? null },
-          externalNaming: { selectedIds: brand.externalNamingIds ?? [], comment: brand.externalNamingComment ?? '', newNamingBrief: brand.newNamingBrief ?? null },
-          internalNaming: { selectedId: brand.internalNamingId ?? null, comment: brand.internalNamingComment ?? '', newNamingFeedback: null },
+          concept: {
+            selectedId: brand.conceptId ?? null,
+            comment: brand.conceptComment ?? '',
+            newConceptBrief: brand.newConceptBrief ?? null,
+          },
+          externalNaming: {
+            selectedIds: brand.externalNamingIds ?? [],
+            comment: brand.externalNamingComment ?? '',
+            newNamingBrief: brand.newNamingBrief ?? null,
+          },
+          internalNaming: {
+            selectedId: brand.internalNamingId ?? null,
+            comment: brand.internalNamingComment ?? '',
+            newNamingFeedback: null,
+          },
           previewComment: '',
-          marketingPackage: { selectedId: brand.prPackageId ?? null, comment: brand.prPackageComment ?? '' },
+          marketingPackage: {
+            selectedId: brand.prPackageId ?? null,
+            comment: brand.prPackageComment ?? '',
+          },
           deliverables: {
             legalLanding: brand.legalLanding ?? false,
             partnerLanding: brand.partnerLanding ?? false,
@@ -54,7 +74,15 @@ const routes: RouteRecordRaw[] = [
             comment: brand.componentsComment ?? '',
           },
         }
-        store.loadBrand(brandId, stepData, brand.currentStep ?? 10, brand.status, brand.internalName ?? undefined, brand.ceoComments ?? undefined, brand.ceoSelections ?? undefined)
+        store.loadBrand(
+          brandId,
+          stepData,
+          brand.currentStep ?? 10,
+          brand.status,
+          brand.internalName ?? undefined,
+          brand.ceoComments ?? undefined,
+          brand.ceoSelections ?? undefined
+        )
         return true
       } catch {
         return { path: '/constructor/step/1' }
@@ -65,18 +93,18 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor',
     component: () => import('@/views/ConstructorLayout.vue'),
     meta: { requiresAuth: true },
-    beforeEnter: (to) => {
-      const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/);
-      if (!stepMatch) return true;
+    beforeEnter: to => {
+      const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/)
+      if (!stepMatch) return true
 
-      const targetStep = parseInt(stepMatch[1]);
-      if (targetStep <= 1) return true;
+      const targetStep = parseInt(stepMatch[1])
+      if (targetStep <= 1) return true
 
-      const store = useConstructorStore();
+      const store = useConstructorStore()
       if (targetStep > store.currentStep) {
-        return { path: `/constructor/step/${store.currentStep}` };
+        return { path: `/constructor/step/${store.currentStep}` }
       }
-      return true;
+      return true
     },
     children: [
       {

@@ -33,15 +33,17 @@ const uploadingType = ref<string | null>(null)
 
 const visualInputRef = ref<HTMLInputElement | null>(null)
 const logoInputRef = ref<HTMLInputElement | null>(null)
-const graphic2InputRef = ref<HTMLInputElement | null>(null)
 const gallery1InputRef = ref<HTMLInputElement | null>(null)
 const gallery2InputRef = ref<HTMLInputElement | null>(null)
-const gallery3InputRef = ref<HTMLInputElement | null>(null)
 const mobilePreviewInputRef = ref<HTMLInputElement | null>(null)
 const webPreviewInputRef = ref<HTMLInputElement | null>(null)
 
 const visualAspectRatio = ref('')
 const logoAspectRatio = ref('')
+const gallery1AspectRatio = ref('')
+const gallery2AspectRatio = ref('')
+const mobilePreviewAspectRatio = ref('')
+const webPreviewAspectRatio = ref('')
 
 onMounted(() => fetchData())
 
@@ -77,8 +79,12 @@ async function handleFileUpload(event: Event, entityType: string) {
   if (!file || !concept.value) return
 
   const ratioInput =
-    entityType === 'concept_visual' ? visualAspectRatio.value : 
-    entityType === 'concept_logo' ? logoAspectRatio.value : ''
+    entityType === 'concept_visual' ? visualAspectRatio.value :
+    entityType === 'concept_logo' ? logoAspectRatio.value :
+    entityType === 'concept_gallery_1' ? gallery1AspectRatio.value :
+    entityType === 'concept_gallery_2' ? gallery2AspectRatio.value :
+    entityType === 'concept_preview_mobile' ? mobilePreviewAspectRatio.value :
+    entityType === 'concept_preview_web' ? webPreviewAspectRatio.value : ''
   const parsedRatio = parseAspectRatio(ratioInput)
 
   uploadingType.value = entityType
@@ -201,7 +207,7 @@ async function handleFileUpload(event: Event, entityType: string) {
           </div>
 
           <div class="asset-slot">
-            <span class="asset-slot__label">Logo (Graphic 1)</span>
+            <span class="asset-slot__label">Logo</span>
             <div class="asset-slot__preview asset-slot__preview--square">
               <img v-if="concept.logo_url" :src="getAssetUrl(concept.logo_url)" alt="Logo" />
               <span v-else class="asset-slot__empty-text">No logo uploaded</span>
@@ -233,36 +239,6 @@ async function handleFileUpload(event: Event, entityType: string) {
           </div>
 
           <div class="asset-slot">
-            <span class="asset-slot__label">Graphic Element 2</span>
-            <div class="asset-slot__preview asset-slot__preview--square">
-              <img
-                v-if="concept.graphic_url_2"
-                :src="getAssetUrl(concept.graphic_url_2)"
-                alt="Graphic 2"
-              />
-              <span v-else class="asset-slot__empty-text">No graphic 2 uploaded</span>
-            </div>
-            <template v-if="canWrite">
-              <input
-                ref="graphic2InputRef"
-                type="file"
-                accept="image/png,image/svg+xml"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_graphic_2')"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === 'concept_graphic_2'"
-                :disabled="uploadingType !== null"
-                @click="graphic2InputRef?.click()"
-              >
-                {{ concept.graphic_url_2 ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
-          </div>
-
-          <div class="asset-slot">
             <span class="asset-slot__label">Gallery Image 1</span>
             <div class="asset-slot__preview">
               <img
@@ -273,10 +249,16 @@ async function handleFileUpload(event: Event, entityType: string) {
               <span v-else class="asset-slot__empty-text">No gallery 1 uploaded</span>
             </div>
             <template v-if="canWrite">
+              <BaseInput
+                v-model="gallery1AspectRatio"
+                label="Співвідношення сторін"
+                placeholder="напр. 4:3"
+                class="asset-slot__ratio-input"
+              />
               <input
                 ref="gallery1InputRef"
                 type="file"
-                accept="image/png,image/svg+xml"
+                accept="image/png,image/jpeg,image/webp"
                 class="asset-slot__file-input"
                 @change="e => handleFileUpload(e, 'concept_gallery_1')"
               />
@@ -303,10 +285,16 @@ async function handleFileUpload(event: Event, entityType: string) {
               <span v-else class="asset-slot__empty-text">No gallery 2 uploaded</span>
             </div>
             <template v-if="canWrite">
+              <BaseInput
+                v-model="gallery2AspectRatio"
+                label="Співвідношення сторін"
+                placeholder="напр. 4:3"
+                class="asset-slot__ratio-input"
+              />
               <input
                 ref="gallery2InputRef"
                 type="file"
-                accept="image/png,image/svg+xml"
+                accept="image/png,image/jpeg,image/webp"
                 class="asset-slot__file-input"
                 @change="e => handleFileUpload(e, 'concept_gallery_2')"
               />
@@ -323,50 +311,27 @@ async function handleFileUpload(event: Event, entityType: string) {
           </div>
 
           <div class="asset-slot">
-            <span class="asset-slot__label">Gallery Image 3</span>
-            <div class="asset-slot__preview">
-              <img
-                v-if="concept.gallery_url_3"
-                :src="getAssetUrl(concept.gallery_url_3)"
-                alt="Gallery 3"
-              />
-              <span v-else class="asset-slot__empty-text">No gallery 3 uploaded</span>
-            </div>
-            <template v-if="canWrite">
-              <input
-                ref="gallery3InputRef"
-                type="file"
-                accept="image/png,image/svg+xml"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_gallery_3')"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === 'concept_gallery_3'"
-                :disabled="uploadingType !== null"
-                @click="gallery3InputRef?.click()"
-              >
-                {{ concept.gallery_url_3 ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
-          </div>
-
-          <div class="asset-slot">
             <span class="asset-slot__label">Mobile Preview</span>
             <div class="asset-slot__preview">
               <img
                 v-if="concept.preview_url"
                 :src="getAssetUrl(concept.preview_url)"
                 alt="Mobile Preview"
+                class="asset-slot__preview-img--contain"
               />
               <span v-else class="asset-slot__empty-text">No mobile preview uploaded</span>
             </div>
             <template v-if="canWrite">
+              <BaseInput
+                v-model="mobilePreviewAspectRatio"
+                label="Співвідношення сторін"
+                placeholder="напр. 9:16"
+                class="asset-slot__ratio-input"
+              />
               <input
                 ref="mobilePreviewInputRef"
                 type="file"
-                accept="image/png,image/svg+xml"
+                accept="image/png,image/jpeg,image/webp"
                 class="asset-slot__file-input"
                 @change="e => handleFileUpload(e, 'concept_preview_mobile')"
               />
@@ -389,14 +354,21 @@ async function handleFileUpload(event: Event, entityType: string) {
                 v-if="concept.preview_url_web"
                 :src="getAssetUrl(concept.preview_url_web)"
                 alt="Web Preview"
+                class="asset-slot__preview-img--contain"
               />
               <span v-else class="asset-slot__empty-text">No web preview uploaded</span>
             </div>
             <template v-if="canWrite">
+              <BaseInput
+                v-model="webPreviewAspectRatio"
+                label="Співвідношення сторін"
+                placeholder="напр. 3:2"
+                class="asset-slot__ratio-input"
+              />
               <input
                 ref="webPreviewInputRef"
                 type="file"
-                accept="image/png,image/svg+xml"
+                accept="image/png,image/jpeg,image/webp"
                 class="asset-slot__file-input"
                 @change="e => handleFileUpload(e, 'concept_preview_web')"
               />
@@ -589,6 +561,11 @@ async function handleFileUpload(event: Event, entityType: string) {
       width: 100%;
       height: 100%;
       object-fit: cover;
+
+      &.asset-slot__preview-img--contain {
+        object-fit: contain;
+        object-position: center;
+      }
     }
   }
 

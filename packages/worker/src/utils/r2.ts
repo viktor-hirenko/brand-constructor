@@ -12,6 +12,8 @@ export function getContentType(fileType: AssetFileType): string {
   const map: Record<string, string> = {
     png: 'image/png',
     svg: 'image/svg+xml',
+    jpg: 'image/jpeg',
+    webp: 'image/webp',
   };
   return map[fileType] || 'application/octet-stream';
 }

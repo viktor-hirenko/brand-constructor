@@ -363,7 +363,8 @@ function handleSave() {
             <!-- 12. Опишіть, що вам не підійшло -->
             <div class="flex flex-col gap-3">
               <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
-                12. Опишіть, що вам не підійшло в запропонованих концептах <span class="text-red-500">*</span>
+                12. Опишіть, що вам не підійшло в запропонованих концептах
+                <span class="text-red-500">*</span>
               </label>
               <textarea
                 v-model="form.conceptFeedback"

@@ -41,6 +41,11 @@ const creating = ref(false)
 const lightboxUrl = ref<string | null>(null)
 const lightboxAlt = ref('')
 
+function openVariantLightbox(thumbnailUrl: string, name: string) {
+  lightboxUrl.value = getAssetUrl(thumbnailUrl)
+  lightboxAlt.value = name
+}
+
 const deleteTarget = ref<{ id: string; name: string } | null>(null)
 const deleting = ref(false)
 
@@ -199,7 +204,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             :src="getAssetUrl(v.thumbnail_url)"
             :alt="v.name"
             class="variant-card__img"
-            @click="lightboxUrl = getAssetUrl(v.thumbnail_url); lightboxAlt = v.name"
+            @click="openVariantLightbox(v.thumbnail_url, v.name)"
           />
           <div v-else class="variant-card__placeholder">
             <svg
@@ -248,11 +253,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             >
               {{ v.thumbnail_url ? 'Change image' : 'Upload image' }}
             </BaseButton>
-            <BaseButton
-              variant="danger"
-              size="sm"
-              @click="handleDelete(v.id, v.name)"
-            >
+            <BaseButton variant="danger" size="sm" @click="handleDelete(v.id, v.name)">
               Delete
             </BaseButton>
           </div>

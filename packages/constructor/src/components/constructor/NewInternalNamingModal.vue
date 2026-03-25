@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed } from 'vue'
 
 const props = defineProps<{
   initialFeedback?: string | null
 }>()
 
 const emit = defineEmits<{
-  save: [feedback: string];
-  cancel: [];
-}>();
+  save: [feedback: string]
+  cancel: []
+}>()
 
 const isEditMode = !!props.initialFeedback
-const feedback = ref(props.initialFeedback ?? '');
+const feedback = ref(props.initialFeedback ?? '')
 
-const isValid = computed(() => feedback.value.trim() !== '');
+const isValid = computed(() => feedback.value.trim() !== '')
 
 function handleSave() {
   if (isValid.value) {
-    emit('save', feedback.value.trim());
+    emit('save', feedback.value.trim())
   }
 }
 </script>
@@ -26,13 +26,12 @@ function handleSave() {
   <Teleport to="body">
     <div class="fixed inset-0 z-50 flex items-center justify-center">
       <!-- Backdrop -->
-      <div
-        class="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        @click="emit('cancel')"
-      />
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="emit('cancel')" />
 
       <!-- Modal -->
-      <div class="relative bg-white rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] w-full max-w-[560px] mx-4 max-h-[90vh] flex flex-col">
+      <div
+        class="relative bg-white rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] w-full max-w-[560px] mx-4 max-h-[90vh] flex flex-col"
+      >
         <!-- Header -->
         <div class="flex items-center justify-between px-8 pt-8 pb-4">
           <h2 class="text-xl font-medium text-[#0a0a0a] tracking-[-0.45px]">
@@ -42,8 +41,17 @@ function handleSave() {
             class="size-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
             @click="emit('cancel')"
           >
-            <svg class="size-5 text-[#717182]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+            <svg
+              class="size-5 text-[#717182]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
             </svg>
           </button>
         </div>

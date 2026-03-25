@@ -176,13 +176,20 @@ function handleGoHome() {
           </div>
           <div v-if="successConfig.showStatus" class="flex justify-between items-center">
             <span class="text-sm text-muted-foreground">Статус</span>
-            <span class="text-sm font-medium" :class="successConfig.statusColor">{{ successConfig.statusLabel }}</span>
+            <span class="text-sm font-medium" :class="successConfig.statusColor">{{
+              successConfig.statusLabel
+            }}</span>
           </div>
         </div>
 
         <div class="flex flex-col gap-3">
           <button
-            v-if="store.brandId && store.successType !== 'submitted' && store.successType !== 'needs_revision' && store.successType !== 'approved'"
+            v-if="
+              store.brandId &&
+              store.successType !== 'submitted' &&
+              store.successType !== 'needs_revision' &&
+              store.successType !== 'approved'
+            "
             class="w-full h-[50px] bg-primary text-primary-foreground rounded-[10px] hover:opacity-90 transition-all text-base font-medium"
             @click="router.push(`/constructor/brand/${store.brandId}`)"
           >

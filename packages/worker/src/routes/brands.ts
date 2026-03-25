@@ -168,26 +168,45 @@ async function collectBrandNotificationData(
   constructorUrl: string,
   ceoSelectionsOverride?: Record<string, string>
 ): Promise<BrandNotificationData> {
-  const ceoSel = ceoSelectionsOverride ?? (() => {
-    try { return JSON.parse(brand.ceo_selections || '{}') } catch { return {} }
-  })()
+  const ceoSel =
+    ceoSelectionsOverride ??
+    (() => {
+      try {
+        return JSON.parse(brand.ceo_selections || '{}')
+      } catch {
+        return {}
+      }
+    })()
 
   const finalConceptId = ceoSel.concept || brand.concept_id || null
   const finalExtIds: string[] = (() => {
     if (ceoSel.externalNaming) return [ceoSel.externalNaming]
-    try { return JSON.parse(brand.external_naming_ids || '[]') } catch { return [] }
+    try {
+      return JSON.parse(brand.external_naming_ids || '[]')
+    } catch {
+      return []
+    }
   })()
   const finalIntId = ceoSel.internalNaming || brand.internal_naming_id || null
 
   const [conceptRow, intNamingRow, prPackageRow] = await Promise.all([
     finalConceptId
-      ? db.prepare('SELECT name FROM concepts WHERE id = ?').bind(finalConceptId).first<{ name: string }>()
+      ? db
+          .prepare('SELECT name FROM concepts WHERE id = ?')
+          .bind(finalConceptId)
+          .first<{ name: string }>()
       : null,
     finalIntId
-      ? db.prepare('SELECT name FROM internal_namings WHERE id = ?').bind(finalIntId).first<{ name: string }>()
+      ? db
+          .prepare('SELECT name FROM internal_namings WHERE id = ?')
+          .bind(finalIntId)
+          .first<{ name: string }>()
       : null,
     brand.pr_package_id
-      ? db.prepare('SELECT name FROM pr_packages WHERE id = ?').bind(brand.pr_package_id).first<{ name: string }>()
+      ? db
+          .prepare('SELECT name FROM pr_packages WHERE id = ?')
+          .bind(brand.pr_package_id)
+          .first<{ name: string }>()
       : null,
   ])
 
@@ -601,7 +620,10 @@ brands.patch('/:id/status', async c => {
     .bind(...values)
     .run()
 
-  if ((targetStatus === 'submitted' || targetStatus === 'needs_revision') && c.env.SLACK_BOT_TOKEN) {
+  if (
+    (targetStatus === 'submitted' || targetStatus === 'needs_revision') &&
+    c.env.SLACK_BOT_TOKEN
+  ) {
     try {
       const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
         .bind(id)
@@ -609,7 +631,9 @@ brands.patch('/:id/status', async c => {
 
       if (brand) {
         const notificationData = await collectBrandNotificationData(
-          c.env.DB, brand, c.env.CONSTRUCTOR_URL ?? ''
+          c.env.DB,
+          brand,
+          c.env.CONSTRUCTOR_URL ?? ''
         )
 
         if (targetStatus === 'submitted') {
@@ -619,14 +643,30 @@ brands.patch('/:id/status', async c => {
             const token = c.env.SLACK_BOT_TOKEN
             c.executionCtx.waitUntil(
               Promise.allSettled([
-                sendSlackMessage(token,
-                  buildNewBriefsApprovalMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData, brand)),
-                sendSlackMessage(token,
-                  buildNewBriefsStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, notificationData, brand)),
-                sendSlackMessage(token,
-                  buildNewBriefsPrMessage(c.env.SLACK_CHANNEL_PR, notificationData)),
-                sendSlackMessage(token,
-                  buildNewBriefsDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)),
+                sendSlackMessage(
+                  token,
+                  buildNewBriefsApprovalMessage(
+                    c.env.SLACK_CHANNEL_APPROVALS,
+                    notificationData,
+                    brand
+                  )
+                ),
+                sendSlackMessage(
+                  token,
+                  buildNewBriefsStrategyMessage(
+                    c.env.SLACK_CHANNEL_STRATEGY,
+                    notificationData,
+                    brand
+                  )
+                ),
+                sendSlackMessage(
+                  token,
+                  buildNewBriefsPrMessage(c.env.SLACK_CHANNEL_PR, notificationData)
+                ),
+                sendSlackMessage(
+                  token,
+                  buildNewBriefsDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)
+                ),
               ])
             )
           } else {
@@ -643,22 +683,27 @@ brands.patch('/:id/status', async c => {
 
           if (ceoSelectionsData.concept) {
             const row = await c.env.DB.prepare('SELECT name FROM concepts WHERE id = ?')
-              .bind(ceoSelectionsData.concept).first<{ name: string }>()
+              .bind(ceoSelectionsData.concept)
+              .first<{ name: string }>()
             if (row) resolvedSelections.concept = row.name
           }
           if (ceoSelectionsData.externalNaming) {
             const row = await c.env.DB.prepare('SELECT name FROM external_namings WHERE id = ?')
-              .bind(ceoSelectionsData.externalNaming).first<{ name: string }>()
+              .bind(ceoSelectionsData.externalNaming)
+              .first<{ name: string }>()
             if (row) resolvedSelections.externalNaming = row.name
           }
           if (ceoSelectionsData.internalNaming) {
             const row = await c.env.DB.prepare('SELECT name FROM internal_namings WHERE id = ?')
-              .bind(ceoSelectionsData.internalNaming).first<{ name: string }>()
+              .bind(ceoSelectionsData.internalNaming)
+              .first<{ name: string }>()
             if (row) resolvedSelections.internalNaming = row.name
           }
 
           const message = buildNeedsRevisionMessage(
-            c.env.SLACK_CHANNEL_APPROVALS, notificationData, ceoCommentsData,
+            c.env.SLACK_CHANNEL_APPROVALS,
+            notificationData,
+            ceoCommentsData,
             Object.keys(resolvedSelections).length > 0 ? resolvedSelections : undefined
           )
           c.executionCtx.waitUntil(sendSlackMessage(c.env.SLACK_BOT_TOKEN, message))
@@ -676,18 +721,30 @@ brands.patch('/:id/status', async c => {
 
     if (brand) {
       const ceoSel: Record<string, string> = (() => {
-        try { return JSON.parse(brand.ceo_selections || '{}') } catch { return {} }
+        try {
+          return JSON.parse(brand.ceo_selections || '{}')
+        } catch {
+          return {}
+        }
       })()
 
       const finalConceptId = ceoSel.concept || brand.concept_id || null
       const finalExtIds: string[] = (() => {
         if (ceoSel.externalNaming) return [ceoSel.externalNaming]
-        try { return JSON.parse(brand.external_naming_ids || '[]') } catch { return [] }
+        try {
+          return JSON.parse(brand.external_naming_ids || '[]')
+        } catch {
+          return []
+        }
       })()
       const finalIntId = ceoSel.internalNaming || brand.internal_naming_id || null
 
       const componentSelections: Record<string, string> = (() => {
-        try { return JSON.parse(brand.component_selections || '{}') } catch { return {} }
+        try {
+          return JSON.parse(brand.component_selections || '{}')
+        } catch {
+          return {}
+        }
       })()
 
       const batchStatements: ReturnType<typeof c.env.DB.prepare>[] = []
@@ -758,15 +815,30 @@ brands.patch('/:id/status', async c => {
       if (c.env.SLACK_BOT_TOKEN) {
         try {
           const notificationData = await collectBrandNotificationData(
-            c.env.DB, brand, c.env.CONSTRUCTOR_URL ?? '', ceoSel
+            c.env.DB,
+            brand,
+            c.env.CONSTRUCTOR_URL ?? '',
+            ceoSel
           )
           const token = c.env.SLACK_BOT_TOKEN
           c.executionCtx.waitUntil(
             Promise.allSettled([
-              sendSlackMessage(token, buildStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, notificationData)),
-              sendSlackMessage(token, buildPrMarketingMessage(c.env.SLACK_CHANNEL_PR, notificationData)),
-              sendSlackMessage(token, buildProductDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)),
-              sendSlackMessage(token, buildApprovedWorkflowMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)),
+              sendSlackMessage(
+                token,
+                buildStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, notificationData)
+              ),
+              sendSlackMessage(
+                token,
+                buildPrMarketingMessage(c.env.SLACK_CHANNEL_PR, notificationData)
+              ),
+              sendSlackMessage(
+                token,
+                buildProductDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)
+              ),
+              sendSlackMessage(
+                token,
+                buildApprovedWorkflowMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
+              ),
             ])
           )
         } catch (err) {

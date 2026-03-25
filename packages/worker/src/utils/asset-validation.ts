@@ -17,12 +17,27 @@ interface ImageMeta {
 }
 
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47];
+const JPEG_MAGIC = [0xff, 0xd8, 0xff];
+const RIFF_MAGIC = [0x52, 0x49, 0x46, 0x46]; // "RIFF"
+const WEBP_MAGIC = [0x57, 0x45, 0x42, 0x50]; // "WEBP"
 
 export function detectFileType(buffer: ArrayBuffer): AssetFileType | null {
   const bytes = new Uint8Array(buffer);
 
   if (bytes.length >= 4 && PNG_MAGIC.every((b, i) => bytes[i] === b)) {
     return ASSET_FILE_TYPES.PNG;
+  }
+
+  if (bytes.length >= 3 && JPEG_MAGIC.every((b, i) => bytes[i] === b)) {
+    return ASSET_FILE_TYPES.JPG;
+  }
+
+  if (
+    bytes.length >= 12 &&
+    RIFF_MAGIC.every((b, i) => bytes[i] === b) &&
+    WEBP_MAGIC.every((b, i) => bytes[i + 8] === b)
+  ) {
+    return ASSET_FILE_TYPES.WEBP;
   }
 
   const text = new TextDecoder().decode(bytes.slice(0, 256));
@@ -43,6 +58,76 @@ export function extractPngDimensions(buffer: ArrayBuffer): ImageMeta | null {
   if (width === 0 || height === 0) return null;
 
   return { width, height, aspectRatio: width / height };
+}
+
+export function extractJpegDimensions(buffer: ArrayBuffer): ImageMeta | null {
+  try {
+    const bytes = new Uint8Array(buffer);
+    if (bytes.length < 4) return null;
+
+    let offset = 2;
+    while (offset + 1 < bytes.length) {
+      if (bytes[offset] !== 0xff) break;
+      const marker = bytes[offset + 1];
+
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        if (offset + 9 > bytes.length) return null;
+        const view = new DataView(buffer);
+        const height = view.getUint16(offset + 5);
+        const width = view.getUint16(offset + 7);
+        if (width === 0 || height === 0) return null;
+        return { width, height, aspectRatio: width / height };
+      }
+
+      if (offset + 3 >= bytes.length) break;
+      const segLen = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      if (segLen < 2) break;
+      offset += 2 + segLen;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function extractWebpDimensions(buffer: ArrayBuffer): ImageMeta | null {
+  try {
+    const bytes = new Uint8Array(buffer);
+    if (bytes.length < 30) return null;
+
+    const subtype = String.fromCharCode(bytes[12], bytes[13], bytes[14], bytes[15]);
+
+    if (subtype === 'VP8 ' && bytes.length >= 30) {
+      const view = new DataView(buffer);
+      const width = view.getUint16(26, true) & 0x3fff;
+      const height = view.getUint16(28, true) & 0x3fff;
+      if (width === 0 || height === 0) return null;
+      return { width, height, aspectRatio: width / height };
+    }
+
+    if (subtype === 'VP8L' && bytes.length >= 25) {
+      const b0 = bytes[21];
+      const b1 = bytes[22];
+      const b2 = bytes[23];
+      const b3 = bytes[24];
+      const width = 1 + (((b1 & 0x3f) << 8) | b0);
+      const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 >> 6) & 0x03));
+      if (width === 0 || height === 0) return null;
+      return { width, height, aspectRatio: width / height };
+    }
+
+    if (subtype === 'VP8X' && bytes.length >= 30) {
+      const width = 1 + (bytes[24] | (bytes[25] << 8) | (bytes[26] << 16));
+      const height = 1 + (bytes[27] | (bytes[28] << 8) | (bytes[29] << 16));
+      if (width === 0 || height === 0) return null;
+      return { width, height, aspectRatio: width / height };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function formatRatio(ratio: number): string {
