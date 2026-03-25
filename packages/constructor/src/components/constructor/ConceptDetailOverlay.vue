@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 
@@ -15,6 +16,23 @@ const emit = defineEmits<{
   close: []
   select: []
 }>()
+
+/** У адмінці: Logo, Gallery 1, Gallery 2; також graphic_url_2 з API — усі показуємо по порядку без дублікатів URL. */
+const graphicImageUrls = computed(() => {
+  const c = props.concept
+  const ordered = [c.logo_url, c.gallery_url_1, c.gallery_url_2, c.graphic_url_2].filter(
+    (u): u is string => typeof u === 'string' && u.trim() !== ''
+  )
+  return [...new Set(ordered)]
+})
+
+const conceptDescriptionText = computed(() => props.concept.description?.trim() ?? '')
+
+const headerTagText = computed(() => {
+  const full = conceptDescriptionText.value
+  if (!full) return ''
+  return full.length > 40 ? `${full.slice(0, 40)}…` : full
+})
 </script>
 
 <template>
@@ -31,14 +49,10 @@ const emit = defineEmits<{
               {{ concept.name }}
             </h3>
             <span
-              v-if="concept.description"
+              v-if="headerTagText"
               class="h-7 px-3 bg-[rgba(3,2,19,0.1)] rounded-full text-sm leading-5 tracking-[-0.15px] text-[#030213] flex items-center"
             >
-              {{
-                concept.description.length > 40
-                  ? concept.description.slice(0, 40) + '…'
-                  : concept.description
-              }}
+              {{ headerTagText }}
             </span>
           </div>
 
@@ -83,10 +97,7 @@ const emit = defineEmits<{
           </h1>
 
           <!-- Main hero image -->
-          <div
-            v-if="concept.visual_url"
-            class="w-full aspect-[848/640] rounded-2xl overflow-hidden mb-10"
-          >
+          <div v-if="concept.visual_url" class="w-full overflow-hidden mb-10">
             <img
               :src="getAssetUrl(concept.visual_url)"
               :alt="concept.name"
@@ -95,53 +106,40 @@ const emit = defineEmits<{
             />
           </div>
 
-          <!-- Опис концепту -->
-          <div v-if="concept.description" class="mb-10">
+          <!-- Опис концепту (як у Figma — завжди блок з текстом з адмінки) -->
+          <div class="mb-10">
             <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-3">
               Опис концепту
             </h3>
-            <p class="text-lg leading-[29.25px] tracking-[-0.44px] text-[#717182]">
-              {{ concept.description }}
+            <p
+              v-if="conceptDescriptionText"
+              class="text-base leading-6 tracking-[-0.31px] text-[#212121] whitespace-pre-wrap"
+            >
+              {{ conceptDescriptionText }}
+            </p>
+            <p v-else class="text-base leading-6 tracking-[-0.31px] text-[#717182]">
+              Додайте опис концепту в адмін-панелі (поле Description).
             </p>
           </div>
 
-          <!-- Галерея зображень -->
-          <div v-if="concept.gallery_url_1 || concept.gallery_url_2" class="mb-10">
-            <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-6">
-              Галерея зображень
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div v-if="concept.gallery_url_1" class="w-full rounded-2xl overflow-hidden">
-                <img
-                  :src="getAssetUrl(concept.gallery_url_1)"
-                  alt="Gallery image 1"
-                  class="w-full object-contain"
-                  loading="lazy"
-                />
-              </div>
-              <div v-if="concept.gallery_url_2" class="w-full rounded-2xl overflow-hidden">
-                <img
-                  :src="getAssetUrl(concept.gallery_url_2)"
-                  alt="Gallery image 2"
-                  class="w-full object-contain"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-          </div>
-
           <!-- Графічні елементи -->
-          <div v-if="concept.logo_url" class="mb-10">
+          <div v-if="graphicImageUrls.length > 0" class="mb-10">
             <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-6">
               Графічні елементи
             </h3>
-            <div class="w-full rounded-2xl overflow-hidden">
-              <img
-                :src="getAssetUrl(concept.logo_url)"
-                alt="Logo"
-                class="w-full object-contain"
-                loading="lazy"
-              />
+            <div class="flex flex-col gap-6">
+              <div
+                v-for="(url, index) in graphicImageUrls"
+                :key="url"
+                class="w-full rounded-2xl overflow-hidden"
+              >
+                <img
+                  :src="getAssetUrl(url)"
+                  :alt="`${concept.name} — графічний елемент ${index + 1}`"
+                  class="w-full object-contain"
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
 
@@ -162,17 +160,17 @@ const emit = defineEmits<{
                     class="w-full object-contain"
                     loading="lazy"
                   />
-                  <!-- Notch -->
-                  <div
-                    class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[#101828] rounded-b-3xl"
-                  />
                 </div>
+                <!-- Notch (outside overflow-hidden) -->
+                <div
+                  class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[#101828] rounded-b-3xl z-10"
+                />
               </div>
             </div>
           </div>
 
           <!-- Веб версія -->
-          <div v-if="concept.preview_url_web || concept.preview_url" class="mb-10">
+          <div v-if="concept.preview_url_web" class="mb-10">
             <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-6">
               Веб версія
             </h3>
@@ -193,7 +191,7 @@ const emit = defineEmits<{
               <!-- Web content -->
               <div class="flex items-start justify-center">
                 <img
-                  :src="getAssetUrl(concept.preview_url_web || concept.preview_url!)"
+                  :src="getAssetUrl(concept.preview_url_web)"
                   alt="Web preview"
                   class="w-full object-contain"
                   loading="lazy"

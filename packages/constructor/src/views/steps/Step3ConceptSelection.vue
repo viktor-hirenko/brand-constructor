@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
-import { useApiList, getAssetUrl } from '@/composables/useApi'
+import { useApiList, getAssetUrl, apiGet } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
 import type { NewConceptBrief } from '@brand-constructor/shared/types'
 import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
@@ -65,9 +65,17 @@ function selectConcept(concept: Concept) {
   }
 }
 
-function openDetail(concept: Concept, event: Event) {
+async function openDetail(concept: Concept, event: Event) {
   event.stopPropagation()
   detailConcept.value = concept
+  try {
+    const full = await apiGet<Concept & { namings?: unknown[]; assets?: unknown[] }>(
+      `/api/concepts/${concept.id}`
+    )
+    detailConcept.value = full
+  } catch {
+    /* залишаємо дані зі списку */
+  }
 }
 
 function closeDetail() {

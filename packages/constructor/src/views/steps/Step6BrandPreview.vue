@@ -233,23 +233,15 @@ function formatDate(value: string): string {
         v-if="selectedConcept"
         class="rounded-[14px] border border-black/10 bg-white p-4 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]"
       >
-        <div class="flex items-start gap-3">
-          <img
-            v-if="selectedConcept.preview_url"
-            :src="selectedConcept.preview_url"
-            class="size-12 rounded-lg object-cover flex-shrink-0"
-            alt=""
-          />
-          <div class="flex-1 min-w-0">
-            <p class="text-xs text-muted-foreground mb-0.5">Концепт з бібліотеки</p>
-            <p class="text-base font-medium text-foreground truncate">{{ selectedConcept.name }}</p>
-            <p
-              v-if="selectedConcept.description"
-              class="text-sm text-muted-foreground line-clamp-2 mt-1"
-            >
-              {{ selectedConcept.description }}
-            </p>
-          </div>
+        <div class="min-w-0">
+          <p class="text-xs text-muted-foreground mb-0.5">Концепт з бібліотеки</p>
+          <p class="text-base font-medium text-foreground truncate">{{ selectedConcept.name }}</p>
+          <p
+            v-if="selectedConcept.description"
+            class="text-sm text-muted-foreground line-clamp-2 mt-1"
+          >
+            {{ selectedConcept.description }}
+          </p>
         </div>
         <div class="mt-3">
           <button

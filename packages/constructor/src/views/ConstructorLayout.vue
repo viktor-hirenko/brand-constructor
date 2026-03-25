@@ -2,7 +2,7 @@
 import { computed, watch, ref, onMounted } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
-import { useApiList, getAssetUrl, getAuthHeader } from '@/composables/useApi'
+import { useApiList, getAssetUrl, getAuthHeader, apiGet } from '@/composables/useApi'
 import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
 import type {
   Concept,
@@ -235,9 +235,17 @@ function getExternalPrice(naming: ExternalNamingPreview | null): string {
   return '—'
 }
 
-function openConceptDetails() {
-  if (selectedConcept.value) {
-    detailConcept.value = selectedConcept.value
+async function openConceptDetails() {
+  const sc = selectedConcept.value
+  if (!sc) return
+  detailConcept.value = sc
+  try {
+    const full = await apiGet<Concept & { namings?: unknown[]; assets?: unknown[] }>(
+      `/api/concepts/${sc.id}`
+    )
+    detailConcept.value = full
+  } catch {
+    /* залишаємо дані зі списку */
   }
 }
 
