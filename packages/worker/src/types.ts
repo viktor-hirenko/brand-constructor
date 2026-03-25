@@ -10,6 +10,8 @@ export interface Env {
   SLACK_CHANNEL_PR: string
   SLACK_CHANNEL_DESIGN: string
   SLACK_CHANNEL_APPROVALS: string
+  GODADDY_API_KEY: string
+  GODADDY_API_SECRET: string
 }
 
 export interface AuthUser {

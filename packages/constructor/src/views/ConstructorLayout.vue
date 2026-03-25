@@ -402,32 +402,47 @@ watch(currentStep, step => {
     >
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div :class="isFullWidth ? 'w-full' : 'w-[42%]'" class="bg-muted/30 flex flex-col min-h-0">
-        <div class="flex-1 overflow-y-auto px-12 pt-5 pb-6">
-          <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-1">
-            {{ stepTitle }}
-          </h1>
-          <p class="text-base text-muted-foreground tracking-[-0.31px] mb-6">
-            {{ stepSubtitle }}
-          </p>
+        <div
+          class="px-12 pt-5 pb-6 min-h-0 flex-1"
+          :class="
+            currentStep === 10 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+          "
+        >
+          <div :class="currentStep === 10 ? 'shrink-0' : ''">
+            <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-1">
+              {{ stepTitle }}
+            </h1>
+            <p class="text-base text-muted-foreground tracking-[-0.31px] mb-6">
+              {{ stepSubtitle }}
+            </p>
 
-          <div class="mb-8">
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-sm text-muted-foreground tracking-[-0.15px]">
-                Крок {{ currentStep }} з {{ totalSteps }}
-              </span>
-              <span class="text-sm text-muted-foreground tracking-[-0.15px]">
-                {{ progressPercent }}%
-              </span>
-            </div>
-            <div class="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                class="h-full bg-primary rounded-full transition-all duration-300"
-                :style="{ width: `${progressPercent}%` }"
-              />
+            <div class="mb-8">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-muted-foreground tracking-[-0.15px]">
+                  Крок {{ currentStep }} з {{ totalSteps }}
+                </span>
+                <span class="text-sm text-muted-foreground tracking-[-0.15px]">
+                  {{ progressPercent }}%
+                </span>
+              </div>
+              <div class="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-primary rounded-full transition-all duration-300"
+                  :style="{ width: `${progressPercent}%` }"
+                />
+              </div>
             </div>
           </div>
 
-          <RouterView />
+          <div
+            :class="
+              currentStep === 10
+                ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
+                : ''
+            "
+          >
+            <RouterView />
+          </div>
         </div>
 
         <div v-if="!isViewMode" class="shrink-0 px-12 py-6 border-t border-border">

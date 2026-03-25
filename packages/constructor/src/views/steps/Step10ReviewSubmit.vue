@@ -17,6 +17,7 @@ import {
   type ComponentTypeInfo,
 } from '@/composables/usePrintBrand'
 import { getAuthHeader } from '@/composables/useApi'
+import Step10ReviewScrollLayout from '@/components/constructor/Step10ReviewScrollLayout.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -656,9 +657,10 @@ async function handlePrintBrand() {
 </script>
 
 <template>
-  <div class="space-y-6" style="opacity: 1; transform: none">
-    <!-- Status badge -->
-    <div v-if="store.brandId" class="flex items-center gap-2">
+  <div class="flex flex-col flex-1 min-h-0 gap-6 h-full">
+    <div class="shrink-0 space-y-6">
+      <!-- Status badge -->
+      <div v-if="store.brandId" class="flex items-center gap-2">
       <span
         class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
         :class="statusInfo.color"
@@ -697,9 +699,10 @@ async function handlePrintBrand() {
         }}
       </p>
     </div>
+    </div>
 
-    <!-- Summary items -->
-    <div class="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+    <Step10ReviewScrollLayout :ceo-unified-scroll="showCeoReview">
+      <template #summary>
       <div
         v-for="(item, idx) in summaryItems"
         :key="`${item.label}-${item.step}-${idx}`"
@@ -982,8 +985,8 @@ async function handlePrintBrand() {
           Редагувати
         </button>
       </div>
-    </div>
-
+      </template>
+      <template #footer>
     <!-- CEO Comments Section -->
     <div
       v-if="showCeoReview && (brandStatus === 'submitted' || brandStatus === 'needs_revision')"
@@ -995,7 +998,7 @@ async function handlePrintBrand() {
         <textarea
           v-model="ceoComments[section.key]"
           rows="2"
-          class="w-full px-3 py-2 bg-[#f3f3f5] border border-transparent rounded-lg resize-none text-sm placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          class="w-full min-h-[4.5rem] resize-y px-3 py-2 bg-[#f3f3f5] border border-transparent rounded-lg text-sm placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/20 transition-all"
           :placeholder="`Коментар до секції «${section.label}»...`"
         />
       </div>
@@ -1404,5 +1407,7 @@ async function handlePrintBrand() {
         {{ isPdfLoading ? 'Генерація PDF...' : 'Завантажити PDF' }}
       </button>
     </div>
+      </template>
+    </Step10ReviewScrollLayout>
   </div>
 </template>

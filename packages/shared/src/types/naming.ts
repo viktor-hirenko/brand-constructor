@@ -4,6 +4,8 @@ export type NamingStatus = (typeof ENTITY_STATUSES)[keyof typeof ENTITY_STATUSES
 
 export type DomainAvailabilityStatus = 'available' | 'sold' | 'unknown'
 
+export type DomainCheckSource = 'manual' | 'godaddy' | 'admin_override'
+
 export interface ExternalNaming {
   id: string
   name: string
@@ -11,6 +13,8 @@ export interface ExternalNaming {
   domain: string | null
   price: number | null
   availability_status: DomainAvailabilityStatus | null
+  domain_checked_at: string | null
+  domain_check_source: DomainCheckSource | null
   concept_id: string | null
   status: NamingStatus
   created_by: string

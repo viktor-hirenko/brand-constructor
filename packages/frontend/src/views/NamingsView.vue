@@ -63,7 +63,6 @@ const newName = ref('')
 const newTagline = ref('')
 const newDomain = ref('')
 const newPrice = ref<number | null>(null)
-const newAvailabilityStatus = ref<'available' | 'sold' | 'unknown'>('unknown')
 const newConceptId = ref<string | null>(null)
 const creating = ref(false)
 
@@ -72,9 +71,13 @@ const editName = ref('')
 const editTagline = ref('')
 const editDomain = ref('')
 const editPrice = ref<number | null>(null)
-const editAvailabilityStatus = ref<'available' | 'sold' | 'unknown'>('unknown')
+const editOverrideStatus = ref<'available' | 'sold' | 'unknown' | null>(null)
+const editIsOverride = ref(false)
 const editConceptId = ref<string | null>(null)
+const editDomainCheckSource = ref<string | null>(null)
 const saving = ref(false)
+
+const checkingDomainId = ref<string | null>(null)
 
 function refreshList() {
   const params: Record<string, string> = { status: statusFilter.value }
@@ -99,7 +102,6 @@ function openCreateModal() {
   newTagline.value = ''
   newDomain.value = ''
   newPrice.value = null
-  newAvailabilityStatus.value = 'unknown'
   newConceptId.value = null
   fetchConcepts({ per_page: '100' })
   showCreateModal.value = true
@@ -115,7 +117,6 @@ async function handleCreate() {
         tagline: newTagline.value.trim(),
         domain: newDomain.value.trim() || null,
         price: newPrice.value,
-        availability_status: newAvailabilityStatus.value,
         concept_id: newConceptId.value || null,
       })
     } else {
@@ -142,12 +143,18 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
     editConceptId.value = extNaming.concept_id
     editDomain.value = extNaming.domain || ''
     editPrice.value = extNaming.price ?? null
-    editAvailabilityStatus.value = extNaming.availability_status || 'unknown'
+    editDomainCheckSource.value = extNaming.domain_check_source || null
+    editIsOverride.value = extNaming.domain_check_source === 'admin_override'
+    editOverrideStatus.value = editIsOverride.value
+      ? extNaming.availability_status || 'unknown'
+      : null
   } else {
     editConceptId.value = null
     editDomain.value = ''
     editPrice.value = null
-    editAvailabilityStatus.value = 'unknown'
+    editDomainCheckSource.value = null
+    editIsOverride.value = false
+    editOverrideStatus.value = null
   }
   fetchConcepts({ per_page: '100' })
   showEditModal.value = true
@@ -166,13 +173,47 @@ async function handleSaveEdit() {
       body.concept_id = editConceptId.value || null
       body.domain = editDomain.value.trim() || null
       body.price = editPrice.value
-      body.availability_status = editAvailabilityStatus.value
+      if (editIsOverride.value && editOverrideStatus.value) {
+        body.availability_status = editOverrideStatus.value
+        body.domain_check_source = 'admin_override'
+      } else if (!editIsOverride.value && editDomainCheckSource.value === 'admin_override') {
+        body.domain_check_source = 'manual'
+      }
     }
     await apiPut(`/api/namings/${type}/${editId.value}`, body)
     showEditModal.value = false
     refreshList()
   } finally {
     saving.value = false
+  }
+}
+
+async function handleCheckDomain(namingId: string) {
+  checkingDomainId.value = namingId
+  try {
+    await apiPost(`/api/namings/external/${namingId}/check-domain`, {})
+    refreshList()
+  } catch {
+    // Silently handle — status will remain as-is
+  } finally {
+    checkingDomainId.value = null
+  }
+}
+
+function formatCheckedAt(checkedAt: string | null): string {
+  if (!checkedAt) return 'Never'
+  const date = new Date(checkedAt)
+  return date.toLocaleString()
+}
+
+function getSourceLabel(source: string | null): string {
+  switch (source) {
+    case 'godaddy':
+      return 'Auto (GoDaddy)'
+    case 'admin_override':
+      return 'Admin Override'
+    default:
+      return 'Manual'
   }
 }
 
@@ -349,18 +390,44 @@ async function confirmDeleteNaming() {
               <td>{{ n.domain || '—' }}</td>
               <td>{{ n.price != null ? `$${n.price}` : '—' }}</td>
               <td>
-                <span
-                  class="namings-view__status-badge"
-                  :class="`namings-view__status-badge--${n.availability_status || 'unknown'}`"
-                >
-                  {{
-                    n.availability_status === 'available'
-                      ? '✓ Available'
-                      : n.availability_status === 'sold'
-                        ? '✗ Sold'
-                        : '? Unknown'
-                  }}
-                </span>
+                <div class="namings-view__availability-cell">
+                  <span
+                    class="namings-view__status-badge"
+                    :class="`namings-view__status-badge--${n.availability_status || 'unknown'}`"
+                  >
+                    {{
+                      n.availability_status === 'available'
+                        ? '✓ Available'
+                        : n.availability_status === 'sold'
+                          ? '✗ Sold'
+                          : '? Unknown'
+                    }}
+                  </span>
+                  <span
+                    v-if="n.domain_check_source === 'admin_override'"
+                    class="namings-view__source-badge namings-view__source-badge--override"
+                    title="Status manually set by admin"
+                  >
+                    Override
+                  </span>
+                  <span
+                    v-else-if="n.domain_check_source === 'godaddy'"
+                    class="namings-view__source-badge namings-view__source-badge--auto"
+                    :title="`Checked: ${formatCheckedAt(n.domain_checked_at)}`"
+                  >
+                    Auto
+                  </span>
+                  <BaseButton
+                    v-if="canWrite && n.domain && !n.used_in_brand_id && n.domain_check_source !== 'admin_override'"
+                    variant="secondary"
+                    size="sm"
+                    :loading="checkingDomainId === n.id"
+                    class="namings-view__check-btn"
+                    @click.stop="handleCheckDomain(n.id)"
+                  >
+                    Check
+                  </BaseButton>
+                </div>
               </td>
               <td>
                 <span
@@ -447,6 +514,9 @@ async function confirmDeleteNaming() {
         <BaseInput v-model="newTagline" label="Tagline" placeholder="Short description..." />
         <template v-if="activeTab === 'external'">
           <BaseInput v-model="newDomain" label="Domain" placeholder="e.g. example.com" />
+          <p v-if="newDomain.trim()" class="namings-view__hint">
+            Domain availability will be checked automatically via GoDaddy API after creation.
+          </p>
           <div class="namings-view__field">
             <label class="namings-view__label">Price ($)</label>
             <input
@@ -457,17 +527,6 @@ async function confirmDeleteNaming() {
               min="0"
               step="0.01"
             />
-          </div>
-          <div class="namings-view__field">
-            <label class="namings-view__label">Availability Status</label>
-            <select
-              v-model="newAvailabilityStatus"
-              class="namings-view__select namings-view__select--full"
-            >
-              <option value="unknown">Unknown</option>
-              <option value="available">Available</option>
-              <option value="sold">Sold</option>
-            </select>
           </div>
           <div class="namings-view__field">
             <label class="namings-view__label">Link to Concept</label>
@@ -524,15 +583,29 @@ async function confirmDeleteNaming() {
             />
           </div>
           <div class="namings-view__field">
-            <label class="namings-view__label">Availability Status</label>
-            <select
-              v-model="editAvailabilityStatus"
-              class="namings-view__select namings-view__select--full"
-            >
-              <option value="unknown">Unknown</option>
-              <option value="available">Available</option>
-              <option value="sold">Sold</option>
-            </select>
+            <label class="namings-view__label">Domain Availability</label>
+            <div class="namings-view__override-section">
+              <label class="namings-view__checkbox-label">
+                <input
+                  type="checkbox"
+                  v-model="editIsOverride"
+                  class="namings-view__checkbox"
+                />
+                <span>Override auto-check (set status manually)</span>
+              </label>
+              <select
+                v-if="editIsOverride"
+                v-model="editOverrideStatus"
+                class="namings-view__select namings-view__select--full"
+              >
+                <option value="unknown">Unknown</option>
+                <option value="available">Available</option>
+                <option value="sold">Sold</option>
+              </select>
+              <p v-else class="namings-view__hint">
+                Status is determined automatically via GoDaddy API. Enable override to set manually.
+              </p>
+            </div>
           </div>
           <div class="namings-view__field">
             <label class="namings-view__label">Link to Concept</label>
@@ -827,6 +900,68 @@ async function confirmDeleteNaming() {
     font-size: $font-size-sm;
     color: $color-text;
     line-height: $line-height-normal;
+  }
+
+  &__availability-cell {
+    display: flex;
+    align-items: center;
+    gap: $spacing-1;
+    flex-wrap: wrap;
+  }
+
+  &__source-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px $spacing-1;
+    border-radius: $radius-sm;
+    font-size: 10px;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    &--auto {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+
+    &--override {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+  }
+
+  &__check-btn {
+    padding: 2px $spacing-2 !important;
+    font-size: 11px !important;
+    min-height: auto !important;
+    line-height: 1.4;
+  }
+
+  &__hint {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    line-height: $line-height-normal;
+  }
+
+  &__override-section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+  }
+
+  &__checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: $font-size-sm;
+    color: $color-text;
+    cursor: pointer;
+  }
+
+  &__checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
   }
 }
 </style>

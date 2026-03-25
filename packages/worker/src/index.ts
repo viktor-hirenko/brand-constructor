@@ -11,6 +11,7 @@ import assetsRoutes from './routes/assets'
 import usersRoutes from './routes/users'
 import authRoutes from './routes/auth'
 import brandsRoutes from './routes/brands'
+import { batchCheckDomains, isGoDaddyConfigured } from './utils/domain-check'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -37,6 +38,43 @@ app.use('*', async (c, next) => {
 
 app.get('/api/health', c => {
   return c.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() })
+})
+
+app.get('/api/debug/godaddy', async c => {
+  const key = c.env.GODADDY_API_KEY
+  const secret = c.env.GODADDY_API_SECRET
+  const hasKey = Boolean(key)
+  const hasSecret = Boolean(secret)
+  const keyPreview = key ? `${key.slice(0, 4)}...${key.slice(-4)}` : null
+  const secretPreview = secret ? `${secret.slice(0, 4)}...${secret.slice(-4)}` : null
+
+  const authHeader = `sso-key ${key}:${secret}`
+  const testDomain = 'testdomain12345xyz.com'
+
+  const results: Record<string, string> = {}
+
+  if (hasKey && hasSecret) {
+    const endpoints = [
+      { name: 'prod_available', url: `https://api.godaddy.com/v1/domains/available?domain=${testDomain}` },
+      { name: 'prod_suggest', url: `https://api.godaddy.com/v1/domains/suggest?query=test&limit=1` },
+      { name: 'prod_shopper', url: `https://api.godaddy.com/v1/shoppers` },
+      { name: 'ote_available', url: `https://api.ote-godaddy.com/v1/domains/available?domain=${testDomain}` },
+    ]
+
+    for (const ep of endpoints) {
+      try {
+        const resp = await fetch(ep.url, {
+          headers: { Authorization: authHeader, Accept: 'application/json' },
+        })
+        const body = await resp.text()
+        results[ep.name] = `HTTP ${resp.status}: ${body.slice(0, 300)}`
+      } catch (e) {
+        results[ep.name] = `fetch error: ${e}`
+      }
+    }
+  }
+
+  return c.json({ hasKey, hasSecret, keyPreview, secretPreview, results })
 })
 
 // Asset serving — public, no auth required
@@ -75,4 +113,20 @@ app.onError((err, c) => {
   return c.json({ success: false, error: 'Internal Server Error' }, 500)
 })
 
-export default app
+export default {
+  fetch: app.fetch,
+
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    if (!isGoDaddyConfigured(env)) {
+      console.log('Scheduled domain check: GoDaddy API not configured, skipping')
+      return
+    }
+
+    console.log('Scheduled domain check started:', new Date().toISOString())
+    ctx.waitUntil(
+      batchCheckDomains(env).then(({ checked, updated }) => {
+        console.log(`Scheduled domain check completed: ${checked} checked, ${updated} updated`)
+      })
+    )
+  },
+}

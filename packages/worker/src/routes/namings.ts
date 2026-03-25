@@ -3,6 +3,12 @@ import { z } from 'zod'
 import type { Env, Variables } from '../types'
 import { requireLibraryAccess } from '../middleware/auth'
 import { generateId } from '../utils/id'
+import {
+  checkDomainAvailability,
+  updateNamingDomainStatus,
+  shouldRecheck,
+  isGoDaddyConfigured,
+} from '../utils/domain-check'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -12,6 +18,7 @@ const createExternalSchema = z.object({
   domain: z.string().max(255).nullable().optional(),
   price: z.number().min(0).nullable().optional(),
   availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
+  domain_check_source: z.enum(['manual', 'godaddy', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
 })
 
@@ -26,6 +33,7 @@ const updateExternalSchema = z.object({
   domain: z.string().max(255).nullable().optional(),
   price: z.number().min(0).nullable().optional(),
   availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
+  domain_check_source: z.enum(['manual', 'godaddy', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
 })
@@ -133,9 +141,20 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
     )
     .run()
 
-  const naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+  let naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
     .bind(id)
     .first()
+
+  if (parsed.data.domain && isGoDaddyConfigured(c.env)) {
+    const result = await checkDomainAvailability(parsed.data.domain, c.env)
+    if (result) {
+      await updateNamingDomainStatus(c.env.DB, id, result)
+      naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+        .bind(id)
+        .first()
+    }
+  }
+
   return c.json({ success: true, data: naming }, 201)
 })
 
@@ -183,9 +202,23 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
     .bind(...values)
     .run()
 
-  const updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+  let updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
     .bind(id)
     .first()
+
+  const domainChanged = parsed.data.domain !== undefined && parsed.data.domain !== existing.domain
+  const isAdminOverride = parsed.data.domain_check_source === 'admin_override'
+
+  if (!isAdminOverride && domainChanged && parsed.data.domain && isGoDaddyConfigured(c.env)) {
+    const result = await checkDomainAvailability(parsed.data.domain, c.env)
+    if (result) {
+      await updateNamingDomainStatus(c.env.DB, id, result)
+      updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+        .bind(id)
+        .first()
+    }
+  }
+
   return c.json({ success: true, data: updated })
 })
 
@@ -205,6 +238,58 @@ app.delete('/external/:id', requireLibraryAccess('external_namings'), async c =>
 
   await c.env.DB.prepare('DELETE FROM external_namings WHERE id = ?').bind(id).run()
   return c.json({ success: true, data: { deleted: true } })
+})
+
+// --- Domain Check ---
+
+app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'), async c => {
+  const id = c.req.param('id')
+
+  const naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+    .bind(id)
+    .first<{ id: string; domain: string | null; domain_checked_at: string | null; domain_check_source: string | null }>()
+
+  if (!naming) {
+    return c.json({ success: false, error: 'External naming not found' }, 404)
+  }
+
+  if (!naming.domain) {
+    return c.json({ success: false, error: 'No domain to check' }, 400)
+  }
+
+  if (!isGoDaddyConfigured(c.env)) {
+    return c.json({ success: false, error: 'Domain check service not configured' }, 503)
+  }
+
+  if (naming.domain_check_source === 'admin_override') {
+    return c.json({
+      success: true,
+      data: { skipped: true, reason: 'Admin override is active. Update the naming to remove override first.' },
+    })
+  }
+
+  if (!shouldRecheck(naming.domain_checked_at)) {
+    const fresh = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+      .bind(id)
+      .first()
+    return c.json({ success: true, data: fresh, cached: true })
+  }
+
+  const result = await checkDomainAvailability(naming.domain, c.env)
+  if (!result) {
+    return c.json({
+      success: false,
+      error: 'Domain check failed. Check Worker logs for details (GoDaddy API may have returned an error or credentials may be invalid).',
+    }, 502)
+  }
+
+  await updateNamingDomainStatus(c.env.DB, id, result)
+
+  const updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+    .bind(id)
+    .first()
+
+  return c.json({ success: true, data: updated })
 })
 
 // --- Internal Namings ---

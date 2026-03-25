@@ -11,6 +11,7 @@ export type {
   InternalNaming,
   NamingStatus,
   DomainAvailabilityStatus,
+  DomainCheckSource,
   CreateExternalNamingPayload,
   CreateInternalNamingPayload,
   UpdateExternalNamingPayload,
