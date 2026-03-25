@@ -904,9 +904,9 @@ async function confirmDeleteNaming() {
 
   &__availability-cell {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: $spacing-1;
-    flex-wrap: wrap;
   }
 
   &__source-badge {
@@ -931,10 +931,7 @@ async function confirmDeleteNaming() {
   }
 
   &__check-btn {
-    padding: 2px $spacing-2 !important;
-    font-size: 11px !important;
-    min-height: auto !important;
-    line-height: 1.4;
+    margin-top: $spacing-1;
   }
 
   &__hint {
