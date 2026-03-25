@@ -1064,6 +1064,14 @@ watch(currentStep, step => {
                 </div>
               </div>
               <div class="flex-1 flex flex-col justify-center space-y-4">
+                <button
+                  v-if="selectedConcept"
+                  type="button"
+                  class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all self-start"
+                  @click="openConceptDetails"
+                >
+                  Переглянути деталі
+                </button>
                 <div class="flex flex-col gap-3">
                   <div
                     v-if="
