@@ -19,14 +19,20 @@ withDefaults(defineProps<ButtonProps>(), {
     class="btn"
     :class="[`btn--${variant}`, `btn--${size}`]"
     :disabled="disabled || loading"
+    :aria-busy="loading ? 'true' : undefined"
   >
-    <span v-if="loading" class="btn__spinner" />
-    <slot />
+    <span class="btn__label" :class="{ 'btn__label--hidden': loading }">
+      <slot />
+    </span>
+    <span v-if="loading" class="btn__spinner-wrap" aria-hidden="true">
+      <span class="btn__spinner" />
+    </span>
   </button>
 </template>
 
 <style lang="scss" scoped>
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -94,6 +100,26 @@ withDefaults(defineProps<ButtonProps>(), {
   &--lg {
     padding: $spacing-3 $spacing-6;
     font-size: $font-size-base;
+  }
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: inherit;
+
+    &--hidden {
+      visibility: hidden;
+    }
+  }
+
+  &__spinner-wrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
   }
 
   &__spinner {
