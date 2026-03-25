@@ -19,14 +19,11 @@ withDefaults(defineProps<ButtonProps>(), {
     class="btn"
     :class="[`btn--${variant}`, `btn--${size}`]"
     :disabled="disabled || loading"
-    :aria-busy="loading ? 'true' : undefined"
   >
-    <span class="btn__label" :class="{ 'btn__label--hidden': loading }">
+    <span class="btn__content" :class="{ 'btn__content--hidden': loading }">
       <slot />
     </span>
-    <span v-if="loading" class="btn__spinner-wrap" aria-hidden="true">
-      <span class="btn__spinner" />
-    </span>
+    <span v-if="loading" class="btn__spinner" aria-hidden="true" />
   </button>
 </template>
 
@@ -41,7 +38,7 @@ withDefaults(defineProps<ButtonProps>(), {
   border-radius: $radius-md;
   font-weight: $font-weight-medium;
   cursor: pointer;
-  transition: all $transition-fast;
+  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
   white-space: nowrap;
 
   &:disabled {
@@ -102,7 +99,7 @@ withDefaults(defineProps<ButtonProps>(), {
     font-size: $font-size-base;
   }
 
-  &__label {
+  &__content {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -113,26 +110,23 @@ withDefaults(defineProps<ButtonProps>(), {
     }
   }
 
-  &__spinner-wrap {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-
   &__spinner {
-    width: 16px;
-    height: 16px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
     border: 2px solid transparent;
     border-top-color: currentColor;
     border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+    animation: btn-spin 0.6s linear infinite;
   }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes btn-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 </style>
