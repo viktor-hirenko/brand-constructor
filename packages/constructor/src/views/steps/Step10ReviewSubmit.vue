@@ -702,28 +702,13 @@ async function handlePrintBrand() {
 
     <Step10ReviewScrollLayout :ceo-unified-scroll="showCeoReview">
       <template #summary>
-      <!-- CEO Comments Display for PO (needs_revision = yellow, approved = green) -->
+      <!-- CEO Comments Display (when brand returned for revision) -->
       <div
-        v-if="!showCeoReview && (brandStatus === 'needs_revision' || brandStatus === 'approved') && hasCeoComments"
-        :class="brandStatus === 'approved'
-          ? 'bg-green-50 border border-green-200 rounded-xl p-4 space-y-2'
-          : 'bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2'"
+        v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoComments"
+        class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2"
       >
         <div class="flex items-center gap-2 mb-1">
           <svg
-            v-if="brandStatus === 'approved'"
-            class="size-5 text-green-600 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          <svg
-            v-else
             class="size-5 text-amber-600 shrink-0"
             viewBox="0 0 24 24"
             fill="none"
@@ -736,17 +721,12 @@ async function handlePrintBrand() {
             <path d="M12 9v4" />
             <path d="M12 17h.01" />
           </svg>
-          <h4
-            class="text-sm font-semibold"
-            :class="brandStatus === 'approved' ? 'text-green-800' : 'text-amber-800'"
-          >
-            Коментарі CEO
-          </h4>
+          <h4 class="text-sm font-semibold text-amber-800">Коментарі CEO</h4>
         </div>
         <div
           v-for="(comment, key) in store.brandCeoComments"
           :key="key"
-          :class="brandStatus === 'approved' ? 'text-sm text-green-900' : 'text-sm text-amber-900'"
+          class="text-sm text-amber-900"
         >
           <template v-if="comment && comment.trim()">
             <span class="font-medium">{{ CEO_COMMENT_SECTION_LABELS[key] ?? key }}:</span>
@@ -755,9 +735,9 @@ async function handlePrintBrand() {
         </div>
       </div>
 
-      <!-- CEO Selections Display for PO (needs_revision or approved) -->
+      <!-- CEO Selections Display for PO (when brand returned for revision) -->
       <div
-        v-if="!showCeoReview && (brandStatus === 'needs_revision' || brandStatus === 'approved') && hasCeoSelections"
+        v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoSelections"
         class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2"
       >
         <div class="flex items-center gap-2 mb-1">
