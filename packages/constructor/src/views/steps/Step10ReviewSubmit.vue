@@ -585,6 +585,9 @@ const isPdfLoading = ref(false)
 async function handlePrintBrand() {
   isPdfLoading.value = true
   try {
+    if (brandStatus.value === 'needs_revision' && store.brandId) {
+      await store.saveBrand()
+    }
     const selections = store.stepData?.visualComponents?.selections ?? {}
     const componentTypes: Record<string, ComponentTypeInfo> = {}
 
