@@ -1,9 +1,9 @@
 <script setup lang="ts">
 interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
-  loading?: boolean;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
+  size?: 'sm' | 'md' | 'lg'
+  disabled?: boolean
+  loading?: boolean
 }
 
 withDefaults(defineProps<ButtonProps>(), {
@@ -11,15 +11,11 @@ withDefaults(defineProps<ButtonProps>(), {
   size: 'md',
   disabled: false,
   loading: false,
-});
+})
 </script>
 
 <template>
-  <button
-    class="btn"
-    :class="[`btn--${variant}`, `btn--${size}`]"
-    :disabled="disabled || loading"
-  >
+  <button class="btn" :class="[`btn--${variant}`, `btn--${size}`]" :disabled="disabled || loading">
     <span class="btn__content" :class="{ 'btn__content--hidden': loading }">
       <slot />
     </span>
@@ -38,7 +34,10 @@ withDefaults(defineProps<ButtonProps>(), {
   border-radius: $radius-md;
   font-weight: $font-weight-medium;
   cursor: pointer;
-  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
   white-space: nowrap;
 
   &:disabled {

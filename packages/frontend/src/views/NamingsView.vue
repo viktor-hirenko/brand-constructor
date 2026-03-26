@@ -418,7 +418,12 @@ async function confirmDeleteNaming() {
                     Auto
                   </span>
                   <BaseButton
-                    v-if="canWrite && n.domain && !n.used_in_brand_id && n.domain_check_source !== 'admin_override'"
+                    v-if="
+                      canWrite &&
+                      n.domain &&
+                      !n.used_in_brand_id &&
+                      n.domain_check_source !== 'admin_override'
+                    "
                     variant="secondary"
                     size="sm"
                     :loading="checkingDomainId === n.id"
@@ -586,11 +591,7 @@ async function confirmDeleteNaming() {
             <label class="namings-view__label">Domain Availability</label>
             <div class="namings-view__override-section">
               <label class="namings-view__checkbox-label">
-                <input
-                  type="checkbox"
-                  v-model="editIsOverride"
-                  class="namings-view__checkbox"
-                />
+                <input type="checkbox" v-model="editIsOverride" class="namings-view__checkbox" />
                 <span>Override auto-check (set status manually)</span>
               </label>
               <select

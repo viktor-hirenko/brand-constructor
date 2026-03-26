@@ -404,9 +404,7 @@ watch(currentStep, step => {
       <div :class="isFullWidth ? 'w-full' : 'w-[42%]'" class="bg-muted/30 flex flex-col min-h-0">
         <div
           class="px-12 pt-5 pb-6 min-h-0 flex-1"
-          :class="
-            currentStep === 10 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
-          "
+          :class="currentStep === 10 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'"
         >
           <div :class="currentStep === 10 ? 'shrink-0' : ''">
             <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-1">
@@ -434,13 +432,7 @@ watch(currentStep, step => {
             </div>
           </div>
 
-          <div
-            :class="
-              currentStep === 10
-                ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
-                : ''
-            "
-          >
+          <div :class="currentStep === 10 ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : ''">
             <RouterView />
           </div>
         </div>
