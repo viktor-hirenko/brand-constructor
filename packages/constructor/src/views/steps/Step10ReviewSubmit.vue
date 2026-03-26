@@ -363,13 +363,15 @@ const showPoSubmitButton = computed(
     !isCeoView.value && (brandStatus.value === 'draft' || brandStatus.value === 'needs_revision')
 )
 
-const showShareButton = computed(
-  () =>
+const showShareButton = computed(() => {
+  if (brandStatus.value === 'approved') {
+    return true
+  }
+  return (
     !isCeoView.value &&
-    (brandStatus.value === 'submitted' ||
-      brandStatus.value === 'needs_revision' ||
-      brandStatus.value === 'approved')
-)
+    (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
+  )
+})
 
 const showPdfButton = computed(
   () =>
