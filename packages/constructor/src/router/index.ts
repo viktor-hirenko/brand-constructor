@@ -85,14 +85,14 @@ const routes: RouteRecordRaw[] = [
         )
         return true
       } catch {
-        return { path: '/constructor/step/1' }
+        return { path: '/' }
       }
     },
   },
   {
     path: '/constructor',
     component: () => import('@/views/ConstructorLayout.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, briefCreatorOnly: true },
     beforeEnter: to => {
       const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/)
       if (!stepMatch) return true
@@ -177,7 +177,7 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor/success',
     name: 'brand-success',
     component: () => import('@/views/BrandSuccessView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, briefCreatorOnly: true },
   },
   {
     path: '/:pathMatch(.*)*',
@@ -205,6 +205,10 @@ router.beforeEach(to => {
 
   if (to.matched.some(r => r.meta.requiresAuth) && !authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.matched.some(r => r.meta.briefCreatorOnly) && !authStore.canStartNewBrandBrief) {
+    return { path: '/' }
   }
 
   return true

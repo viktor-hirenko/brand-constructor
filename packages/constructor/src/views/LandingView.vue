@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const COVER_IMAGE =
   'https://raw.githubusercontent.com/lukaguzenko/brand-constructor-assets/a61fff81678850a0ead1e39a7a3770237d50ef5a/others/cover_1.png'
@@ -63,6 +65,7 @@ function startConstructor() {
 
           <!-- CTA Button -->
           <button
+            v-if="authStore.canStartNewBrandBrief"
             class="inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] hover:shadow-[0px_15px_25px_rgba(0,0,0,0.15),0px_6px_10px_rgba(0,0,0,0.1)] transition-shadow text-lg font-medium tracking-[-0.44px] cursor-pointer"
             @click="startConstructor"
           >

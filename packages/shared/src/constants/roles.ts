@@ -36,3 +36,13 @@ export const BRAND_APPROVAL_ROLES = [
   USER_ROLES.HEAD_DHC,
   USER_ROLES.CPO_CEO,
 ] as const;
+
+/** Roles allowed to start the multi-step brief wizard and create a new brand (POST /brands). */
+export const BRAND_BRIEF_CREATOR_ROLES = [
+  USER_ROLES.PRODUCT_OWNER,
+  USER_ROLES.ADMIN,
+] as const;
+
+export function isBrandBriefCreatorRole(role: string): boolean {
+  return (BRAND_BRIEF_CREATOR_ROLES as readonly string[]).includes(role);
+}

@@ -2,8 +2,11 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
+import { useAuthStore } from '@/stores/auth'
+
 const router = useRouter()
 const store = useConstructorStore()
+const authStore = useAuthStore()
 
 const brandDisplayName = computed(() => store.brandInternalName || 'New Brand')
 
@@ -196,7 +199,7 @@ function handleGoHome() {
             Переглянути бриф
           </button>
           <button
-            v-if="successConfig.showCreateNew"
+            v-if="successConfig.showCreateNew && authStore.canStartNewBrandBrief"
             class="w-full h-[50px] border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
             @click="handleNewBrief"
           >

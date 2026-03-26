@@ -17,7 +17,7 @@ import {
   buildNewBriefsDesignMessage,
   type BrandNotificationData,
 } from '../utils/slack'
-import { BRAND_APPROVAL_ROLES } from '@brand-constructor/shared'
+import { BRAND_APPROVAL_ROLES, isBrandBriefCreatorRole } from '@brand-constructor/shared'
 import type { Brand, BrandStatus } from '@brand-constructor/shared/types'
 
 const VALID_STATUSES: BrandStatus[] = [
@@ -323,6 +323,12 @@ brands.get('/:id', async c => {
 
 brands.post('/', async c => {
   const user = c.get('user')
+  if (!isBrandBriefCreatorRole(user.role)) {
+    return c.json(
+      { success: false, error: 'Only Product Owner or Admin can create a new brand brief' },
+      403
+    )
+  }
   const body = await c.req.json()
   const parsed = createBrandSchema.safeParse(body)
 

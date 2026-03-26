@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { isBrandBriefCreatorRole } from '@brand-constructor/shared';
 import type { User } from '@brand-constructor/shared/types';
 
 const STORAGE_KEY = 'brand_constructor_auth';
@@ -56,6 +57,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isProductOwner = computed(() => userRole.value === 'product_owner');
 
+  const canStartNewBrandBrief = computed(() => {
+    const role = userRole.value;
+    return role !== null && isBrandBriefCreatorRole(role);
+  });
+
   async function loginWithGoogle(credential: string): Promise<void> {
     loading.value = true;
     try {
@@ -108,6 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
     isCeoOrAdmin,
     isAdmin,
     isProductOwner,
+    canStartNewBrandBrief,
     loginWithGoogle,
     logout,
     fetchCurrentUser,
