@@ -1,7 +1,13 @@
 import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
 import { generateId } from '../utils/id'
-import { detectFileType, extractPngDimensions, extractJpegDimensions, extractWebpDimensions, validateAsset } from '../utils/asset-validation'
+import {
+  detectFileType,
+  extractPngDimensions,
+  extractJpegDimensions,
+  extractWebpDimensions,
+  validateAsset,
+} from '../utils/asset-validation'
 import { buildR2Key, getContentType } from '../utils/r2'
 import type { AssetEntityType } from '@brand-constructor/shared'
 

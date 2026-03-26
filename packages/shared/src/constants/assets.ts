@@ -1,4 +1,4 @@
-import type { AssetValidationRule } from '../types/asset';
+import type { AssetValidationRule } from '../types/asset'
 
 export const ASSET_ENTITY_TYPES = {
   CONCEPT_VISUAL: 'concept_visual',
@@ -10,21 +10,21 @@ export const ASSET_ENTITY_TYPES = {
   CONCEPT_PREVIEW_MOBILE: 'concept_preview_mobile',
   CONCEPT_PREVIEW_WEB: 'concept_preview_web',
   COMPONENT_THUMBNAIL: 'component_thumbnail',
-} as const;
+} as const
 
 export const ASSET_FILE_TYPES = {
   PNG: 'png',
   SVG: 'svg',
   JPG: 'jpg',
   WEBP: 'webp',
-} as const;
+} as const
 
 export const MAX_FILE_SIZES = {
   png: 10 * 1024 * 1024, // 10MB
   svg: 2 * 1024 * 1024, // 2MB
   jpg: 10 * 1024 * 1024, // 10MB
   webp: 10 * 1024 * 1024, // 10MB
-} as const;
+} as const
 
 /**
  * Aspect ratios per UI component type, derived from prototype measurements:
@@ -36,9 +36,9 @@ export const MAX_FILE_SIZES = {
  * Theme:      no image validation
  */
 export interface ComponentTypeAspectConfig {
-  aspect_ratio: number;
-  min_width: number;
-  min_height: number;
+  aspect_ratio: number
+  min_width: number
+  min_height: number
 }
 
 /**
@@ -52,24 +52,24 @@ export const COMPONENT_TYPE_ASPECT_RATIOS: Record<string, ComponentTypeAspectCon
   ct_thumbnails: { aspect_ratio: 2.14, min_width: 100, min_height: 50 },
   ct_tabbar: { aspect_ratio: 5.07, min_width: 100, min_height: 20 },
   ct_sidebar: { aspect_ratio: 0.47, min_width: 100, min_height: 100 },
-};
+}
 
 /**
  * Parse user input into a numeric aspect ratio.
  * Accepts "16:9" → 1.778, "1.5" → 1.5, empty/invalid → null.
  */
 export function parseAspectRatio(input: string): number | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
+  const trimmed = input.trim()
+  if (!trimmed) return null
 
   if (trimmed.includes(':')) {
-    const [w, h] = trimmed.split(':').map(Number);
-    if (!w || !h || isNaN(w) || isNaN(h) || h === 0) return null;
-    return w / h;
+    const [w, h] = trimmed.split(':').map(Number)
+    if (!w || !h || isNaN(w) || isNaN(h) || h === 0) return null
+    return w / h
   }
 
-  const num = parseFloat(trimmed);
-  return isNaN(num) || num <= 0 ? null : num;
+  const num = parseFloat(trimmed)
+  return isNaN(num) || num <= 0 ? null : num
 }
 
 /**
@@ -168,4 +168,4 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
     min_height: 40,
     max_file_size: MAX_FILE_SIZES.png,
   },
-];
+]

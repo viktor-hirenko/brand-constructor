@@ -79,12 +79,19 @@ async function handleFileUpload(event: Event, entityType: string) {
   if (!file || !concept.value) return
 
   const ratioInput =
-    entityType === 'concept_visual' ? visualAspectRatio.value :
-    entityType === 'concept_logo' ? logoAspectRatio.value :
-    entityType === 'concept_gallery_1' ? gallery1AspectRatio.value :
-    entityType === 'concept_gallery_2' ? gallery2AspectRatio.value :
-    entityType === 'concept_preview_mobile' ? mobilePreviewAspectRatio.value :
-    entityType === 'concept_preview_web' ? webPreviewAspectRatio.value : ''
+    entityType === 'concept_visual'
+      ? visualAspectRatio.value
+      : entityType === 'concept_logo'
+        ? logoAspectRatio.value
+        : entityType === 'concept_gallery_1'
+          ? gallery1AspectRatio.value
+          : entityType === 'concept_gallery_2'
+            ? gallery2AspectRatio.value
+            : entityType === 'concept_preview_mobile'
+              ? mobilePreviewAspectRatio.value
+              : entityType === 'concept_preview_web'
+                ? webPreviewAspectRatio.value
+                : ''
   const parsedRatio = parseAspectRatio(ratioInput)
 
   uploadingType.value = entityType
