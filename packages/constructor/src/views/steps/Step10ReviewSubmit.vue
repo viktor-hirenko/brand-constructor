@@ -364,7 +364,10 @@ const showPoSubmitButton = computed(
 
 const showShareButton = computed(
   () =>
-    !isCeoView.value && (brandStatus.value === 'needs_revision' || brandStatus.value === 'approved')
+    !isCeoView.value &&
+    (brandStatus.value === 'submitted' ||
+      brandStatus.value === 'needs_revision' ||
+      brandStatus.value === 'approved')
 )
 
 const showPdfButton = computed(
@@ -1051,7 +1054,7 @@ async function handlePrintBrand() {
         </div>
 
         <button
-          v-if="!isCeoView"
+          v-if="!isCeoView && (brandStatus === 'draft' || brandStatus === 'needs_revision')"
           type="button"
           class="mt-3 h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
           @click="goToStep(item.step)"
