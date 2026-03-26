@@ -182,15 +182,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       sectionKey: 'basics',
       icon: 'file-text',
       step: 1,
-    })
-  }
-  if (basicsComment) {
-    items.push({
-      label: 'Коментар',
-      value: basicsComment,
-      sectionKey: 'basics',
-      icon: 'message',
-      step: 1,
+      comment: basicsComment,
     })
   }
   if (mode.value) {
@@ -703,6 +695,85 @@ async function handlePrintBrand() {
 
     <Step10ReviewScrollLayout :ceo-unified-scroll="showCeoReview">
       <template #summary>
+      <!-- CEO Comments Display (when brand returned for revision) -->
+      <div
+        v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoComments"
+        class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2"
+      >
+        <div class="flex items-center gap-2 mb-1">
+          <svg
+            class="size-5 text-amber-600 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+          <h4 class="text-sm font-semibold text-amber-800">Коментарі CEO</h4>
+        </div>
+        <div
+          v-for="(comment, key) in store.brandCeoComments"
+          :key="key"
+          class="text-sm text-amber-900"
+        >
+          <template v-if="comment && comment.trim()">
+            <span class="font-medium">{{ CEO_COMMENT_SECTION_LABELS[key] ?? key }}:</span>
+            {{ comment }}
+          </template>
+        </div>
+      </div>
+
+      <!-- CEO Selections Display for PO (when brand returned for revision) -->
+      <div
+        v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoSelections"
+        class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2"
+      >
+        <div class="flex items-center gap-2 mb-1">
+          <svg
+            class="size-5 text-blue-600 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"
+            />
+          </svg>
+          <h4 class="text-sm font-semibold text-blue-800">Альтернативи CEO</h4>
+        </div>
+        <ul class="list-disc list-inside space-y-0.5 text-sm text-blue-900">
+          <li v-if="store.brandCeoSelections?.concept">
+            Концепт:
+            {{
+              concepts.find(c => c.id === store.brandCeoSelections!.concept)?.name ??
+              store.brandCeoSelections!.concept
+            }}
+          </li>
+          <li v-if="store.brandCeoSelections?.externalNaming">
+            Зовн. назва:
+            {{
+              externalNamings.find(n => n.id === store.brandCeoSelections!.externalNaming)?.name ??
+              store.brandCeoSelections!.externalNaming
+            }}
+          </li>
+          <li v-if="store.brandCeoSelections?.internalNaming">
+            Внутр. назва:
+            {{
+              internalNamings.find(n => n.id === store.brandCeoSelections!.internalNaming)?.name ??
+              store.brandCeoSelections!.internalNaming
+            }}
+          </li>
+        </ul>
+      </div>
+
       <div
         v-for="(item, idx) in summaryItems"
         :key="`${item.label}-${item.step}-${idx}`"
@@ -1221,85 +1292,6 @@ async function handlePrintBrand() {
         </div>
       </div>
     </Teleport>
-
-    <!-- CEO Comments Display (when brand returned for revision) -->
-    <div
-      v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoComments"
-      class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2"
-    >
-      <div class="flex items-center gap-2 mb-1">
-        <svg
-          class="size-5 text-amber-600 shrink-0"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </svg>
-        <h4 class="text-sm font-semibold text-amber-800">Коментарі CEO</h4>
-      </div>
-      <div
-        v-for="(comment, key) in store.brandCeoComments"
-        :key="key"
-        class="text-sm text-amber-900"
-      >
-        <template v-if="comment && comment.trim()">
-          <span class="font-medium">{{ CEO_COMMENT_SECTION_LABELS[key] ?? key }}:</span>
-          {{ comment }}
-        </template>
-      </div>
-    </div>
-
-    <!-- CEO Selections Display for PO (when brand returned for revision) -->
-    <div
-      v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoSelections"
-      class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2"
-    >
-      <div class="flex items-center gap-2 mb-1">
-        <svg
-          class="size-5 text-blue-600 shrink-0"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"
-          />
-        </svg>
-        <h4 class="text-sm font-semibold text-blue-800">Альтернативи CEO</h4>
-      </div>
-      <ul class="list-disc list-inside space-y-0.5 text-sm text-blue-900">
-        <li v-if="store.brandCeoSelections?.concept">
-          Концепт:
-          {{
-            concepts.find(c => c.id === store.brandCeoSelections!.concept)?.name ??
-            store.brandCeoSelections!.concept
-          }}
-        </li>
-        <li v-if="store.brandCeoSelections?.externalNaming">
-          Зовн. назва:
-          {{
-            externalNamings.find(n => n.id === store.brandCeoSelections!.externalNaming)?.name ??
-            store.brandCeoSelections!.externalNaming
-          }}
-        </li>
-        <li v-if="store.brandCeoSelections?.internalNaming">
-          Внутр. назва:
-          {{
-            internalNamings.find(n => n.id === store.brandCeoSelections!.internalNaming)?.name ??
-            store.brandCeoSelections!.internalNaming
-          }}
-        </li>
-      </ul>
-    </div>
 
     <!-- Action Buttons -->
     <div
