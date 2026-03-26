@@ -333,6 +333,7 @@ const isSaving = computed(() => store.isSaving)
 const saveError = computed(() => store.saveError)
 const statusActionLoading = ref(false)
 const statusActionError = ref<string | null>(null)
+const showCeoCommentsForm = ref(false)
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: 'Чернетка', color: 'bg-gray-100 text-gray-700' },
@@ -701,13 +702,28 @@ async function handlePrintBrand() {
 
     <Step10ReviewScrollLayout :ceo-unified-scroll="showCeoReview">
       <template #summary>
-      <!-- CEO Comments Display (when brand returned for revision) -->
+      <!-- CEO Comments Display for PO (needs_revision = yellow, approved = green) -->
       <div
-        v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoComments"
-        class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2"
+        v-if="!showCeoReview && (brandStatus === 'needs_revision' || brandStatus === 'approved') && hasCeoComments"
+        :class="brandStatus === 'approved'
+          ? 'bg-green-50 border border-green-200 rounded-xl p-4 space-y-2'
+          : 'bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2'"
       >
         <div class="flex items-center gap-2 mb-1">
           <svg
+            v-if="brandStatus === 'approved'"
+            class="size-5 text-green-600 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          <svg
+            v-else
             class="size-5 text-amber-600 shrink-0"
             viewBox="0 0 24 24"
             fill="none"
@@ -720,12 +736,17 @@ async function handlePrintBrand() {
             <path d="M12 9v4" />
             <path d="M12 17h.01" />
           </svg>
-          <h4 class="text-sm font-semibold text-amber-800">Коментарі CEO</h4>
+          <h4
+            class="text-sm font-semibold"
+            :class="brandStatus === 'approved' ? 'text-green-800' : 'text-amber-800'"
+          >
+            Коментарі CEO
+          </h4>
         </div>
         <div
           v-for="(comment, key) in store.brandCeoComments"
           :key="key"
-          class="text-sm text-amber-900"
+          :class="brandStatus === 'approved' ? 'text-sm text-green-900' : 'text-sm text-amber-900'"
         >
           <template v-if="comment && comment.trim()">
             <span class="font-medium">{{ CEO_COMMENT_SECTION_LABELS[key] ?? key }}:</span>
@@ -734,9 +755,9 @@ async function handlePrintBrand() {
         </div>
       </div>
 
-      <!-- CEO Selections Display for PO (when brand returned for revision) -->
+      <!-- CEO Selections Display for PO (needs_revision or approved) -->
       <div
-        v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoSelections"
+        v-if="!showCeoReview && (brandStatus === 'needs_revision' || brandStatus === 'approved') && hasCeoSelections"
         class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2"
       >
         <div class="flex items-center gap-2 mb-1">
@@ -1064,20 +1085,40 @@ async function handlePrintBrand() {
       </div>
       </template>
       <template #footer>
-    <!-- CEO Comments Section -->
+    <!-- CEO Comments Section (accordion) -->
     <div
       v-if="showCeoReview && (brandStatus === 'submitted' || brandStatus === 'needs_revision')"
-      class="space-y-4 pt-4 border-t border-black/10"
+      class="pt-4 border-t border-black/10"
     >
-      <h4 class="text-sm font-medium text-foreground">Коментарі CEO</h4>
-      <div v-for="section in CEO_COMMENT_SECTIONS" :key="section.key" class="space-y-1">
-        <label class="text-xs text-muted-foreground">{{ section.label }}</label>
-        <textarea
-          v-model="ceoComments[section.key]"
-          rows="2"
-          class="w-full min-h-[4.5rem] resize-y px-3 py-2 bg-[#f3f3f5] border border-transparent rounded-lg text-sm placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/20 transition-all"
-          :placeholder="`Коментар до секції «${section.label}»...`"
-        />
+      <button
+        type="button"
+        class="w-full flex items-center justify-between text-sm font-medium text-foreground hover:text-foreground/70 transition-colors"
+        @click="showCeoCommentsForm = !showCeoCommentsForm"
+      >
+        <span>Коментарі CEO</span>
+        <svg
+          class="size-4 transition-transform duration-200"
+          :class="showCeoCommentsForm ? 'rotate-180' : ''"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      <div v-if="showCeoCommentsForm" class="space-y-3 mt-4">
+        <div v-for="section in CEO_COMMENT_SECTIONS" :key="section.key" class="space-y-1">
+          <label class="text-xs text-muted-foreground">{{ section.label }}</label>
+          <textarea
+            v-model="ceoComments[section.key]"
+            rows="2"
+            class="w-full min-h-[4.5rem] resize-y px-3 py-2 bg-[#f3f3f5] border border-transparent rounded-lg text-sm placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/20 transition-all"
+            :placeholder="`Коментар до секції «${section.label}»...`"
+          />
+        </div>
       </div>
     </div>
 
