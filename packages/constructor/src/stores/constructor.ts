@@ -215,10 +215,14 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   }
 
   function setDeliverables(data: Partial<BrandDeliverablesData>) {
-    stepData.value.deliverables = {
+    const merged = {
       ...stepData.value.deliverables,
       ...data,
     }
+    if (!merged.legalLanding && !merged.partnerLanding) {
+      merged.developmentDeadline = ''
+    }
+    stepData.value.deliverables = merged
   }
 
   function setVisualComponents(data: Partial<BrandVisualComponentsData>) {

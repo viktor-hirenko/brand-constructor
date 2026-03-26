@@ -247,7 +247,12 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
 
   const naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
     .bind(id)
-    .first<{ id: string; domain: string | null; domain_checked_at: string | null; domain_check_source: string | null }>()
+    .first<{
+      id: string
+      domain: string | null
+      domain_checked_at: string | null
+      domain_check_source: string | null
+    }>()
 
   if (!naming) {
     return c.json({ success: false, error: 'External naming not found' }, 404)
@@ -264,7 +269,10 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
   if (naming.domain_check_source === 'admin_override') {
     return c.json({
       success: true,
-      data: { skipped: true, reason: 'Admin override is active. Update the naming to remove override first.' },
+      data: {
+        skipped: true,
+        reason: 'Admin override is active. Update the naming to remove override first.',
+      },
     })
   }
 
@@ -277,10 +285,14 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
 
   const result = await checkDomainAvailability(naming.domain, c.env)
   if (!result) {
-    return c.json({
-      success: false,
-      error: 'Domain check failed. Check Worker logs for details (GoDaddy API may have returned an error or credentials may be invalid).',
-    }, 502)
+    return c.json(
+      {
+        success: false,
+        error:
+          'Domain check failed. Check Worker logs for details (GoDaddy API may have returned an error or credentials may be invalid).',
+      },
+      502
+    )
   }
 
   await updateNamingDomainStatus(c.env.DB, id, result)

@@ -32,7 +32,10 @@ export async function checkDomainAvailability(
     return null
   }
 
-  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim()
+  const cleanDomain = domain
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .trim()
   if (!cleanDomain || !cleanDomain.includes('.')) {
     return null
   }
@@ -48,17 +51,24 @@ export async function checkDomainAvailability(
 
     if (!response.ok) {
       const text = await response.text()
-      console.error(`GoDaddy API error for domain "${cleanDomain}": HTTP ${response.status} — ${text}`)
+      console.error(
+        `GoDaddy API error for domain "${cleanDomain}": HTTP ${response.status} — ${text}`
+      )
       return null
     }
 
     const data: GoDaddyAvailabilityResponse = await response.json()
-    console.log(`GoDaddy check for "${cleanDomain}": available=${data.available}, price=${data.price}, currency=${data.currency}`)
+    console.log(
+      `GoDaddy check for "${cleanDomain}": available=${data.available}, price=${data.price}, currency=${data.currency}`
+    )
 
     return {
       available: data.available,
       // GoDaddy returns price in microcents (e.g. 7490000 = $7.49)
-      price: typeof data.price === 'number' && data.price > 0 ? Math.round(data.price / 1_000_000) : null,
+      price:
+        typeof data.price === 'number' && data.price > 0
+          ? Math.round(data.price / 1_000_000)
+          : null,
       currency: data.currency || 'USD',
       source: 'godaddy',
       checkedAt: new Date().toISOString(),
@@ -104,7 +114,12 @@ export async function batchCheckDomains(env: Env): Promise<{ checked: number; up
        AND domain != ''
        AND status IN ('active', 'used')
        AND domain_check_source != 'admin_override'`
-  ).all<{ id: string; domain: string; domain_checked_at: string | null; domain_check_source: string | null }>()
+  ).all<{
+    id: string
+    domain: string
+    domain_checked_at: string | null
+    domain_check_source: string | null
+  }>()
 
   let checked = 0
   let updated = 0

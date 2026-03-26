@@ -55,10 +55,19 @@ app.get('/api/debug/godaddy', async c => {
 
   if (hasKey && hasSecret) {
     const endpoints = [
-      { name: 'prod_available', url: `https://api.godaddy.com/v1/domains/available?domain=${testDomain}` },
-      { name: 'prod_suggest', url: `https://api.godaddy.com/v1/domains/suggest?query=test&limit=1` },
+      {
+        name: 'prod_available',
+        url: `https://api.godaddy.com/v1/domains/available?domain=${testDomain}`,
+      },
+      {
+        name: 'prod_suggest',
+        url: `https://api.godaddy.com/v1/domains/suggest?query=test&limit=1`,
+      },
       { name: 'prod_shopper', url: `https://api.godaddy.com/v1/shoppers` },
-      { name: 'ote_available', url: `https://api.ote-godaddy.com/v1/domains/available?domain=${testDomain}` },
+      {
+        name: 'ote_available',
+        url: `https://api.ote-godaddy.com/v1/domains/available?domain=${testDomain}`,
+      },
     ]
 
     for (const ep of endpoints) {

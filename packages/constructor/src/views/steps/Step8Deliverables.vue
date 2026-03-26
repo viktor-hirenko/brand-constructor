@@ -28,8 +28,6 @@ const comment = computed({
 })
 
 const hasAnythingEnabled = computed(() => legalLanding.value || partnerLanding.value)
-
-const isDeadlineRequired = computed(() => hasAnythingEnabled.value)
 </script>
 
 <template>
@@ -129,7 +127,7 @@ const isDeadlineRequired = computed(() => hasAnythingEnabled.value)
     </div>
 
     <!-- Development Deadline -->
-    <div class="flex flex-col gap-2">
+    <div v-if="hasAnythingEnabled" class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <svg
           class="size-4 text-foreground"
@@ -148,11 +146,11 @@ const isDeadlineRequired = computed(() => hasAnythingEnabled.value)
         </svg>
         <span class="text-base font-medium text-foreground tracking-[-0.31px]">
           Дедлайн розробки
-          <span v-if="isDeadlineRequired" class="text-red-500">*</span>
+          <span class="text-red-500">*</span>
         </span>
       </div>
       <DatePicker v-model="developmentDeadline" :min-date="todayISO" />
-      <p v-if="isDeadlineRequired && !developmentDeadline" class="text-xs text-red-500">
+      <p v-if="!developmentDeadline" class="text-xs text-red-500">
         Дедлайн є обовʼязковим, якщо увімкнено хоча б одну опцію
       </p>
     </div>
