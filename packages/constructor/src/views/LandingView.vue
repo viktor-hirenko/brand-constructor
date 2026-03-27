@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { computed } from 'vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -14,6 +15,11 @@ const features = [
   { label: 'UI рішення', icon: 'target' },
   { label: 'Маркетінговий розвіток', icon: 'trending' },
 ] as const
+
+const showButton = computed(() => {
+  // Показываем кнопку если: не залогинен ИЛИ залогинен и имеет права
+  return !authStore.isAuthenticated || authStore.canStartNewBrandBrief
+})
 
 function startConstructor() {
   router.push('/constructor/step/1')
@@ -65,7 +71,7 @@ function startConstructor() {
 
           <!-- CTA Button -->
           <button
-            v-if="authStore.canStartNewBrandBrief"
+            v-if="showButton"
             class="inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] hover:shadow-[0px_15px_25px_rgba(0,0,0,0.15),0px_6px_10px_rgba(0,0,0,0.1)] transition-shadow text-lg font-medium tracking-[-0.44px] cursor-pointer"
             @click="startConstructor"
           >
@@ -89,6 +95,14 @@ function startConstructor() {
               <path d="M5 18H3" />
             </svg>
           </button>
+
+          <!-- Сообщение для залогиненных без прав -->
+          <p
+            v-else-if="authStore.isAuthenticated && !authStore.canStartNewBrandBrief"
+            class="text-muted-foreground text-sm mt-4"
+          >
+            Створення брифу доступне тільки для Product Owner та Admin
+          </p>
 
           <!-- Features Grid -->
           <div class="grid grid-cols-2 gap-6 mt-12">
