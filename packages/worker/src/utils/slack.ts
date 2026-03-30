@@ -41,6 +41,11 @@ export async function sendSlackMessage(token: string, message: SlackMessage): Pr
   }
 }
 
+export interface ResolvedComponent {
+  typeName: string
+  variantName: string
+}
+
 export interface BrandNotificationData {
   brandId: string
   internalName: string
@@ -56,9 +61,26 @@ export interface BrandNotificationData {
   delegateToDesigners: boolean
   developmentDeadline: string | null
   constructorUrl: string
+
+  brandBasicsComment: string | null
+  conceptComment: string | null
+  externalNamingComment: string | null
+  internalNamingComment: string | null
+  prPackageComment: string | null
+  deliverablesComment: string | null
+  componentsComment: string | null
+
+  resolvedComponents: ResolvedComponent[]
+
+  ceoComments: Record<string, string> | null
+
+  prPackageTimeline: string | null
+  prPackageTeamsInvolved: string | null
+  prPackageComponentsList: string | null
+  prPackageRequirements: string | null
 }
 
-const CEO_COMMENT_LABELS: Record<string, string> = {
+export const CEO_COMMENT_LABELS: Record<string, string> = {
   concept: 'Концепт',
   externalNaming: 'Зовнішня назва',
   internalNaming: 'Внутрішня назва',
@@ -67,6 +89,10 @@ const CEO_COMMENT_LABELS: Record<string, string> = {
   visualComponents: 'Візуальні компоненти',
   general: 'Загальний коментар',
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function field(label: string, value: string | null | undefined): string {
   return value ? `*${label}:* ${value}` : ''
@@ -100,22 +126,59 @@ function buildBlocks(lines: string[], brandId: string, constructorUrl: string): 
   ]
 }
 
-// --- Approved: team-specific messages (existing) ---
+function appendCeoComments(lines: string[], data: BrandNotificationData): void {
+  if (!data.ceoComments) return
+  const entries: string[] = []
+  for (const [key, comment] of Object.entries(data.ceoComments)) {
+    if (comment.trim()) {
+      const label = CEO_COMMENT_LABELS[key] ?? key
+      entries.push(`  • *${label}:* ${comment}`)
+    }
+  }
+  if (entries.length > 0) {
+    lines.push('', '*Коментарі CEO:*', ...entries)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Approved: team-specific messages
+// ---------------------------------------------------------------------------
 
 export function buildStrategyMessage(channel: string, data: BrandNotificationData): SlackMessage {
   const header = `:white_check_mark: Бренд затверджено: *${data.internalName}*`
-  const lines = [
-    header,
-    '',
-    field('GEO', data.geo),
-    field('Дата запуску', data.launchDate),
-    field('Режим', data.mode),
-    field('Концепт', data.conceptName),
-    data.externalNamingNames.length > 0
-      ? field('Зовнішній неймінг', data.externalNamingNames.join(', '))
-      : '',
-    field('Внутрішній неймінг', data.internalNamingName),
-  ]
+  const lines = [header, '']
+
+  // — Основна інформація
+  lines.push(field('GEO', data.geo))
+  lines.push(field('Дата запуску', data.launchDate))
+  if (data.brandBasicsComment) lines.push(field('Коментар замовника', data.brandBasicsComment))
+
+  // — Режим
+  lines.push(field('Режим', data.mode))
+
+  // — Концепт
+  lines.push('')
+  lines.push(field('Концепт', data.conceptName))
+  if (data.conceptComment) lines.push(field('Коментар до концепту', data.conceptComment))
+
+  // — Зовнішній неймінг
+  if (data.externalNamingNames.length > 0) {
+    lines.push('')
+    lines.push(field('Зовнішній неймінг', data.externalNamingNames.join(', ')))
+    if (data.externalNamingComment)
+      lines.push(field('Коментар до зовнішнього неймінгу', data.externalNamingComment))
+  }
+
+  // — Внутрішній неймінг
+  if (data.internalNamingName) {
+    lines.push('')
+    lines.push(field('Внутрішній неймінг', data.internalNamingName))
+    if (data.internalNamingComment)
+      lines.push(field('Коментар до внутрішнього неймінгу', data.internalNamingComment))
+  }
+
+  // — Коментарі CEO
+  appendCeoComments(lines, data)
 
   return {
     channel,
@@ -129,13 +192,28 @@ export function buildPrMarketingMessage(
   data: BrandNotificationData
 ): SlackMessage {
   const header = `:white_check_mark: Бренд затверджено: *${data.internalName}*`
-  const lines = [
-    header,
-    '',
-    field('GEO', data.geo),
-    field('Дата запуску', data.launchDate),
-    field('PR-пакет', data.prPackageName),
-  ]
+  const lines = [header, '']
+
+  // — Основна інформація
+  lines.push(field('GEO', data.geo))
+  lines.push(field('Дата запуску', data.launchDate))
+  if (data.brandBasicsComment) lines.push(field('Коментар замовника', data.brandBasicsComment))
+
+  // — PR пакет
+  lines.push('')
+  lines.push(field('PR-пакет', data.prPackageName))
+  if (data.prPackageTimeline) lines.push(field('Строки впровадження', data.prPackageTimeline))
+  if (data.prPackageTeamsInvolved)
+    lines.push(field('Задіяні команди', data.prPackageTeamsInvolved))
+  if (data.prPackageComponentsList) {
+    lines.push('*Складові пакету:*')
+    lines.push(data.prPackageComponentsList)
+  }
+  if (data.prPackageRequirements) lines.push(field('Що необхідно', data.prPackageRequirements))
+  if (data.prPackageComment) lines.push(field('Коментар до PR пакету', data.prPackageComment))
+
+  // — Коментарі CEO
+  appendCeoComments(lines, data)
 
   return {
     channel,
@@ -149,17 +227,38 @@ export function buildProductDesignMessage(
   data: BrandNotificationData
 ): SlackMessage {
   const header = `:white_check_mark: Бренд затверджено: *${data.internalName}*`
-  const lines = [
-    header,
-    '',
-    field('GEO', data.geo),
-    field('Дата запуску', data.launchDate),
-    field('Режим', data.mode),
-    boolField('Legal Landing', data.legalLanding),
-    boolField('Partner Landing', data.partnerLanding),
-    boolField('Делегувати дизайнерам', data.delegateToDesigners),
-    field('Дедлайн розробки', data.developmentDeadline),
-  ]
+  const lines = [header, '']
+
+  // — Основна інформація
+  lines.push(field('GEO', data.geo))
+  lines.push(field('Дата запуску', data.launchDate))
+  if (data.brandBasicsComment) lines.push(field('Коментар замовника', data.brandBasicsComment))
+
+  // — Режим
+  lines.push(field('Режим', data.mode))
+
+  // — Deliverables
+  lines.push('')
+  lines.push(boolField('Legal Landing', data.legalLanding))
+  lines.push(boolField('Partner Landing', data.partnerLanding))
+  lines.push(field('Дедлайн розробки', data.developmentDeadline))
+  if (data.deliverablesComment)
+    lines.push(field('Коментар до Deliverables', data.deliverablesComment))
+
+  // — Візуальні компоненти
+  lines.push('')
+  lines.push(boolField('Делегувати дизайнерам', data.delegateToDesigners))
+  if (!data.delegateToDesigners && data.resolvedComponents.length > 0) {
+    lines.push('*Візуальні компоненти:*')
+    for (const comp of data.resolvedComponents) {
+      lines.push(`  • *${comp.typeName}:* ${comp.variantName}`)
+    }
+  }
+  if (data.componentsComment)
+    lines.push(field('Коментар до Visual Components', data.componentsComment))
+
+  // — Коментарі CEO
+  appendCeoComments(lines, data)
 
   return {
     channel,
@@ -168,7 +267,9 @@ export function buildProductDesignMessage(
   }
 }
 
-// --- Workflow messages for bc-approvals ---
+// ---------------------------------------------------------------------------
+// Workflow messages for bc-approvals
+// ---------------------------------------------------------------------------
 
 export function buildSubmittedMessage(channel: string, data: BrandNotificationData): SlackMessage {
   const header = `:new: Новий бриф відправлено на розгляд: *${data.internalName}*`
@@ -262,13 +363,16 @@ export function buildNeedsRevisionMessage(
   }
 }
 
-// --- Scenario B: submitted with new briefs (CEO not involved) ---
+// ---------------------------------------------------------------------------
+// Scenario B: submitted with new briefs (CEO not involved)
+// ---------------------------------------------------------------------------
 
 export interface BrandRowForSlack {
   id: string
   internal_name: string | null
   new_concept_brief: string | null
   new_naming_brief: string | null
+  step_data: string | null
 }
 
 function parseJson<T>(raw: string | null): T | null {
@@ -319,19 +423,42 @@ export function buildNewBriefsStrategyMessage(
   const namingBrief = parseJson<Record<string, unknown>>(brand.new_naming_brief)
 
   const header = `:memo: Нове замовлення для *${data.internalName}*`
-  const lines = [
-    header,
-    '',
-    field('GEO', data.geo),
-    field('Дата запуску', data.launchDate),
-    field('Режим', data.mode),
-  ]
+  const lines = [header, '']
+
+  // — Основна інформація
+  lines.push(field('GEO', data.geo))
+  lines.push(field('Дата запуску', data.launchDate))
+  if (data.brandBasicsComment) lines.push(field('Коментар замовника', data.brandBasicsComment))
+  lines.push(field('Режим', data.mode))
+
+  // — Концепт (обраний або бриф нового)
+  if (data.conceptName) {
+    lines.push('')
+    lines.push(field('Концепт', data.conceptName))
+    if (data.conceptComment) lines.push(field('Коментар до концепту', data.conceptComment))
+  }
 
   if (conceptBrief) {
     lines.push('', '*--- Бриф нового концепту ---*')
+    if (conceptBrief.isNewGeo != null)
+      lines.push(field('Нове ГЕО', conceptBrief.isNewGeo ? 'Так' : 'Ні'))
+    lines.push(field('Інфо про ГЕО', conceptBrief.geoInfo as string))
+    if (conceptBrief.needsGeoResearch != null)
+      lines.push(
+        field('Потрібен Brand Research GEO', conceptBrief.needsGeoResearch ? 'Так' : 'Ні')
+      )
     lines.push(field('Що не підійшло', conceptBrief.conceptFeedback as string))
     lines.push(field('Інфо від трафік-команди', conceptBrief.trafficTeamInfo as string))
     lines.push(field('Конкуренти', conceptBrief.competitors as string))
+    if (conceptBrief.keepProductConnection != null)
+      lines.push(
+        field(
+          "Зв'язок з іншими продуктами",
+          conceptBrief.keepProductConnection
+            ? `Так${conceptBrief.connectedProducts ? ` (${conceptBrief.connectedProducts})` : ''}`
+            : 'Ні'
+        )
+      )
     lines.push(field('Мова назви', conceptBrief.namingLanguage as string))
     lines.push(field('Бажані слова в назві', conceptBrief.desiredWordsInName as string))
     const zones = conceptBrief.domainZones as string[] | undefined
@@ -343,18 +470,59 @@ export function buildNewBriefsStrategyMessage(
       )
     )
     lines.push(field('Дедлайн', conceptBrief.namingDeadline as string))
-    if (conceptBrief.isNewGeo != null)
-      lines.push(field('Новий ГЕО', conceptBrief.isNewGeo ? 'Так' : 'Ні'))
-    lines.push(field('Інфо про ГЕО', conceptBrief.geoInfo as string))
     lines.push(field('Додаткова інфо по ГЕО', conceptBrief.additionalGeoInfo as string))
+  }
+
+  // — Зовнішній неймінг (обраний або бриф нового)
+  if (data.externalNamingNames.length > 0) {
+    lines.push('')
+    lines.push(field('Зовнішній неймінг', data.externalNamingNames.join(', ')))
+    if (data.externalNamingComment)
+      lines.push(field('Коментар до зовнішнього неймінгу', data.externalNamingComment))
   }
 
   if (namingBrief) {
     lines.push('', '*--- Бриф нового External Naming ---*')
+    if (namingBrief.isNewGeo != null)
+      lines.push(field('Нове ГЕО', namingBrief.isNewGeo ? 'Так' : 'Ні'))
     lines.push(field('Що не підійшло', namingBrief.namingFeedback as string))
     lines.push(field('Інфо від трафік-команди', namingBrief.trafficTeamInfo as string))
-    lines.push(field('Конкуренти', namingBrief.competitors as string))
+    if (namingBrief.needsGeoResearch != null)
+      lines.push(
+        field('Потрібен Brand Research GEO', namingBrief.needsGeoResearch ? 'Так' : 'Ні')
+      )
+    lines.push(
+      field('Конкуренти', (namingBrief as Record<string, unknown>).competitors as string)
+    )
+    lines.push(field('Мова назви', namingBrief.namingLanguage as string))
+    lines.push(field('Бажані слова в назві', namingBrief.desiredWordsInName as string))
+    const namingZones = namingBrief.domainZones as string[] | undefined
+    if (namingZones && namingZones.length > 0)
+      lines.push(field('Доменні зони', namingZones.join(', ')))
+    lines.push(field('Слова яких уникнути', namingBrief.wordsToAvoid as string))
+    lines.push(
+      field(
+        'Бюджет домена',
+        namingBrief.domainBudget != null ? `$${namingBrief.domainBudget}` : null
+      )
+    )
     lines.push(field('Дедлайн', namingBrief.namingDeadline as string))
+    lines.push(field('Додаткова інфо по ГЕО', namingBrief.additionalGeoInfo as string))
+  }
+
+  // — Внутрішній неймінг
+  if (data.internalNamingName) {
+    lines.push('')
+    lines.push(field('Внутрішній неймінг', data.internalNamingName))
+    if (data.internalNamingComment)
+      lines.push(field('Коментар до внутрішнього неймінгу', data.internalNamingComment))
+  }
+
+  const stepData = parseJson<Record<string, unknown>>(brand.step_data)
+  const intNaming = stepData?.internalNaming as Record<string, unknown> | undefined
+  if (intNaming?.newNamingFeedback) {
+    lines.push('', '*--- Бриф нового Internal Naming ---*')
+    lines.push(field('Що не підійшло', intNaming.newNamingFeedback as string))
   }
 
   return {
@@ -369,15 +537,27 @@ export function buildNewBriefsPrMessage(
   data: BrandNotificationData
 ): SlackMessage {
   const header = `:memo: Новий бриф відправлено в роботу: *${data.internalName}*`
-  const lines = [
-    header,
-    '',
-    field('GEO', data.geo),
-    field('Дата запуску', data.launchDate),
-    field('PR-пакет', data.prPackageName),
-    '',
-    '_Бриф містить нові замовлення (не з бібліотеки)._',
-  ]
+  const lines = [header, '']
+
+  // — Основна інформація
+  lines.push(field('GEO', data.geo))
+  lines.push(field('Дата запуску', data.launchDate))
+  if (data.brandBasicsComment) lines.push(field('Коментар замовника', data.brandBasicsComment))
+
+  // — PR пакет
+  lines.push('')
+  lines.push(field('PR-пакет', data.prPackageName))
+  if (data.prPackageTimeline) lines.push(field('Строки впровадження', data.prPackageTimeline))
+  if (data.prPackageTeamsInvolved)
+    lines.push(field('Задіяні команди', data.prPackageTeamsInvolved))
+  if (data.prPackageComponentsList) {
+    lines.push('*Складові пакету:*')
+    lines.push(data.prPackageComponentsList)
+  }
+  if (data.prPackageRequirements) lines.push(field('Що необхідно', data.prPackageRequirements))
+  if (data.prPackageComment) lines.push(field('Коментар до PR пакету', data.prPackageComment))
+
+  lines.push('', '_Бриф містить нові замовлення (не з бібліотеки)._')
 
   return {
     channel,
@@ -391,19 +571,37 @@ export function buildNewBriefsDesignMessage(
   data: BrandNotificationData
 ): SlackMessage {
   const header = `:memo: Новий бриф відправлено в роботу: *${data.internalName}*`
-  const lines = [
-    header,
-    '',
-    field('GEO', data.geo),
-    field('Дата запуску', data.launchDate),
-    field('Режим', data.mode),
-    boolField('Legal Landing', data.legalLanding),
-    boolField('Partner Landing', data.partnerLanding),
-    boolField('Делегувати дизайнерам', data.delegateToDesigners),
-    field('Дедлайн розробки', data.developmentDeadline),
-    '',
-    '_Бриф містить нові замовлення (не з бібліотеки)._',
-  ]
+  const lines = [header, '']
+
+  // — Основна інформація
+  lines.push(field('GEO', data.geo))
+  lines.push(field('Дата запуску', data.launchDate))
+  if (data.brandBasicsComment) lines.push(field('Коментар замовника', data.brandBasicsComment))
+
+  // — Режим
+  lines.push(field('Режим', data.mode))
+
+  // — Deliverables
+  lines.push('')
+  lines.push(boolField('Legal Landing', data.legalLanding))
+  lines.push(boolField('Partner Landing', data.partnerLanding))
+  lines.push(field('Дедлайн розробки', data.developmentDeadline))
+  if (data.deliverablesComment)
+    lines.push(field('Коментар до Deliverables', data.deliverablesComment))
+
+  // — Візуальні компоненти
+  lines.push('')
+  lines.push(boolField('Делегувати дизайнерам', data.delegateToDesigners))
+  if (!data.delegateToDesigners && data.resolvedComponents.length > 0) {
+    lines.push('*Візуальні компоненти:*')
+    for (const comp of data.resolvedComponents) {
+      lines.push(`  • *${comp.typeName}:* ${comp.variantName}`)
+    }
+  }
+  if (data.componentsComment)
+    lines.push(field('Коментар до Visual Components', data.componentsComment))
+
+  lines.push('', '_Бриф містить нові замовлення (не з бібліотеки)._')
 
   return {
     channel,

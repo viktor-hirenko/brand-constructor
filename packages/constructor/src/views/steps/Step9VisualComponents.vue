@@ -72,14 +72,6 @@ const FALLBACK_TYPES: ComponentTypeWithEmoji[] = [
     created_at: '',
     emoji: '📋',
   },
-  {
-    id: 'ct_theme',
-    name: 'Theme',
-    description: 'Light or dark color theme',
-    sort_order: 6,
-    created_at: '',
-    emoji: '🎭',
-  },
 ]
 
 const INCOMPATIBLE_PAIRS: Array<{
@@ -232,6 +224,7 @@ async function loadComponentTypes() {
       const types = (json.data || []) as ComponentType[]
       if (types.length > 0) {
         componentTypes.value = types
+          .filter(t => t.id !== 'ct_theme')
           .map(t => ({
             ...t,
             emoji: COMPONENT_EMOJIS[t.name] || '📦',

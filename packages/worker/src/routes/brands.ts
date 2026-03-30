@@ -204,9 +204,17 @@ async function collectBrandNotificationData(
       : null,
     brand.pr_package_id
       ? db
-          .prepare('SELECT name FROM pr_packages WHERE id = ?')
+          .prepare(
+            'SELECT name, timeline, teams_involved, components_list, requirements FROM pr_packages WHERE id = ?'
+          )
           .bind(brand.pr_package_id)
-          .first<{ name: string }>()
+          .first<{
+            name: string
+            timeline: string
+            teams_involved: string
+            components_list: string
+            requirements: string
+          }>()
       : null,
   ])
 
@@ -218,6 +226,70 @@ async function collectBrandNotificationData(
       .bind(...finalExtIds)
       .all<{ name: string }>()
     extNamingNames = extRows.results.map(r => r.name)
+  }
+
+  let brandBasicsComment: string | null = null
+  let ceoComments: Record<string, string> | null = null
+
+  try {
+    const stepData = brand.step_data ? JSON.parse(brand.step_data) : null
+    if (stepData?.brandBasics?.comment) {
+      brandBasicsComment = stepData.brandBasics.comment
+    }
+  } catch {
+    /* step_data parse failure is non-critical */
+  }
+
+  try {
+    ceoComments = brand.ceo_comments ? JSON.parse(brand.ceo_comments) : null
+  } catch {
+    ceoComments = null
+  }
+
+  let rawSelections: Record<string, string> = {}
+  try {
+    rawSelections = brand.component_selections ? JSON.parse(brand.component_selections) : {}
+  } catch {
+    rawSelections = {}
+  }
+
+  const resolvedComponents: Array<{ typeName: string; variantName: string }> = []
+  const selectionEntries = Object.entries(rawSelections)
+  if (selectionEntries.length > 0) {
+    const typeIds = selectionEntries.map(([typeId]) => typeId)
+    const variantIds = selectionEntries.map(([, variantId]) => variantId)
+
+    const [typeRows, variantRows] = await Promise.all([
+      db
+        .prepare(
+          `SELECT id, name, sort_order FROM component_types WHERE id IN (${typeIds.map(() => '?').join(',')})`
+        )
+        .bind(...typeIds)
+        .all<{ id: string; name: string; sort_order: number }>(),
+      db
+        .prepare(
+          `SELECT id, name FROM component_variants WHERE id IN (${variantIds.map(() => '?').join(',')})`
+        )
+        .bind(...variantIds)
+        .all<{ id: string; name: string }>(),
+    ])
+
+    const typeMap = new Map(typeRows.results.map(r => [r.id, r]))
+    const variantMap = new Map(variantRows.results.map(r => [r.id, r.name]))
+
+    const sorted = selectionEntries
+      .map(([typeId, variantId]) => ({
+        typeId,
+        variantId,
+        sortOrder: typeMap.get(typeId)?.sort_order ?? 99,
+        typeName: typeMap.get(typeId)?.name ?? typeId,
+        variantName: variantMap.get(variantId) ?? variantId,
+      }))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+
+    for (const item of sorted) {
+      resolvedComponents.push({ typeName: item.typeName, variantName: item.variantName })
+    }
   }
 
   return {
@@ -235,6 +307,22 @@ async function collectBrandNotificationData(
     delegateToDesigners: Boolean(brand.delegate_to_designers),
     developmentDeadline: brand.development_deadline || null,
     constructorUrl,
+
+    brandBasicsComment,
+    conceptComment: brand.concept_comment || null,
+    externalNamingComment: brand.external_naming_comment || null,
+    internalNamingComment: brand.internal_naming_comment || null,
+    prPackageComment: brand.pr_package_comment || null,
+    deliverablesComment: brand.deliverables_comment || null,
+    componentsComment: brand.components_comment || null,
+
+    resolvedComponents,
+    ceoComments,
+
+    prPackageTimeline: prPackageRow?.timeline || null,
+    prPackageTeamsInvolved: prPackageRow?.teams_involved || null,
+    prPackageComponentsList: prPackageRow?.components_list || null,
+    prPackageRequirements: prPackageRow?.requirements || null,
   }
 }
 

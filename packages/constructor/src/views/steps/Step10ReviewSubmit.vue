@@ -425,14 +425,32 @@ function selectCeoAlternative(type: string, id: string) {
 }
 
 const ceoLibraryItems = computed(() => {
+  let items: { id: string; name: string }[]
   if (ceoLibraryType.value === 'concept') {
-    return concepts.value.map(c => ({ id: c.id, name: c.name }))
+    items = concepts.value.map(c => ({ id: c.id, name: c.name }))
+  } else if (ceoLibraryType.value === 'externalNaming') {
+    items = externalNamings.value.map(n => ({ id: n.id, name: n.name }))
+  } else {
+    items = internalNamings.value.map(n => ({ id: n.id, name: n.name }))
+  }
+  return [...items].sort((a, b) => a.name.localeCompare(b.name, 'uk'))
+})
+
+const poSelectedIds = computed<string[]>(() => {
+  if (ceoLibraryType.value === 'concept') {
+    const id = store.stepData.concept.selectedId
+    return id ? [id] : []
   }
   if (ceoLibraryType.value === 'externalNaming') {
-    return externalNamings.value.map(n => ({ id: n.id, name: n.name }))
+    return store.stepData.externalNaming.selectedIds ?? []
   }
-  return internalNamings.value.map(n => ({ id: n.id, name: n.name }))
+  const id = store.stepData.internalNaming.selectedId
+  return id ? [id] : []
 })
+
+function isPoSelected(id: string): boolean {
+  return poSelectedIds.value.includes(id)
+}
 
 const ceoLibraryTitle = computed(() => {
   const titles: Record<string, string> = {
@@ -1286,7 +1304,9 @@ async function handlePrintBrand() {
                 :class="
                   ceoSelections[ceoLibraryType] === item.id
                     ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-black/10 hover:bg-gray-50'
+                    : isPoSelected(item.id)
+                      ? 'border-orange-400 bg-orange-50 text-orange-700'
+                      : 'border-black/10 hover:bg-gray-50'
                 "
                 @click="selectCeoAlternative(ceoLibraryType, item.id)"
               >
@@ -1295,6 +1315,11 @@ async function handlePrintBrand() {
                   v-if="ceoSelections[ceoLibraryType] === item.id"
                   class="ml-2 text-xs text-primary"
                   >Обрано</span
+                >
+                <span
+                  v-else-if="isPoSelected(item.id)"
+                  class="ml-2 text-xs text-orange-500"
+                  >Обрано PO</span
                 >
               </button>
               <p

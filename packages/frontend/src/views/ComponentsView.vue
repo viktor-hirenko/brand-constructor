@@ -18,10 +18,12 @@ interface ComponentTypeWithCount extends ComponentType {
 }
 
 const {
-  data: types,
+  data: rawTypes,
   loading,
   fetchData: fetchTypes,
 } = useApiList<ComponentTypeWithCount>('/api/components/types')
+
+const types = computed(() => rawTypes.value.filter(t => t.id !== 'ct_theme'))
 const showCreateModal = ref(false)
 const creating = ref(false)
 const newName = ref('')
