@@ -208,8 +208,8 @@ function formatCheckedAt(checkedAt: string | null): string {
 
 function getSourceLabel(source: string | null): string {
   switch (source) {
-    case 'godaddy':
-      return 'Auto (GoDaddy)'
+    case 'pananames':
+      return 'Auto (Pananames)'
     case 'admin_override':
       return 'Admin Override'
     default:
@@ -411,7 +411,7 @@ async function confirmDeleteNaming() {
                     Override
                   </span>
                   <span
-                    v-else-if="n.domain_check_source === 'godaddy'"
+                    v-else-if="n.domain_check_source === 'pananames'"
                     class="namings-view__source-badge namings-view__source-badge--auto"
                     :title="`Checked: ${formatCheckedAt(n.domain_checked_at)}`"
                   >
@@ -520,7 +520,7 @@ async function confirmDeleteNaming() {
         <template v-if="activeTab === 'external'">
           <BaseInput v-model="newDomain" label="Domain" placeholder="e.g. example.com" />
           <p v-if="newDomain.trim()" class="namings-view__hint">
-            Domain availability will be checked automatically via GoDaddy API after creation.
+            Domain availability will be checked automatically via Pananames API after creation.
           </p>
           <div class="namings-view__field">
             <label class="namings-view__label">Price ($)</label>
@@ -604,7 +604,7 @@ async function confirmDeleteNaming() {
                 <option value="sold">Sold</option>
               </select>
               <p v-else class="namings-view__hint">
-                Status is determined automatically via GoDaddy API. Enable override to set manually.
+                Status is determined automatically via Pananames API. Enable override to set manually.
               </p>
             </div>
           </div>

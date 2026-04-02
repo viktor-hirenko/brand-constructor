@@ -4,7 +4,7 @@ export type NamingStatus = (typeof ENTITY_STATUSES)[keyof typeof ENTITY_STATUSES
 
 export type DomainAvailabilityStatus = 'available' | 'sold' | 'unknown'
 
-export type DomainCheckSource = 'manual' | 'godaddy' | 'admin_override'
+export type DomainCheckSource = 'manual' | 'pananames' | 'admin_override'
 
 export interface ExternalNaming {
   id: string

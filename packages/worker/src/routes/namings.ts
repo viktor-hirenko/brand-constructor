@@ -7,7 +7,7 @@ import {
   checkDomainAvailability,
   updateNamingDomainStatus,
   shouldRecheck,
-  isGoDaddyConfigured,
+  isPananamesConfigured,
 } from '../utils/domain-check'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
@@ -18,7 +18,7 @@ const createExternalSchema = z.object({
   domain: z.string().max(255).nullable().optional(),
   price: z.number().min(0).nullable().optional(),
   availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
-  domain_check_source: z.enum(['manual', 'godaddy', 'admin_override']).nullable().optional(),
+  domain_check_source: z.enum(['manual', 'pananames', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
 })
 
@@ -33,7 +33,7 @@ const updateExternalSchema = z.object({
   domain: z.string().max(255).nullable().optional(),
   price: z.number().min(0).nullable().optional(),
   availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
-  domain_check_source: z.enum(['manual', 'godaddy', 'admin_override']).nullable().optional(),
+  domain_check_source: z.enum(['manual', 'pananames', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
 })
@@ -145,7 +145,7 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
     .bind(id)
     .first()
 
-  if (parsed.data.domain && isGoDaddyConfigured(c.env)) {
+  if (parsed.data.domain && isPananamesConfigured(c.env)) {
     const result = await checkDomainAvailability(parsed.data.domain, c.env)
     if (result) {
       await updateNamingDomainStatus(c.env.DB, id, result)
@@ -209,7 +209,7 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
   const domainChanged = parsed.data.domain !== undefined && parsed.data.domain !== existing.domain
   const isAdminOverride = parsed.data.domain_check_source === 'admin_override'
 
-  if (!isAdminOverride && domainChanged && parsed.data.domain && isGoDaddyConfigured(c.env)) {
+  if (!isAdminOverride && domainChanged && parsed.data.domain && isPananamesConfigured(c.env)) {
     const result = await checkDomainAvailability(parsed.data.domain, c.env)
     if (result) {
       await updateNamingDomainStatus(c.env.DB, id, result)
@@ -262,7 +262,7 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
     return c.json({ success: false, error: 'No domain to check' }, 400)
   }
 
-  if (!isGoDaddyConfigured(c.env)) {
+  if (!isPananamesConfigured(c.env)) {
     return c.json({ success: false, error: 'Domain check service not configured' }, 503)
   }
 
@@ -289,7 +289,7 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
       {
         success: false,
         error:
-          'Domain check failed. Check Worker logs for details (GoDaddy API may have returned an error or credentials may be invalid).',
+          'Domain check failed. Check Worker logs for details (Pananames API may have returned an error or signature may be invalid).',
       },
       502
     )

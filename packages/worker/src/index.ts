@@ -11,7 +11,7 @@ import assetsRoutes from './routes/assets'
 import usersRoutes from './routes/users'
 import authRoutes from './routes/auth'
 import brandsRoutes from './routes/brands'
-import { batchCheckDomains, isGoDaddyConfigured } from './utils/domain-check'
+import { batchCheckDomains, isPananamesConfigured } from './utils/domain-check'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -40,50 +40,32 @@ app.get('/api/health', c => {
   return c.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() })
 })
 
-app.get('/api/debug/godaddy', async c => {
-  const key = c.env.GODADDY_API_KEY
-  const secret = c.env.GODADDY_API_SECRET
-  const hasKey = Boolean(key)
-  const hasSecret = Boolean(secret)
-  const keyPreview = key ? `${key.slice(0, 4)}...${key.slice(-4)}` : null
-  const secretPreview = secret ? `${secret.slice(0, 4)}...${secret.slice(-4)}` : null
+app.get('/api/debug/pananames', async c => {
+  const signature = c.env.PANANAMES_SIGNATURE
+  const hasSignature = Boolean(signature)
+  const signaturePreview = signature
+    ? `${signature.slice(0, 8)}...${signature.slice(-8)}`
+    : null
 
-  const authHeader = `sso-key ${key}:${secret}`
   const testDomain = 'testdomain12345xyz.com'
-
   const results: Record<string, string> = {}
 
-  if (hasKey && hasSecret) {
-    const endpoints = [
-      {
-        name: 'prod_available',
-        url: `https://api.godaddy.com/v1/domains/available?domain=${testDomain}`,
-      },
-      {
-        name: 'prod_suggest',
-        url: `https://api.godaddy.com/v1/domains/suggest?query=test&limit=1`,
-      },
-      { name: 'prod_shopper', url: `https://api.godaddy.com/v1/shoppers` },
-      {
-        name: 'ote_available',
-        url: `https://api.ote-godaddy.com/v1/domains/available?domain=${testDomain}`,
-      },
-    ]
-
-    for (const ep of endpoints) {
-      try {
-        const resp = await fetch(ep.url, {
-          headers: { Authorization: authHeader, Accept: 'application/json' },
-        })
-        const body = await resp.text()
-        results[ep.name] = `HTTP ${resp.status}: ${body.slice(0, 300)}`
-      } catch (e) {
-        results[ep.name] = `fetch error: ${e}`
-      }
+  if (hasSignature) {
+    try {
+      const resp = await fetch(
+        `https://api.pananames.com/merchant/v2/domains/${testDomain}/check`,
+        {
+          headers: { SIGNATURE: signature, Accept: 'application/json' },
+        }
+      )
+      const body = await resp.text()
+      results['check_domain'] = `HTTP ${resp.status}: ${body.slice(0, 300)}`
+    } catch (e) {
+      results['check_domain'] = `fetch error: ${e}`
     }
   }
 
-  return c.json({ hasKey, hasSecret, keyPreview, secretPreview, results })
+  return c.json({ hasSignature, signaturePreview, results })
 })
 
 // Asset serving — public, no auth required
@@ -126,8 +108,8 @@ export default {
   fetch: app.fetch,
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    if (!isGoDaddyConfigured(env)) {
-      console.log('Scheduled domain check: GoDaddy API not configured, skipping')
+    if (!isPananamesConfigured(env)) {
+      console.log('Scheduled domain check: Pananames API signature not configured, skipping')
       return
     }
 

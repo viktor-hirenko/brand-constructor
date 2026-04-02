@@ -1,34 +1,45 @@
 import type { Env } from '../types'
 
-interface GoDaddyAvailabilityResponse {
-  available: boolean
-  domain: string
-  definitive: boolean
-  price: number
+interface PananamesPrices {
   currency: string
+  register: number
+  renew: number
+  transfer: number
+  redeem: number
+}
+
+interface PananamesDomainCheckResponse {
+  domain: string
+  domain_idn: string
+  available: boolean
+  premium: boolean
+  prices: PananamesPrices | null
+  promo_prices: PananamesPrices | null
+  claim: boolean
+  add_req: boolean
 }
 
 interface DomainCheckResult {
   available: boolean
   price: number | null
   currency: string | null
-  source: 'godaddy'
+  source: 'pananames'
   checkedAt: string
 }
 
-const GODADDY_API_BASE = 'https://api.godaddy.com/v1'
+const PANANAMES_API_BASE = 'https://api.pananames.com/merchant/v2'
 const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
 
-export function isGoDaddyConfigured(env: Env): boolean {
-  return Boolean(env.GODADDY_API_KEY && env.GODADDY_API_SECRET)
+export function isPananamesConfigured(env: Env): boolean {
+  return Boolean(env.PANANAMES_SIGNATURE)
 }
 
 export async function checkDomainAvailability(
   domain: string,
   env: Env
 ): Promise<DomainCheckResult | null> {
-  if (!isGoDaddyConfigured(env)) {
-    console.warn('GoDaddy API credentials not configured, skipping domain check')
+  if (!isPananamesConfigured(env)) {
+    console.warn('Pananames API signature not configured, skipping domain check')
     return null
   }
 
@@ -41,10 +52,10 @@ export async function checkDomainAvailability(
   }
 
   try {
-    const url = `${GODADDY_API_BASE}/domains/available?domain=${encodeURIComponent(cleanDomain)}`
+    const url = `${PANANAMES_API_BASE}/domains/${encodeURIComponent(cleanDomain)}/check`
     const response = await fetch(url, {
       headers: {
-        Authorization: `sso-key ${env.GODADDY_API_KEY}:${env.GODADDY_API_SECRET}`,
+        SIGNATURE: env.PANANAMES_SIGNATURE,
         Accept: 'application/json',
       },
     })
@@ -52,25 +63,25 @@ export async function checkDomainAvailability(
     if (!response.ok) {
       const text = await response.text()
       console.error(
-        `GoDaddy API error for domain "${cleanDomain}": HTTP ${response.status} — ${text}`
+        `Pananames API error for domain "${cleanDomain}": HTTP ${response.status} — ${text}`
       )
       return null
     }
 
-    const data: GoDaddyAvailabilityResponse = await response.json()
+    const json: { data: PananamesDomainCheckResponse } = await response.json()
+    const data = json.data
     console.log(
-      `GoDaddy check for "${cleanDomain}": available=${data.available}, price=${data.price}, currency=${data.currency}`
+      `Pananames check for "${cleanDomain}": available=${data.available}, price=${data.prices?.register}, currency=${data.prices?.currency}`
     )
 
     return {
       available: data.available,
-      // GoDaddy returns price in microcents (e.g. 7490000 = $7.49)
       price:
-        typeof data.price === 'number' && data.price > 0
-          ? Math.round(data.price / 1_000_000)
+        data.prices && typeof data.prices.register === 'number' && data.prices.register > 0
+          ? Math.round(data.prices.register)
           : null,
-      currency: data.currency || 'USD',
-      source: 'godaddy',
+      currency: data.prices?.currency || 'USD',
+      source: 'pananames',
       checkedAt: new Date().toISOString(),
     }
   } catch (error) {
