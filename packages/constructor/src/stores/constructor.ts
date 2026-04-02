@@ -72,6 +72,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   const isLoading = ref(false)
   const isSaving = ref(false)
   const returnToStep = ref<number | null>(null)
+  const step10ScrollTop = ref<number>(0)
 
   const totalSteps = 10
 
@@ -326,6 +327,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     returnToStep.value = step
   }
 
+  function setStep10ScrollTop(value: number) {
+    step10ScrollTop.value = value
+  }
+
   function reset() {
     brandId.value = null
     brandInternalName.value = null
@@ -490,6 +495,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setSuccessType,
     returnToStep,
     setReturnToStep,
+    step10ScrollTop,
+    setStep10ScrollTop,
     reset,
     loadBrand,
     restoreDraftFromStorage,
