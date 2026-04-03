@@ -8,6 +8,13 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 
+interface DomainPreview {
+  available: boolean
+  price: number | null
+  currency: string | null
+  checkedAt: string
+}
+
 const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('external_namings'))
 
@@ -62,15 +69,24 @@ const showEditModal = ref(false)
 const newName = ref('')
 const newTagline = ref('')
 const newDomain = ref('')
-const newPrice = ref<number | null>(null)
 const newConceptId = ref<string | null>(null)
 const creating = ref(false)
+
+const createPreviewLoading = ref(false)
+const createPreviewError = ref<string | null>(null)
+const createPreviewData = ref<DomainPreview | null>(null)
+const createPreviewAttempted = ref(false)
+let createPreviewTimer: ReturnType<typeof setTimeout> | null = null
 
 const editId = ref('')
 const editName = ref('')
 const editTagline = ref('')
 const editDomain = ref('')
-const editPrice = ref<number | null>(null)
+const editPreviewLoading = ref(false)
+const editPreviewError = ref<string | null>(null)
+const editPreviewData = ref<DomainPreview | null>(null)
+const editPreviewAttempted = ref(false)
+let editPreviewTimer: ReturnType<typeof setTimeout> | null = null
 const editOverrideStatus = ref<'available' | 'sold' | 'unknown' | null>(null)
 const editIsOverride = ref(false)
 const editConceptId = ref<string | null>(null)
@@ -78,6 +94,98 @@ const editDomainCheckSource = ref<string | null>(null)
 const saving = ref(false)
 
 const checkingDomainId = ref<string | null>(null)
+
+function clearCreatePreviewTimer() {
+  if (createPreviewTimer) {
+    clearTimeout(createPreviewTimer)
+    createPreviewTimer = null
+  }
+}
+
+function clearEditPreviewTimer() {
+  if (editPreviewTimer) {
+    clearTimeout(editPreviewTimer)
+    editPreviewTimer = null
+  }
+}
+
+function resetCreateDomainPreview() {
+  clearCreatePreviewTimer()
+  createPreviewLoading.value = false
+  createPreviewError.value = null
+  createPreviewData.value = null
+  createPreviewAttempted.value = false
+}
+
+function resetEditDomainPreview() {
+  clearEditPreviewTimer()
+  editPreviewLoading.value = false
+  editPreviewError.value = null
+  editPreviewData.value = null
+  editPreviewAttempted.value = false
+}
+
+async function loadCreateDomainPreview() {
+  const raw = newDomain.value.trim()
+  if (!raw || !raw.includes('.')) {
+    resetCreateDomainPreview()
+    return
+  }
+  createPreviewLoading.value = true
+  createPreviewError.value = null
+  createPreviewData.value = null
+  createPreviewAttempted.value = false
+  try {
+    const data = await apiPost<DomainPreview | null>('/api/namings/external/preview-domain', {
+      domain: raw,
+    })
+    createPreviewData.value = data
+  } catch (e) {
+    createPreviewError.value = e instanceof Error ? e.message : 'Could not load domain preview'
+  } finally {
+    createPreviewLoading.value = false
+    createPreviewAttempted.value = true
+  }
+}
+
+function scheduleCreateDomainPreview() {
+  clearCreatePreviewTimer()
+  createPreviewTimer = setTimeout(() => {
+    createPreviewTimer = null
+    void loadCreateDomainPreview()
+  }, 500)
+}
+
+async function loadEditDomainPreview() {
+  const raw = editDomain.value.trim()
+  if (!raw || !raw.includes('.')) {
+    resetEditDomainPreview()
+    return
+  }
+  editPreviewLoading.value = true
+  editPreviewError.value = null
+  editPreviewData.value = null
+  editPreviewAttempted.value = false
+  try {
+    const data = await apiPost<DomainPreview | null>('/api/namings/external/preview-domain', {
+      domain: raw,
+    })
+    editPreviewData.value = data
+  } catch (e) {
+    editPreviewError.value = e instanceof Error ? e.message : 'Could not load domain preview'
+  } finally {
+    editPreviewLoading.value = false
+    editPreviewAttempted.value = true
+  }
+}
+
+function scheduleEditDomainPreview() {
+  clearEditPreviewTimer()
+  editPreviewTimer = setTimeout(() => {
+    editPreviewTimer = null
+    void loadEditDomainPreview()
+  }, 500)
+}
 
 function refreshList() {
   const params: Record<string, string> = { status: statusFilter.value }
@@ -97,12 +205,50 @@ onMounted(() => {
 })
 watch([activeTab, conceptFilter, statusFilter], refreshList)
 
+watch([newDomain, showCreateModal, activeTab], () => {
+  if (!showCreateModal.value) {
+    resetCreateDomainPreview()
+    return
+  }
+  if (activeTab.value !== 'external') {
+    resetCreateDomainPreview()
+    return
+  }
+  const raw = newDomain.value.trim()
+  if (!raw || !raw.includes('.')) {
+    resetCreateDomainPreview()
+    return
+  }
+  scheduleCreateDomainPreview()
+})
+
+watch([editDomain, showEditModal, activeTab], () => {
+  if (!showEditModal.value) {
+    resetEditDomainPreview()
+    return
+  }
+  if (activeTab.value !== 'external') {
+    resetEditDomainPreview()
+    return
+  }
+  const raw = editDomain.value.trim()
+  if (!raw || !raw.includes('.')) {
+    resetEditDomainPreview()
+    return
+  }
+  scheduleEditDomainPreview()
+})
+
+function formatPreviewPrice(price: number): string {
+  return Number.isInteger(price) ? String(price) : price.toFixed(2)
+}
+
 function openCreateModal() {
   newName.value = ''
   newTagline.value = ''
   newDomain.value = ''
-  newPrice.value = null
   newConceptId.value = null
+  resetCreateDomainPreview()
   fetchConcepts({ per_page: '100' })
   showCreateModal.value = true
 }
@@ -116,7 +262,6 @@ async function handleCreate() {
         name: newName.value.trim(),
         tagline: newTagline.value.trim(),
         domain: newDomain.value.trim() || null,
-        price: newPrice.value,
         concept_id: newConceptId.value || null,
       })
     } else {
@@ -126,6 +271,7 @@ async function handleCreate() {
       })
     }
     showCreateModal.value = false
+    resetCreateDomainPreview()
     refreshList()
   } finally {
     creating.value = false
@@ -135,6 +281,7 @@ async function handleCreate() {
 type InternalNamingRow = InternalNaming & { author_name: string }
 
 function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
+  resetEditDomainPreview()
   editId.value = naming.id
   editName.value = naming.name
   editTagline.value = naming.tagline || ''
@@ -142,7 +289,6 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
     const extNaming = naming as ExternalNamingRow
     editConceptId.value = extNaming.concept_id
     editDomain.value = extNaming.domain || ''
-    editPrice.value = extNaming.price ?? null
     editDomainCheckSource.value = extNaming.domain_check_source || null
     editIsOverride.value = extNaming.domain_check_source === 'admin_override'
     editOverrideStatus.value = editIsOverride.value
@@ -151,7 +297,6 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
   } else {
     editConceptId.value = null
     editDomain.value = ''
-    editPrice.value = null
     editDomainCheckSource.value = null
     editIsOverride.value = false
     editOverrideStatus.value = null
@@ -172,7 +317,6 @@ async function handleSaveEdit() {
     if (type === 'external') {
       body.concept_id = editConceptId.value || null
       body.domain = editDomain.value.trim() || null
-      body.price = editPrice.value
       if (editIsOverride.value && editOverrideStatus.value) {
         body.availability_status = editOverrideStatus.value
         body.domain_check_source = 'admin_override'
@@ -182,6 +326,7 @@ async function handleSaveEdit() {
     }
     await apiPut(`/api/namings/${type}/${editId.value}`, body)
     showEditModal.value = false
+    resetEditDomainPreview()
     refreshList()
   } finally {
     saving.value = false
@@ -200,20 +345,33 @@ async function handleCheckDomain(namingId: string) {
   }
 }
 
-function formatCheckedAt(checkedAt: string | null): string {
-  if (!checkedAt) return 'Never'
-  const date = new Date(checkedAt)
-  return date.toLocaleString()
+type SourceKind = 'auto' | 'manual' | 'override'
+
+function getSourceKind(n: ExternalNamingRow): SourceKind {
+  if (n.domain_check_source === 'admin_override') return 'override'
+  if (n.domain_check_source === 'pananames') return 'auto'
+  return 'manual'
 }
 
-function getSourceLabel(source: string | null): string {
-  switch (source) {
-    case 'pananames':
-      return 'Auto (Pananames)'
-    case 'admin_override':
-      return 'Admin Override'
+function getSourceLetter(n: ExternalNamingRow): string {
+  switch (getSourceKind(n)) {
+    case 'override':
+      return 'O'
+    case 'auto':
+      return 'A'
     default:
-      return 'Manual'
+      return 'M'
+  }
+}
+
+function getSourceTooltip(n: ExternalNamingRow): string {
+  switch (getSourceKind(n)) {
+    case 'override':
+      return 'Override — set manually by admin'
+    case 'auto':
+      return 'Auto — Pananames API'
+    default:
+      return 'Manual — not from automatic check'
   }
 }
 
@@ -391,47 +549,59 @@ async function confirmDeleteNaming() {
               <td>{{ n.price != null ? `$${n.price}` : '—' }}</td>
               <td>
                 <div class="namings-view__availability-cell">
-                  <span
-                    class="namings-view__status-badge"
-                    :class="`namings-view__status-badge--${n.availability_status || 'unknown'}`"
-                  >
-                    {{
-                      n.availability_status === 'available'
-                        ? '✓ Available'
-                        : n.availability_status === 'sold'
-                          ? '✗ Sold'
-                          : '? Unknown'
-                    }}
-                  </span>
-                  <span
-                    v-if="n.domain_check_source === 'admin_override'"
-                    class="namings-view__source-badge namings-view__source-badge--override"
-                    title="Status manually set by admin"
-                  >
-                    Override
-                  </span>
-                  <span
-                    v-else-if="n.domain_check_source === 'pananames'"
-                    class="namings-view__source-badge namings-view__source-badge--auto"
-                    :title="`Checked: ${formatCheckedAt(n.domain_checked_at)}`"
-                  >
-                    Auto
-                  </span>
-                  <BaseButton
-                    v-if="
-                      canWrite &&
-                      n.domain &&
-                      !n.used_in_brand_id &&
-                      n.domain_check_source !== 'admin_override'
-                    "
-                    variant="secondary"
-                    size="sm"
-                    :loading="checkingDomainId === n.id"
-                    class="namings-view__check-btn"
-                    @click.stop="handleCheckDomain(n.id)"
-                  >
-                    Check
-                  </BaseButton>
+                  <div class="namings-view__availability-row">
+                    <span
+                      class="namings-view__status-badge"
+                      :class="`namings-view__status-badge--${n.availability_status || 'unknown'}`"
+                    >
+                      {{
+                        n.availability_status === 'available'
+                          ? '✓ Available'
+                          : n.availability_status === 'sold'
+                            ? '✗ Sold'
+                            : '? Unknown'
+                      }}
+                    </span>
+                    <span
+                      class="namings-view__source-badge"
+                      :class="`namings-view__source-badge--${getSourceKind(n)}`"
+                      :title="getSourceTooltip(n)"
+                      :aria-label="getSourceTooltip(n)"
+                    >
+                      {{ getSourceLetter(n) }}
+                    </span>
+                    <BaseButton
+                      v-if="
+                        canWrite &&
+                        n.domain &&
+                        !n.used_in_brand_id &&
+                        n.domain_check_source !== 'admin_override'
+                      "
+                      variant="ghost"
+                      size="sm"
+                      :loading="checkingDomainId === n.id"
+                      class="namings-view__recheck-btn"
+                      title="Recheck domain via Pananames"
+                      aria-label="Recheck domain via Pananames"
+                      @click.stop="handleCheckDomain(n.id)"
+                    >
+                      <svg
+                        class="namings-view__recheck-icon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                        />
+                      </svg>
+                    </BaseButton>
+                  </div>
                 </div>
               </td>
               <td>
@@ -519,20 +689,48 @@ async function confirmDeleteNaming() {
         <BaseInput v-model="newTagline" label="Tagline" placeholder="Short description..." />
         <template v-if="activeTab === 'external'">
           <BaseInput v-model="newDomain" label="Domain" placeholder="e.g. example.com" />
-          <p v-if="newDomain.trim()" class="namings-view__hint">
+          <div
+            v-if="newDomain.trim() && newDomain.includes('.')"
+            class="namings-view__domain-preview"
+          >
+            <p v-if="createPreviewLoading" class="namings-view__hint">
+              Checking registration estimate…
+            </p>
+            <p v-else-if="createPreviewError" class="namings-view__hint namings-view__hint--error">
+              {{ createPreviewError }}
+            </p>
+            <template v-else-if="createPreviewData">
+              <p class="namings-view__domain-preview-row">
+                <span
+                  class="namings-view__status-badge"
+                  :class="
+                    createPreviewData.available
+                      ? 'namings-view__status-badge--available'
+                      : 'namings-view__status-badge--sold'
+                  "
+                >
+                  {{ createPreviewData.available ? 'Available' : 'Sold' }}
+                </span>
+                <span
+                  v-if="createPreviewData.price != null"
+                  class="namings-view__domain-preview-price"
+                >
+                  Est. registration:
+                  {{ createPreviewData.currency || 'USD' }}
+                  {{ formatPreviewPrice(createPreviewData.price) }}
+                </span>
+              </p>
+            </template>
+            <p
+              v-else-if="createPreviewAttempted && !createPreviewLoading"
+              class="namings-view__hint"
+            >
+              Could not retrieve registration estimate. Final price is set when you save.
+            </p>
+          </div>
+          <p class="namings-view__hint">
             Domain availability will be checked automatically via Pananames API after creation.
           </p>
-          <div class="namings-view__field">
-            <label class="namings-view__label">Price ($)</label>
-            <input
-              type="number"
-              v-model.number="newPrice"
-              class="namings-view__number-input"
-              placeholder="e.g. 1500"
-              min="0"
-              step="0.01"
-            />
-          </div>
           <div class="namings-view__field">
             <label class="namings-view__label">Link to Concept</label>
             <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
@@ -576,16 +774,41 @@ async function confirmDeleteNaming() {
         <BaseInput v-model="editTagline" label="Tagline" placeholder="Short description..." />
         <template v-if="activeTab === 'external'">
           <BaseInput v-model="editDomain" label="Domain" placeholder="e.g. example.com" />
-          <div class="namings-view__field">
-            <label class="namings-view__label">Price ($)</label>
-            <input
-              type="number"
-              v-model.number="editPrice"
-              class="namings-view__number-input"
-              placeholder="e.g. 1500"
-              min="0"
-              step="0.01"
-            />
+          <div
+            v-if="editDomain.trim() && editDomain.includes('.')"
+            class="namings-view__domain-preview"
+          >
+            <p v-if="editPreviewLoading" class="namings-view__hint">
+              Checking registration estimate…
+            </p>
+            <p v-else-if="editPreviewError" class="namings-view__hint namings-view__hint--error">
+              {{ editPreviewError }}
+            </p>
+            <template v-else-if="editPreviewData">
+              <p class="namings-view__domain-preview-row">
+                <span
+                  class="namings-view__status-badge"
+                  :class="
+                    editPreviewData.available
+                      ? 'namings-view__status-badge--available'
+                      : 'namings-view__status-badge--sold'
+                  "
+                >
+                  {{ editPreviewData.available ? 'Available' : 'Sold' }}
+                </span>
+                <span
+                  v-if="editPreviewData.price != null"
+                  class="namings-view__domain-preview-price"
+                >
+                  Est. registration:
+                  {{ editPreviewData.currency || 'USD' }}
+                  {{ formatPreviewPrice(editPreviewData.price) }}
+                </span>
+              </p>
+            </template>
+            <p v-else-if="editPreviewAttempted && !editPreviewLoading" class="namings-view__hint">
+              Could not retrieve registration estimate. Final price is set when you save.
+            </p>
           </div>
           <div class="namings-view__field">
             <label class="namings-view__label">Domain Availability</label>
@@ -604,7 +827,8 @@ async function confirmDeleteNaming() {
                 <option value="sold">Sold</option>
               </select>
               <p v-else class="namings-view__hint">
-                Status is determined automatically via Pananames API. Enable override to set manually.
+                Status is determined automatically via Pananames API. Enable override to set
+                manually.
               </p>
             </div>
           </div>
@@ -814,23 +1038,29 @@ async function confirmDeleteNaming() {
     width: 100%;
   }
 
-  &__number-input {
-    width: 100%;
-    padding: $spacing-2 $spacing-3;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    font-size: $font-size-sm;
-    background-color: $color-bg-white;
+  &__domain-preview {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+  }
 
-    &:focus {
-      outline: none;
-      border-color: $color-primary;
-    }
+  &__domain-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-2 $spacing-3;
+    margin: 0;
+    font-size: $font-size-sm;
+  }
+
+  &__domain-preview-price {
+    color: $color-text-secondary;
   }
 
   &__status-badge {
     display: inline-flex;
     align-items: center;
+    margin-right: auto;
     padding: $spacing-1 $spacing-2;
     border-radius: $radius-sm;
     font-size: $font-size-xs;
@@ -904,41 +1134,77 @@ async function confirmDeleteNaming() {
   }
 
   &__availability-cell {
+    min-width: 0;
+  }
+
+  &__availability-row {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: $spacing-1;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: $spacing-1 $spacing-2;
   }
 
   &__source-badge {
     display: inline-flex;
     align-items: center;
-    padding: 1px $spacing-1;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    padding: 4px 6px;
     border-radius: $radius-sm;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: $font-weight-semibold;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    line-height: 1.2;
+    cursor: default;
+    user-select: none;
 
     &--auto {
-      background-color: #dbeafe;
-      color: #1e40af;
+      color: #334155;
+      background-color: #e2e8f0;
+    }
+
+    &--manual {
+      color: #475569;
+      background-color: #f1f5f9;
     }
 
     &--override {
-      background-color: #fef3c7;
       color: #92400e;
+      background-color: #fef3c7;
     }
   }
 
-  &__check-btn {
-    margin-top: $spacing-1;
+  :deep(.namings-view__recheck-btn) {
+    flex-shrink: 0;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    padding: $spacing-1 $spacing-1;
+
+    &:hover:not(:disabled) {
+      background-color: $color-bg;
+    }
+  }
+
+  :deep(.namings-view__recheck-btn .btn__content) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__recheck-icon {
+    width: 16px;
+    height: 16px;
   }
 
   &__hint {
     font-size: $font-size-xs;
     color: $color-text-muted;
     line-height: $line-height-normal;
+
+    &--error {
+      color: #b91c1c;
+    }
   }
 
   &__override-section {

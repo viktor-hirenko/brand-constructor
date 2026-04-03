@@ -44,6 +44,10 @@ const updateInternalSchema = z.object({
   status: z.enum(['active', 'archived', 'draft']).optional(),
 })
 
+const previewDomainSchema = z.object({
+  domain: z.string().min(1).max(255),
+})
+
 // --- External Namings ---
 
 app.get('/external', async c => {
@@ -156,6 +160,42 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
   }
 
   return c.json({ success: true, data: naming }, 201)
+})
+
+/** Live preview for admin modal: availability + registrar price without persisting. */
+app.post('/external/preview-domain', requireLibraryAccess('external_namings'), async c => {
+  const body = await c.req.json()
+  const parsed = previewDomainSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+      400
+    )
+  }
+
+  if (!isPananamesConfigured(c.env)) {
+    return c.json({ success: false, error: 'Domain check service not configured' }, 503)
+  }
+
+  const result = await checkDomainAvailability(parsed.data.domain, c.env)
+  if (!result) {
+    return c.json({
+      success: true,
+      data: null,
+      message: 'Could not check domain (invalid domain or API error).',
+    })
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      available: result.available,
+      price: result.price,
+      currency: result.currency,
+      checkedAt: result.checkedAt,
+    },
+  })
 })
 
 app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
