@@ -19,13 +19,16 @@ const updateSchema = z.object({
   mode: z.enum(['light', 'dark']).nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
   visual_url: z.string().nullable().optional(),
-  logo_url: z.string().nullable().optional(),
-  graphic_url_2: z.string().nullable().optional(),
   gallery_url_1: z.string().nullable().optional(),
   gallery_url_2: z.string().nullable().optional(),
   gallery_url_3: z.string().nullable().optional(),
-  preview_url: z.string().nullable().optional(),
-  preview_url_web: z.string().nullable().optional(),
+  gallery_url_4: z.string().nullable().optional(),
+  gallery_url_5: z.string().nullable().optional(),
+  gallery_url_6: z.string().nullable().optional(),
+  gallery_url_7: z.string().nullable().optional(),
+  gallery_url_8: z.string().nullable().optional(),
+  gallery_url_9: z.string().nullable().optional(),
+  gallery_url_10: z.string().nullable().optional(),
 })
 
 app.get('/', async c => {

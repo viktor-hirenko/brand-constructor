@@ -11,13 +11,16 @@ export interface Concept {
   mode: ConceptMode | null
   status: ConceptStatus
   visual_url: string | null
-  logo_url: string | null
-  graphic_url_2: string | null
   gallery_url_1: string | null
   gallery_url_2: string | null
   gallery_url_3: string | null
-  preview_url: string | null
-  preview_url_web: string | null
+  gallery_url_4: string | null
+  gallery_url_5: string | null
+  gallery_url_6: string | null
+  gallery_url_7: string | null
+  gallery_url_8: string | null
+  gallery_url_9: string | null
+  gallery_url_10: string | null
   created_by: string
   used_in_brand_id: string | null
   created_at: string
@@ -37,11 +40,14 @@ export interface UpdateConceptPayload {
   mode?: ConceptMode | null
   status?: ConceptStatus
   visual_url?: string | null
-  logo_url?: string | null
-  graphic_url_2?: string | null
   gallery_url_1?: string | null
   gallery_url_2?: string | null
   gallery_url_3?: string | null
-  preview_url?: string | null
-  preview_url_web?: string | null
+  gallery_url_4?: string | null
+  gallery_url_5?: string | null
+  gallery_url_6?: string | null
+  gallery_url_7?: string | null
+  gallery_url_8?: string | null
+  gallery_url_9?: string | null
+  gallery_url_10?: string | null
 }

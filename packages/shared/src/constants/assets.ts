@@ -1,14 +1,17 @@
-import type { AssetValidationRule } from '../types/asset'
+import type { AssetEntityType, AssetValidationRule } from '../types/asset'
 
 export const ASSET_ENTITY_TYPES = {
   CONCEPT_VISUAL: 'concept_visual',
-  CONCEPT_LOGO: 'concept_logo',
-  CONCEPT_GRAPHIC_2: 'concept_graphic_2',
   CONCEPT_GALLERY_1: 'concept_gallery_1',
   CONCEPT_GALLERY_2: 'concept_gallery_2',
   CONCEPT_GALLERY_3: 'concept_gallery_3',
-  CONCEPT_PREVIEW_MOBILE: 'concept_preview_mobile',
-  CONCEPT_PREVIEW_WEB: 'concept_preview_web',
+  CONCEPT_GALLERY_4: 'concept_gallery_4',
+  CONCEPT_GALLERY_5: 'concept_gallery_5',
+  CONCEPT_GALLERY_6: 'concept_gallery_6',
+  CONCEPT_GALLERY_7: 'concept_gallery_7',
+  CONCEPT_GALLERY_8: 'concept_gallery_8',
+  CONCEPT_GALLERY_9: 'concept_gallery_9',
+  CONCEPT_GALLERY_10: 'concept_gallery_10',
   COMPONENT_THUMBNAIL: 'component_thumbnail',
 } as const
 
@@ -72,9 +75,23 @@ export function parseAspectRatio(input: string): number | null {
   return isNaN(num) || num <= 0 ? null : num
 }
 
+const CONCEPT_GALLERY_VALIDATION_RULES: AssetValidationRule[] = Array.from({ length: 10 }, (_, i) => {
+  const n = i + 1
+  return {
+    entity_type: `concept_gallery_${n}` as AssetEntityType,
+    asset_slot: `gallery_${n}`,
+    allowed_types: ['png', 'jpg', 'webp'],
+    aspect_ratio: 0,
+    aspect_ratio_tolerance: 0,
+    min_width: 300,
+    min_height: 300,
+    max_file_size: MAX_FILE_SIZES.png,
+  }
+})
+
 /**
- * Concept visual: no ratio check (CSS object-fit:cover handles cropping to card shape)
- * Concept logo:   no ratio check (displayed in various contexts with different crops)
+ * Concept visual: optional ratio via upload form override (default 1:1 in admin).
+ * Concept gallery slots 1–10: raster PNG/JPEG/WebP; ratio enforced via optional aspect_ratio form field (±1% when set).
  * Component thumbnail: dynamic ratio per component type (see COMPONENT_TYPE_ASPECT_RATIOS)
  */
 export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
@@ -88,76 +105,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
     min_height: 300,
     max_file_size: MAX_FILE_SIZES.png,
   },
-  {
-    entity_type: 'concept_logo',
-    asset_slot: 'logo',
-    allowed_types: ['png', 'svg'],
-    aspect_ratio: 0,
-    aspect_ratio_tolerance: 0,
-    min_width: 64,
-    min_height: 64,
-    max_file_size: MAX_FILE_SIZES.png,
-  },
-  {
-    entity_type: 'concept_graphic_2',
-    asset_slot: 'graphic_2',
-    allowed_types: ['png', 'svg'],
-    aspect_ratio: 0,
-    aspect_ratio_tolerance: 0,
-    min_width: 300,
-    min_height: 300,
-    max_file_size: MAX_FILE_SIZES.png,
-  },
-  {
-    entity_type: 'concept_gallery_1',
-    asset_slot: 'gallery_1',
-    allowed_types: ['png', 'jpg', 'webp'],
-    aspect_ratio: 0,
-    aspect_ratio_tolerance: 0,
-    min_width: 300,
-    min_height: 300,
-    max_file_size: MAX_FILE_SIZES.png,
-  },
-  {
-    entity_type: 'concept_gallery_2',
-    asset_slot: 'gallery_2',
-    allowed_types: ['png', 'jpg', 'webp'],
-    aspect_ratio: 0,
-    aspect_ratio_tolerance: 0,
-    min_width: 300,
-    min_height: 300,
-    max_file_size: MAX_FILE_SIZES.png,
-  },
-  {
-    entity_type: 'concept_gallery_3',
-    asset_slot: 'gallery_3',
-    allowed_types: ['png', 'jpg', 'webp'],
-    aspect_ratio: 0,
-    aspect_ratio_tolerance: 0,
-    min_width: 300,
-    min_height: 300,
-    max_file_size: MAX_FILE_SIZES.png,
-  },
-  {
-    entity_type: 'concept_preview_mobile',
-    asset_slot: 'preview_mobile',
-    allowed_types: ['png', 'jpg', 'webp'],
-    aspect_ratio: 0,
-    aspect_ratio_tolerance: 0,
-    min_width: 300,
-    min_height: 400,
-    max_file_size: MAX_FILE_SIZES.png,
-  },
-  {
-    entity_type: 'concept_preview_web',
-    asset_slot: 'preview_web',
-    allowed_types: ['png', 'jpg', 'webp'],
-    aspect_ratio: 0,
-    aspect_ratio_tolerance: 0,
-    min_width: 600,
-    min_height: 400,
-    max_file_size: MAX_FILE_SIZES.png,
-  },
+  ...CONCEPT_GALLERY_VALIDATION_RULES,
   {
     entity_type: 'component_thumbnail',
     asset_slot: 'thumbnail',

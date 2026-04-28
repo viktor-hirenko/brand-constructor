@@ -17,12 +17,19 @@ const emit = defineEmits<{
   select: []
 }>()
 
-/** У адмінці: Logo, Gallery 1, Gallery 2; також graphic_url_2 з API — усі показуємо по порядку без дублікатів URL. */
+/** Gallery images 3–10 (після рефактору адмінки: слоти 1–2 — mobile/desktop прев’ю в мокапах нижче). */
 const graphicImageUrls = computed(() => {
   const c = props.concept
-  const ordered = [c.logo_url, c.gallery_url_1, c.gallery_url_2, c.graphic_url_2].filter(
-    (u): u is string => typeof u === 'string' && u.trim() !== ''
-  )
+  const ordered = [
+    c.gallery_url_3,
+    c.gallery_url_4,
+    c.gallery_url_5,
+    c.gallery_url_6,
+    c.gallery_url_7,
+    c.gallery_url_8,
+    c.gallery_url_9,
+    c.gallery_url_10,
+  ].filter((u): u is string => typeof u === 'string' && u.trim() !== '')
   return [...new Set(ordered)]
 })
 
@@ -144,7 +151,7 @@ const headerTagText = computed(() => {
           </div>
 
           <!-- Мобільна версія (preview as mobile mockup) -->
-          <div v-if="concept.preview_url" class="mb-10">
+          <div v-if="concept.gallery_url_1" class="mb-10">
             <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-6">
               Мобільна версія
             </h3>
@@ -155,7 +162,7 @@ const headerTagText = computed(() => {
                   class="bg-[#101828] rounded-[48px] border-[14px] border-[#101828] overflow-hidden w-[375px]"
                 >
                   <img
-                    :src="getAssetUrl(concept.preview_url)"
+                    :src="getAssetUrl(concept.gallery_url_1)"
                     alt="Mobile preview"
                     class="w-full object-contain"
                     loading="lazy"
@@ -170,7 +177,7 @@ const headerTagText = computed(() => {
           </div>
 
           <!-- Веб версія -->
-          <div v-if="concept.preview_url_web" class="mb-10">
+          <div v-if="concept.gallery_url_2" class="mb-10">
             <h3 class="text-lg font-medium leading-[27px] tracking-[-0.44px] text-[#0a0a0a] mb-6">
               Веб версія
             </h3>
@@ -191,7 +198,7 @@ const headerTagText = computed(() => {
               <!-- Web content -->
               <div class="flex items-start justify-center">
                 <img
-                  :src="getAssetUrl(concept.preview_url_web)"
+                  :src="getAssetUrl(concept.gallery_url_2)"
                   alt="Web preview"
                   class="w-full object-contain"
                   loading="lazy"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared'
 import { parseAspectRatio } from '@brand-constructor/shared'
@@ -8,11 +8,46 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+
 interface ConceptDetail extends Concept {
   namings: ExternalNaming[]
   assets: Asset[]
   author_name: string
 }
+
+interface GallerySlot {
+  fieldKey: keyof Pick<
+    Concept,
+    | 'gallery_url_1'
+    | 'gallery_url_2'
+    | 'gallery_url_3'
+    | 'gallery_url_4'
+    | 'gallery_url_5'
+    | 'gallery_url_6'
+    | 'gallery_url_7'
+    | 'gallery_url_8'
+    | 'gallery_url_9'
+    | 'gallery_url_10'
+  >
+  entityType: `concept_gallery_${number}`
+  label: string
+}
+
+const GALLERY_SLOTS: GallerySlot[] = Array.from({ length: 10 }, (_, i) => {
+  const n = i + 1
+  const fieldKey = `gallery_url_${n}` as GallerySlot['fieldKey']
+  const label =
+    n === 1
+      ? 'Gallery Image 1 (Mobile Preview)'
+      : n === 2
+        ? 'Gallery Image 2 (Desktop preview)'
+        : `Gallery Image ${n}`
+  return {
+    fieldKey,
+    entityType: `concept_gallery_${n}` as `concept_gallery_${number}`,
+    label,
+  }
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -32,20 +67,26 @@ const editMode = ref<'light' | 'dark' | null>(null)
 const uploadingType = ref<string | null>(null)
 
 const visualInputRef = ref<HTMLInputElement | null>(null)
-const logoInputRef = ref<HTMLInputElement | null>(null)
-const gallery1InputRef = ref<HTMLInputElement | null>(null)
-const gallery2InputRef = ref<HTMLInputElement | null>(null)
-const mobilePreviewInputRef = ref<HTMLInputElement | null>(null)
-const webPreviewInputRef = ref<HTMLInputElement | null>(null)
+const galleryFileInputs = ref<Record<string, HTMLInputElement | null>>({})
 
-const visualAspectRatio = ref('')
-const logoAspectRatio = ref('')
-const gallery1AspectRatio = ref('')
-const gallery2AspectRatio = ref('')
-const mobilePreviewAspectRatio = ref('')
-const webPreviewAspectRatio = ref('')
+const visualAspectRatio = ref('1:1')
+const galleryRatios = reactive<Record<string, string>>(
+  Object.fromEntries(GALLERY_SLOTS.map(s => [s.entityType, '1:1']))
+)
 
 onMounted(() => fetchData())
+
+function setGalleryFileInputRef(entityType: string, el: unknown) {
+  if (el && el instanceof HTMLInputElement) {
+    galleryFileInputs.value[entityType] = el
+  } else {
+    delete galleryFileInputs.value[entityType]
+  }
+}
+
+function openGalleryFileInput(entityType: string) {
+  galleryFileInputs.value[entityType]?.click()
+}
 
 function startEditing() {
   if (!concept.value) return
@@ -63,7 +104,7 @@ async function saveChanges() {
     mode: editMode.value,
   }
   try {
-    const result = await apiPut(`/api/concepts/${concept.value.id}`, payload)
+    await apiPut(`/api/concepts/${concept.value.id}`, payload)
     isEditing.value = false
     await fetchData()
   } catch (err) {
@@ -81,17 +122,7 @@ async function handleFileUpload(event: Event, entityType: string) {
   const ratioInput =
     entityType === 'concept_visual'
       ? visualAspectRatio.value
-      : entityType === 'concept_logo'
-        ? logoAspectRatio.value
-        : entityType === 'concept_gallery_1'
-          ? gallery1AspectRatio.value
-          : entityType === 'concept_gallery_2'
-            ? gallery2AspectRatio.value
-            : entityType === 'concept_preview_mobile'
-              ? mobilePreviewAspectRatio.value
-              : entityType === 'concept_preview_web'
-                ? webPreviewAspectRatio.value
-                : ''
+      : (galleryRatios[entityType] ?? '1:1')
   const parsedRatio = parseAspectRatio(ratioInput)
 
   uploadingType.value = entityType
@@ -112,6 +143,10 @@ async function handleFileUpload(event: Event, entityType: string) {
     uploadingType.value = null
     input.value = ''
   }
+}
+
+function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
+  return c[slot.fieldKey]
 }
 </script>
 
@@ -191,7 +226,7 @@ async function handleFileUpload(event: Event, entityType: string) {
               <BaseInput
                 v-model="visualAspectRatio"
                 label="Співвідношення сторін"
-                placeholder="напр. 1.5 або 16:9"
+                placeholder="напр. 1:1"
                 class="asset-slot__ratio-input"
               />
               <input
@@ -213,180 +248,38 @@ async function handleFileUpload(event: Event, entityType: string) {
             </template>
           </div>
 
-          <div class="asset-slot">
-            <span class="asset-slot__label">Logo</span>
-            <div class="asset-slot__preview asset-slot__preview--square">
-              <img v-if="concept.logo_url" :src="getAssetUrl(concept.logo_url)" alt="Logo" />
-              <span v-else class="asset-slot__empty-text">No logo uploaded</span>
-            </div>
-            <template v-if="canWrite">
-              <BaseInput
-                v-model="logoAspectRatio"
-                label="Співвідношення сторін"
-                placeholder="напр. 1 або 1:1"
-                class="asset-slot__ratio-input"
-              />
-              <input
-                ref="logoInputRef"
-                type="file"
-                accept="image/png,image/svg+xml"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_logo')"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === 'concept_logo'"
-                :disabled="uploadingType !== null"
-                @click="logoInputRef?.click()"
-              >
-                {{ concept.logo_url ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
-          </div>
-
-          <div class="asset-slot">
-            <span class="asset-slot__label">Gallery Image 1</span>
+          <div v-for="slot in GALLERY_SLOTS" :key="slot.entityType" class="asset-slot">
+            <span class="asset-slot__label">{{ slot.label }}</span>
             <div class="asset-slot__preview">
               <img
-                v-if="concept.gallery_url_1"
-                :src="getAssetUrl(concept.gallery_url_1)"
-                alt="Gallery 1"
+                v-if="galleryUrl(concept, slot)"
+                :src="getAssetUrl(galleryUrl(concept, slot)!)"
+                :alt="slot.label"
               />
-              <span v-else class="asset-slot__empty-text">No gallery 1 uploaded</span>
+              <span v-else class="asset-slot__empty-text">No image uploaded</span>
             </div>
             <template v-if="canWrite">
               <BaseInput
-                v-model="gallery1AspectRatio"
+                v-model="galleryRatios[slot.entityType]"
                 label="Співвідношення сторін"
-                placeholder="напр. 4:3"
+                placeholder="напр. 1:1"
                 class="asset-slot__ratio-input"
               />
               <input
-                ref="gallery1InputRef"
+                :ref="el => setGalleryFileInputRef(slot.entityType, el)"
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_gallery_1')"
+                @change="e => handleFileUpload(e, slot.entityType)"
               />
               <BaseButton
                 variant="secondary"
                 size="sm"
-                :loading="uploadingType === 'concept_gallery_1'"
+                :loading="uploadingType === slot.entityType"
                 :disabled="uploadingType !== null"
-                @click="gallery1InputRef?.click()"
+                @click="openGalleryFileInput(slot.entityType)"
               >
-                {{ concept.gallery_url_1 ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
-          </div>
-
-          <div class="asset-slot">
-            <span class="asset-slot__label">Gallery Image 2</span>
-            <div class="asset-slot__preview">
-              <img
-                v-if="concept.gallery_url_2"
-                :src="getAssetUrl(concept.gallery_url_2)"
-                alt="Gallery 2"
-              />
-              <span v-else class="asset-slot__empty-text">No gallery 2 uploaded</span>
-            </div>
-            <template v-if="canWrite">
-              <BaseInput
-                v-model="gallery2AspectRatio"
-                label="Співвідношення сторін"
-                placeholder="напр. 4:3"
-                class="asset-slot__ratio-input"
-              />
-              <input
-                ref="gallery2InputRef"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_gallery_2')"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === 'concept_gallery_2'"
-                :disabled="uploadingType !== null"
-                @click="gallery2InputRef?.click()"
-              >
-                {{ concept.gallery_url_2 ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
-          </div>
-
-          <div class="asset-slot">
-            <span class="asset-slot__label">Mobile Preview</span>
-            <div class="asset-slot__preview">
-              <img
-                v-if="concept.preview_url"
-                :src="getAssetUrl(concept.preview_url)"
-                alt="Mobile Preview"
-                class="asset-slot__preview-img--contain"
-              />
-              <span v-else class="asset-slot__empty-text">No mobile preview uploaded</span>
-            </div>
-            <template v-if="canWrite">
-              <BaseInput
-                v-model="mobilePreviewAspectRatio"
-                label="Співвідношення сторін"
-                placeholder="напр. 9:16"
-                class="asset-slot__ratio-input"
-              />
-              <input
-                ref="mobilePreviewInputRef"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_preview_mobile')"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === 'concept_preview_mobile'"
-                :disabled="uploadingType !== null"
-                @click="mobilePreviewInputRef?.click()"
-              >
-                {{ concept.preview_url ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
-          </div>
-
-          <div class="asset-slot">
-            <span class="asset-slot__label">Web Preview</span>
-            <div class="asset-slot__preview">
-              <img
-                v-if="concept.preview_url_web"
-                :src="getAssetUrl(concept.preview_url_web)"
-                alt="Web Preview"
-                class="asset-slot__preview-img--contain"
-              />
-              <span v-else class="asset-slot__empty-text">No web preview uploaded</span>
-            </div>
-            <template v-if="canWrite">
-              <BaseInput
-                v-model="webPreviewAspectRatio"
-                label="Співвідношення сторін"
-                placeholder="напр. 3:2"
-                class="asset-slot__ratio-input"
-              />
-              <input
-                ref="webPreviewInputRef"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_preview_web')"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === 'concept_preview_web'"
-                :disabled="uploadingType !== null"
-                @click="webPreviewInputRef?.click()"
-              >
-                {{ concept.preview_url_web ? 'Change image' : 'Upload image' }}
+                {{ galleryUrl(concept, slot) ? 'Change image' : 'Upload image' }}
               </BaseButton>
             </template>
           </div>
@@ -560,19 +453,10 @@ async function handleFileUpload(event: Event, entityType: string) {
     color: $color-text-muted;
     font-size: $font-size-sm;
 
-    &--square {
-      aspect-ratio: 1;
-    }
-
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-
-      &.asset-slot__preview-img--contain {
-        object-fit: contain;
-        object-position: center;
-      }
     }
   }
 
