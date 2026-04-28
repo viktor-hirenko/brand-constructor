@@ -111,54 +111,24 @@ app.post('/upload', async c => {
     )
       .bind(fileUrl, entityId)
       .run()
-  } else if (entityType === 'concept_logo') {
-    await c.env.DB.prepare(
-      "UPDATE concepts SET logo_url = ?, updated_at = datetime('now') WHERE id = ?"
-    )
-      .bind(fileUrl, entityId)
-      .run()
-  } else if (entityType === 'concept_graphic_2') {
-    await c.env.DB.prepare(
-      "UPDATE concepts SET graphic_url_2 = ?, updated_at = datetime('now') WHERE id = ?"
-    )
-      .bind(fileUrl, entityId)
-      .run()
-  } else if (entityType === 'concept_gallery_1') {
-    await c.env.DB.prepare(
-      "UPDATE concepts SET gallery_url_1 = ?, updated_at = datetime('now') WHERE id = ?"
-    )
-      .bind(fileUrl, entityId)
-      .run()
-  } else if (entityType === 'concept_gallery_2') {
-    await c.env.DB.prepare(
-      "UPDATE concepts SET gallery_url_2 = ?, updated_at = datetime('now') WHERE id = ?"
-    )
-      .bind(fileUrl, entityId)
-      .run()
-  } else if (entityType === 'concept_gallery_3') {
-    await c.env.DB.prepare(
-      "UPDATE concepts SET gallery_url_3 = ?, updated_at = datetime('now') WHERE id = ?"
-    )
-      .bind(fileUrl, entityId)
-      .run()
-  } else if (entityType === 'concept_preview_mobile') {
-    await c.env.DB.prepare(
-      "UPDATE concepts SET preview_url = ?, updated_at = datetime('now') WHERE id = ?"
-    )
-      .bind(fileUrl, entityId)
-      .run()
-  } else if (entityType === 'concept_preview_web') {
-    await c.env.DB.prepare(
-      "UPDATE concepts SET preview_url_web = ?, updated_at = datetime('now') WHERE id = ?"
-    )
-      .bind(fileUrl, entityId)
-      .run()
   } else if (entityType === 'component_thumbnail') {
     await c.env.DB.prepare(
       "UPDATE component_variants SET thumbnail_url = ?, updated_at = datetime('now') WHERE id = ?"
     )
       .bind(fileUrl, entityId)
       .run()
+  } else {
+    const galleryMatch = /^concept_gallery_(\d{1,2})$/.exec(entityType)
+    if (galleryMatch) {
+      const slot = Number(galleryMatch[1])
+      if (slot >= 1 && slot <= 10) {
+        await c.env.DB.prepare(
+          `UPDATE concepts SET gallery_url_${slot} = ?, updated_at = datetime('now') WHERE id = ?`
+        )
+          .bind(fileUrl, entityId)
+          .run()
+      }
+    }
   }
 
   const asset = await c.env.DB.prepare('SELECT * FROM assets WHERE id = ?').bind(id).first()
