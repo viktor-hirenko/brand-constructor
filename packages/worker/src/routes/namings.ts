@@ -48,6 +48,21 @@ const previewDomainSchema = z.object({
   domain: z.string().min(1).max(255),
 })
 
+/** Same row shape as GET /external (joins for author_name, concept_name, brand_name). */
+async function getExternalNamingListRow(db: D1Database, id: string) {
+  return await db
+    .prepare(
+      `SELECT en.*, u.name as author_name, c.name as concept_name, COALESCE(b.internal_name, en.used_in_brand_id) as brand_name
+       FROM external_namings en
+       LEFT JOIN users u ON en.created_by = u.id
+       LEFT JOIN concepts c ON en.concept_id = c.id
+       LEFT JOIN brands b ON en.used_in_brand_id = b.id
+       WHERE en.id = ?`
+    )
+    .bind(id)
+    .first()
+}
+
 // --- External Namings ---
 
 app.get('/external', async c => {
@@ -317,10 +332,8 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
   }
 
   if (!shouldRecheck(naming.domain_checked_at)) {
-    const fresh = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
-      .bind(id)
-      .first()
-    return c.json({ success: true, data: fresh, cached: true })
+    const row = await getExternalNamingListRow(c.env.DB, id)
+    return c.json({ success: true, data: row, cached: true })
   }
 
   const result = await checkDomainAvailability(naming.domain, c.env)
@@ -337,11 +350,9 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
 
   await updateNamingDomainStatus(c.env.DB, id, result)
 
-  const updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
-    .bind(id)
-    .first()
+  const row = await getExternalNamingListRow(c.env.DB, id)
 
-  return c.json({ success: true, data: updated })
+  return c.json({ success: true, data: row })
 })
 
 // --- Internal Namings ---

@@ -28,6 +28,14 @@ type ExternalNamingRow = ExternalNaming & {
   brand_name: string | null
 }
 
+type CheckDomainPostResult =
+  | ExternalNamingRow
+  | { skipped: true; reason: string }
+
+function isCheckDomainSkipped(r: CheckDomainPostResult): r is { skipped: true; reason: string } {
+  return 'skipped' in r && r.skipped === true
+}
+
 const {
   data: externalNamings,
   loading: extLoading,
@@ -336,8 +344,21 @@ async function handleSaveEdit() {
 async function handleCheckDomain(namingId: string) {
   checkingDomainId.value = namingId
   try {
-    await apiPost(`/api/namings/external/${namingId}/check-domain`, {})
-    refreshList()
+    const data = await apiPost<CheckDomainPostResult>(
+      `/api/namings/external/${namingId}/check-domain`,
+      {}
+    )
+    if (isCheckDomainSkipped(data)) {
+      return
+    }
+    const idx = externalNamings.value.findIndex((n) => n.id === namingId)
+    if (idx === -1) {
+      await fetchExternal()
+      return
+    }
+    const next = externalNamings.value.slice()
+    next[idx] = data
+    externalNamings.value = next
   } catch {
     // Silently handle — status will remain as-is
   } finally {
