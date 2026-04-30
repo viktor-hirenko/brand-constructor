@@ -19,6 +19,7 @@ import {
 import { getAuthHeader } from '@/composables/useApi'
 import Step10ReviewScrollLayout from '@/components/constructor/Step10ReviewScrollLayout.vue'
 import SectionCommentBlock from '@/components/constructor/SectionCommentBlock.vue'
+import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -727,6 +728,18 @@ function startCeoReselect(item: SummaryItem) {
   })
 }
 
+const conceptPreviewOpen = ref(false)
+
+function openConceptPreview() {
+  if (!selectedConcept.value) return
+  store.setStep3PreviewSlideIndex(1)
+  conceptPreviewOpen.value = true
+}
+
+function closeConceptPreview() {
+  conceptPreviewOpen.value = false
+}
+
 /** Sections that must have a CEO comment because CEO chose an alternative there. */
 const SELECTION_REQUIRING_COMMENT: CeoLibraryTab[] = [
   'concept',
@@ -1334,7 +1347,29 @@ async function handlePrintBrand() {
 
             <div class="flex-1 min-w-0">
               <p class="text-sm text-muted-foreground mb-1">{{ item.label }}</p>
-              <p class="text-sm whitespace-pre-line">{{ item.value }}</p>
+              <div class="flex items-start gap-2">
+                <p class="text-sm whitespace-pre-line flex-1">{{ item.value }}</p>
+                <button
+                  v-if="item.sectionKey === 'concept' && selectedConcept"
+                  type="button"
+                  class="shrink-0 inline-flex items-center justify-center size-8 rounded-full border border-black/10 hover:bg-black/[0.03] transition-colors"
+                  aria-label="Переглянути концепт"
+                  @click="openConceptPreview"
+                >
+                  <svg
+                    class="size-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1761,5 +1796,46 @@ async function handlePrintBrand() {
         </div>
       </template>
     </Step10ReviewScrollLayout>
+
+    <!-- Concept Preview popup (eye button → slider starting from 2nd image) -->
+    <Teleport to="body">
+      <div
+        v-if="conceptPreviewOpen && selectedConcept"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        @click.self="closeConceptPreview"
+      >
+        <div
+          class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        >
+          <div class="flex items-center justify-between h-[64px] px-6 border-b border-black/10 shrink-0">
+            <h3 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
+              {{ selectedConcept.name }}
+            </h3>
+            <button
+              type="button"
+              class="size-8 rounded-full hover:bg-black/[0.05] flex items-center justify-center"
+              aria-label="Закрити"
+              @click="closeConceptPreview"
+            >
+              <svg
+                class="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="flex-1 overflow-hidden p-6">
+            <ConceptPreviewSlider :concept="selectedConcept" :is-final-selected="true" />
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
