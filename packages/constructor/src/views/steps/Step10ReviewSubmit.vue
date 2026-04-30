@@ -18,6 +18,7 @@ import {
 } from '@/composables/usePrintBrand'
 import { getAuthHeader } from '@/composables/useApi'
 import Step10ReviewScrollLayout from '@/components/constructor/Step10ReviewScrollLayout.vue'
+import SectionCommentBlock from '@/components/constructor/SectionCommentBlock.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -645,6 +646,52 @@ const nonEmptyCeoComments = computed(() => {
   return result
 })
 
+/** Marks the first summary row per section so the comment block renders only once per section. */
+const firstItemIndexPerSection = computed(() => {
+  const seen = new Set<string>()
+  const indexes = new Set<number>()
+  summaryItems.value.forEach((item, idx) => {
+    if (!seen.has(item.sectionKey)) {
+      seen.add(item.sectionKey)
+      indexes.add(idx)
+    }
+  })
+  return indexes
+})
+
+const SECTION_TO_COMMENT_KEY: Record<string, string> = {
+  basics: 'basics',
+  mode: 'concept',
+  concept: 'concept',
+  externalNaming: 'externalNaming',
+  internalNaming: 'internalNaming',
+  marketingPackage: 'marketingPackage',
+  deliverables: 'deliverables',
+  visualComponents: 'visualComponents',
+}
+
+function getCeoCommentForItem(item: SummaryItem): string {
+  const key = SECTION_TO_COMMENT_KEY[item.sectionKey] ?? item.sectionKey
+  return ceoComments[key] ?? ''
+}
+
+function showInlineCommentForItem(item: SummaryItem, index: number): boolean {
+  if (!firstItemIndexPerSection.value.has(index)) return false
+  const isReviewable =
+    brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision'
+  if (isCeoView.value && isReviewable) return true
+  if (!isCeoView.value && brandStatus.value === 'needs_revision') {
+    return getCeoCommentForItem(item).trim().length > 0
+  }
+  return false
+}
+
+function handleCeoCommentUpdate(item: SummaryItem, value: string) {
+  const key = SECTION_TO_COMMENT_KEY[item.sectionKey] ?? item.sectionKey
+  ceoComments[key] = value
+  store.setCeoCommentValue(key, value)
+}
+
 function goToStep(step: number) {
   store.setReturnToStep(9)
   router.push(`/constructor/step/${step}`)
@@ -1188,9 +1235,6 @@ async function handlePrintBrand() {
             <div class="flex-1 min-w-0">
               <p class="text-sm text-muted-foreground mb-1">{{ item.label }}</p>
               <p class="text-sm whitespace-pre-line">{{ item.value }}</p>
-              <p v-if="item.comment" class="text-xs text-muted-foreground mt-1.5 italic">
-                Коментар: {{ item.comment }}
-              </p>
             </div>
           </div>
 
@@ -1202,6 +1246,16 @@ async function handlePrintBrand() {
           >
             Редагувати
           </button>
+
+          <SectionCommentBlock
+            v-if="showInlineCommentForItem(item, idx)"
+            class="mt-3"
+            :section-key="SECTION_TO_COMMENT_KEY[item.sectionKey] ?? item.sectionKey"
+            :po-comment="item.comment ?? ''"
+            :ceo-comment="getCeoCommentForItem(item)"
+            :ceo-editable="isCeoView && (brandStatus === 'submitted' || brandStatus === 'needs_revision')"
+            @update:ceo-comment="value => handleCeoCommentUpdate(item, value)"
+          />
         </div>
       </template>
       <template #footer>

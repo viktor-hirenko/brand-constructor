@@ -344,6 +344,22 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     step3PreviewSlideIndex.value = index
   }
 
+  /**
+   * Updates a single CEO comment section locally. Empty string removes the key.
+   * Persistence happens later when CEO triggers approve/needs_revision via
+   * PATCH /:id/status, which accepts the full `ceoComments` payload.
+   */
+  function setCeoCommentValue(sectionKey: string, value: string) {
+    const trimmed = value.trim()
+    const current = brandCeoComments.value ? { ...brandCeoComments.value } : {}
+    if (trimmed) {
+      current[sectionKey] = trimmed
+    } else {
+      delete current[sectionKey]
+    }
+    brandCeoComments.value = Object.keys(current).length > 0 ? current : null
+  }
+
   function reset() {
     brandId.value = null
     brandInternalName.value = null
@@ -521,6 +537,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setStep10ScrollTop,
     step3PreviewSlideIndex,
     setStep3PreviewSlideIndex,
+    setCeoCommentValue,
     reset,
     loadBrand,
     restoreDraftFromStorage,
