@@ -690,7 +690,62 @@ function handleCeoCommentUpdate(item: SummaryItem, value: string) {
   const key = SECTION_TO_COMMENT_KEY[item.sectionKey] ?? item.sectionKey
   ceoComments[key] = value
   store.setCeoCommentValue(key, value)
+  if (value.trim()) {
+    revisionMissingSections.value.delete(key)
+    if (revisionMissingSections.value.size === 0) {
+      revisionRequiresAnyComment.value = false
+    }
+  }
 }
+
+/** Sections that must have a CEO comment because CEO chose an alternative there. */
+const SELECTION_REQUIRING_COMMENT: CeoLibraryTab[] = [
+  'concept',
+  'externalNaming',
+  'internalNaming',
+]
+
+/** Sections currently flagged as "comment required" after a failed needs_revision attempt. */
+const revisionMissingSections = ref<Set<string>>(new Set())
+/** True when no CEO comment exists at all and CEO clicked needs_revision. */
+const revisionRequiresAnyComment = ref(false)
+
+function isSectionHighlighted(sectionKey: string): boolean {
+  const key = SECTION_TO_COMMENT_KEY[sectionKey] ?? sectionKey
+  if (revisionMissingSections.value.has(key)) return true
+  return revisionRequiresAnyComment.value
+}
+
+function validateNeedsRevision(): { ok: true } | { ok: false; reason: 'no-comment' | 'missing-section' } {
+  const missing = new Set<string>()
+  for (const key of SELECTION_REQUIRING_COMMENT) {
+    if (ceoSelections[key] && !(ceoComments[key] ?? '').trim()) {
+      missing.add(key)
+    }
+  }
+  if (missing.size > 0) {
+    revisionMissingSections.value = missing
+    revisionRequiresAnyComment.value = false
+    return { ok: false, reason: 'missing-section' }
+  }
+  if (Object.keys(nonEmptyCeoComments.value).length === 0) {
+    revisionRequiresAnyComment.value = true
+    return { ok: false, reason: 'no-comment' }
+  }
+  revisionRequiresAnyComment.value = false
+  revisionMissingSections.value = new Set()
+  return { ok: true }
+}
+
+const revisionWarning = computed<string | null>(() => {
+  if (revisionRequiresAnyComment.value) {
+    return 'Додайте хоча б один коментар перед поверненням.'
+  }
+  if (revisionMissingSections.value.size > 0) {
+    return 'Залиште коментар у секціях, де ви змінили вибір.'
+  }
+  return null
+})
 
 function goToStep(step: number) {
   store.setReturnToStep(9)
@@ -738,6 +793,22 @@ async function handleSaveDraft() {
 }
 
 async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_revision') {
+  if (newStatus === 'needs_revision') {
+    const validation = validateNeedsRevision()
+    if (!validation.ok) {
+      const targetSection =
+        revisionMissingSections.value.values().next().value ?? null
+      const sectionEl = targetSection
+        ? document.querySelector<HTMLElement>(`[data-section="${targetSection}"]`)
+        : getScrollContainer()?.querySelector<HTMLElement>('[data-section]') ?? null
+      sectionEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+  } else {
+    revisionRequiresAnyComment.value = false
+    revisionMissingSections.value = new Set()
+  }
+
   if (newStatus === 'submitted') {
     const saved = await store.saveBrand()
     if (!saved) return
@@ -1254,6 +1325,7 @@ async function handlePrintBrand() {
             :po-comment="item.comment ?? ''"
             :ceo-comment="getCeoCommentForItem(item)"
             :ceo-editable="isCeoView && (brandStatus === 'submitted' || brandStatus === 'needs_revision')"
+            :highlighted="isSectionHighlighted(item.sectionKey)"
             @update:ceo-comment="value => handleCeoCommentUpdate(item, value)"
           />
         </div>
@@ -1356,7 +1428,12 @@ async function handlePrintBrand() {
             {{ statusActionLoading ? 'Зачекайте...' : 'Затвердити' }}
           </button>
           <button
-            class="flex items-center justify-center gap-2 px-6 py-3.5 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors text-sm font-medium disabled:opacity-50"
+            :class="[
+              'flex items-center justify-center gap-2 px-6 py-3.5 text-white rounded-xl transition-colors text-sm font-medium disabled:opacity-50',
+              revisionWarning
+                ? 'bg-amber-600 ring-2 ring-amber-300 hover:bg-amber-700'
+                : 'bg-amber-500 hover:bg-amber-600',
+            ]"
             :disabled="statusActionLoading"
             @click="handleStatusChange('needs_revision')"
           >
@@ -1376,6 +1453,26 @@ async function handlePrintBrand() {
             </svg>
             Повернути на доопрацювання
           </button>
+          <div
+            v-if="revisionWarning"
+            class="flex items-center gap-2 text-sm text-amber-700"
+            role="alert"
+          >
+            <svg
+              class="size-5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
+            <span>{{ revisionWarning }}</span>
+          </div>
           <button
             class="flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-medium"
             @click="openCeoLibrary('concept')"
