@@ -9,6 +9,8 @@ export interface BrandBasicsData {
 
 export interface BrandConceptData {
   selectedId: string | null
+  /** Runtime-only preview in grid (not persisted when saving brand). */
+  previewId?: string | null
   comment: string
   newConceptBrief: NewConceptBrief | null
 }
@@ -75,6 +77,8 @@ export interface BrandVisualComponentsData {
 }
 
 export interface BrandStepData {
+  /** 1 = 9-step flow (post UXUI-2293). Omitted = legacy 10-step drafts from DB. */
+  stepLayoutVersion?: 1
   brandBasics: BrandBasicsData
   mode: 'light' | 'dark' | null
   concept: BrandConceptData

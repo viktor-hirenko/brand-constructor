@@ -4,6 +4,8 @@ import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, getAssetUrl, getAuthHeader, apiGet } from '@/composables/useApi'
 import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
+import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
+import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
 import type {
   Concept,
   ExternalNaming,
@@ -29,18 +31,18 @@ watch(
 )
 
 const stepTitle = computed(() => {
-  if (currentStep.value === 10 && store.brandInternalName) {
+  if (currentStep.value === 9 && store.brandInternalName) {
     return store.brandInternalName
   }
   return (route.meta.title as string) || ''
 })
 const stepSubtitle = computed(() => (route.meta.subtitle as string) || '')
-const totalSteps = 10
+const totalSteps = 9
 const progressPercent = computed(() => Math.round((currentStep.value / totalSteps) * 100))
 
 const isFirstStep = computed(() => currentStep.value === 1)
 const isLastStep = computed(() => currentStep.value === totalSteps)
-const isFullWidth = computed(() => [3, 4, 5, 7, 8].includes(currentStep.value))
+const isFullWidth = computed(() => [6, 7].includes(currentStep.value))
 const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'))
 
 interface ExternalNamingPreview extends ExternalNaming {
@@ -165,6 +167,24 @@ const selectedConcept = computed(() => {
   return concepts.value.find(item => item.id === id) ?? null
 })
 
+const conceptPreviewForSlider = computed(() => {
+  const id = store.stepData?.concept?.previewId ?? store.stepData?.concept?.selectedId
+  if (!id) return null
+  return concepts.value.find(item => item.id === id) ?? null
+})
+
+const isConceptSliderFinalSelected = computed(() => {
+  const c = conceptPreviewForSlider.value
+  if (!c) return false
+  return store.stepData.concept.selectedId === c.id
+})
+
+function confirmConceptFromSlider() {
+  const id = store.stepData.concept.previewId ?? store.stepData.concept.selectedId
+  if (!id) return
+  store.setConcept({ selectedId: id, newConceptBrief: null })
+}
+
 const selectedExternalNamings = computed(() => {
   const ids = store.stepData?.externalNaming?.selectedIds ?? []
   return ids
@@ -192,7 +212,7 @@ function formatDate(dateStr: string): string {
 function goBack() {
   if (!isFirstStep.value) {
     let prev = currentStep.value - 1
-    if (prev === 4 && store.shouldSkipStep4) prev = 3
+    if (prev === 3 && store.shouldSkipStep3) prev = 2
     router.push(`/constructor/step/${prev}`)
   }
 }
@@ -210,7 +230,7 @@ async function goNext() {
   }
 
   let next = currentStep.value + 1
-  if (next === 4 && store.shouldSkipStep4) next = 5
+  if (next === 3 && store.shouldSkipStep3) next = 4
   router.push(`/constructor/step/${next}`)
 }
 
@@ -250,7 +270,14 @@ async function openConceptDetails() {
 }
 
 function loadPreviewData() {
-  if (currentStep.value !== 6 && currentStep.value !== 10) return
+  if (
+    currentStep.value !== 2 &&
+    currentStep.value !== 3 &&
+    currentStep.value !== 4 &&
+    currentStep.value !== 5 &&
+    currentStep.value !== 9
+  )
+    return
   conceptsPerPage.value = 100
   externalPerPage.value = 100
   internalPerPage.value = 100
@@ -365,7 +392,7 @@ const prevSelections = ref<Record<string, string>>({})
 watch(
   () => store.stepData?.visualComponents?.selections,
   newSel => {
-    if (currentStep.value === 9) loadStep9Variants()
+    if (currentStep.value === 8) loadStep9Variants()
 
     const sel = (newSel ?? {}) as Record<string, string>
     const sidebarKey = Object.keys(sel).find(k => k.includes('sidebar'))
@@ -390,8 +417,8 @@ watch(
 )
 
 watch(currentStep, step => {
+  if (step === 8) loadStep9Variants()
   if (step === 9) loadStep9Variants()
-  if (step === 10) loadStep9Variants()
 })
 </script>
 
@@ -404,10 +431,10 @@ watch(currentStep, step => {
       <div :class="isFullWidth ? 'w-full' : 'w-[42%]'" class="bg-muted/30 flex flex-col min-h-0">
         <div
           class="px-12 pt-5 pb-6 min-h-0 flex-1"
-          :class="currentStep === 10 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'"
+          :class="currentStep === 9 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'"
         >
-          <div :class="currentStep === 10 ? 'shrink-0' : ''">
-            <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-1">
+          <div :class="currentStep === 9 ? 'shrink-0' : ''">
+            <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
               {{ stepTitle }}
             </h1>
             <p class="text-base text-muted-foreground tracking-[-0.31px] mb-6">
@@ -432,7 +459,7 @@ watch(currentStep, step => {
             </div>
           </div>
 
-          <div :class="currentStep === 10 ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : ''">
+          <div :class="currentStep === 9 ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : ''">
             <RouterView />
           </div>
         </div>
@@ -481,7 +508,13 @@ watch(currentStep, step => {
       </div>
 
       <!-- Right Panel: Preview (hidden on full-width steps) -->
-      <div v-if="!isFullWidth" class="w-[58%] bg-white pt-12 px-12 pb-12 overflow-y-auto">
+      <div
+        v-if="!isFullWidth"
+        class="w-[58%] bg-white px-12 overflow-y-auto"
+        :class="
+          currentStep >= 2 && currentStep <= 4 ? 'pt-[20px] pb-[100px]' : 'pt-12 pb-12'
+        "
+      >
         <!-- Step 1 Preview -->
         <template v-if="currentStep === 1">
           <div v-if="hasGeo || hasDate || hasLinkedProduct" class="flex flex-col gap-6">
@@ -600,144 +633,22 @@ watch(currentStep, step => {
           </div>
         </template>
 
-        <!-- Step 2 Preview: Mode -->
+        <!-- Step 2 Preview: concept slider -->
         <template v-else-if="currentStep === 2">
-          <div v-if="store.stepData?.mode" class="flex flex-col gap-6">
-            <div
-              class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
-            >
-              <div class="flex items-center gap-3 mb-6">
-                <svg
-                  v-if="store.stepData.mode === 'dark'"
-                  class="size-8 text-foreground"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-                <svg
-                  v-else
-                  class="size-8 text-foreground"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2" />
-                  <path d="M12 20v2" />
-                  <path d="m4.93 4.93 1.41 1.41" />
-                  <path d="m17.66 17.66 1.41 1.41" />
-                  <path d="M2 12h2" />
-                  <path d="M20 12h2" />
-                  <path d="m6.34 17.66-1.41 1.41" />
-                  <path d="m19.07 4.93-1.41 1.41" />
-                </svg>
-                <h3 class="text-xl font-medium tracking-[-0.45px]">
-                  {{ store.stepData.mode === 'dark' ? 'Dark Mode' : 'Light Mode' }}
-                </h3>
-              </div>
-              <p class="text-muted-foreground text-base tracking-[-0.31px] mb-6">
-                {{
-                  store.stepData.mode === 'dark'
-                    ? 'Ваш бренд використовує темну тему - сучасний та елегантний підхід'
-                    : 'Ваш бренд використовує світлу тему - чистий та легкий підхід'
-                }}
-              </p>
-              <div class="flex gap-4">
-                <div
-                  class="flex-1 h-[124px] rounded-[14px] border-2 p-6"
-                  :class="
-                    store.stepData.mode === 'dark'
-                      ? 'bg-[#101828] border-[#364153]'
-                      : 'bg-[#f8f9fa] border-[#e5e7eb]'
-                  "
-                >
-                  <div
-                    class="h-4 rounded w-24 mb-3"
-                    :class="store.stepData.mode === 'dark' ? 'bg-[#364153]' : 'bg-[#d1d5db]'"
-                  />
-                  <div
-                    class="h-3 rounded w-full mb-2"
-                    :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'"
-                  />
-                  <div
-                    class="h-3 rounded w-3/4"
-                    :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'"
-                  />
-                </div>
-                <div
-                  class="flex-1 h-[124px] rounded-[14px] border-2 p-6"
-                  :class="
-                    store.stepData.mode === 'dark'
-                      ? 'bg-[#101828] border-[#364153]'
-                      : 'bg-[#f8f9fa] border-[#e5e7eb]'
-                  "
-                >
-                  <div
-                    class="size-12 rounded-full mb-3"
-                    :class="store.stepData.mode === 'dark' ? 'bg-[#364153]' : 'bg-[#d1d5db]'"
-                  />
-                  <div
-                    class="h-3 rounded w-20"
-                    :class="store.stepData.mode === 'dark' ? 'bg-[#1e2939]' : 'bg-[#e5e7eb]'"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="flex items-center justify-center h-96">
-            <div class="text-center text-muted-foreground">
-              <div class="flex gap-4 justify-center mb-4">
-                <svg
-                  class="size-16 opacity-30"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2" />
-                  <path d="M12 20v2" />
-                  <path d="m4.93 4.93 1.41 1.41" />
-                  <path d="m17.66 17.66 1.41 1.41" />
-                  <path d="M2 12h2" />
-                  <path d="M20 12h2" />
-                  <path d="m6.34 17.66-1.41 1.41" />
-                  <path d="m19.07 4.93-1.41 1.41" />
-                </svg>
-                <svg
-                  class="size-16 opacity-30"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-              </div>
-              <p>Оберіть тему для вашого бренду</p>
-            </div>
-          </div>
+          <ConceptPreviewSlider
+            :concept="conceptPreviewForSlider"
+            :is-final-selected="isConceptSliderFinalSelected"
+            @confirm-selection="confirmConceptFromSlider"
+          />
         </template>
 
-        <!-- Step 6 Preview -->
-        <template v-else-if="currentStep === 6">
+        <!-- Step 3 / 4: mobile preview of selected concept -->
+        <template v-else-if="currentStep === 3 || currentStep === 4">
+          <ConceptMobilePreview :concept="selectedConcept" />
+        </template>
+
+        <!-- Step 5 Preview (Brand Preview) -->
+        <template v-else-if="currentStep === 5">
           <!-- Brand card (Figma base + REDO) -->
           <div
             class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] flex"
@@ -893,7 +804,7 @@ watch(currentStep, step => {
         </template>
 
         <!-- Step 9 Preview: iPhone with layered Visual Components -->
-        <template v-else-if="currentStep === 9">
+        <template v-else-if="currentStep === 8">
           <div class="flex flex-col items-center justify-center h-full">
             <div class="flex items-center gap-2 mb-6 text-muted-foreground">
               <svg
@@ -1023,7 +934,7 @@ watch(currentStep, step => {
         </template>
 
         <!-- Step 10 Preview: Brand summary card + iPhone -->
-        <template v-else-if="currentStep === 10">
+        <template v-else-if="currentStep === 9">
           <div class="space-y-8">
             <!-- Brand summary card -->
             <div class="p-6 bg-card border border-black/10 rounded-xl shadow-lg flex gap-6">
@@ -1144,7 +1055,7 @@ watch(currentStep, step => {
                     v-if="!hasStep9Selections"
                     class="h-full flex items-center justify-center p-4 text-center bg-white/90 backdrop-blur-sm rounded-[27px]"
                   >
-                    <p class="text-xs text-muted-foreground">Оберіть компоненти на кроці 9</p>
+                    <p class="text-xs text-muted-foreground">Оберіть компоненти на кроці 8</p>
                   </div>
                   <div
                     v-else
@@ -1218,7 +1129,7 @@ watch(currentStep, step => {
         :concept="detailConcept"
         :show-select-button="false"
         @close="detailConcept = null"
-        @select="router.push('/constructor/step/3')"
+        @select="router.push('/constructor/step/2')"
       />
     </div>
   </div>
@@ -1274,7 +1185,7 @@ watch(currentStep, step => {
               () => {
                 store.setReturnToStep(currentStep)
                 router.push(
-                  `/constructor/step/${activeBrief === 'concept' ? 3 : activeBrief === 'external' ? 4 : 5}`
+                  `/constructor/step/${activeBrief === 'concept' ? 2 : activeBrief === 'external' ? 3 : 4}`
                 )
                 closeLayoutBrief()
               }

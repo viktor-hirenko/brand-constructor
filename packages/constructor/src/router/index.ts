@@ -2,7 +2,8 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
-import type { Brand } from '@brand-constructor/shared/types'
+import { redirectLegacyStepPath } from '@/utils/stepMigration'
+import type { Brand, BrandStepData } from '@brand-constructor/shared/types'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -19,13 +20,13 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor/brand/:id',
     name: 'brand-view',
     component: () => import('@/views/ConstructorLayout.vue'),
-    meta: { requiresAuth: true, step: 10, title: 'Save', subtitle: 'Фінальний огляд' },
+    meta: { requiresAuth: true, step: 9, title: 'Save', subtitle: 'Фінальний огляд' },
     children: [
       {
         path: '',
         name: 'brand-view-review',
         component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
-        meta: { step: 10, title: 'Save', subtitle: 'Фінальний огляд' },
+        meta: { step: 9, title: 'Save', subtitle: 'Фінальний огляд' },
       },
     ],
     beforeEnter: async to => {
@@ -34,7 +35,7 @@ const routes: RouteRecordRaw[] = [
 
       try {
         const brand = await apiGet<Brand>(`/api/brands/${brandId}`)
-        const stepData = brand.stepData ?? {
+        const stepData = (brand.stepData ?? {
           brandBasics: {
             geo: brand.geo ? brand.geo.split(',') : [],
             launchDate: brand.launchDate ?? '',
@@ -73,11 +74,11 @@ const routes: RouteRecordRaw[] = [
             delegateToDesigners: brand.delegateToDesigners ?? false,
             comment: brand.componentsComment ?? '',
           },
-        }
+        }) as BrandStepData
         store.loadBrand(
           brandId,
           stepData,
-          brand.currentStep ?? 10,
+          brand.currentStep ?? 9,
           brand.status,
           brand.internalName ?? undefined,
           brand.ceoComments ?? undefined,
@@ -94,6 +95,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ConstructorLayout.vue'),
     meta: { requiresAuth: true, briefCreatorOnly: true },
     beforeEnter: to => {
+      const legacyRedirect = redirectLegacyStepPath(to.path)
+      if (legacyRedirect) return legacyRedirect
+
       const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/)
       if (!stepMatch) return true
 
@@ -120,56 +124,62 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/2',
         name: 'step-2',
-        component: () => import('@/views/steps/Step2Mode.vue'),
-        meta: { step: 2, title: 'Mode', subtitle: 'Світла або темна тема' },
+        component: () => import('@/views/steps/Step3ConceptSelection.vue'),
+        meta: {
+          step: 2,
+          title: 'Concept Selection',
+          subtitle: "Оберіть концепт та перегляньте прев'ю праворуч.",
+        },
       },
       {
         path: 'step/3',
         name: 'step-3',
-        component: () => import('@/views/steps/Step3ConceptSelection.vue'),
-        meta: { step: 3, title: 'Concept Selection', subtitle: 'Вибір концепту дизайну' },
+        component: () => import('@/views/steps/Step4ExternalNaming.vue'),
+        meta: {
+          step: 3,
+          title: 'External Naming',
+          subtitle: 'Оберіть до 3-х назв, що пройдуть перевірку юристами на можливі ризики.',
+        },
       },
       {
         path: 'step/4',
         name: 'step-4',
-        component: () => import('@/views/steps/Step4ExternalNaming.vue'),
-        meta: { step: 4, title: 'External Naming', subtitle: 'Зовнішні назви' },
+        component: () => import('@/views/steps/Step5InternalNaming.vue'),
+        meta: {
+          step: 4,
+          title: 'Internal Naming',
+          subtitle: 'Оберіть назву для внутрішньої комунікації команди.',
+        },
       },
       {
         path: 'step/5',
         name: 'step-5',
-        component: () => import('@/views/steps/Step5InternalNaming.vue'),
-        meta: { step: 5, title: 'Internal Naming', subtitle: 'Внутрішня назва' },
+        component: () => import('@/views/steps/Step6BrandPreview.vue'),
+        meta: { step: 5, title: 'Brand Preview', subtitle: 'Перегляд бренду' },
       },
       {
         path: 'step/6',
         name: 'step-6',
-        component: () => import('@/views/steps/Step6BrandPreview.vue'),
-        meta: { step: 6, title: 'Brand Preview', subtitle: 'Перегляд бренду' },
+        component: () => import('@/views/steps/Step7MarketingPackage.vue'),
+        meta: { step: 6, title: 'Marketing Package', subtitle: 'PR пакет для запуску' },
       },
       {
         path: 'step/7',
         name: 'step-7',
-        component: () => import('@/views/steps/Step7MarketingPackage.vue'),
-        meta: { step: 7, title: 'Marketing Package', subtitle: 'PR пакет для запуску' },
+        component: () => import('@/views/steps/Step8Deliverables.vue'),
+        meta: { step: 7, title: 'Deliverables', subtitle: 'Додаткові опції' },
       },
       {
         path: 'step/8',
         name: 'step-8',
-        component: () => import('@/views/steps/Step8Deliverables.vue'),
-        meta: { step: 8, title: 'Deliverables', subtitle: 'Додаткові опції' },
+        component: () => import('@/views/steps/Step9VisualComponents.vue'),
+        meta: { step: 8, title: 'Visual Components ⭐', subtitle: 'Візуальні компоненти' },
       },
       {
         path: 'step/9',
         name: 'step-9',
-        component: () => import('@/views/steps/Step9VisualComponents.vue'),
-        meta: { step: 9, title: 'Visual Components ⭐', subtitle: 'Візуальні компоненти' },
-      },
-      {
-        path: 'step/10',
-        name: 'step-10',
         component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
-        meta: { step: 10, title: 'Save', subtitle: 'Фінальний огляд' },
+        meta: { step: 9, title: 'Save', subtitle: 'Фінальний огляд' },
       },
     ],
   },

@@ -59,7 +59,7 @@ const createBrandSchema = z.object({
   developmentDeadline: z.string().max(30).optional(),
   newNamingBrief: z.any().nullish(),
   stepData: z.any().optional(),
-  currentStep: z.number().int().min(1).max(10).optional(),
+  currentStep: z.number().int().min(1).max(9).optional(),
 })
 
 const updateBrandSchema = z.object({
@@ -85,7 +85,7 @@ const updateBrandSchema = z.object({
   developmentDeadline: z.string().max(30).optional(),
   newNamingBrief: z.any().nullish(),
   stepData: z.any().optional(),
-  currentStep: z.number().int().min(1).max(10).optional(),
+  currentStep: z.number().int().min(1).max(9).optional(),
 })
 
 const updateStatusSchema = z.object({

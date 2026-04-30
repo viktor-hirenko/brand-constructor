@@ -165,7 +165,7 @@ const internalBriefItems = computed(() => {
 })
 
 function goToStep(step: number) {
-  store.setReturnToStep(6)
+  store.setReturnToStep(5)
   router.push(`/constructor/step/${step}`)
 }
 
@@ -247,7 +247,7 @@ function formatDate(value: string): string {
           <button
             type="button"
             class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-            @click="goToStep(3)"
+            @click="goToStep(2)"
           >
             Редагувати
           </button>
@@ -275,7 +275,7 @@ function formatDate(value: string): string {
           <button
             type="button"
             class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-            @click="goToStep(4)"
+            @click="goToStep(3)"
           >
             Редагувати
           </button>
@@ -292,7 +292,7 @@ function formatDate(value: string): string {
           <button
             type="button"
             class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-            @click="goToStep(5)"
+            @click="goToStep(4)"
           >
             Редагувати
           </button>
@@ -317,7 +317,7 @@ function formatDate(value: string): string {
         <button
           type="button"
           class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-          @click="goToStep(3)"
+          @click="goToStep(2)"
         >
           Редагувати
         </button>
@@ -340,7 +340,7 @@ function formatDate(value: string): string {
         <button
           type="button"
           class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-          @click="goToStep(4)"
+          @click="goToStep(3)"
         >
           Редагувати
         </button>
@@ -363,7 +363,7 @@ function formatDate(value: string): string {
         <button
           type="button"
           class="h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-          @click="goToStep(5)"
+          @click="goToStep(4)"
         >
           Редагувати
         </button>
@@ -452,7 +452,7 @@ function formatDate(value: string): string {
             <button
               type="button"
               class="h-10 px-4 rounded-[10px] bg-[#030213] text-white text-sm font-medium hover:opacity-90 transition-all"
-              @click="goToStep(activeBrief === 'concept' ? 3 : activeBrief === 'external' ? 4 : 5)"
+              @click="goToStep(activeBrief === 'concept' ? 2 : activeBrief === 'external' ? 3 : 4)"
             >
               Редагувати
             </button>

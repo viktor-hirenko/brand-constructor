@@ -217,7 +217,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: selectedConcept.value.name,
       sectionKey: 'concept',
       icon: 'palette',
-      step: 3,
+      step: 2,
       comment: store.stepData.concept.comment?.trim() || '',
     })
   } else if (isNewConcept.value) {
@@ -226,7 +226,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Новий концепт (бриф)',
       sectionKey: 'concept',
       icon: 'palette',
-      step: 3,
+      step: 2,
       comment: store.stepData.concept.comment?.trim() || '',
     })
   }
@@ -236,7 +236,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: selectedExternalNamings.value.map(n => n.name).join(', '),
       sectionKey: 'externalNaming',
       icon: 'tag',
-      step: 4,
+      step: 3,
       comment: store.stepData.externalNaming.comment?.trim() || '',
     })
   } else if (isNewNaming.value) {
@@ -245,7 +245,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Новий неймінг (бриф)',
       sectionKey: 'externalNaming',
       icon: 'tag',
-      step: 4,
+      step: 3,
       comment: store.stepData.externalNaming.comment?.trim() || '',
     })
   }
@@ -255,7 +255,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: selectedInternalNaming.value.name,
       sectionKey: 'internalNaming',
       icon: 'briefcase',
-      step: 5,
+      step: 4,
       comment: store.stepData.internalNaming.comment?.trim() || '',
     })
   } else if (internalFeedback.value) {
@@ -264,7 +264,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: internalFeedback.value,
       sectionKey: 'internalNaming',
       icon: 'briefcase',
-      step: 5,
+      step: 4,
       comment: store.stepData.internalNaming.comment?.trim() || '',
     })
   }
@@ -274,7 +274,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: selectedPackage.value.name,
       sectionKey: 'marketingPackage',
       icon: 'package',
-      step: 7,
+      step: 6,
       comment: store.stepData.marketingPackage.comment?.trim() || '',
     })
   }
@@ -287,7 +287,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Так',
       sectionKey: 'deliverables',
       icon: 'scale',
-      step: 8,
+      step: 7,
       comment: deliverablesComment,
     })
   }
@@ -297,7 +297,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Так',
       sectionKey: 'deliverables',
       icon: 'handshake',
-      step: 8,
+      step: 7,
     })
   }
   const devDeadline = deliverables.value.developmentDeadline?.trim() ?? ''
@@ -307,7 +307,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: formatDate(devDeadline),
       sectionKey: 'deliverables',
       icon: 'calendar',
-      step: 8,
+      step: 7,
     })
   }
   if (visualComponents.value.delegateToDesigners) {
@@ -316,7 +316,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Делеговано дизайнерам',
       sectionKey: 'visualComponents',
       icon: 'sparkles',
-      step: 9,
+      step: 8,
       comment: visualComponents.value.comment?.trim() || '',
     })
   } else if (componentSelectionCount.value > 0) {
@@ -329,7 +329,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: lines.join('\n') || `${componentSelectionCount.value} обрано`,
       sectionKey: 'visualComponents',
       icon: 'layers',
-      step: 9,
+      step: 8,
       comment: visualComponents.value.comment?.trim() || '',
     })
   }
@@ -646,7 +646,7 @@ const nonEmptyCeoComments = computed(() => {
 })
 
 function goToStep(step: number) {
-  store.setReturnToStep(10)
+  store.setReturnToStep(9)
   router.push(`/constructor/step/${step}`)
 }
 

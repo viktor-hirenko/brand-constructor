@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { getAuthHeader } from '@/composables/useApi'
+import { migrateIncomingCurrentStep } from '@/utils/stepMigration'
 import type {
   BrandStepData,
   BrandBasicsData,
@@ -18,15 +19,17 @@ const DRAFT_STORAGE_KEY = 'brand-constructor-draft'
 
 function getInitialStepData(): BrandStepData {
   return {
+    stepLayoutVersion: 1,
     brandBasics: {
       geo: [],
       launchDate: '',
       linkedProduct: '',
       comment: '',
     },
-    mode: null,
+    mode: 'light',
     concept: {
       selectedId: null,
+      previewId: null,
       comment: '',
       newConceptBrief: null,
     },
@@ -73,8 +76,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   const isSaving = ref(false)
   const returnToStep = ref<number | null>(null)
   const step10ScrollTop = ref<number>(0)
+  /** Persists across concept preview switches on step 2 (not saved to API). */
+  const step3PreviewSlideIndex = ref(0)
 
-  const totalSteps = 10
+  const totalSteps = 9
 
   const progressPercent = computed(() => {
     return Math.round((currentStep.value / totalSteps) * 100)
@@ -95,35 +100,34 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
           stepData.value.brandBasics.geo.length > 0 && stepData.value.brandBasics.launchDate !== ''
         )
       case 2:
-        return stepData.value.mode !== null
-      case 3:
         return (
-          stepData.value.concept.selectedId !== null ||
-          stepData.value.concept.newConceptBrief !== null
+          stepData.value.mode !== null &&
+          (stepData.value.concept.selectedId !== null ||
+            stepData.value.concept.newConceptBrief !== null)
         )
-      case 4: {
+      case 3: {
         const en = stepData.value.externalNaming
         if (en.newNamingBrief !== null) return true
         if (en.selectedIds.length === 0) return false
         if (en.selectedIds.length > 1 && en.comment.trim() === '') return false
         return true
       }
-      case 5: {
+      case 4: {
         const inn = stepData.value.internalNaming
         return (
           inn.selectedId !== null ||
           (inn.newNamingFeedback !== null && inn.newNamingFeedback.trim() !== '')
         )
       }
-      case 7:
+      case 6:
         return stepData.value.marketingPackage.selectedId !== null
-      case 8: {
+      case 7: {
         const del = stepData.value.deliverables
         const hasAnythingEnabled = del.legalLanding || del.partnerLanding
         if (hasAnythingEnabled && del.developmentDeadline === '') return false
         return true
       }
-      case 9: {
+      case 8: {
         const vc = stepData.value.visualComponents
         if (vc.delegateToDesigners) return true
         const selectionCount = Object.keys(vc.selections).length
@@ -160,7 +164,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     stepData.value.concept.newConceptBrief = brief
   }
 
-  const shouldSkipStep4 = computed(() => {
+  const shouldSkipStep3 = computed(() => {
     return stepData.value.concept.newConceptBrief !== null
   })
 
@@ -313,8 +317,13 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
       if (!raw) return false
       const parsed = JSON.parse(raw)
       if (parsed.stepData && typeof parsed.currentStep === 'number') {
-        stepData.value = parsed.stepData
-        currentStep.value = parsed.currentStep
+        const sd = parsed.stepData as BrandStepData
+        const layoutV = sd.stepLayoutVersion
+        currentStep.value = migrateIncomingCurrentStep(parsed.currentStep, layoutV)
+        stepData.value = {
+          ...sd,
+          stepLayoutVersion: 1,
+        }
         return true
       }
     } catch {}
@@ -331,6 +340,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     step10ScrollTop.value = value
   }
 
+  function setStep3PreviewSlideIndex(index: number) {
+    step3PreviewSlideIndex.value = index
+  }
+
   function reset() {
     brandId.value = null
     brandInternalName.value = null
@@ -341,6 +354,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     stepData.value = getInitialStepData()
     isDraft.value = true
     returnToStep.value = null
+    step3PreviewSlideIndex.value = 0
     clearDraftFromStorage()
   }
 
@@ -358,8 +372,13 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     brandStatus.value = status ?? 'draft'
     brandCeoComments.value = ceoComments ?? null
     brandCeoSelections.value = ceoSelections ?? null
-    stepData.value = data
-    currentStep.value = step
+    const layoutVersion = data.stepLayoutVersion
+    const migratedStep = migrateIncomingCurrentStep(step, layoutVersion)
+    stepData.value = {
+      ...data,
+      stepLayoutVersion: layoutVersion ?? 1,
+    }
+    currentStep.value = migratedStep
     isDraft.value = false
   }
 
@@ -377,11 +396,14 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
       const apiUrl = import.meta.env.VITE_API_URL || ''
       const sd = stepData.value
 
+      const conceptForApi = { ...sd.concept }
+      delete (conceptForApi as { previewId?: string | null }).previewId
+
       const payload = {
         geo: sd.brandBasics.geo.join(','),
         launchDate: sd.brandBasics.launchDate,
         mode: sd.mode,
-        conceptId: sd.concept.selectedId,
+        conceptId: conceptForApi.selectedId,
         conceptComment: sd.concept.comment,
         externalNamingIds: sd.externalNaming.selectedIds,
         externalNamingComment: sd.externalNaming.comment,
@@ -395,10 +417,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
         componentSelections: sd.visualComponents.selections,
         componentsComment: sd.visualComponents.comment,
         delegateToDesigners: sd.visualComponents.delegateToDesigners,
-        newConceptBrief: sd.concept.newConceptBrief,
+        newConceptBrief: conceptForApi.newConceptBrief,
         developmentDeadline: sd.deliverables.developmentDeadline || undefined,
         newNamingBrief: sd.externalNaming.newNamingBrief,
-        stepData: sd,
+        stepData: { ...sd, concept: conceptForApi },
         currentStep: currentStep.value,
       }
 
@@ -465,7 +487,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setMode,
     setConcept,
     setNewConceptBrief,
-    shouldSkipStep4,
+    shouldSkipStep3,
     setNewNamingBrief,
     setExternalNaming,
     toggleExternalNaming,
@@ -497,6 +519,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setReturnToStep,
     step10ScrollTop,
     setStep10ScrollTop,
+    step3PreviewSlideIndex,
+    setStep3PreviewSlideIndex,
     reset,
     loadBrand,
     restoreDraftFromStorage,
