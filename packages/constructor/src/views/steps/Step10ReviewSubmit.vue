@@ -351,7 +351,6 @@ const isSaving = computed(() => store.isSaving)
 const saveError = computed(() => store.saveError)
 const statusActionLoading = ref(false)
 const statusActionError = ref<string | null>(null)
-const showCeoCommentsForm = ref(false)
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: 'Чернетка', color: 'bg-gray-100 text-gray-700' },
@@ -480,6 +479,13 @@ function hasCeoCommentForSection(item: SummaryItem): boolean {
 type CeoLibraryTab = 'concept' | 'externalNaming' | 'internalNaming'
 
 const CEO_LIBRARY_KEYS: CeoLibraryTab[] = ['concept', 'externalNaming', 'internalNaming']
+
+/**
+ * Legacy "single library modal" flow for CEO. The new design replaces it with
+ * inline "Змінити вибір" actions per section that re-enter the matching step
+ * in CEO reselect mode. Kept under a flag during migration.
+ */
+const SHOW_CEO_LIBRARY_BUTTON = false
 
 const showCeoLibraryModal = ref(false)
 const ceoLibraryType = ref<CeoLibraryTab>('concept')
@@ -628,16 +634,6 @@ watch(
   { immediate: true }
 )
 
-const CEO_COMMENT_SECTIONS = [
-  { key: 'concept', label: 'Concept' },
-  { key: 'externalNaming', label: 'External Naming' },
-  { key: 'internalNaming', label: 'Internal Naming' },
-  { key: 'marketingPackage', label: 'PR пакет' },
-  { key: 'deliverables', label: 'Deliverables' },
-  { key: 'visualComponents', label: 'Visual Components' },
-  { key: 'general', label: 'Загальний коментар' },
-]
-
 const nonEmptyCeoComments = computed(() => {
   const result: Record<string, string> = {}
   for (const [key, value] of Object.entries(ceoComments)) {
@@ -695,6 +691,14 @@ function handleCeoCommentUpdate(item: SummaryItem, value: string) {
     if (revisionMissingSections.value.size === 0) {
       revisionRequiresAnyComment.value = false
     }
+  }
+}
+
+function handleGeneralCeoCommentUpdate(value: string) {
+  ceoComments.general = value
+  store.setCeoCommentValue('general', value)
+  if (value.trim()) {
+    revisionRequiresAnyComment.value = false
   }
 }
 
@@ -1331,41 +1335,21 @@ async function handlePrintBrand() {
         </div>
       </template>
       <template #footer>
-        <!-- CEO Comments Section (accordion) -->
+        <!-- General CEO comment block (replaces the previous accordion) -->
         <div
           v-if="showCeoReview && (brandStatus === 'submitted' || brandStatus === 'needs_revision')"
           class="pt-4 border-t border-black/10"
         >
-          <button
-            type="button"
-            class="w-full flex items-center justify-between text-sm font-medium text-foreground hover:text-foreground/70 transition-colors"
-            @click="showCeoCommentsForm = !showCeoCommentsForm"
-          >
-            <span>Коментарі CEO</span>
-            <svg
-              class="size-4 transition-transform duration-200"
-              :class="showCeoCommentsForm ? 'rotate-180' : ''"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-          <div v-if="showCeoCommentsForm" class="space-y-3 mt-4">
-            <div v-for="section in CEO_COMMENT_SECTIONS" :key="section.key" class="space-y-1">
-              <label class="text-xs text-muted-foreground">{{ section.label }}</label>
-              <textarea
-                v-model="ceoComments[section.key]"
-                rows="2"
-                class="w-full min-h-[4.5rem] resize-y px-3 py-2 bg-[#f3f3f5] border border-transparent rounded-lg text-sm placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/20 transition-all"
-                :placeholder="`Коментар до секції «${section.label}»...`"
-              />
-            </div>
-          </div>
+          <p class="text-sm font-medium text-foreground mb-2">Загальний коментар</p>
+          <SectionCommentBlock
+            section-key="general"
+            :ceo-comment="ceoComments.general"
+            :ceo-editable="true"
+            :highlighted="revisionRequiresAnyComment"
+            empty-label="+ Загальний коментар CEO"
+            placeholder="Додайте ваші коментарі або побажання..."
+            @update:ceo-comment="handleGeneralCeoCommentUpdate"
+          />
         </div>
 
         <!-- Error messages -->
@@ -1474,6 +1458,7 @@ async function handlePrintBrand() {
             <span>{{ revisionWarning }}</span>
           </div>
           <button
+            v-if="SHOW_CEO_LIBRARY_BUTTON"
             class="flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-medium"
             @click="openCeoLibrary('concept')"
           >
