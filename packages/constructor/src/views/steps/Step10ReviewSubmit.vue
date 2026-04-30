@@ -702,6 +702,31 @@ function handleGeneralCeoCommentUpdate(value: string) {
   }
 }
 
+const RESELECTABLE_SECTIONS = new Set(['concept', 'externalNaming', 'internalNaming'])
+
+const SECTION_TO_RESELECT_STEP: Record<string, number> = {
+  concept: 2,
+  externalNaming: 3,
+  internalNaming: 4,
+}
+
+function showCeoChangeChoice(item: SummaryItem, index: number): boolean {
+  if (!isCeoView.value) return false
+  if (brandStatus.value !== 'submitted' && brandStatus.value !== 'needs_revision') return false
+  if (!firstItemIndexPerSection.value.has(index)) return false
+  return RESELECTABLE_SECTIONS.has(item.sectionKey)
+}
+
+function startCeoReselect(item: SummaryItem) {
+  const targetStep = SECTION_TO_RESELECT_STEP[item.sectionKey]
+  if (!targetStep) return
+  store.setReturnToStep(9)
+  router.push({
+    path: `/constructor/step/${targetStep}`,
+    query: { ceo: '1', section: item.sectionKey },
+  })
+}
+
 /** Sections that must have a CEO comment because CEO chose an alternative there. */
 const SELECTION_REQUIRING_COMMENT: CeoLibraryTab[] = [
   'concept',
@@ -1320,6 +1345,29 @@ async function handlePrintBrand() {
             @click="goToStep(item.step)"
           >
             Редагувати
+          </button>
+
+          <button
+            v-if="showCeoChangeChoice(item, idx)"
+            type="button"
+            class="mt-3 inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
+            @click="startCeoReselect(item)"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
+            </svg>
+            Змінити вибір
           </button>
 
           <SectionCommentBlock

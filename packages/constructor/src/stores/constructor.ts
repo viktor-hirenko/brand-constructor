@@ -360,6 +360,20 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     brandCeoComments.value = Object.keys(current).length > 0 ? current : null
   }
 
+  /**
+   * Records CEO-picked alternative for concept/external/internal sections.
+   * Empty string clears the override. Same persistence model as comments.
+   */
+  function setCeoSelectionValue(sectionKey: string, value: string) {
+    const current = brandCeoSelections.value ? { ...brandCeoSelections.value } : {}
+    if (value) {
+      current[sectionKey] = value
+    } else {
+      delete current[sectionKey]
+    }
+    brandCeoSelections.value = Object.keys(current).length > 0 ? current : null
+  }
+
   function reset() {
     brandId.value = null
     brandInternalName.value = null
@@ -538,6 +552,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     step3PreviewSlideIndex,
     setStep3PreviewSlideIndex,
     setCeoCommentValue,
+    setCeoSelectionValue,
     reset,
     loadBrand,
     restoreDraftFromStorage,
