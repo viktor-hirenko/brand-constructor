@@ -2,16 +2,12 @@
 import { computed, watch, ref, onMounted } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
-import { useApiList, getAssetUrl, getAuthHeader, apiGet } from '@/composables/useApi'
+import { useApiList, getAssetUrl, apiGet } from '@/composables/useApi'
+import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
 import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
 import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
-import type {
-  Concept,
-  ExternalNaming,
-  InternalNaming,
-  ComponentVariant,
-} from '@brand-constructor/shared/types'
+import type { Concept, ExternalNaming, InternalNaming } from '@brand-constructor/shared/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -296,92 +292,17 @@ onMounted(() => {
 })
 watch(currentStep, loadPreviewData)
 
-const hasStep9Selections = computed(() => {
-  return Object.keys(store.stepData?.visualComponents?.selections ?? {}).length > 0
-})
+const {
+  loadVariants: loadStep9Variants,
+  buildLayers,
+  hasSelections: hasStep9Selections,
+  hasSidebarSelected,
+} = useBrandPreviewLayers()
 
-const step9VariantsCache = ref<Record<string, ComponentVariant[]>>({})
 const step9SidebarVisible = ref(true)
-
-interface ComponentSlot {
-  left: string
-  top: string
-  width: string
-  height: string
-  zIndex: number
-  contain?: boolean
-}
-
-const COMPONENT_SLOTS: Record<string, ComponentSlot> = {
-  ct_header: { left: '0px', top: '33.75px', width: '290.25px', height: '48px', zIndex: 20 },
-  ct_banners: { left: '12px', top: '81.75px', width: '278.25px', height: '144px', zIndex: 19 },
-  ct_thumbnails: { left: '12px', top: '394.5px', width: '270px', height: '126px', zIndex: 18 },
-  ct_tabbar: { left: '0px', top: '557.25px', width: '289.5px', height: '57px', zIndex: 17 },
-  ct_sidebar: {
-    left: '0px',
-    top: '0px',
-    width: '288.75px',
-    height: '614.25px',
-    zIndex: 30,
-    contain: true,
-  },
-  ct_theme: { left: '0px', top: '0px', width: '288.75px', height: '614.25px', zIndex: 5 },
-}
-
-async function loadStep9Variants() {
-  const selections = store.stepData?.visualComponents?.selections ?? {}
-  const typeIds = Object.keys(selections)
-  if (typeIds.length === 0) return
-
-  for (const typeId of typeIds) {
-    if (step9VariantsCache.value[typeId]) continue
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
-        { headers: getAuthHeader() }
-      )
-      if (res.ok) {
-        const json = await res.json()
-        step9VariantsCache.value[typeId] = json.data?.variants || []
-      }
-    } catch {
-      /* skip */
-    }
-  }
-}
-
-function getStep9PreviewUrl(typeId: string): string | null {
-  const variantId = store.stepData?.visualComponents?.selections?.[typeId]
-  if (!variantId) return null
-  const variants = step9VariantsCache.value[typeId] || []
-  const variant = variants.find(v => v.id === variantId)
-  if (!variant) return null
-  const url = variant.preview_url || variant.thumbnail_url
-  if (!url) return null
-  return url.startsWith('http') ? url : getAssetUrl(url)
-}
-
-function buildLayers(hideSidebar: boolean) {
-  const selections = store.stepData?.visualComponents?.selections ?? {}
-  const layers: Array<{ typeId: string; url: string; slot: ComponentSlot }> = []
-  for (const [typeId, _variantId] of Object.entries(selections)) {
-    if (typeId.includes('sidebar') && hideSidebar) continue
-    const slot = COMPONENT_SLOTS[typeId]
-    const url = getStep9PreviewUrl(typeId)
-    if (slot && url) {
-      layers.push({ typeId, url, slot })
-    }
-  }
-  return layers.sort((a, b) => a.slot.zIndex - b.slot.zIndex)
-}
 
 const step9SelectedLayers = computed(() => buildLayers(!step9SidebarVisible.value))
 const step10SelectedLayers = computed(() => buildLayers(true))
-
-const hasSidebarSelected = computed(() => {
-  const selections = store.stepData?.visualComponents?.selections ?? {}
-  return Object.keys(selections).some(id => id.includes('sidebar'))
-})
 
 function toggleSidebarPreview() {
   step9SidebarVisible.value = !step9SidebarVisible.value
