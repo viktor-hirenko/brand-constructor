@@ -79,6 +79,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   /** Persists across concept preview switches on step 2 (not saved to API). */
   const step3PreviewSlideIndex = ref(0)
 
+  /** Full-screen overlay concept preview above the right column (CEO / PO). */
+  const conceptPreviewOpen = ref(false)
+  const conceptPreviewConceptId = ref<string | null>(null)
+
   const totalSteps = 9
 
   const progressPercent = computed(() => {
@@ -344,6 +348,18 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     step3PreviewSlideIndex.value = index
   }
 
+  /** Opens concept carousel overlay; starts at the first slide (`gallery_url_1`). */
+  function openConceptPreview(conceptId: string) {
+    conceptPreviewConceptId.value = conceptId
+    step3PreviewSlideIndex.value = 0
+    conceptPreviewOpen.value = true
+  }
+
+  function closeConceptPreview() {
+    conceptPreviewOpen.value = false
+    conceptPreviewConceptId.value = null
+  }
+
   /**
    * Updates a single CEO comment section locally. Empty string removes the key.
    * Persistence happens later when CEO triggers approve/needs_revision via
@@ -385,6 +401,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     isDraft.value = true
     returnToStep.value = null
     step3PreviewSlideIndex.value = 0
+    conceptPreviewOpen.value = false
+    conceptPreviewConceptId.value = null
     clearDraftFromStorage()
   }
 
@@ -551,6 +569,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setStep10ScrollTop,
     step3PreviewSlideIndex,
     setStep3PreviewSlideIndex,
+    conceptPreviewOpen,
+    conceptPreviewConceptId,
+    openConceptPreview,
+    closeConceptPreview,
     setCeoCommentValue,
     setCeoSelectionValue,
     reset,

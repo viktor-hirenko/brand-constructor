@@ -41,7 +41,7 @@ const info = computed<InfoMeta | null>(() => {
       return {
         title: 'Бриф на розгляді',
         description:
-          'Перегляньте всю інформацію справа. Ви можете поділитися брифом або зберегти його для подальшої роботи.',
+          'Перегляньте бриф та залиште коментарі. Затвердіть або поверніть на доопрацювання.',
       }
     case 'needs_revision':
       return {
@@ -67,7 +67,7 @@ const info = computed<InfoMeta | null>(() => {
       <span
         v-if="badge"
         :class="[
-          'inline-flex items-center h-6 px-2 rounded-full text-xs font-medium tracking-[-0.15px]',
+          'inline-flex items-center h-6 px-2 py-1 rounded-full text-xs font-medium tracking-[-0.15px]',
           badge.classes,
         ]"
       >

@@ -9,6 +9,7 @@ import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.
 import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
 import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
 import BrandPreviewPanel from '@/components/constructor/BrandPreviewPanel.vue'
+import ConceptPreviewPopup from '@/components/constructor/ConceptPreviewPopup.vue'
 import type { Concept, ExternalNaming, InternalNaming } from '@brand-constructor/shared/types'
 
 const route = useRoute()
@@ -27,10 +28,6 @@ const isCeoFinalize = computed(() => {
   const status = store.brandStatus
   return status === 'submitted' || status === 'needs_revision'
 })
-
-const ceoFinalizeBrandTitle = computed(
-  () => store.brandInternalName || (route.meta.title as string | undefined) || 'Бриф на розгляді'
-)
 
 const currentStep = computed(() => (route.meta.step as number) || 1)
 
@@ -178,6 +175,12 @@ const hasLinkedProduct = computed(() => (brandBasics.value?.linkedProduct ?? '')
 
 const selectedConcept = computed(() => {
   const id = store.stepData?.concept?.selectedId
+  if (!id) return null
+  return concepts.value.find(item => item.id === id) ?? null
+})
+
+const conceptPreviewOverlayConcept = computed(() => {
+  const id = store.conceptPreviewConceptId
   if (!id) return null
   return concepts.value.find(item => item.id === id) ?? null
 })
@@ -365,10 +368,16 @@ watch(currentStep, step => {
 <template>
   <div class="min-h-screen bg-background flex items-center justify-center p-6">
     <div
-      class="w-full max-w-[1311px] h-[90vh] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
+      class="relative w-full max-w-[1311px] h-[90vh] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
     >
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
-      <div :class="isFullWidth ? 'w-full' : 'w-[42%]'" class="bg-muted/30 flex flex-col min-h-0">
+      <div
+        :class="[
+          isFullWidth ? 'w-full' : 'w-[42%]',
+          isCeoFinalize ? 'bg-[#f9f9fb]' : 'bg-muted/30',
+        ]"
+        class="flex flex-col min-h-0"
+      >
         <div
           class="min-h-0 flex-1"
           :class="[
@@ -461,17 +470,14 @@ watch(currentStep, step => {
       </div>
 
       <!-- Right Panel: CEO finalize preview -->
-      <div v-if="isCeoFinalize" class="w-[58%] bg-white">
-        <BrandPreviewPanel
-          :title="ceoFinalizeBrandTitle"
-          :subtitle="store.brandStatus === 'needs_revision' ? 'На доопрацюванні' : 'На розгляді'"
-        />
+      <div v-if="isCeoFinalize" class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden">
+        <BrandPreviewPanel />
       </div>
 
       <!-- Right Panel: Preview (hidden on full-width steps) -->
       <div
         v-else-if="!isFullWidth"
-        class="w-[58%] bg-white px-12 overflow-y-auto"
+        class="relative w-[58%] bg-white px-12 overflow-y-auto min-h-0"
         :class="
           currentStep >= 2 && currentStep <= 4 ? 'pt-[20px] pb-[100px]' : 'pt-12 pb-12'
         "
@@ -1083,6 +1089,7 @@ watch(currentStep, step => {
             </div>
           </div>
         </template>
+
       </div>
 
       <ConceptDetailOverlay
@@ -1092,6 +1099,23 @@ watch(currentStep, step => {
         @close="detailConcept = null"
         @select="router.push('/constructor/step/2')"
       />
+
+      <!-- Concept Preview: fullscreen backdrop + right-column popup -->
+      <Transition name="concept-backdrop">
+        <div
+          v-if="store.conceptPreviewOpen && conceptPreviewOverlayConcept"
+          class="absolute inset-0 z-[28] bg-black/50 rounded-[14px]"
+          @click="store.closeConceptPreview()"
+        />
+      </Transition>
+      <Transition name="concept-panel">
+        <div
+          v-if="store.conceptPreviewOpen && conceptPreviewOverlayConcept"
+          class="absolute right-0 top-0 h-full w-[58%] z-[29] overflow-hidden"
+        >
+          <ConceptPreviewPopup :concept="conceptPreviewOverlayConcept" />
+        </div>
+      </Transition>
     </div>
   </div>
 
@@ -1159,3 +1183,25 @@ watch(currentStep, step => {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* Backdrop fade */
+.concept-backdrop-enter-active,
+.concept-backdrop-leave-active {
+  transition: opacity 0.25s ease;
+}
+.concept-backdrop-enter-from,
+.concept-backdrop-leave-to {
+  opacity: 0;
+}
+
+/* Panel slide-in/out from right edge */
+.concept-panel-enter-active,
+.concept-panel-leave-active {
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.concept-panel-enter-from,
+.concept-panel-leave-to {
+  transform: translateX(100%);
+}
+</style>

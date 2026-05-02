@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, watch, ref, onMounted, onUnmounted } from 'vue'
+import { computed, watch, ref, onMounted, onUnmounted, withDefaults } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 import { useConstructorStore } from '@/stores/constructor'
 
-const props = defineProps<{
-  concept: Concept | null
-  /** True when this concept is the final selected one */
-  isFinalSelected: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    concept: Concept | null
+    /** True when this concept is the final selected one */
+    isFinalSelected: boolean
+    /** Hide name row + "Обрати концепт" (e.g. overlay preview). */
+    hideHeader?: boolean
+  }>(),
+  { hideHeader: false }
+)
 
 const emit = defineEmits<{
   confirmSelection: []
@@ -180,7 +185,10 @@ onUnmounted(() => {
 
     <template v-else>
       <!-- Header: name + select button -->
-      <div class="flex items-center justify-between gap-4 shrink-0">
+      <div
+        v-if="!props.hideHeader"
+        class="flex items-center justify-between gap-4 shrink-0"
+      >
         <h3 class="text-2xl font-medium tracking-[-0.4492px] leading-8 truncate text-[#0a0a0a]">
           {{ concept.name }}
         </h3>
