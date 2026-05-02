@@ -20,6 +20,15 @@ import { getAuthHeader } from '@/composables/useApi'
 import Step10ReviewScrollLayout from '@/components/constructor/Step10ReviewScrollLayout.vue'
 import SectionCommentBlock from '@/components/constructor/SectionCommentBlock.vue'
 import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
+import ReviewHeader from '@/components/constructor/review/ReviewHeader.vue'
+import ReviewSection from '@/components/constructor/review/ReviewSection.vue'
+import ReviewSectionRow from '@/components/constructor/review/ReviewSectionRow.vue'
+import ReviewConceptBlock from '@/components/constructor/review/ReviewConceptBlock.vue'
+import ReviewExternalNamingsList from '@/components/constructor/review/ReviewExternalNamingsList.vue'
+import ReviewPrPackageBlock from '@/components/constructor/review/ReviewPrPackageBlock.vue'
+import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliverablesBlock.vue'
+import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
+import CeoActionsFooter from '@/components/constructor/review/CeoActionsFooter.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -597,6 +606,7 @@ const ceoLibraryTitle = computed(() => {
 })
 
 const ceoComments = reactive<Record<string, string>>({
+  basics: '',
   concept: '',
   externalNaming: '',
   internalNaming: '',
@@ -605,6 +615,91 @@ const ceoComments = reactive<Record<string, string>>({
   visualComponents: '',
   general: '',
 })
+
+/** True when CEO/admin is reviewing a brand they need to act on (submitted or already returned). */
+const ceoFinalizeView = computed(
+  () =>
+    isCeoView.value &&
+    (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
+)
+
+const brandHeaderTitle = computed(
+  () =>
+    store.brandInternalName ||
+    selectedExternalNamings.value[0]?.name ||
+    selectedConcept.value?.name ||
+    'Новий бренд'
+)
+
+const externalNamingItems = computed(() =>
+  selectedExternalNamings.value.map(n => ({
+    id: n.id,
+    name: n.name,
+    domain: (n as ExternalNaming & { domain?: string }).domain,
+  }))
+)
+
+const deliverablesScopeText = computed(() => {
+  const items: string[] = []
+  if (deliverables.value.legalLanding) items.push('Legal Landing')
+  if (deliverables.value.partnerLanding) items.push('Partner Landing')
+  return items.length > 0 ? items.join(' • ') : 'Не вибрано'
+})
+
+const deliverablesTimingText = computed(() => {
+  const dl = deliverables.value.developmentDeadline?.trim() ?? ''
+  return dl ? formatDate(dl) : 'Не визначено'
+})
+
+const visualComponentsSummary = computed(() => {
+  if (visualComponents.value.delegateToDesigners) return 'Делеговано дизайнерам'
+  if (componentSelectionCount.value === 0) return 'Не вибрано'
+  return Object.keys(visualComponents.value.selections)
+    .map(typeId => componentSelectionDetails.value[typeId]?.typeName ?? typeId)
+    .join(', ')
+})
+
+function getPoCommentForSection(key: string): string {
+  switch (key) {
+    case 'basics':
+      return basics.value.comment?.trim() || ''
+    case 'concept':
+      return store.stepData.concept.comment?.trim() || ''
+    case 'externalNaming':
+      return store.stepData.externalNaming.comment?.trim() || ''
+    case 'internalNaming':
+      return store.stepData.internalNaming.comment?.trim() || ''
+    case 'marketingPackage':
+      return store.stepData.marketingPackage.comment?.trim() || ''
+    case 'deliverables':
+      return deliverables.value.comment?.trim() || ''
+    case 'visualComponents':
+      return visualComponents.value.comment?.trim() || ''
+    default:
+      return ''
+  }
+}
+
+function handleCeoCommentBySection(key: string, value: string) {
+  ceoComments[key] = value
+  store.setCeoCommentValue(key, value)
+  if (value.trim()) {
+    revisionMissingSections.value.delete(key)
+    if (revisionMissingSections.value.size === 0) {
+      revisionRequiresAnyComment.value = false
+    }
+  }
+}
+
+function startCeoReselectBySection(key: string) {
+  const targetStep = SECTION_TO_RESELECT_STEP[key]
+  if (!targetStep) return
+  store.setReturnToStep(9)
+  router.push({
+    path: `/constructor/step/${targetStep}`,
+    query: { ceo: '1', section: key },
+  })
+}
 
 watch(
   () => store.brandCeoComments,
@@ -965,7 +1060,190 @@ async function handlePrintBrand() {
 </script>
 
 <template>
-  <div class="flex flex-col flex-1 min-h-0 gap-6 h-full">
+  <!-- CEO finalize view: drive the redesigned two-column layout -->
+  <div v-if="ceoFinalizeView" class="flex flex-col flex-1 min-h-0 h-full">
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="px-8 py-8 space-y-6">
+        <ReviewHeader :title="brandHeaderTitle" :status="brandStatus" />
+
+        <div class="space-y-4">
+          <ReviewSection title="Базова інформація">
+            <ReviewSectionRow
+              v-if="basics.geo.length > 0"
+              label="GEO"
+              :value="basics.geo.join(', ')"
+            />
+            <ReviewSectionRow
+              v-if="basics.launchDate"
+              label="Планована дата запуску"
+              :value="formatDate(basics.launchDate)"
+            />
+            <ReviewSectionRow
+              v-if="basics.linkedProduct"
+              label="Звʼязок з іншим продуктом"
+              :value="basics.linkedProduct"
+            />
+            <template #comment>
+              <SectionCommentBlock
+                section-key="basics"
+                :po-comment="getPoCommentForSection('basics')"
+                :ceo-comment="ceoComments.basics ?? ''"
+                :ceo-editable="true"
+                :highlighted="isSectionHighlighted('basics')"
+                @update:ceo-comment="value => handleCeoCommentBySection('basics', value)"
+              />
+            </template>
+          </ReviewSection>
+
+          <ReviewSection
+            title="Концепт"
+            change-choice
+            :highlighted="isSectionHighlighted('concept')"
+            @change="startCeoReselectBySection('concept')"
+          >
+            <ReviewConceptBlock
+              :concept="selectedConcept"
+              :mode="mode"
+              :is-new-concept="isNewConcept"
+              @preview="openConceptPreview"
+            />
+            <template #comment>
+              <SectionCommentBlock
+                section-key="concept"
+                :po-comment="getPoCommentForSection('concept')"
+                :ceo-comment="ceoComments.concept ?? ''"
+                :ceo-editable="true"
+                :highlighted="isSectionHighlighted('concept')"
+                @update:ceo-comment="value => handleCeoCommentBySection('concept', value)"
+              />
+            </template>
+          </ReviewSection>
+
+          <ReviewSection
+            title="Зовнішнє позиціонування"
+            change-choice
+            :highlighted="isSectionHighlighted('externalNaming')"
+            @change="startCeoReselectBySection('externalNaming')"
+          >
+            <ReviewExternalNamingsList :items="externalNamingItems" />
+            <template #comment>
+              <SectionCommentBlock
+                section-key="externalNaming"
+                :po-comment="getPoCommentForSection('externalNaming')"
+                :ceo-comment="ceoComments.externalNaming ?? ''"
+                :ceo-editable="true"
+                :highlighted="isSectionHighlighted('externalNaming')"
+                @update:ceo-comment="value => handleCeoCommentBySection('externalNaming', value)"
+              />
+            </template>
+          </ReviewSection>
+
+          <ReviewSection
+            title="Внутрішня назва"
+            change-choice
+            :highlighted="isSectionHighlighted('internalNaming')"
+            @change="startCeoReselectBySection('internalNaming')"
+          >
+            <ReviewSectionRow
+              label="Внутрішня назва"
+              :value="selectedInternalNaming?.name || internalFeedback || 'Не обрано'"
+            />
+            <template #comment>
+              <SectionCommentBlock
+                section-key="internalNaming"
+                :po-comment="getPoCommentForSection('internalNaming')"
+                :ceo-comment="ceoComments.internalNaming ?? ''"
+                :ceo-editable="true"
+                :highlighted="isSectionHighlighted('internalNaming')"
+                @update:ceo-comment="value => handleCeoCommentBySection('internalNaming', value)"
+              />
+            </template>
+          </ReviewSection>
+
+          <ReviewSection title="PR пакет">
+            <ReviewPrPackageBlock :title="selectedPackage?.name ?? 'Не обрано'" />
+            <template #comment>
+              <SectionCommentBlock
+                section-key="marketingPackage"
+                :po-comment="getPoCommentForSection('marketingPackage')"
+                :ceo-comment="ceoComments.marketingPackage ?? ''"
+                :ceo-editable="true"
+                :highlighted="isSectionHighlighted('marketingPackage')"
+                @update:ceo-comment="value => handleCeoCommentBySection('marketingPackage', value)"
+              />
+            </template>
+          </ReviewSection>
+
+          <ReviewSection title="Що отримуємо">
+            <ReviewDeliverablesBlock
+              :scope="deliverablesScopeText"
+              :timing="deliverablesTimingText"
+            />
+            <template #comment>
+              <SectionCommentBlock
+                section-key="deliverables"
+                :po-comment="getPoCommentForSection('deliverables')"
+                :ceo-comment="ceoComments.deliverables ?? ''"
+                :ceo-editable="true"
+                :highlighted="isSectionHighlighted('deliverables')"
+                @update:ceo-comment="value => handleCeoCommentBySection('deliverables', value)"
+              />
+            </template>
+          </ReviewSection>
+
+          <ReviewSection title="Візуальні компоненти">
+            <ReviewVisualComponentsBlock
+              :summary="visualComponentsSummary"
+              :count="componentSelectionCount > 0 ? componentSelectionCount : null"
+            />
+            <template #comment>
+              <SectionCommentBlock
+                section-key="visualComponents"
+                :po-comment="getPoCommentForSection('visualComponents')"
+                :ceo-comment="ceoComments.visualComponents ?? ''"
+                :ceo-editable="true"
+                :highlighted="isSectionHighlighted('visualComponents')"
+                @update:ceo-comment="value => handleCeoCommentBySection('visualComponents', value)"
+              />
+            </template>
+          </ReviewSection>
+
+          <ReviewSection title="Загальний коментар">
+            <SectionCommentBlock
+              section-key="general"
+              :ceo-comment="ceoComments.general ?? ''"
+              :ceo-editable="true"
+              :highlighted="revisionRequiresAnyComment"
+              empty-label="+ Загальний коментар CEO"
+              placeholder="Додайте ваші коментарі або побажання…"
+              @update:ceo-comment="handleGeneralCeoCommentUpdate"
+            />
+          </ReviewSection>
+        </div>
+
+        <div
+          v-if="saveError || statusActionError"
+          class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm"
+        >
+          {{ statusActionError || saveError }}
+        </div>
+      </div>
+    </div>
+
+    <div class="shrink-0 border-t border-black/10 bg-white px-8 py-4">
+      <CeoActionsFooter
+        :loading="statusActionLoading"
+        :warning="revisionWarning"
+        :show-approve="brandStatus === 'submitted'"
+        :show-revise="brandStatus === 'submitted' || brandStatus === 'needs_revision'"
+        @approve="handleStatusChange('approved')"
+        @revise="handleStatusChange('needs_revision')"
+      />
+    </div>
+  </div>
+
+  <!-- Default (Product Owner) view: keep the historical layout -->
+  <div v-else class="flex flex-col flex-1 min-h-0 gap-6 h-full">
     <div class="shrink-0 space-y-6">
       <!-- Status badge -->
       <div v-if="store.brandId" class="flex items-center gap-2">
@@ -1796,46 +2074,46 @@ async function handlePrintBrand() {
         </div>
       </template>
     </Step10ReviewScrollLayout>
+  </div>
 
-    <!-- Concept Preview popup (eye button → slider starting from 2nd image) -->
-    <Teleport to="body">
+  <!-- Concept Preview popup (shared between CEO/PO branches) -->
+  <Teleport to="body">
+    <div
+      v-if="conceptPreviewOpen && selectedConcept"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="closeConceptPreview"
+    >
       <div
-        v-if="conceptPreviewOpen && selectedConcept"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-        @click.self="closeConceptPreview"
+        class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
       >
-        <div
-          class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
-        >
-          <div class="flex items-center justify-between h-[64px] px-6 border-b border-black/10 shrink-0">
-            <h3 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
-              {{ selectedConcept.name }}
-            </h3>
-            <button
-              type="button"
-              class="size-8 rounded-full hover:bg-black/[0.05] flex items-center justify-center"
-              aria-label="Закрити"
-              @click="closeConceptPreview"
+        <div class="flex items-center justify-between h-[64px] px-6 border-b border-black/10 shrink-0">
+          <h3 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
+            {{ selectedConcept.name }}
+          </h3>
+          <button
+            type="button"
+            class="size-8 rounded-full hover:bg-black/[0.05] flex items-center justify-center"
+            aria-label="Закрити"
+            @click="closeConceptPreview"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <svg
-                class="size-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-          </div>
-          <div class="flex-1 overflow-hidden p-6">
-            <ConceptPreviewSlider :concept="selectedConcept" :is-final-selected="true" />
-          </div>
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="flex-1 overflow-hidden p-6">
+          <ConceptPreviewSlider :concept="selectedConcept" :is-final-selected="true" />
         </div>
       </div>
-    </Teleport>
-  </div>
+    </div>
+  </Teleport>
 </template>
