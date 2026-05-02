@@ -2,16 +2,35 @@
 import { computed, watch, ref, onMounted } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
+import { useAuthStore } from '@/stores/auth'
 import { useApiList, getAssetUrl, apiGet } from '@/composables/useApi'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
 import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
 import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
+import BrandPreviewPanel from '@/components/constructor/BrandPreviewPanel.vue'
 import type { Concept, ExternalNaming, InternalNaming } from '@brand-constructor/shared/types'
 
 const route = useRoute()
 const router = useRouter()
 const store = useConstructorStore()
+const authStore = useAuthStore()
+
+/**
+ * True when CEO/admin is reviewing a submitted brand (or one already returned)
+ * on the final step — drives the "no header / no footer / brand preview panel"
+ * layout that matches Figma 1473:23546.
+ */
+const isCeoFinalize = computed(() => {
+  if ((route.meta.step as number | undefined) !== 9) return false
+  if (!authStore.isCeoOrAdmin) return false
+  const status = store.brandStatus
+  return status === 'submitted' || status === 'needs_revision'
+})
+
+const ceoFinalizeBrandTitle = computed(
+  () => store.brandInternalName || (route.meta.title as string | undefined) || 'Бриф на розгляді'
+)
 
 const currentStep = computed(() => (route.meta.step as number) || 1)
 
@@ -351,10 +370,14 @@ watch(currentStep, step => {
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div :class="isFullWidth ? 'w-full' : 'w-[42%]'" class="bg-muted/30 flex flex-col min-h-0">
         <div
-          class="px-12 pt-5 pb-6 min-h-0 flex-1"
-          :class="currentStep === 9 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'"
+          class="min-h-0 flex-1"
+          :class="[
+            isCeoFinalize ? 'flex flex-col overflow-hidden' : 'px-12 pt-5 pb-6',
+            !isCeoFinalize && currentStep === 9 ? 'flex flex-col overflow-hidden' : '',
+            !isCeoFinalize && currentStep !== 9 ? 'overflow-y-auto' : '',
+          ]"
         >
-          <div :class="currentStep === 9 ? 'shrink-0' : ''">
+          <div v-if="!isCeoFinalize" :class="currentStep === 9 ? 'shrink-0' : ''">
             <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
               {{ stepTitle }}
             </h1>
@@ -380,12 +403,21 @@ watch(currentStep, step => {
             </div>
           </div>
 
-          <div :class="currentStep === 9 ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : ''">
+          <div
+            :class="
+              isCeoFinalize || currentStep === 9
+                ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
+                : ''
+            "
+          >
             <RouterView />
           </div>
         </div>
 
-        <div v-if="!isViewMode" class="shrink-0 px-12 py-6 border-t border-border">
+        <div
+          v-if="!isViewMode && !isCeoFinalize"
+          class="shrink-0 px-12 py-6 border-t border-border"
+        >
           <div v-if="store.returnToStep" class="flex items-center gap-3">
             <button
               class="h-[50px] px-6 bg-[#030213] text-white rounded-[10px] hover:opacity-90 transition-all text-base font-medium flex items-center gap-2"
@@ -428,9 +460,17 @@ watch(currentStep, step => {
         </div>
       </div>
 
+      <!-- Right Panel: CEO finalize preview -->
+      <div v-if="isCeoFinalize" class="w-[58%] bg-white">
+        <BrandPreviewPanel
+          :title="ceoFinalizeBrandTitle"
+          :subtitle="store.brandStatus === 'needs_revision' ? 'На доопрацюванні' : 'На розгляді'"
+        />
+      </div>
+
       <!-- Right Panel: Preview (hidden on full-width steps) -->
       <div
-        v-if="!isFullWidth"
+        v-else-if="!isFullWidth"
         class="w-[58%] bg-white px-12 overflow-y-auto"
         :class="
           currentStep >= 2 && currentStep <= 4 ? 'pt-[20px] pb-[100px]' : 'pt-12 pb-12'
