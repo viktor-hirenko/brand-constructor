@@ -106,7 +106,7 @@ const hasPoComment = computed(() => (props.poComment ?? '').trim().length > 0)
 const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
 
 const ceoFieldClass = computed(() => [
-  'relative w-full rounded-lg border bg-[#f3f3f5] transition-colors',
+  'relative w-full rounded-xl border bg-[#f3f3f5] transition-colors',
   props.highlighted
     ? 'border-amber-400 ring-2 ring-amber-200'
     : 'border-transparent focus-within:border-black/10',
@@ -114,11 +114,11 @@ const ceoFieldClass = computed(() => [
 </script>
 
 <template>
-  <div class="space-y-2" :data-section="sectionKey">
+  <div class="space-y-3" :data-section="sectionKey">
     <!-- Product Owner comment (read-only) -->
-    <div v-if="hasPoComment" class="rounded-lg bg-[#f3f3f5] p-3">
+    <div v-if="hasPoComment" class="rounded-xl bg-[#f3f3f5] px-4 py-3">
       <p class="text-xs text-muted-foreground mb-1">Коментар замовника</p>
-      <p class="text-sm whitespace-pre-line text-foreground">{{ poComment }}</p>
+      <p class="text-sm whitespace-pre-line text-foreground leading-5">{{ poComment }}</p>
     </div>
 
     <!-- CEO comment block -->
@@ -127,7 +127,7 @@ const ceoFieldClass = computed(() => [
         <button
           type="button"
           :class="[
-            'inline-flex items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-sm transition-colors',
+            'inline-flex items-center gap-2 h-11 rounded-xl border border-dashed px-4 text-sm font-medium transition-colors',
             highlighted
               ? 'border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100'
               : 'border-black/15 text-foreground hover:bg-black/[0.03]',
@@ -151,13 +151,13 @@ const ceoFieldClass = computed(() => [
       </div>
 
       <div v-else :class="ceoFieldClass">
-        <label class="block px-3 pt-2 text-xs text-muted-foreground">Коментар CEO</label>
+        <label class="block px-4 pt-3 text-xs text-muted-foreground">Коментар CEO</label>
         <textarea
           ref="textareaRef"
           :value="draft"
           rows="2"
           :placeholder="placeholder"
-          class="block w-full min-h-[4rem] resize-y bg-transparent px-3 pb-2 pt-1 text-sm placeholder:text-foreground/40 focus:outline-none"
+          class="block w-full min-h-[4.5rem] resize-y bg-transparent px-4 pb-3 pt-1 text-sm leading-5 placeholder:text-foreground/40 focus:outline-none"
           @input="onInput"
           @blur="onBlur"
         />
@@ -165,9 +165,9 @@ const ceoFieldClass = computed(() => [
     </template>
 
     <!-- Read-only CEO comment (PO/admin reading existing comments) -->
-    <div v-else-if="hasCeoComment" class="rounded-lg bg-amber-50 p-3 border border-amber-200">
+    <div v-else-if="hasCeoComment" class="rounded-xl bg-amber-50 px-4 py-3 border border-amber-200">
       <p class="text-xs font-medium text-amber-800 mb-1">Коментар CEO</p>
-      <p class="text-sm whitespace-pre-line text-amber-900">{{ ceoComment }}</p>
+      <p class="text-sm whitespace-pre-line text-amber-900 leading-5">{{ ceoComment }}</p>
     </div>
   </div>
 </template>
