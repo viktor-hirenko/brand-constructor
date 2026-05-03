@@ -1,9 +1,28 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import {
+  createRouter,
+  createWebHistory,
+  type RouteLocationNormalized,
+  type RouteRecordRaw,
+} from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
 import { redirectLegacyStepPath } from '@/utils/stepMigration'
 import type { Brand, BrandStepData } from '@brand-constructor/shared/types'
+
+function ceoReselectGuard(to: RouteLocationNormalized) {
+  const auth = useAuthStore()
+  const store = useConstructorStore()
+  const id = to.params.id as string
+  if (!auth.isCeoOrAdmin) {
+    return { path: `/constructor/brand/${id}` }
+  }
+  const st = store.brandStatus
+  if (st !== 'submitted' && st !== 'needs_revision') {
+    return { path: `/constructor/brand/${id}` }
+  }
+  return true
+}
 
 const routes: RouteRecordRaw[] = [
   {
@@ -27,6 +46,58 @@ const routes: RouteRecordRaw[] = [
         name: 'brand-view-review',
         component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
         meta: { step: 9, title: 'Save', subtitle: 'Фінальний огляд' },
+      },
+      {
+        path: 'ceo-reselect/concept',
+        name: 'ceo-reselect-concept',
+        component: () => import('@/views/ceo-reselect/CeoReselectConceptStep.vue'),
+        meta: {
+          step: 9,
+          ceoReselect: true,
+          ceoOnly: true,
+          title: 'CEO — Concept',
+          subtitle: '',
+        },
+        beforeEnter: ceoReselectGuard,
+      },
+      {
+        path: 'ceo-reselect/concept/external-naming',
+        name: 'ceo-reselect-concept-external-naming',
+        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingStep.vue'),
+        meta: {
+          step: 9,
+          ceoReselect: true,
+          ceoOnly: true,
+          title: 'CEO — External Naming',
+          subtitle: '',
+        },
+        beforeEnter: ceoReselectGuard,
+      },
+      {
+        path: 'ceo-reselect/external-naming',
+        name: 'ceo-reselect-external-naming',
+        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingStep.vue'),
+        meta: {
+          step: 9,
+          ceoReselect: true,
+          ceoOnly: true,
+          title: 'CEO — External Naming',
+          subtitle: '',
+        },
+        beforeEnter: ceoReselectGuard,
+      },
+      {
+        path: 'ceo-reselect/internal-naming',
+        name: 'ceo-reselect-internal-naming',
+        component: () => import('@/views/ceo-reselect/CeoReselectInternalNamingStep.vue'),
+        meta: {
+          step: 9,
+          ceoReselect: true,
+          ceoOnly: true,
+          title: 'CEO — Internal Naming',
+          subtitle: '',
+        },
+        beforeEnter: ceoReselectGuard,
       },
     ],
     beforeEnter: async to => {

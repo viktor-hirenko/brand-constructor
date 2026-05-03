@@ -50,12 +50,7 @@ const emit = defineEmits<{
     <button
       v-if="showRevise"
       type="button"
-      :class="[
-        'w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border text-base font-medium transition-all disabled:opacity-50',
-        warning
-          ? 'border-amber-400 ring-2 ring-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-          : 'border-black/10 text-foreground hover:bg-black/[0.02]',
-      ]"
+      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02] disabled:opacity-50"
       :disabled="loading"
       @click="emit('revise')"
     >
@@ -75,19 +70,24 @@ const emit = defineEmits<{
       <span>Повернути на доопрацювання</span>
     </button>
 
-    <p v-if="warning" class="text-sm text-amber-700 flex items-center gap-2" role="alert">
+    <p
+      v-if="warning"
+      class="flex items-center justify-center gap-2 text-[16px] font-normal leading-6 tracking-[-0.312px] text-[rgba(10,10,10,0.80)]"
+      role="alert"
+    >
       <svg
-        class="size-4 shrink-0"
-        viewBox="0 0 24 24"
+        class="size-5 shrink-0"
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
         fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        aria-hidden="true"
       >
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
+        <path
+          d="M16.875 10C16.875 8.17664 16.151 6.42766 14.8617 5.13835C13.5723 3.84903 11.8234 3.125 10 3.125C8.17664 3.125 6.42766 3.84903 5.13835 5.13835C3.84903 6.42766 3.125 8.17664 3.125 10C3.125 10.9028 3.30277 11.7969 3.64827 12.631C3.99378 13.4651 4.49995 14.2233 5.13835 14.8617C5.77674 15.5 6.53488 16.0062 7.36898 16.3517C8.20309 16.6972 9.09716 16.875 10 16.875C10.9028 16.875 11.7969 16.6972 12.631 16.3517C13.4651 16.0062 14.2233 15.5 14.8617 14.8617C15.5 14.2233 16.0062 13.4651 16.3517 12.631C16.6972 11.7969 16.875 10.9028 16.875 10ZM10.0065 12.5C10.3517 12.5 10.6315 12.7798 10.6315 13.125V13.1315C10.6315 13.4767 10.3517 13.7565 10.0065 13.7565H10C9.65482 13.7565 9.375 13.4767 9.375 13.1315V13.125C9.375 12.7798 9.65482 12.5 10 12.5H10.0065ZM9.375 10.625V7.5C9.375 7.15482 9.65482 6.875 10 6.875C10.3452 6.875 10.625 7.15482 10.625 7.5V10.625C10.625 10.9702 10.3452 11.25 10 11.25C9.65482 11.25 9.375 10.9702 9.375 10.625ZM18.125 10C18.125 11.067 17.9148 12.1238 17.5065 13.1095C17.0982 14.0952 16.4999 14.991 15.7454 15.7454C14.991 16.4999 14.0952 17.0982 13.1095 17.5065C12.1238 17.9148 11.067 18.125 10 18.125C8.93301 18.125 7.87623 17.9148 6.89046 17.5065C5.90477 17.0982 5.00898 16.4999 4.25456 15.7454C3.50013 14.991 2.90181 14.0952 2.49349 13.1095C2.08517 12.1238 1.875 11.067 1.875 10C1.875 7.84512 2.73082 5.77829 4.25456 4.25456C5.77829 2.73082 7.84512 1.875 10 1.875C12.1549 1.875 14.2217 2.73082 15.7454 4.25456C17.2692 5.77829 18.125 7.84512 18.125 10Z"
+          fill="#C97D00"
+        />
       </svg>
       <span>{{ warning }}</span>
     </p>

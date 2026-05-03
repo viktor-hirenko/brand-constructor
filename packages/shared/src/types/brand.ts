@@ -114,7 +114,7 @@ export interface Brand {
   delegateToDesigners: boolean
   newConceptBrief: NewConceptBrief | null
   ceoComments: Record<string, string> | null
-  ceoSelections: Record<string, string> | null
+  ceoSelections: Record<string, string | string[]> | null
   developmentDeadline: string | null
   newNamingBrief: NewNamingBrief | null
   stepData: BrandStepData | null
@@ -156,5 +156,5 @@ export interface UpdateBrandPayload {
 export interface UpdateBrandStatusPayload {
   status: BrandStatus
   ceoComments?: Record<string, string>
-  ceoSelections?: Record<string, string>
+  ceoSelections?: Record<string, string | string[]>
 }

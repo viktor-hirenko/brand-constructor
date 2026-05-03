@@ -24,6 +24,7 @@ import ReviewSection from '@/components/constructor/review/ReviewSection.vue'
 import ReviewSectionRow from '@/components/constructor/review/ReviewSectionRow.vue'
 import ReviewConceptBlock from '@/components/constructor/review/ReviewConceptBlock.vue'
 import ReviewExternalNamingsList from '@/components/constructor/review/ReviewExternalNamingsList.vue'
+import ReviewInternalNamingBlock from '@/components/constructor/review/ReviewInternalNamingBlock.vue'
 import ReviewPrPackageBlock from '@/components/constructor/review/ReviewPrPackageBlock.vue'
 import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliverablesBlock.vue'
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
@@ -80,6 +81,9 @@ onMounted(() => {
       }
     })
   }
+
+  // Restore CEO review scroll position after returning from a ceo-reselect page.
+  restoreReviewScroll()
 })
 
 onBeforeUnmount(() => {
@@ -423,49 +427,115 @@ const hasCeoComments = computed(() => {
   return Object.values(comments).some(v => v.trim().length > 0)
 })
 
+function ceoSelectionAsString(value: string | string[] | undefined): string | null {
+  if (typeof value === 'string') return value || null
+  if (Array.isArray(value)) return value[0] ?? null
+  return null
+}
+function ceoSelectionAsArray(value: string | string[] | undefined): string[] {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string' && value) return [value]
+  return []
+}
+
 const hasCeoSelections = computed(() => {
   const selections = store.brandCeoSelections
   if (!selections) return false
-  return Object.values(selections).some(v => v && v.trim().length > 0)
+  return Object.values(selections).some(v => {
+    if (typeof v === 'string') return v.trim().length > 0
+    if (Array.isArray(v)) return v.length > 0
+    return false
+  })
 })
 
-// Resolved names for CEO selections — строки рендерятся только когда имя уже найдено,
-// чтобы исключить мигание сырых ID при ремаунте компонента
 const resolvedCeoConcept = computed<string | null>(() => {
-  const id = store.brandCeoSelections?.concept
+  const id = ceoSelectionAsString(store.brandCeoSelections?.concept)
   if (!id) return null
   return concepts.value.find(c => c.id === id)?.name ?? null
+})
+
+const resolvedCeoExternalNames = computed<string[]>(() => {
+  const ids = ceoSelectionAsArray(store.brandCeoSelections?.externalNaming)
+  return ids
+    .map(id => externalNamings.value.find(n => n.id === id)?.name)
+    .filter((n): n is string => Boolean(n))
 })
 
 const resolvedCeoExternal = computed<string | null>(() => {
-  const id = store.brandCeoSelections?.externalNaming
-  if (!id) return null
-  return externalNamings.value.find(n => n.id === id)?.name ?? null
+  const names = resolvedCeoExternalNames.value
+  if (names.length === 0) return null
+  return names.join(', ')
 })
 
 const resolvedCeoInternal = computed<string | null>(() => {
-  const id = store.brandCeoSelections?.internalNaming
+  const id = ceoSelectionAsString(store.brandCeoSelections?.internalNaming)
   if (!id) return null
   return internalNamings.value.find(n => n.id === id)?.name ?? null
 })
 
-// Аналогичные resolved-имена для блока CEO-обзора в footer (ceoSelections — локальный reactive)
-const resolvedCeoSelectionConcept = computed<string | null>(() => {
-  const id = ceoSelections.concept
+type CeoLibraryTab = 'concept' | 'externalNaming' | 'internalNaming'
+
+const CEO_LIBRARY_KEYS: CeoLibraryTab[] = ['concept', 'externalNaming', 'internalNaming']
+
+function isCeoChoiceAnAlternative(key: CeoLibraryTab, ceoValue: string | string[]): boolean {
+  if (key === 'concept') {
+    const ceoId = typeof ceoValue === 'string' ? ceoValue : ceoValue[0]
+    if (!ceoId?.trim()) return false
+    const poId = store.stepData.concept.selectedId
+    return !poId || ceoId !== poId
+  }
+  if (key === 'externalNaming') {
+    const ceoIds = ceoSelectionAsArray(ceoValue)
+    if (ceoIds.length === 0) return false
+    const poIds = store.stepData.externalNaming.selectedIds ?? []
+    if (poIds.length !== ceoIds.length) return true
+    return ceoIds.some(id => !poIds.includes(id))
+  }
+  const ceoId = typeof ceoValue === 'string' ? ceoValue : ceoValue[0]
+  if (!ceoId?.trim()) return false
+  const poId = store.stepData.internalNaming.selectedId
+  return !poId || ceoId !== poId
+}
+
+/** CEO pick shown next to PO when it differs from PO (brand brief review). */
+const reviewCeoConceptForBlock = computed(() => {
+  const id = ceoSelectionAsString(store.brandCeoSelections?.concept)
   if (!id) return null
-  return concepts.value.find(c => c.id === id)?.name ?? null
+  if (!isCeoChoiceAnAlternative('concept', id)) return null
+  return concepts.value.find(c => c.id === id) ?? null
 })
 
-const resolvedCeoSelectionExternal = computed<string | null>(() => {
-  const id = ceoSelections.externalNaming
-  if (!id) return null
-  return externalNamings.value.find(n => n.id === id)?.name ?? null
+const ceoExternalItemsForReview = computed(() => {
+  const ids = ceoSelectionAsArray(store.brandCeoSelections?.externalNaming)
+  if (ids.length === 0 || !isCeoChoiceAnAlternative('externalNaming', ids)) return []
+  const poIdSet = new Set(store.stepData.externalNaming.selectedIds ?? [])
+  // Показуємо в колонці CEO лише те, чого немає у виборі замовника (без дублювання TestEcho тощо).
+  let displayIds = ids.filter(id => !poIdSet.has(id))
+  if (displayIds.length === 0) displayIds = ids
+  return displayIds
+    .map(id => externalNamings.value.find(x => x.id === id))
+    .filter((n): n is ExternalNaming => n != null)
+    .map(n => ({
+      id: n.id,
+      name: n.name,
+      domain: (n as ExternalNaming & { domain?: string }).domain,
+    }))
 })
 
-const resolvedCeoSelectionInternal = computed<string | null>(() => {
-  const id = ceoSelections.internalNaming
-  if (!id) return null
+const ceoInternalNameForReview = computed(() => {
+  const id = ceoSelectionAsString(store.brandCeoSelections?.internalNaming)
+  if (!id || !isCeoChoiceAnAlternative('internalNaming', id)) return null
   return internalNamings.value.find(n => n.id === id)?.name ?? null
+})
+
+const hasCeoAlternativeFooterSummary = computed(() => {
+  const s = store.brandCeoSelections
+  if (!s) return false
+  for (const key of CEO_LIBRARY_KEYS) {
+    const v = s[key]
+    if (v != null && isCeoChoiceAnAlternative(key, v)) return true
+  }
+  return false
 })
 
 // Ref на Step10ReviewScrollLayout — используется для поиска скроллируемого контейнера
@@ -484,125 +554,6 @@ function hasCeoCommentForSection(item: SummaryItem): boolean {
   const comment = comments[item.sectionKey]
   return !!comment && comment.trim().length > 0
 }
-
-type CeoLibraryTab = 'concept' | 'externalNaming' | 'internalNaming'
-
-const CEO_LIBRARY_KEYS: CeoLibraryTab[] = ['concept', 'externalNaming', 'internalNaming']
-
-/**
- * Legacy "single library modal" flow for CEO. The new design replaces it with
- * inline "Змінити вибір" actions per section that re-enter the matching step
- * in CEO reselect mode. Kept under a flag during migration.
- */
-const SHOW_CEO_LIBRARY_BUTTON = false
-
-const showCeoLibraryModal = ref(false)
-const ceoLibraryType = ref<CeoLibraryTab>('concept')
-/** Затверджені альтернативи CEO (лише відмінні від вибору PO) — синій блок і payload */
-const ceoSelections = reactive<Record<string, string>>({})
-/** Чернетка в модалці; у синій блок потрапляє після «Закрити» */
-const ceoLibraryModalDraft = reactive<Record<string, string>>({})
-
-function isCeoChoiceAnAlternative(key: CeoLibraryTab, ceoId: string): boolean {
-  if (!ceoId.trim()) return false
-  if (key === 'concept') {
-    const poId = store.stepData.concept.selectedId
-    return !poId || ceoId !== poId
-  }
-  if (key === 'externalNaming') {
-    const poIds = store.stepData.externalNaming.selectedIds ?? []
-    return !poIds.includes(ceoId)
-  }
-  const poId = store.stepData.internalNaming.selectedId
-  return !poId || ceoId !== poId
-}
-
-function isPoSelectedInTab(type: CeoLibraryTab, id: string): boolean {
-  if (type === 'concept') {
-    const poId = store.stepData.concept.selectedId
-    return !!poId && poId === id
-  }
-  if (type === 'externalNaming') {
-    return (store.stepData.externalNaming.selectedIds ?? []).includes(id)
-  }
-  const poId = store.stepData.internalNaming.selectedId
-  return !!poId && poId === id
-}
-
-function openCeoLibrary(type: CeoLibraryTab) {
-  ceoLibraryType.value = type
-  for (const key of CEO_LIBRARY_KEYS) {
-    const v = ceoSelections[key]
-    if (v) {
-      ceoLibraryModalDraft[key] = v
-    } else {
-      delete ceoLibraryModalDraft[key]
-    }
-  }
-  showCeoLibraryModal.value = true
-}
-
-function closeCeoLibraryModal() {
-  for (const key of CEO_LIBRARY_KEYS) {
-    const v = ceoLibraryModalDraft[key]
-    if (v && isCeoChoiceAnAlternative(key, v)) {
-      ceoSelections[key] = v
-    } else {
-      delete ceoSelections[key]
-    }
-  }
-  showCeoLibraryModal.value = false
-}
-
-/** Клік по рядку PO — прибирає альтернативу CEO; по іншому — обрати / зняти */
-function selectCeoAlternativeInModal(type: CeoLibraryTab, id: string) {
-  if (isPoSelectedInTab(type, id)) {
-    delete ceoLibraryModalDraft[type]
-    return
-  }
-  if (ceoLibraryModalDraft[type] === id) {
-    delete ceoLibraryModalDraft[type]
-    return
-  }
-  ceoLibraryModalDraft[type] = id
-}
-
-const ceoLibraryItems = computed(() => {
-  let items: { id: string; name: string }[]
-  if (ceoLibraryType.value === 'concept') {
-    items = concepts.value.map(c => ({ id: c.id, name: c.name }))
-  } else if (ceoLibraryType.value === 'externalNaming') {
-    items = externalNamings.value.map(n => ({ id: n.id, name: n.name }))
-  } else {
-    items = internalNamings.value.map(n => ({ id: n.id, name: n.name }))
-  }
-  return [...items].sort((a, b) => a.name.localeCompare(b.name, 'uk'))
-})
-
-const poSelectedIds = computed<string[]>(() => {
-  if (ceoLibraryType.value === 'concept') {
-    const id = store.stepData.concept.selectedId
-    return id ? [id] : []
-  }
-  if (ceoLibraryType.value === 'externalNaming') {
-    return store.stepData.externalNaming.selectedIds ?? []
-  }
-  const id = store.stepData.internalNaming.selectedId
-  return id ? [id] : []
-})
-
-function isPoSelected(id: string): boolean {
-  return poSelectedIds.value.includes(id)
-}
-
-const ceoLibraryTitle = computed(() => {
-  const titles: Record<string, string> = {
-    concept: 'Оберіть концепт',
-    externalNaming: 'Оберіть зовнішню назву',
-    internalNaming: 'Оберіть внутрішню назву',
-  }
-  return titles[ceoLibraryType.value] ?? ''
-})
 
 const ceoComments = reactive<Record<string, string>>({
   basics: '',
@@ -641,7 +592,7 @@ const deliverablesScopeText = computed(() => {
   const items: string[] = []
   if (deliverables.value.legalLanding) items.push('Legal Landing')
   if (deliverables.value.partnerLanding) items.push('Partner Landing')
-  return items.length > 0 ? items.join(' • ') : 'Не вибрано'
+  return items.length > 0 ? items.join(', ') : 'Не вибрано'
 })
 
 const deliverablesTimingText = computed(() => {
@@ -689,14 +640,41 @@ function handleCeoCommentBySection(key: string, value: string) {
   }
 }
 
-function startCeoReselectBySection(key: string) {
-  const targetStep = SECTION_TO_RESELECT_STEP[key]
-  if (!targetStep) return
-  store.setReturnToStep(9)
-  router.push({
-    path: `/constructor/step/${targetStep}`,
-    query: { ceo: '1', section: key },
+const REVIEW_SCROLL_KEY = 'ceo-review-scroll-top'
+
+function saveReviewScroll() {
+  const container = getScrollContainer()
+  if (container) {
+    sessionStorage.setItem(REVIEW_SCROLL_KEY, String(container.scrollTop))
+  }
+}
+
+function restoreReviewScroll() {
+  const saved = sessionStorage.getItem(REVIEW_SCROLL_KEY)
+  if (!saved) return
+  sessionStorage.removeItem(REVIEW_SCROLL_KEY)
+  const top = Number(saved)
+  if (!Number.isFinite(top) || top <= 0) return
+  nextTick(() => {
+    const container = getScrollContainer()
+    if (container) container.scrollTop = top
   })
+}
+
+function startCeoReselectBySection(key: string) {
+  const bid = store.brandId
+  if (!bid) return
+  saveReviewScroll()
+  if (key === 'concept') {
+    store.seedCeoReselectFromBrand('concept')
+    router.push(`/constructor/brand/${bid}/ceo-reselect/concept`)
+  } else if (key === 'externalNaming') {
+    store.seedCeoReselectFromBrand('externalNaming')
+    router.push(`/constructor/brand/${bid}/ceo-reselect/external-naming`)
+  } else if (key === 'internalNaming') {
+    store.seedCeoReselectFromBrand('internalNaming')
+    router.push(`/constructor/brand/${bid}/ceo-reselect/internal-naming`)
+  }
 }
 
 watch(
@@ -707,21 +685,6 @@ watch(
         if (key in ceoComments) {
           ceoComments[key] = value
         }
-      }
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  () => store.brandCeoSelections,
-  selections => {
-    for (const key of CEO_LIBRARY_KEYS) {
-      const value = selections?.[key]
-      if (value && typeof value === 'string' && isCeoChoiceAnAlternative(key, value)) {
-        ceoSelections[key] = value
-      } else {
-        delete ceoSelections[key]
       }
     }
   },
@@ -797,12 +760,6 @@ function handleGeneralCeoCommentUpdate(value: string) {
 
 const RESELECTABLE_SECTIONS = new Set(['concept', 'externalNaming', 'internalNaming'])
 
-const SECTION_TO_RESELECT_STEP: Record<string, number> = {
-  concept: 2,
-  externalNaming: 3,
-  internalNaming: 4,
-}
-
 function showCeoChangeChoice(item: SummaryItem, index: number): boolean {
   if (!isCeoView.value) return false
   if (brandStatus.value !== 'submitted' && brandStatus.value !== 'needs_revision') return false
@@ -811,19 +768,13 @@ function showCeoChangeChoice(item: SummaryItem, index: number): boolean {
 }
 
 function startCeoReselect(item: SummaryItem) {
-  const targetStep = SECTION_TO_RESELECT_STEP[item.sectionKey]
-  if (!targetStep) return
-  store.setReturnToStep(9)
-  router.push({
-    path: `/constructor/step/${targetStep}`,
-    query: { ceo: '1', section: item.sectionKey },
-  })
+  startCeoReselectBySection(item.sectionKey)
 }
 
-function openConceptPreview() {
-  const id = selectedConcept.value?.id
-  if (!id) return
-  store.openConceptPreview(id)
+function openConceptPreview(concept?: Concept | null) {
+  const c = concept ?? selectedConcept.value
+  if (!c) return
+  store.openConceptPreview(c.id)
 }
 
 /** Sections that must have a CEO comment because CEO chose an alternative there. */
@@ -836,16 +787,21 @@ const revisionRequiresAnyComment = ref(false)
 
 function isSectionHighlighted(sectionKey: string): boolean {
   const key = SECTION_TO_COMMENT_KEY[sectionKey] ?? sectionKey
-  if (revisionMissingSections.value.has(key)) return true
-  return revisionRequiresAnyComment.value
+  return revisionMissingSections.value.has(key)
 }
 
 function validateNeedsRevision():
   | { ok: true }
   | { ok: false; reason: 'no-comment' | 'missing-section' } {
   const missing = new Set<string>()
+  const sel = store.brandCeoSelections
   for (const key of SELECTION_REQUIRING_COMMENT) {
-    if (ceoSelections[key] && !(ceoComments[key] ?? '').trim()) {
+    const v = sel?.[key]
+    if (
+      v != null &&
+      isCeoChoiceAnAlternative(key, v) &&
+      !(ceoComments[key] ?? '').trim()
+    ) {
       missing.add(key)
     }
   }
@@ -864,11 +820,8 @@ function validateNeedsRevision():
 }
 
 const revisionWarning = computed<string | null>(() => {
-  if (revisionRequiresAnyComment.value) {
+  if (revisionRequiresAnyComment.value || revisionMissingSections.value.size > 0) {
     return 'Додайте хоча б один коментар перед поверненням.'
-  }
-  if (revisionMissingSections.value.size > 0) {
-    return 'Залиште коментар у секціях, де ви змінили вибір.'
   }
   return null
 })
@@ -947,8 +900,11 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
     if (isCeoView.value && Object.keys(nonEmptyCeoComments.value).length > 0) {
       payload.ceoComments = nonEmptyCeoComments.value
     }
-    if (isCeoView.value && Object.keys(ceoSelections).length > 0) {
-      payload.ceoSelections = { ...ceoSelections }
+    if (isCeoView.value) {
+      const persisted = store.brandCeoSelections
+      if (persisted && Object.keys(persisted).length > 0) {
+        payload.ceoSelections = { ...persisted }
+      }
     }
     await apiPatch<Brand>(`/api/brands/${store.brandId}/status`, payload)
     store.setBrandStatus(newStatus)
@@ -1011,14 +967,22 @@ async function handlePrintBrand() {
 
     const ceoSelectionsResolved: Record<string, string> = {}
     for (const key of CEO_LIBRARY_KEYS) {
-      const id = ceoSelections[key]
-      if (!id?.trim()) continue
-      if (key === 'concept') {
-        ceoSelectionsResolved[key] = concepts.value.find(c => c.id === id)?.name ?? id
-      } else if (key === 'externalNaming') {
-        ceoSelectionsResolved[key] = externalNamings.value.find(n => n.id === id)?.name ?? id
-      } else if (key === 'internalNaming') {
-        ceoSelectionsResolved[key] = internalNamings.value.find(n => n.id === id)?.name ?? id
+      const v = store.brandCeoSelections?.[key]
+      if (key === 'externalNaming') {
+        const ids = ceoSelectionAsArray(v)
+        if (ids.length === 0) continue
+        const names = ids
+          .map(id => externalNamings.value.find(n => n.id === id)?.name ?? id)
+          .filter((n): n is string => Boolean(n))
+        if (names.length > 0) ceoSelectionsResolved[key] = names.join(', ')
+      } else {
+        const id = ceoSelectionAsString(v)
+        if (!id?.trim()) continue
+        if (key === 'concept') {
+          ceoSelectionsResolved[key] = concepts.value.find(c => c.id === id)?.name ?? id
+        } else if (key === 'internalNaming') {
+          ceoSelectionsResolved[key] = internalNamings.value.find(n => n.id === id)?.name ?? id
+        }
       }
     }
 
@@ -1119,7 +1083,6 @@ async function handlePrintBrand() {
                 :po-comment="getPoCommentForSection('basics')"
                 :ceo-comment="ceoComments.basics ?? ''"
                 :ceo-editable="true"
-                :highlighted="isSectionHighlighted('basics')"
                 @update:ceo-comment="value => handleCeoCommentBySection('basics', value)"
               />
             </template>
@@ -1128,14 +1091,14 @@ async function handlePrintBrand() {
           <ReviewSection
             title="Concept"
             change-choice
-            :highlighted="isSectionHighlighted('concept')"
             @change="startCeoReselectBySection('concept')"
           >
             <ReviewConceptBlock
               :concept="selectedConcept"
+              :ceo-concept="reviewCeoConceptForBlock"
               :mode="mode"
               :is-new-concept="isNewConcept"
-              @preview="openConceptPreview"
+              @preview="openConceptPreview($event)"
             />
             <template #comment>
               <SectionCommentBlock
@@ -1152,10 +1115,12 @@ async function handlePrintBrand() {
           <ReviewSection
             title="External Naming"
             change-choice
-            :highlighted="isSectionHighlighted('externalNaming')"
             @change="startCeoReselectBySection('externalNaming')"
           >
-            <ReviewExternalNamingsList :items="externalNamingItems" />
+            <ReviewExternalNamingsList
+              :items="externalNamingItems"
+              :ceo-items="ceoExternalItemsForReview"
+            />
             <template #comment>
               <SectionCommentBlock
                 section-key="externalNaming"
@@ -1171,12 +1136,11 @@ async function handlePrintBrand() {
           <ReviewSection
             title="Internal Naming"
             change-choice
-            :highlighted="isSectionHighlighted('internalNaming')"
             @change="startCeoReselectBySection('internalNaming')"
           >
-            <ReviewSectionRow
-              label="Вибір замовника"
-              :value="selectedInternalNaming?.name || internalFeedback || 'Не обрано'"
+            <ReviewInternalNamingBlock
+              :po-value="selectedInternalNaming?.name || internalFeedback || 'Не обрано'"
+              :ceo-name="ceoInternalNameForReview"
             />
             <template #comment>
               <SectionCommentBlock
@@ -1198,7 +1162,6 @@ async function handlePrintBrand() {
                 :po-comment="getPoCommentForSection('marketingPackage')"
                 :ceo-comment="ceoComments.marketingPackage ?? ''"
                 :ceo-editable="true"
-                :highlighted="isSectionHighlighted('marketingPackage')"
                 @update:ceo-comment="value => handleCeoCommentBySection('marketingPackage', value)"
               />
             </template>
@@ -1215,7 +1178,6 @@ async function handlePrintBrand() {
                 :po-comment="getPoCommentForSection('deliverables')"
                 :ceo-comment="ceoComments.deliverables ?? ''"
                 :ceo-editable="true"
-                :highlighted="isSectionHighlighted('deliverables')"
                 @update:ceo-comment="value => handleCeoCommentBySection('deliverables', value)"
               />
             </template>
@@ -1229,7 +1191,6 @@ async function handlePrintBrand() {
                 :po-comment="getPoCommentForSection('visualComponents')"
                 :ceo-comment="ceoComments.visualComponents ?? ''"
                 :ceo-editable="true"
-                :highlighted="isSectionHighlighted('visualComponents')"
                 @update:ceo-comment="value => handleCeoCommentBySection('visualComponents', value)"
               />
             </template>
@@ -1261,7 +1222,7 @@ async function handlePrintBrand() {
               always-expanded
               :ceo-comment="ceoComments.general ?? ''"
               :ceo-editable="true"
-              :highlighted="revisionRequiresAnyComment"
+              :highlighted="!!revisionWarning"
               empty-label="Коментар CEO"
               placeholder="Додайте ваші коментарі або побажання…"
               @update:ceo-comment="handleGeneralCeoCommentUpdate"
@@ -1390,15 +1351,15 @@ async function handlePrintBrand() {
             <h4 class="text-sm font-semibold text-blue-800">Альтернативи CEO</h4>
           </div>
           <ul class="list-disc list-inside space-y-0.5 text-sm text-blue-900">
-            <li v-if="store.brandCeoSelections?.concept">
+            <li v-if="resolvedCeoConcept || store.brandCeoSelections?.concept">
               <span v-if="resolvedCeoConcept">Концепт: {{ resolvedCeoConcept }}</span>
               <span v-else class="inline-block h-[1em] w-32 rounded bg-blue-200/60 align-middle" />
             </li>
-            <li v-if="store.brandCeoSelections?.externalNaming">
+            <li v-if="resolvedCeoExternal || store.brandCeoSelections?.externalNaming">
               <span v-if="resolvedCeoExternal">Зовн. назва: {{ resolvedCeoExternal }}</span>
               <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
             </li>
-            <li v-if="store.brandCeoSelections?.internalNaming">
+            <li v-if="resolvedCeoInternal || store.brandCeoSelections?.internalNaming">
               <span v-if="resolvedCeoInternal">Внутр. назва: {{ resolvedCeoInternal }}</span>
               <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
             </li>
@@ -1678,7 +1639,7 @@ async function handlePrintBrand() {
                   type="button"
                   class="shrink-0 inline-flex items-center justify-center size-8 rounded-full border border-black/10 hover:bg-black/[0.03] transition-colors"
                   aria-label="Переглянути концепт"
-                  @click="openConceptPreview"
+                  @click="() => openConceptPreview()"
                 >
                   <svg
                     class="size-4"
@@ -1754,7 +1715,7 @@ async function handlePrintBrand() {
             section-key="general"
             :ceo-comment="ceoComments.general"
             :ceo-editable="true"
-            :highlighted="revisionRequiresAnyComment"
+            :highlighted="!!revisionWarning"
             empty-label="+ Загальний коментар CEO"
             placeholder="Додайте ваші коментарі або побажання..."
             @update:ceo-comment="handleGeneralCeoCommentUpdate"
@@ -1771,27 +1732,21 @@ async function handlePrintBrand() {
 
         <!-- CEO Selections indicator -->
         <div
-          v-if="showCeoReview && Object.keys(ceoSelections).length > 0"
+          v-if="showCeoReview && hasCeoAlternativeFooterSummary"
           class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-700 text-sm"
         >
           <p class="font-medium mb-1">Обрані альтернативи CEO:</p>
           <ul class="list-disc list-inside space-y-0.5">
-            <li v-if="ceoSelections.concept">
-              <span v-if="resolvedCeoSelectionConcept"
-                >Концепт: {{ resolvedCeoSelectionConcept }}</span
-              >
+            <li v-if="reviewCeoConceptForBlock">
+              <span v-if="resolvedCeoConcept">Концепт: {{ resolvedCeoConcept }}</span>
               <span v-else class="inline-block h-[1em] w-32 rounded bg-blue-200/60 align-middle" />
             </li>
-            <li v-if="ceoSelections.externalNaming">
-              <span v-if="resolvedCeoSelectionExternal"
-                >Зовн. назва: {{ resolvedCeoSelectionExternal }}</span
-              >
+            <li v-if="ceoExternalItemsForReview.length > 0">
+              <span v-if="resolvedCeoExternal">Зовн. назва: {{ resolvedCeoExternal }}</span>
               <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
             </li>
-            <li v-if="ceoSelections.internalNaming">
-              <span v-if="resolvedCeoSelectionInternal"
-                >Внутр. назва: {{ resolvedCeoSelectionInternal }}</span
-              >
+            <li v-if="ceoInternalNameForReview">
+              <span v-if="resolvedCeoInternal">Внутр. назва: {{ resolvedCeoInternal }}</span>
               <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
             </li>
           </ul>
@@ -1866,153 +1821,7 @@ async function handlePrintBrand() {
             </svg>
             <span>{{ revisionWarning }}</span>
           </div>
-          <button
-            v-if="SHOW_CEO_LIBRARY_BUTTON"
-            class="flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-medium"
-            @click="openCeoLibrary('concept')"
-          >
-            <svg
-              class="size-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"
-              />
-            </svg>
-            Переглянути бібліотеку
-          </button>
         </div>
-
-        <!-- CEO Library Modal -->
-        <Teleport to="body">
-          <div
-            v-if="showCeoLibraryModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          >
-            <div
-              class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 h-[520px] max-h-[80vh] flex flex-col overflow-hidden"
-            >
-              <!-- Header: per NewConceptModal/NewNamingModal -->
-              <div
-                class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0"
-              >
-                <h3 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
-                  {{ ceoLibraryTitle }}
-                </h3>
-                <button
-                  type="button"
-                  class="size-10 rounded-full bg-[#ececf0] flex items-center justify-center hover:bg-[#dddde2] transition-colors"
-                  @click="closeCeoLibraryModal"
-                >
-                  <svg
-                    class="size-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Scroll container: таби sticky всередині, щоб при скролі залишались поверх -->
-              <div class="flex-1 min-h-0 overflow-y-auto">
-                <div
-                  class="sticky top-0 z-10 flex gap-2 px-6 py-3 bg-white border-b border-black/10"
-                >
-                  <button
-                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                    :class="
-                      ceoLibraryType === 'concept'
-                        ? 'bg-[#030213] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    "
-                    @click="ceoLibraryType = 'concept'"
-                  >
-                    Концепти
-                  </button>
-                  <button
-                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                    :class="
-                      ceoLibraryType === 'externalNaming'
-                        ? 'bg-[#030213] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    "
-                    @click="ceoLibraryType = 'externalNaming'"
-                  >
-                    Зовнішні назви
-                  </button>
-                  <button
-                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                    :class="
-                      ceoLibraryType === 'internalNaming'
-                        ? 'bg-[#030213] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    "
-                    @click="ceoLibraryType = 'internalNaming'"
-                  >
-                    Внутрішні назви
-                  </button>
-                </div>
-                <div class="px-6 py-4 space-y-2">
-                  <button
-                    v-for="item in ceoLibraryItems"
-                    :key="item.id"
-                    class="w-full text-left px-4 py-3 rounded-lg border transition-colors"
-                    :class="
-                      ceoLibraryModalDraft[ceoLibraryType] === item.id && !isPoSelected(item.id)
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : isPoSelected(item.id)
-                          ? 'border-orange-400 bg-orange-50 text-orange-700'
-                          : 'border-black/10 hover:bg-gray-50'
-                    "
-                    @click="selectCeoAlternativeInModal(ceoLibraryType, item.id)"
-                  >
-                    <span class="text-sm font-medium">{{ item.name }}</span>
-                    <span
-                      v-if="
-                        ceoLibraryModalDraft[ceoLibraryType] === item.id && !isPoSelected(item.id)
-                      "
-                      class="ml-2 text-xs text-primary"
-                      >Обрано CEO</span
-                    >
-                    <span v-else-if="isPoSelected(item.id)" class="ml-2 text-xs text-orange-500"
-                      >Обрано PO</span
-                    >
-                  </button>
-                  <p
-                    v-if="ceoLibraryItems.length === 0"
-                    class="text-center text-sm text-muted-foreground py-8"
-                  >
-                    Немає доступних елементів
-                  </p>
-                </div>
-              </div>
-
-              <!-- Footer: per NewConceptModal/NewNamingModal -->
-              <div
-                class="flex items-center justify-end px-6 pt-[17px] pb-4 border-t border-black/10 shrink-0"
-              >
-                <button
-                  type="button"
-                  class="h-[46px] px-6 bg-[#030213] text-white rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] hover:opacity-90 transition-all"
-                  @click="closeCeoLibraryModal"
-                >
-                  Закрити
-                </button>
-              </div>
-            </div>
-          </div>
-        </Teleport>
 
         <!-- Action Buttons -->
         <div

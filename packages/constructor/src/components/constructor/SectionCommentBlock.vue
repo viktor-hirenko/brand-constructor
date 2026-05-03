@@ -71,16 +71,6 @@ watch(
   { immediate: true }
 )
 
-watch(
-  () => props.highlighted,
-  highlighted => {
-    if (highlighted && props.ceoEditable && !isExpanded.value) {
-      isExpanded.value = true
-      nextTick(() => textareaRef.value?.focus())
-    }
-  }
-)
-
 watch(isExpanded, expanded => {
   if (expanded) nextTick(autosize)
 })
@@ -164,7 +154,7 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
         :class="[
           'w-full inline-flex items-center justify-center gap-1 rounded-lg border border-dashed p-3 transition-colors',
           highlighted
-            ? 'border-amber-400 bg-amber-50 hover:bg-amber-100'
+            ? 'border-[#C97D00] hover:bg-black/[0.02]'
             : 'border-[rgba(0,0,0,0.2)] hover:bg-black/[0.02]',
         ]"
         @click="openEditor"
@@ -180,13 +170,10 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
         >
           <path
             d="M7.5 13V8.5H3C2.72386 8.5 2.5 8.27614 2.5 8C2.5 7.72386 2.72386 7.5 3 7.5H7.5V3C7.5 2.72386 7.72386 2.5 8 2.5C8.27614 2.5 8.5 2.72386 8.5 3V7.5H13C13.2761 7.5 13.5 7.72386 13.5 8C13.5 8.27614 13.2761 8.5 13 8.5H8.5V13C8.5 13.2761 8.27614 13.5 8 13.5C7.72386 13.5 7.5 13.2761 7.5 13Z"
-            :fill="highlighted ? '#92400e' : '#373737'"
+            fill="#373737"
           />
         </svg>
-        <span
-          class="text-[14px] font-medium leading-4 tracking-[-0.3125px]"
-          :class="highlighted ? 'text-amber-800' : 'text-[#373737]'"
-        >
+        <span class="text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#373737]">
           {{ emptyLabel }}
         </span>
       </button>
@@ -194,9 +181,9 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
       <label
         v-else
         :class="[
-          'block w-full rounded-lg border-2 bg-[rgba(197,197,200,0.2)] p-4 transition-colors cursor-text',
-          highlighted
-            ? 'border-amber-400 ring-2 ring-amber-200'
+          'block w-full rounded-lg border bg-[rgba(197,197,200,0.2)] p-4 transition-colors cursor-text',
+          highlighted && !hasCeoComment
+            ? 'border-[#C97D00]'
             : 'border-transparent focus-within:border-[#c8c7cc]',
         ]"
       >

@@ -18,7 +18,7 @@ interface BadgeMeta {
 const badge = computed<BadgeMeta | null>(() => {
   switch (props.status) {
     case 'submitted':
-      return { text: 'На розгляді', classes: 'bg-blue-50 text-blue-700' }
+      return { text: 'На розгляді', classes: 'bg-[#D7ECFF] text-blue-700' }
     case 'needs_revision':
       return { text: 'Потрібно доопрацювати', classes: 'bg-amber-50 text-amber-700' }
     case 'approved':

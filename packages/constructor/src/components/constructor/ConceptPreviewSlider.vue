@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, ref, onMounted, onUnmounted, withDefaults } from 'vue'
+import { computed, watch, ref, onMounted, onUnmounted } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 import { useConstructorStore } from '@/stores/constructor'
@@ -11,13 +11,47 @@ const props = withDefaults(
     isFinalSelected: boolean
     /** Hide name row + "Обрати концепт" (e.g. overlay preview). */
     hideHeader?: boolean
+    /** Small label above the concept name (e.g. "Вибір замовника" / "Вибір CEO"). */
+    topLabel?: string | null
+    /** Override the primary action button label (default "Обрати концепт"). */
+    confirmLabel?: string
+    /** Force-disable the primary action regardless of `isFinalSelected`. */
+    confirmDisabled?: boolean
+    /** When true, primary action emits `cancelSelection` instead of `confirmSelection`. */
+    cancelMode?: boolean
   }>(),
-  { hideHeader: false }
+  {
+    hideHeader: false,
+    topLabel: null,
+    confirmLabel: '',
+    confirmDisabled: false,
+    cancelMode: false,
+  }
 )
 
 const emit = defineEmits<{
   confirmSelection: []
+  cancelSelection: []
 }>()
+
+const computedConfirmLabel = computed(() => {
+  if (props.confirmLabel) return props.confirmLabel
+  if (props.cancelMode) return 'Скасувати вибір'
+  return props.isFinalSelected ? 'Обрано' : 'Обрати концепт'
+})
+
+const computedConfirmDisabled = computed(
+  () => props.confirmDisabled || (!props.cancelMode && props.isFinalSelected)
+)
+
+function handlePrimaryClick() {
+  if (computedConfirmDisabled.value) return
+  if (props.cancelMode) {
+    emit('cancelSelection')
+  } else {
+    emit('confirmSelection')
+  }
+}
 
 const store = useConstructorStore()
 
@@ -86,7 +120,10 @@ const fgReady = ref(false)
 let cleanupTimer: ReturnType<typeof setTimeout> | null = null
 
 function clearTimer() {
-  if (cleanupTimer !== null) { clearTimeout(cleanupTimer); cleanupTimer = null }
+  if (cleanupTimer !== null) {
+    clearTimeout(cleanupTimer)
+    cleanupTimer = null
+  }
 }
 
 watch(
@@ -109,22 +146,32 @@ watch(
       return
     }
 
-    if (!bgUrl.value) { bgUrl.value = newUrl; return }
+    if (!bgUrl.value) {
+      bgUrl.value = newUrl
+      return
+    }
     if (newUrl === bgUrl.value && !fgUrl.value) return
 
     clearTimer()
     if (fgUrl.value) bgUrl.value = fgUrl.value
     fgUrl.value = newUrl
     fgReady.value = false
-  },
+  }
 )
 
 // Preload neighbouring slides so the next/prev image is already cached
-watch(activeIndex, (idx) => {
-  ;[slideUrls.value[idx + 1], slideUrls.value[idx - 1]].forEach((u) => {
-    if (u) { const img = new window.Image(); img.src = asset(u) }
-  })
-}, { immediate: true })
+watch(
+  activeIndex,
+  idx => {
+    ;[slideUrls.value[idx + 1], slideUrls.value[idx - 1]].forEach(u => {
+      if (u) {
+        const img = new window.Image()
+        img.src = asset(u)
+      }
+    })
+  },
+  { immediate: true }
+)
 
 function onFgLoaded() {
   if (!fgUrl.value) return
@@ -184,27 +231,36 @@ onUnmounted(() => {
     </div>
 
     <template v-else>
-      <!-- Header: name + select button -->
-      <div
-        v-if="!props.hideHeader"
-        class="flex items-center justify-between gap-4 shrink-0"
-      >
-        <h3 class="text-2xl font-medium tracking-[-0.4492px] leading-8 truncate text-[#0a0a0a]">
-          {{ concept.name }}
-        </h3>
+      <!-- Header: name + optional pill badge + select button -->
+      <div v-if="!props.hideHeader" class="flex items-center justify-between gap-4 shrink-0">
+        <div class="min-w-0 flex items-center gap-3">
+          <h3
+            class="min-w-0 flex-1 text-2xl font-medium tracking-[-0.4492px] leading-8 truncate text-[#0a0a0a]"
+          >
+            {{ concept.name }}
+          </h3>
+          <span
+            v-if="topLabel"
+            class="shrink-0 inline-flex items-center justify-center p-2 rounded-[100px] bg-[#E7E7E9] backdrop-blur-[15px] text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#030213]"
+          >
+            {{ topLabel }}
+          </span>
+        </div>
         <button
           type="button"
-          :disabled="isFinalSelected"
-          class="inline-flex items-center justify-center gap-2 h-12 text-base font-medium tracking-[-0.31px] transition-all shrink-0 disabled:cursor-default px-3 rounded-[8px]"
+          :disabled="computedConfirmDisabled"
+          class="inline-flex items-center justify-center gap-2 h-12 text-base font-medium tracking-[-0.31px] transition-all shrink-0 disabled:cursor-not-allowed rounded-[8px] px-5"
           :class="
-            isFinalSelected
-              ? 'bg-[#e0e0e4] text-[#030213]'
-              : 'bg-[#030213] text-white hover:opacity-90 px-5'
+            computedConfirmDisabled
+              ? 'bg-[#ececf0] text-[#030213] opacity-60'
+              : cancelMode
+                ? 'bg-[#ececf0] text-[#030213] hover:bg-[#dedde3]'
+                : 'bg-[#030213] text-white hover:opacity-90'
           "
-          @click="emit('confirmSelection')"
+          @click="handlePrimaryClick"
         >
           <svg
-            v-if="isFinalSelected"
+            v-if="!cancelMode && isFinalSelected"
             class="size-5 shrink-0"
             viewBox="0 0 24 24"
             fill="none"
@@ -215,7 +271,7 @@ onUnmounted(() => {
           >
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          {{ isFinalSelected ? 'Обрано' : 'Обрати концепт' }}
+          {{ computedConfirmLabel }}
         </button>
       </div>
 

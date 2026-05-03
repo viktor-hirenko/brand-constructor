@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { getAuthHeader } from '@/composables/useApi'
+import { getAuthHeader, apiPatch } from '@/composables/useApi'
 import { migrateIncomingCurrentStep } from '@/utils/stepMigration'
 import type {
   BrandStepData,
@@ -13,9 +13,23 @@ import type {
   BrandVisualComponentsData,
   NewConceptBrief,
   NewNamingBrief,
+  Brand,
 } from '@brand-constructor/shared/types'
 
 const DRAFT_STORAGE_KEY = 'brand-constructor-draft'
+
+export type CeoReselectSection = 'concept' | 'externalNaming' | 'internalNaming'
+
+export interface CeoReselectDraft {
+  /** Confirmed CEO concept override (null = no override, slider stays on PO concept). */
+  conceptId: string | null
+  /** What the slider currently shows (independent of confirmation). */
+  conceptPreviewId: string | null
+  externalNamingIds: string[]
+  internalNamingId: string | null
+}
+
+export const CEO_RESELECT_EXTERNAL_NAMING_LIMIT = 3
 
 function getInitialStepData(): BrandStepData {
   return {
@@ -67,7 +81,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   const brandInternalName = ref<string | null>(null)
   const brandStatus = ref<string>('draft')
   const brandCeoComments = ref<Record<string, string> | null>(null)
-  const brandCeoSelections = ref<Record<string, string> | null>(null)
+  const brandCeoSelections = ref<Record<string, string | string[]> | null>(null)
   const successType = ref<'saved' | 'submitted' | 'needs_revision' | 'approved'>('saved')
   const currentStep = ref(1)
   const stepData = ref<BrandStepData>(getInitialStepData())
@@ -82,6 +96,16 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   /** Full-screen overlay concept preview above the right column (CEO / PO). */
   const conceptPreviewOpen = ref(false)
   const conceptPreviewConceptId = ref<string | null>(null)
+
+  /** Transient state for dedicated CEO re-select routes (not persisted until save). */
+  const ceoReselectDraft = ref<CeoReselectDraft>({
+    conceptId: null,
+    conceptPreviewId: null,
+    externalNamingIds: [],
+    internalNamingId: null,
+  })
+
+  const saveCeoSelectionsError = ref<string | null>(null)
 
   const totalSteps = 9
 
@@ -380,14 +404,152 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
    * Records CEO-picked alternative for concept/external/internal sections.
    * Empty string clears the override. Same persistence model as comments.
    */
-  function setCeoSelectionValue(sectionKey: string, value: string) {
+  function setCeoSelectionValue(sectionKey: string, value: string | string[]) {
     const current = brandCeoSelections.value ? { ...brandCeoSelections.value } : {}
-    if (value) {
+    const isEmpty =
+      value == null ||
+      (typeof value === 'string' && value.length === 0) ||
+      (Array.isArray(value) && value.length === 0)
+    if (!isEmpty) {
       current[sectionKey] = value
     } else {
       delete current[sectionKey]
     }
     brandCeoSelections.value = Object.keys(current).length > 0 ? current : null
+  }
+
+  function resetCeoReselectDraft() {
+    ceoReselectDraft.value = {
+      conceptId: null,
+      conceptPreviewId: null,
+      externalNamingIds: [],
+      internalNamingId: null,
+    }
+  }
+
+  /** Confirmed CEO concept override. Pass `null` to clear (= keep PO concept). */
+  function setCeoReselectConcept(id: string | null) {
+    ceoReselectDraft.value = { ...ceoReselectDraft.value, conceptId: id }
+  }
+
+  /** Currently previewed concept in slider (independent of confirmation). */
+  function setCeoReselectConceptPreview(id: string | null) {
+    ceoReselectDraft.value = { ...ceoReselectDraft.value, conceptPreviewId: id }
+  }
+
+  /** Toggles an external naming id in/out of the staged set, with limit 3. */
+  function toggleCeoReselectExternalNaming(id: string): boolean {
+    const current = [...ceoReselectDraft.value.externalNamingIds]
+    const idx = current.indexOf(id)
+    if (idx >= 0) {
+      current.splice(idx, 1)
+    } else {
+      if (current.length >= CEO_RESELECT_EXTERNAL_NAMING_LIMIT) return false
+      current.push(id)
+    }
+    ceoReselectDraft.value = { ...ceoReselectDraft.value, externalNamingIds: current }
+    return true
+  }
+
+  function setCeoReselectExternalNamingIds(ids: string[]) {
+    ceoReselectDraft.value = {
+      ...ceoReselectDraft.value,
+      externalNamingIds: ids.slice(0, CEO_RESELECT_EXTERNAL_NAMING_LIMIT),
+    }
+  }
+
+  function setCeoReselectInternalNaming(id: string | null) {
+    ceoReselectDraft.value = { ...ceoReselectDraft.value, internalNamingId: id }
+  }
+
+  function readSelectionAsString(value: string | string[] | undefined): string | null {
+    if (typeof value === 'string') return value || null
+    if (Array.isArray(value)) return value[0] ?? null
+    return null
+  }
+
+  function readSelectionAsArray(value: string | string[] | undefined): string[] {
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string' && value) return [value]
+    return []
+  }
+
+  /**
+   * Prefill draft from saved CEO picks, else PO `stepData`, for the given re-select entry point.
+   */
+  function seedCeoReselectFromBrand(section: CeoReselectSection) {
+    const sel = brandCeoSelections.value
+    const sd = stepData.value
+    resetCeoReselectDraft()
+    if (section === 'concept') {
+      const ceoConcept = readSelectionAsString(sel?.concept)
+      ceoReselectDraft.value.conceptId = ceoConcept
+      ceoReselectDraft.value.conceptPreviewId = ceoConcept ?? sd.concept.selectedId
+    } else if (section === 'externalNaming') {
+      ceoReselectDraft.value.conceptId = readSelectionAsString(sel?.concept) ?? sd.concept.selectedId
+      const saved = readSelectionAsArray(sel?.externalNaming)
+      ceoReselectDraft.value.externalNamingIds =
+        saved.length > 0 ? saved : sd.externalNaming.selectedIds.slice(0, CEO_RESELECT_EXTERNAL_NAMING_LIMIT)
+    } else {
+      ceoReselectDraft.value.internalNamingId =
+        readSelectionAsString(sel?.internalNaming) ?? sd.internalNaming.selectedId ?? null
+    }
+  }
+
+  /**
+   * Preserves `conceptId` in draft (after concept step) and starts external naming pick fresh.
+   *
+   * In chained mode the CEO has just chosen a different concept, so any prior external
+   * naming selections (PO's or previously saved CEO's) belong to the OLD concept and are
+   * irrelevant. Starting empty forces the CEO to make a new decision against the new
+   * concept's naming set.
+   */
+  function seedCeoReselectExternalNamingChained() {
+    ceoReselectDraft.value = {
+      ...ceoReselectDraft.value,
+      externalNamingIds: [],
+    }
+  }
+
+  /**
+   * Merge partial CEO selection keys, persist via PATCH /ceo-selections, update local store from response.
+   */
+  async function saveCeoSelections(
+    partial: Record<string, string | string[] | null | undefined>
+  ): Promise<boolean> {
+    if (!brandId.value) {
+      saveCeoSelectionsError.value = 'No brand id'
+      return false
+    }
+    saveCeoSelectionsError.value = null
+    const previous = brandCeoSelections.value ? { ...brandCeoSelections.value } : {}
+    const merged: Record<string, string | string[]> = { ...previous }
+    for (const [k, v] of Object.entries(partial)) {
+      const isEmpty =
+        v == null ||
+        (typeof v === 'string' && v.length === 0) ||
+        (Array.isArray(v) && v.length === 0)
+      if (!isEmpty) merged[k] = v as string | string[]
+      else delete merged[k]
+    }
+    const keys = Object.keys(merged)
+    const payload = keys.length > 0 ? merged : ({} as Record<string, string | string[]>)
+
+    try {
+      const data = await apiPatch<Brand>(`/api/brands/${brandId.value}/ceo-selections`, {
+        ceoSelections: payload,
+      })
+      brandCeoSelections.value =
+        data.ceoSelections && Object.keys(data.ceoSelections).length > 0
+          ? data.ceoSelections
+          : null
+      return true
+    } catch (error) {
+      brandCeoSelections.value = Object.keys(previous).length > 0 ? previous : null
+      saveCeoSelectionsError.value =
+        error instanceof Error ? error.message : 'Failed to save CEO selections'
+      return false
+    }
   }
 
   function reset() {
@@ -403,6 +565,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     step3PreviewSlideIndex.value = 0
     conceptPreviewOpen.value = false
     conceptPreviewConceptId.value = null
+    resetCeoReselectDraft()
+    saveCeoSelectionsError.value = null
     clearDraftFromStorage()
   }
 
@@ -413,7 +577,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     status?: string,
     internalName?: string,
     ceoComments?: Record<string, string> | null,
-    ceoSelections?: Record<string, string> | null
+    ceoSelections?: Record<string, string | string[]> | null
   ) {
     brandId.value = id
     brandInternalName.value = internalName ?? null
@@ -575,6 +739,17 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     closeConceptPreview,
     setCeoCommentValue,
     setCeoSelectionValue,
+    ceoReselectDraft,
+    resetCeoReselectDraft,
+    setCeoReselectConcept,
+    setCeoReselectConceptPreview,
+    toggleCeoReselectExternalNaming,
+    setCeoReselectExternalNamingIds,
+    setCeoReselectInternalNaming,
+    seedCeoReselectFromBrand,
+    seedCeoReselectExternalNamingChained,
+    saveCeoSelections,
+    saveCeoSelectionsError,
     reset,
     loadBrand,
     restoreDraftFromStorage,

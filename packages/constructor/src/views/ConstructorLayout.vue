@@ -22,7 +22,10 @@ const authStore = useAuthStore()
  * on the final step — drives the "no header / no footer / brand preview panel"
  * layout that matches Figma 1473:23546.
  */
+const isCeoReselect = computed(() => route.meta.ceoReselect === true)
+
 const isCeoFinalize = computed(() => {
+  if (route.meta.ceoReselect) return false
   if ((route.meta.step as number | undefined) !== 9) return false
   if (!authStore.isCeoOrAdmin) return false
   const status = store.brandStatus
@@ -197,6 +200,64 @@ const isConceptSliderFinalSelected = computed(() => {
   return store.stepData.concept.selectedId === c.id
 })
 
+const poConceptId = computed(() => store.stepData.concept.selectedId)
+
+/** Concept currently displayed in the right-column slider (independent of confirmation). */
+const ceoReselectPreviewConcept = computed(() => {
+  const id = store.ceoReselectDraft.conceptPreviewId ?? poConceptId.value
+  if (!id) return null
+  return concepts.value.find(c => c.id === id) ?? null
+})
+
+/** Confirmed CEO override concept (null = no CEO override yet). */
+const ceoReselectConfirmedConcept = computed(() => {
+  const id = store.ceoReselectDraft.conceptId
+  if (!id) return null
+  return concepts.value.find(c => c.id === id) ?? null
+})
+
+const ceoReselectIsShowingPo = computed(() => {
+  const previewId = store.ceoReselectDraft.conceptPreviewId
+  return !previewId || previewId === poConceptId.value
+})
+
+const ceoReselectIsShowingConfirmed = computed(() => {
+  const previewId = store.ceoReselectDraft.conceptPreviewId
+  const confirmedId = store.ceoReselectDraft.conceptId
+  return Boolean(confirmedId && previewId === confirmedId)
+})
+
+const ceoReselectSliderTopLabel = computed<string | null>(() => {
+  if (ceoReselectIsShowingPo.value) return 'Вибір замовника'
+  if (ceoReselectIsShowingConfirmed.value) return 'Вибір CEO'
+  return null
+})
+
+const ceoReselectSliderConfirmDisabled = computed(() => {
+  return ceoReselectIsShowingPo.value
+})
+
+const ceoReselectSliderCancelMode = computed(() => ceoReselectIsShowingConfirmed.value)
+
+function handleCeoReselectSliderConfirm() {
+  const previewId = store.ceoReselectDraft.conceptPreviewId
+  if (!previewId || previewId === poConceptId.value) return
+  store.setCeoReselectConcept(previewId)
+}
+
+function handleCeoReselectSliderCancel() {
+  store.setCeoReselectConcept(null)
+  store.setCeoReselectConceptPreview(poConceptId.value)
+}
+
+/** Mobile-preview concept for naming sub-pages: confirmed CEO if any, else PO. */
+const ceoReselectMobilePreviewConcept = computed(() => {
+  if (route.name === 'ceo-reselect-concept-external-naming') {
+    return ceoReselectConfirmedConcept.value ?? selectedConcept.value
+  }
+  return selectedConcept.value
+})
+
 function confirmConceptFromSlider() {
   const id = store.stepData.concept.previewId ?? store.stepData.concept.selectedId
   if (!id) return
@@ -288,6 +349,19 @@ async function openConceptDetails() {
 }
 
 function loadPreviewData() {
+  if (isCeoReselect.value) {
+    conceptsPerPage.value = 100
+    externalPerPage.value = 100
+    internalPerPage.value = 100
+    const params: Record<string, string> = { status: 'active' }
+    if (store.brandId) {
+      params.available_for_brand = store.brandId
+    }
+    fetchConcepts(params)
+    fetchExternalNamings(params)
+    fetchInternalNamings(params)
+    return
+  }
   if (
     currentStep.value !== 2 &&
     currentStep.value !== 3 &&
@@ -313,6 +387,9 @@ onMounted(() => {
   loadStep9Variants()
 })
 watch(currentStep, loadPreviewData)
+watch(isCeoReselect, v => {
+  if (v) loadPreviewData()
+})
 
 const {
   loadVariants: loadStep9Variants,
@@ -373,20 +450,23 @@ watch(currentStep, step => {
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div
         :class="[
-          isFullWidth ? 'w-full' : 'w-[42%]',
-          isCeoFinalize ? 'bg-[#f9f9fb]' : 'bg-muted/30',
+          isFullWidth && !isCeoReselect ? 'w-full' : 'w-[42%]',
+          isCeoFinalize || isCeoReselect ? 'bg-[#f9f9fb]' : 'bg-muted/30',
         ]"
         class="flex flex-col min-h-0"
       >
         <div
           class="min-h-0 flex-1"
           :class="[
-            isCeoFinalize ? 'flex flex-col overflow-hidden' : 'px-12 pt-5 pb-6',
-            !isCeoFinalize && currentStep === 9 ? 'flex flex-col overflow-hidden' : '',
-            !isCeoFinalize && currentStep !== 9 ? 'overflow-y-auto' : '',
+            isCeoFinalize || isCeoReselect ? 'flex flex-col overflow-hidden' : 'px-12 pt-5 pb-6',
+            isCeoReselect ? 'px-8 pt-8 pb-0' : '',
+            !isCeoFinalize && !isCeoReselect && currentStep === 9
+              ? 'flex flex-col overflow-hidden'
+              : '',
+            !isCeoFinalize && !isCeoReselect && currentStep !== 9 ? 'overflow-y-auto' : '',
           ]"
         >
-          <div v-if="!isCeoFinalize" :class="currentStep === 9 ? 'shrink-0' : ''">
+          <div v-if="!isCeoFinalize && !isCeoReselect" :class="currentStep === 9 ? 'shrink-0' : ''">
             <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
               {{ stepTitle }}
             </h1>
@@ -414,7 +494,7 @@ watch(currentStep, step => {
 
           <div
             :class="
-              isCeoFinalize || currentStep === 9
+              isCeoFinalize || isCeoReselect || currentStep === 9
                 ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
                 : ''
             "
@@ -424,7 +504,7 @@ watch(currentStep, step => {
         </div>
 
         <div
-          v-if="!isViewMode && !isCeoFinalize"
+          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect"
           class="shrink-0 px-12 py-6 border-t border-border"
         >
           <div v-if="store.returnToStep" class="flex items-center gap-3">
@@ -472,6 +552,25 @@ watch(currentStep, step => {
       <!-- Right Panel: CEO finalize preview -->
       <div v-if="isCeoFinalize" class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden">
         <BrandPreviewPanel />
+      </div>
+
+      <!-- Right Panel: CEO re-select preview -->
+      <div
+        v-else-if="isCeoReselect"
+        class="relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
+      >
+        <template v-if="route.name === 'ceo-reselect-concept'">
+          <ConceptPreviewSlider
+            :concept="ceoReselectPreviewConcept"
+            :is-final-selected="false"
+            :top-label="ceoReselectSliderTopLabel"
+            :confirm-disabled="ceoReselectSliderConfirmDisabled"
+            :cancel-mode="ceoReselectSliderCancelMode"
+            @confirm-selection="handleCeoReselectSliderConfirm"
+            @cancel-selection="handleCeoReselectSliderCancel"
+          />
+        </template>
+        <ConceptMobilePreview v-else :concept="ceoReselectMobilePreviewConcept" />
       </div>
 
       <!-- Right Panel: Preview (hidden on full-width steps) -->

@@ -88,10 +88,16 @@ const updateBrandSchema = z.object({
   currentStep: z.number().int().min(1).max(9).optional(),
 })
 
+const ceoSelectionValueSchema = z.union([z.string(), z.array(z.string())])
+
 const updateStatusSchema = z.object({
   status: z.enum(['draft', 'submitted', 'needs_revision', 'approved', 'rejected']),
   ceoComments: z.record(z.string()).optional(),
-  ceoSelections: z.record(z.string()).optional(),
+  ceoSelections: z.record(ceoSelectionValueSchema).optional(),
+})
+
+const patchCeoSelectionsSchema = z.object({
+  ceoSelections: z.record(ceoSelectionValueSchema),
 })
 
 interface BrandRow {
@@ -633,6 +639,56 @@ brands.put('/:id', async c => {
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
 
+  return c.json({ success: true, data: rowToBrand(row!) })
+})
+
+/** Updates only `ceo_selections` — no status transition. Used by CEO re-select flows on Step 10. */
+brands.patch('/:id/ceo-selections', async c => {
+  const id = c.req.param('id')
+  const user = c.get('user')
+  const rawBody = await c.req.json()
+  const parsed = patchCeoSelectionsSchema.safeParse(rawBody)
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+      400
+    )
+  }
+
+  if (!(BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)) {
+    return c.json(
+      { success: false, error: 'Forbidden: only CEO/admin roles can update CEO selections' },
+      403
+    )
+  }
+
+  const existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
+    .bind(id)
+    .first<BrandRow>()
+
+  if (!existing) {
+    return c.json({ success: false, error: 'Brand not found' }, 404)
+  }
+
+  const currentStatus = existing.status as BrandStatus
+  if (currentStatus !== 'submitted' && currentStatus !== 'needs_revision') {
+    return c.json(
+      {
+        success: false,
+        error: 'CEO selections can only be edited while brand is submitted or needs_revision',
+      },
+      400
+    )
+  }
+
+  await c.env.DB.prepare(
+    `UPDATE brands SET ceo_selections = ?, updated_at = ? WHERE id = ?`
+  )
+    .bind(JSON.stringify(parsed.data.ceoSelections), new Date().toISOString(), id)
+    .run()
+
+  const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
   return c.json({ success: true, data: rowToBrand(row!) })
 })
 
