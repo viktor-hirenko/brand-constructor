@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import GeoMultiSelect from '@/components/constructor/GeoMultiSelect.vue'
 import DatePicker from '@/components/constructor/DatePicker.vue'
+import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
 const store = useConstructorStore()
 
@@ -120,33 +121,6 @@ const comment = computed({
     </div>
 
     <!-- Comment -->
-    <div>
-      <label class="flex items-center gap-2 mb-2">
-        <svg
-          class="size-4 text-muted-foreground"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-          <path d="M10 9H8" />
-          <path d="M16 13H8" />
-          <path d="M16 17H8" />
-        </svg>
-        <span class="font-medium text-base">Коментар</span>
-        <span class="text-sm text-muted-foreground">(необовʼязково)</span>
-      </label>
-      <textarea
-        v-model="comment"
-        rows="3"
-        placeholder="Додайте ваші коментарі або побажання..."
-        class="w-full px-4 py-3 bg-input border border-transparent rounded-[10px] outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base placeholder:text-foreground/50 resize-none"
-      />
-    </div>
+    <StepCommentField v-model="comment" optional />
   </div>
 </template>
