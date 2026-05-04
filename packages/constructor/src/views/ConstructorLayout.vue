@@ -5,6 +5,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { useApiList, getAssetUrl, apiGet } from '@/composables/useApi'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
+import { useViewportScale } from '@/composables/useViewportScale'
 import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
 import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
 import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
@@ -17,6 +18,17 @@ const route = useRoute()
 const router = useRouter()
 const store = useConstructorStore()
 const authStore = useAuthStore()
+
+/**
+ * Fits the fixed 1311×810 shell into the current viewport via CSS scale so
+ * every internal pixel value stays 1:1 with the Figma source. Padding 48 ≈
+ * outer wrapper p-6 (24px on each side).
+ */
+const { scale: shellScale } = useViewportScale({
+  baseWidth: 1311,
+  baseHeight: 810,
+  padding: 48,
+})
 
 /**
  * True when CEO/admin is reviewing a submitted brand (or one already returned)
@@ -466,11 +478,10 @@ watch(currentStep, step => {
 </script>
 
 <template>
-  <div
-    class="min-h-[100dvh] bg-background flex items-center justify-center p-6 overflow-auto"
-  >
+  <div class="h-[100dvh] bg-background flex items-center justify-center overflow-hidden">
     <div
       class="relative shrink-0 w-[1311px] h-[810px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
+      :style="{ transform: `scale(${shellScale})`, transformOrigin: 'center center' }"
     >
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div
