@@ -468,7 +468,7 @@ watch(currentStep, step => {
 <template>
   <div class="min-h-screen bg-background flex items-center justify-center p-6">
     <div
-      class="relative w-full max-w-[1311px] h-[90vh] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
+      class="relative w-full max-w-[1311px] aspect-[1311/810] max-h-[calc(100dvh-3rem)] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
     >
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div

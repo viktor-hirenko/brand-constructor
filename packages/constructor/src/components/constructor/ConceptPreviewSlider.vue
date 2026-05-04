@@ -207,7 +207,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 h-full min-h-[480px]">
+  <div class="flex flex-col gap-6 h-full">
     <!-- Empty state -->
     <div
       v-if="!concept"
@@ -276,7 +276,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Slider canvas -->
-      <div class="relative flex-1 min-h-[480px] rounded-[24px] overflow-hidden bg-muted/30">
+      <div class="relative flex-1 min-h-0 rounded-[24px] overflow-hidden bg-muted/30">
         <!-- Crossfade: background layer — currently visible image, always fully opaque -->
         <img
           v-if="bgUrl"
