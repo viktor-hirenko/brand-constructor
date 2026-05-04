@@ -1,14 +1,35 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+interface InfoOverride {
+  title: string
+  description: string
+}
+
 interface ReviewHeaderProps {
   /** Brand internal name (when known) or fallback "New Brand". */
   title: string
   /** Brand status — drives the badge/info block. */
   status: 'submitted' | 'needs_revision' | 'approved' | 'rejected' | string
+  /** Optional line under the title (e.g. PO final step instruction). */
+  subtitle?: string
+  /** Step index for progress row (PO draft). */
+  currentStep?: number
+  /** Total steps for progress row (PO draft). */
+  totalSteps?: number
+  /** 0–100 — shows progress bar when set (PO draft). */
+  progressPercent?: number
+  /** When set, replaces status-derived info block (PO “Бриф готовий!”). */
+  infoOverride?: InfoOverride | null
 }
 
-const props = defineProps<ReviewHeaderProps>()
+const props = withDefaults(defineProps<ReviewHeaderProps>(), {
+  subtitle: undefined,
+  currentStep: undefined,
+  totalSteps: undefined,
+  progressPercent: undefined,
+  infoOverride: undefined,
+})
 
 interface BadgeMeta {
   text: string
@@ -58,24 +79,61 @@ const info = computed<InfoMeta | null>(() => {
       return null
   }
 })
+
+const displayInfo = computed<InfoMeta | null>(() => {
+  if (props.infoOverride) {
+    return {
+      title: props.infoOverride.title,
+      description: props.infoOverride.description,
+    }
+  }
+  return info.value
+})
+
+const showProgress = computed(
+  () =>
+    props.progressPercent != null &&
+    props.currentStep != null &&
+    props.totalSteps != null
+)
 </script>
 
 <template>
   <header class="space-y-6">
-    <div class="flex items-center gap-3 flex-wrap">
-      <h1 class="text-3xl font-medium tracking-[-0.6px] text-foreground">{{ title }}</h1>
-      <span
-        v-if="badge"
-        :class="[
-          'inline-flex items-center h-6 px-2 py-1 rounded-full text-xs font-medium tracking-[-0.15px]',
-          badge.classes,
-        ]"
+    <div class="space-y-2">
+      <div class="flex items-center gap-3 flex-wrap">
+        <h1 class="text-3xl font-medium tracking-[-0.6px] text-foreground">{{ title }}</h1>
+        <span
+          v-if="badge"
+          :class="[
+            'inline-flex items-center h-6 px-2 py-1 rounded-full text-xs font-medium tracking-[-0.15px]',
+            badge.classes,
+          ]"
+        >
+          {{ badge.text }}
+        </span>
+      </div>
+      <p
+        v-if="subtitle"
+        class="text-base text-muted-foreground tracking-[-0.31px]"
       >
-        {{ badge.text }}
-      </span>
+        {{ subtitle }}
+      </p>
     </div>
 
-    <div v-if="info" class="rounded-2xl bg-[#f3f3f5] px-6 py-6">
+    <div v-if="showProgress" class="space-y-2">
+      <div class="text-sm text-muted-foreground tracking-[-0.15px]">
+        Крок {{ currentStep }} з {{ totalSteps }}
+      </div>
+      <div class="h-2 rounded-full bg-black/10 overflow-hidden">
+        <div
+          class="h-full rounded-full bg-foreground transition-all duration-300"
+          :style="{ width: `${progressPercent}%` }"
+        />
+      </div>
+    </div>
+
+    <div v-if="displayInfo" class="rounded-2xl bg-[#f3f3f5] px-6 py-6">
       <div class="flex items-start gap-3 mb-2">
         <svg
           class="size-6 shrink-0 text-foreground/80"
@@ -90,9 +148,9 @@ const info = computed<InfoMeta | null>(() => {
           <circle cx="12" cy="12" r="10" />
           <path d="m9 12 2 2 4-4" />
         </svg>
-        <h3 class="text-lg font-medium tracking-[-0.45px] text-foreground">{{ info.title }}</h3>
+        <h3 class="text-lg font-medium tracking-[-0.45px] text-foreground">{{ displayInfo.title }}</h3>
       </div>
-      <p class="text-sm text-muted-foreground leading-5 pl-9">{{ info.description }}</p>
+      <p class="text-sm text-muted-foreground leading-5 pl-9">{{ displayInfo.description }}</p>
     </div>
   </header>
 </template>

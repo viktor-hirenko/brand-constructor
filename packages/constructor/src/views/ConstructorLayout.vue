@@ -10,6 +10,7 @@ import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.
 import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
 import BrandPreviewPanel from '@/components/constructor/BrandPreviewPanel.vue'
 import ConceptPreviewPopup from '@/components/constructor/ConceptPreviewPopup.vue'
+import PrPackagePreviewPopup from '@/components/constructor/PrPackagePreviewPopup.vue'
 import type { Concept, ExternalNaming, InternalNaming } from '@brand-constructor/shared/types'
 
 const route = useRoute()
@@ -30,6 +31,14 @@ const isCeoFinalize = computed(() => {
   if (!authStore.isCeoOrAdmin) return false
   const status = store.brandStatus
   return status === 'submitted' || status === 'needs_revision'
+})
+
+/** PO on final step in draft — same shell as CEO finalize (Figma Product view). */
+const isPoDraftReview = computed(() => {
+  if (route.meta.ceoReselect) return false
+  if ((route.meta.step as number | undefined) !== 9) return false
+  if (authStore.isCeoOrAdmin) return false
+  return store.brandStatus === 'draft'
 })
 
 const currentStep = computed(() => (route.meta.step as number) || 1)
@@ -321,6 +330,20 @@ function handleReturnToPreview() {
   }
 }
 
+/** PO edit-mode — save current state and come back to Final review. */
+function handleSaveSectionEdit() {
+  const target = store.returnToStep ?? 9
+  store.commitEditSection()
+  router.push(`/constructor/step/${target}`)
+}
+
+/** PO edit-mode — revert changes and come back to Final review. */
+function handleCancelSectionEdit() {
+  const target = store.returnToStep ?? 9
+  store.cancelEditSection()
+  router.push(`/constructor/step/${target}`)
+}
+
 function getExternalDomain(naming: ExternalNamingPreview | null): string {
   if (!naming) return '—'
   if (naming.domain && naming.domain.trim() !== '') return naming.domain
@@ -451,22 +474,29 @@ watch(currentStep, step => {
       <div
         :class="[
           isFullWidth && !isCeoReselect ? 'w-full' : 'w-[42%]',
-          isCeoFinalize || isCeoReselect ? 'bg-[#f9f9fb]' : 'bg-muted/30',
+          isCeoFinalize || isCeoReselect || isPoDraftReview ? 'bg-[#f9f9fb]' : 'bg-muted/30',
         ]"
         class="flex flex-col min-h-0"
       >
         <div
           class="min-h-0 flex-1"
           :class="[
-            isCeoFinalize || isCeoReselect ? 'flex flex-col overflow-hidden' : 'px-12 pt-5 pb-6',
+            isCeoFinalize || isCeoReselect || isPoDraftReview
+              ? 'flex flex-col overflow-hidden'
+              : 'px-12 pt-5 pb-6',
             isCeoReselect ? 'px-8 pt-8 pb-0' : '',
-            !isCeoFinalize && !isCeoReselect && currentStep === 9
+            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && currentStep === 9
               ? 'flex flex-col overflow-hidden'
               : '',
-            !isCeoFinalize && !isCeoReselect && currentStep !== 9 ? 'overflow-y-auto' : '',
+            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && currentStep !== 9
+              ? 'overflow-y-auto'
+              : '',
           ]"
         >
-          <div v-if="!isCeoFinalize && !isCeoReselect" :class="currentStep === 9 ? 'shrink-0' : ''">
+          <div
+            v-if="!isCeoFinalize && !isCeoReselect && !isPoDraftReview"
+            :class="currentStep === 9 ? 'shrink-0' : ''"
+          >
             <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
               {{ stepTitle }}
             </h1>
@@ -504,10 +534,26 @@ watch(currentStep, step => {
         </div>
 
         <div
-          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect"
+          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect && !isPoDraftReview"
           class="shrink-0 px-12 py-6 border-t border-border"
         >
-          <div v-if="store.returnToStep" class="flex items-center gap-3">
+          <div v-if="store.editingSection" class="flex items-center gap-3">
+            <button
+              class="h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
+              @click="handleCancelSectionEdit"
+            >
+              Скасувати
+            </button>
+            <button
+              :disabled="!store.isCurrentStepValid"
+              class="h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
+              @click="handleSaveSectionEdit"
+            >
+              Зберегти
+            </button>
+          </div>
+
+          <div v-else-if="store.returnToStep" class="flex items-center gap-3">
             <button
               class="h-[50px] px-6 bg-[#030213] text-white rounded-[10px] hover:opacity-90 transition-all text-base font-medium flex items-center gap-2"
               @click="handleReturnToPreview"
@@ -549,8 +595,11 @@ watch(currentStep, step => {
         </div>
       </div>
 
-      <!-- Right Panel: CEO finalize preview -->
-      <div v-if="isCeoFinalize" class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden">
+      <!-- Right Panel: CEO finalize / PO draft final preview -->
+      <div
+        v-if="isCeoFinalize || isPoDraftReview"
+        class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
+      >
         <BrandPreviewPanel />
       </div>
 
@@ -1213,6 +1262,23 @@ watch(currentStep, step => {
           class="absolute right-0 top-0 h-full w-[58%] z-[29] overflow-hidden"
         >
           <ConceptPreviewPopup :concept="conceptPreviewOverlayConcept" />
+        </div>
+      </Transition>
+
+      <!-- PR Package Preview: fullscreen backdrop + right-column drawer -->
+      <Transition name="concept-backdrop">
+        <div
+          v-if="store.prPackagePreviewOpen && store.prPackagePreviewPackage"
+          class="absolute inset-0 z-[28] bg-black/50 rounded-[14px]"
+          @click="store.closePrPackagePreview()"
+        />
+      </Transition>
+      <Transition name="concept-panel">
+        <div
+          v-if="store.prPackagePreviewOpen && store.prPackagePreviewPackage"
+          class="absolute right-0 top-0 h-full w-[58%] z-[29] overflow-hidden"
+        >
+          <PrPackagePreviewPopup :pkg="store.prPackagePreviewPackage" />
         </div>
       </Transition>
     </div>

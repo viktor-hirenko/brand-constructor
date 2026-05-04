@@ -3,21 +3,31 @@ interface ReviewSectionProps {
   title: string
   /** Render the "Змінити вибір" button in the header. */
   changeChoice?: boolean
+  /** PO final review: step number for "Редагувати" → navigate to step. */
+  editStep?: number
   /** Highlight the section (amber border) when validation requires action here. */
   highlighted?: boolean
   /** No card chrome (border/hr) — for loose blocks only if needed. */
   borderless?: boolean
 }
 
-withDefaults(defineProps<ReviewSectionProps>(), {
+const props = withDefaults(defineProps<ReviewSectionProps>(), {
   changeChoice: false,
+  editStep: undefined,
   highlighted: false,
   borderless: false,
 })
 
 const emit = defineEmits<{
   change: []
+  edit: [step: number]
 }>()
+
+function onEditClick() {
+  if (props.editStep != null) {
+    emit('edit', props.editStep)
+  }
+}
 </script>
 
 <template>
@@ -40,7 +50,29 @@ const emit = defineEmits<{
         {{ title }}
       </h3>
       <button
-        v-if="changeChoice"
+        v-if="editStep != null"
+        type="button"
+        class="inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
+        @click="onEditClick"
+      >
+        <svg
+          class="size-4 shrink-0 text-[#373737]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+          />
+        </svg>
+        Редагувати
+      </button>
+      <button
+        v-else-if="changeChoice"
         type="button"
         class="inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
         @click="emit('change')"

@@ -14,6 +14,7 @@ import type {
   NewConceptBrief,
   NewNamingBrief,
   Brand,
+  PrPackage,
 } from '@brand-constructor/shared/types'
 
 const DRAFT_STORAGE_KEY = 'brand-constructor-draft'
@@ -96,6 +97,18 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   /** Full-screen overlay concept preview above the right column (CEO / PO). */
   const conceptPreviewOpen = ref(false)
   const conceptPreviewConceptId = ref<string | null>(null)
+
+  /** Right-side drawer PR package preview (PO final review). */
+  const prPackagePreviewOpen = ref(false)
+  const prPackagePreviewPackage = ref<PrPackage | null>(null)
+
+  /**
+   * Section-edit mode from PO Final review.
+   * When set, steps render “Скасувати / Зберегти” footer instead of Назад/Далі
+   * or the generic “Повернутись”. Snapshot is restored on Скасувати.
+   */
+  const editingSection = ref<string | null>(null)
+  const editingSectionSnapshot = ref<unknown>(null)
 
   /** Transient state for dedicated CEO re-select routes (not persisted until save). */
   const ceoReselectDraft = ref<CeoReselectDraft>({
@@ -384,6 +397,96 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     conceptPreviewConceptId.value = null
   }
 
+  function openPrPackagePreview(pkg: PrPackage) {
+    prPackagePreviewPackage.value = pkg
+    prPackagePreviewOpen.value = true
+  }
+
+  function closePrPackagePreview() {
+    prPackagePreviewOpen.value = false
+    prPackagePreviewPackage.value = null
+  }
+
+  /** Maps a Review section key to the matching slice of stepData. */
+  function getSectionStateByKey(key: string): unknown {
+    switch (key) {
+      case 'basics':
+        return stepData.value.brandBasics
+      case 'concept':
+        return stepData.value.concept
+      case 'externalNaming':
+        return stepData.value.externalNaming
+      case 'internalNaming':
+        return stepData.value.internalNaming
+      case 'marketingPackage':
+        return stepData.value.marketingPackage
+      case 'deliverables':
+        return stepData.value.deliverables
+      case 'visualComponents':
+        return stepData.value.visualComponents
+      default:
+        return null
+    }
+  }
+
+  function restoreSectionStateByKey(key: string, value: unknown) {
+    if (value == null) return
+    switch (key) {
+      case 'basics':
+        stepData.value.brandBasics = value as BrandBasicsData
+        break
+      case 'concept':
+        stepData.value.concept = value as BrandConceptData
+        break
+      case 'externalNaming':
+        stepData.value.externalNaming = value as BrandExternalNamingData
+        break
+      case 'internalNaming':
+        stepData.value.internalNaming = value as BrandInternalNamingData
+        break
+      case 'marketingPackage':
+        stepData.value.marketingPackage = value as BrandMarketingPackageData
+        break
+      case 'deliverables':
+        stepData.value.deliverables = value as BrandDeliverablesData
+        break
+      case 'visualComponents':
+        stepData.value.visualComponents = value as BrandVisualComponentsData
+        break
+    }
+  }
+
+  /**
+   * Begin inline edit of a single review section. Captures a deep snapshot so
+   * Скасувати can restore untouched state; sets `returnToStep` so the layout
+   * knows where to come back.
+   */
+  function beginEditSection(key: string, fromStep: number) {
+    const snapshot = getSectionStateByKey(key)
+    editingSection.value = key
+    editingSectionSnapshot.value =
+      snapshot == null ? null : JSON.parse(JSON.stringify(snapshot))
+    returnToStep.value = fromStep
+  }
+
+  /** Commit the current edits and clear the edit flag. */
+  function commitEditSection() {
+    editingSection.value = null
+    editingSectionSnapshot.value = null
+    returnToStep.value = null
+  }
+
+  /** Revert the section to its snapshot and clear the edit flag. */
+  function cancelEditSection() {
+    const key = editingSection.value
+    if (key) {
+      restoreSectionStateByKey(key, editingSectionSnapshot.value)
+    }
+    editingSection.value = null
+    editingSectionSnapshot.value = null
+    returnToStep.value = null
+  }
+
   /**
    * Updates a single CEO comment section locally. Empty string removes the key.
    * Persistence happens later when CEO triggers approve/needs_revision via
@@ -565,6 +668,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     step3PreviewSlideIndex.value = 0
     conceptPreviewOpen.value = false
     conceptPreviewConceptId.value = null
+    prPackagePreviewOpen.value = false
+    prPackagePreviewPackage.value = null
+    editingSection.value = null
+    editingSectionSnapshot.value = null
     resetCeoReselectDraft()
     saveCeoSelectionsError.value = null
     clearDraftFromStorage()
@@ -737,6 +844,14 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     conceptPreviewConceptId,
     openConceptPreview,
     closeConceptPreview,
+    prPackagePreviewOpen,
+    prPackagePreviewPackage,
+    openPrPackagePreview,
+    closePrPackagePreview,
+    editingSection,
+    beginEditSection,
+    commitEditSection,
+    cancelEditSection,
     setCeoCommentValue,
     setCeoSelectionValue,
     ceoReselectDraft,

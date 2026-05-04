@@ -29,6 +29,7 @@ import ReviewPrPackageBlock from '@/components/constructor/review/ReviewPrPackag
 import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliverablesBlock.vue'
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
 import CeoActionsFooter from '@/components/constructor/review/CeoActionsFooter.vue'
+import PoActionsFooter from '@/components/constructor/review/PoActionsFooter.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -572,12 +573,35 @@ const ceoFinalizeView = computed(
     isCeoView.value && (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
 )
 
+/** PO final step in draft — Figma Product view (1566:27958). */
+const poDraftView = computed(() => !isCeoView.value && brandStatus.value === 'draft')
+
+const unifiedReviewLayout = computed(() => ceoFinalizeView.value || poDraftView.value)
+
+const reviewMode = computed<'ceo' | 'po-draft'>(() =>
+  ceoFinalizeView.value ? 'ceo' : 'po-draft'
+)
+
+const poDraftInfoOverride = {
+  title: 'Бриф готовий!',
+  description:
+    'Перегляньте всю інформацію справа. Ви можете поділитися брифом або зберегти його для подальшої роботи.',
+} as const
+
 const brandHeaderTitle = computed(
   () =>
     store.brandInternalName ||
     selectedExternalNamings.value[0]?.name ||
     selectedConcept.value?.name ||
     'Новий бренд'
+)
+
+const unifiedReviewTitle = computed(() =>
+  reviewMode.value === 'po-draft' ? 'Final review' : brandHeaderTitle.value
+)
+
+const unifiedReviewSubtitle = computed(() =>
+  reviewMode.value === 'po-draft' ? 'Перевірте всі дані перед відправкою' : undefined
 )
 
 const externalNamingItems = computed(() =>
@@ -826,9 +850,32 @@ const revisionWarning = computed<string | null>(() => {
   return null
 })
 
+/**
+ * PO “Редагувати” from a review section — captures a snapshot so the user can
+ * cancel changes and come back to the Final review with Скасувати / Зберегти.
+ * Uses the section key (same as SectionCommentBlock) to locate the slice.
+ */
+function editSection(step: number, sectionKey: string) {
+  store.beginEditSection(sectionKey, 9)
+  router.push(`/constructor/step/${step}`)
+}
+
+/** CEO flow only — keeps the legacy “Повернутись” behaviour. */
 function goToStep(step: number) {
   store.setReturnToStep(9)
   router.push(`/constructor/step/${step}`)
+}
+
+/** PO footer “Назад” — plain step navigation, no edit-mode marker. */
+function backToStep(step: number) {
+  store.setReturnToStep(null)
+  router.push(`/constructor/step/${step}`)
+}
+
+function handlePrPackagePreview() {
+  if (selectedPackage.value) {
+    store.openPrPackagePreview(selectedPackage.value)
+  }
 }
 
 async function handleShare() {
@@ -875,11 +922,18 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
   if (newStatus === 'needs_revision') {
     const validation = validateNeedsRevision()
     if (!validation.ok) {
-      const targetSection = revisionMissingSections.value.values().next().value ?? null
-      const sectionEl = targetSection
-        ? document.querySelector<HTMLElement>(`[data-section="${targetSection}"]`)
-        : (getScrollContainer()?.querySelector<HTMLElement>('[data-section]') ?? null)
-      sectionEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Scroll only when CEO must add a comment in a specific section; for the
+      // generic "no comments at all" case keep the viewport in place so the
+      // warning under the button stays visible.
+      if (validation.reason === 'missing-section') {
+        const targetSection = revisionMissingSections.value.values().next().value ?? null
+        if (targetSection) {
+          const sectionEl = document.querySelector<HTMLElement>(
+            `[data-section="${targetSection}"]`
+          )
+          sectionEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }
       return
     }
   } else {
@@ -1012,14 +1066,26 @@ async function handlePrintBrand() {
 </script>
 
 <template>
-  <!-- CEO finalize view: drive the redesigned two-column layout -->
-  <div v-if="ceoFinalizeView" class="flex flex-col flex-1 min-h-0 h-full">
+  <!-- Unified review layout: CEO finalize + PO draft (Figma Product view) -->
+  <div v-if="unifiedReviewLayout" class="flex flex-col flex-1 min-h-0 h-full">
     <div class="flex-1 min-h-0 overflow-y-auto">
       <div class="px-8 py-8 flex flex-col gap-6">
-        <ReviewHeader :title="brandHeaderTitle" :status="brandStatus" />
+        <ReviewHeader
+          :title="unifiedReviewTitle"
+          :status="brandStatus"
+          :subtitle="unifiedReviewSubtitle"
+          :current-step="reviewMode === 'po-draft' ? 9 : undefined"
+          :total-steps="reviewMode === 'po-draft' ? 9 : undefined"
+          :progress-percent="reviewMode === 'po-draft' ? 100 : undefined"
+          :info-override="reviewMode === 'po-draft' ? poDraftInfoOverride : undefined"
+        />
 
         <div class="space-y-4">
-          <ReviewSection title="Brand Basics">
+          <ReviewSection
+            title="Brand Basics"
+            :edit-step="reviewMode === 'po-draft' ? 1 : undefined"
+            @edit="step => editSection(step, 'basics')"
+          >
             <ReviewSectionRow
               v-if="basics.geo.length > 0"
               label="Географія"
@@ -1076,13 +1142,30 @@ async function handlePrintBrand() {
               v-if="basics.linkedProduct"
               label="Звʼязок з іншим продуктом"
               :value="basics.linkedProduct"
-            />
+            >
+              <template #icon>
+                <svg
+                  class="size-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M9 17H7a5 5 0 0 1 0-10h2" />
+                  <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+              </template>
+            </ReviewSectionRow>
             <template #comment>
               <SectionCommentBlock
                 section-key="basics"
                 :po-comment="getPoCommentForSection('basics')"
                 :ceo-comment="ceoComments.basics ?? ''"
-                :ceo-editable="true"
+                :ceo-editable="reviewMode === 'ceo'"
                 @update:ceo-comment="value => handleCeoCommentBySection('basics', value)"
               />
             </template>
@@ -1090,7 +1173,9 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Concept"
-            change-choice
+            :edit-step="reviewMode === 'po-draft' ? 2 : undefined"
+            :change-choice="reviewMode === 'ceo'"
+            @edit="step => editSection(step, 'concept')"
             @change="startCeoReselectBySection('concept')"
           >
             <ReviewConceptBlock
@@ -1105,8 +1190,8 @@ async function handlePrintBrand() {
                 section-key="concept"
                 :po-comment="getPoCommentForSection('concept')"
                 :ceo-comment="ceoComments.concept ?? ''"
-                :ceo-editable="true"
-                :highlighted="isSectionHighlighted('concept')"
+                :ceo-editable="reviewMode === 'ceo'"
+                :highlighted="reviewMode === 'ceo' && isSectionHighlighted('concept')"
                 @update:ceo-comment="value => handleCeoCommentBySection('concept', value)"
               />
             </template>
@@ -1114,7 +1199,9 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="External Naming"
-            change-choice
+            :edit-step="reviewMode === 'po-draft' ? 3 : undefined"
+            :change-choice="reviewMode === 'ceo'"
+            @edit="step => editSection(step, 'externalNaming')"
             @change="startCeoReselectBySection('externalNaming')"
           >
             <ReviewExternalNamingsList
@@ -1126,8 +1213,8 @@ async function handlePrintBrand() {
                 section-key="externalNaming"
                 :po-comment="getPoCommentForSection('externalNaming')"
                 :ceo-comment="ceoComments.externalNaming ?? ''"
-                :ceo-editable="true"
-                :highlighted="isSectionHighlighted('externalNaming')"
+                :ceo-editable="reviewMode === 'ceo'"
+                :highlighted="reviewMode === 'ceo' && isSectionHighlighted('externalNaming')"
                 @update:ceo-comment="value => handleCeoCommentBySection('externalNaming', value)"
               />
             </template>
@@ -1135,7 +1222,9 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Internal Naming"
-            change-choice
+            :edit-step="reviewMode === 'po-draft' ? 4 : undefined"
+            :change-choice="reviewMode === 'ceo'"
+            @edit="step => editSection(step, 'internalNaming')"
             @change="startCeoReselectBySection('internalNaming')"
           >
             <ReviewInternalNamingBlock
@@ -1147,27 +1236,38 @@ async function handlePrintBrand() {
                 section-key="internalNaming"
                 :po-comment="getPoCommentForSection('internalNaming')"
                 :ceo-comment="ceoComments.internalNaming ?? ''"
-                :ceo-editable="true"
-                :highlighted="isSectionHighlighted('internalNaming')"
+                :ceo-editable="reviewMode === 'ceo'"
+                :highlighted="reviewMode === 'ceo' && isSectionHighlighted('internalNaming')"
                 @update:ceo-comment="value => handleCeoCommentBySection('internalNaming', value)"
               />
             </template>
           </ReviewSection>
 
-          <ReviewSection title="PR Package">
-            <ReviewPrPackageBlock :title="selectedPackage?.name ?? 'Не обрано'" />
+          <ReviewSection
+            title="PR Package"
+            :edit-step="reviewMode === 'po-draft' ? 6 : undefined"
+            @edit="step => editSection(step, 'marketingPackage')"
+          >
+            <ReviewPrPackageBlock
+              :title="selectedPackage?.name ?? 'Не обрано'"
+              @view="handlePrPackagePreview"
+            />
             <template #comment>
               <SectionCommentBlock
                 section-key="marketingPackage"
                 :po-comment="getPoCommentForSection('marketingPackage')"
                 :ceo-comment="ceoComments.marketingPackage ?? ''"
-                :ceo-editable="true"
+                :ceo-editable="reviewMode === 'ceo'"
                 @update:ceo-comment="value => handleCeoCommentBySection('marketingPackage', value)"
               />
             </template>
           </ReviewSection>
 
-          <ReviewSection title="Deliverables">
+          <ReviewSection
+            title="Deliverables"
+            :edit-step="reviewMode === 'po-draft' ? 7 : undefined"
+            @edit="step => editSection(step, 'deliverables')"
+          >
             <ReviewDeliverablesBlock
               :scope="deliverablesScopeText"
               :timing="deliverablesTimingText"
@@ -1177,26 +1277,30 @@ async function handlePrintBrand() {
                 section-key="deliverables"
                 :po-comment="getPoCommentForSection('deliverables')"
                 :ceo-comment="ceoComments.deliverables ?? ''"
-                :ceo-editable="true"
+                :ceo-editable="reviewMode === 'ceo'"
                 @update:ceo-comment="value => handleCeoCommentBySection('deliverables', value)"
               />
             </template>
           </ReviewSection>
 
-          <ReviewSection title="Visual Components">
+          <ReviewSection
+            title="Visual Components"
+            :edit-step="reviewMode === 'po-draft' ? 8 : undefined"
+            @edit="step => editSection(step, 'visualComponents')"
+          >
             <ReviewVisualComponentsBlock :summary="visualComponentsSummary" />
             <template #comment>
               <SectionCommentBlock
                 section-key="visualComponents"
                 :po-comment="getPoCommentForSection('visualComponents')"
                 :ceo-comment="ceoComments.visualComponents ?? ''"
-                :ceo-editable="true"
+                :ceo-editable="reviewMode === 'ceo'"
                 @update:ceo-comment="value => handleCeoCommentBySection('visualComponents', value)"
               />
             </template>
           </ReviewSection>
 
-          <div class="space-y-3">
+          <div v-if="reviewMode === 'ceo'" class="space-y-3">
             <div class="flex items-center gap-2">
               <span class="inline-flex size-5 shrink-0 text-[#5B5B62]" aria-hidden="true">
                 <svg
@@ -1238,12 +1342,28 @@ async function handlePrintBrand() {
         </div>
 
         <CeoActionsFooter
+          v-if="reviewMode === 'ceo' && brandStatus === 'submitted'"
           :loading="statusActionLoading"
           :warning="revisionWarning"
-          :show-approve="brandStatus === 'submitted'"
-          :show-revise="brandStatus === 'submitted' || brandStatus === 'needs_revision'"
+          :show-approve="true"
+          :show-revise="true"
           @approve="handleStatusChange('approved')"
           @revise="handleStatusChange('needs_revision')"
+        />
+        <PoActionsFooter
+          v-else
+          :loading="statusActionLoading || isSaving"
+          :submit-label="
+            hasNewBrief ? 'Відправити в роботу' : 'Відправити на розгляд'
+          "
+          :show-share="showShareButton"
+          :show-pdf="showPdfButton"
+          :share-copied="shareSuccess"
+          :pdf-loading="isPdfLoading"
+          @submit="handleStatusChange('submitted')"
+          @back="backToStep(8)"
+          @share="handleShare"
+          @pdf="handlePrintBrand"
         />
       </div>
     </div>

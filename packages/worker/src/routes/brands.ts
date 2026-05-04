@@ -100,6 +100,21 @@ const patchCeoSelectionsSchema = z.object({
   ceoSelections: z.record(ceoSelectionValueSchema),
 })
 
+/**
+ * CEO selection values can be either a single id (string) or a list of ids
+ * (string[] — e.g. `externalNaming` after the CEO reselect flow). These helpers
+ * normalize the union so downstream D1 `.bind()` calls never receive an array.
+ */
+function firstId(value: string | string[] | null | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null
+  return value || null
+}
+
+function asIdArray(value: string | string[] | null | undefined): string[] {
+  if (Array.isArray(value)) return value.filter(Boolean)
+  return value ? [value] : []
+}
+
 interface BrandRow {
   id: string
   internal_name: string | null
@@ -172,9 +187,9 @@ async function collectBrandNotificationData(
   db: D1Database,
   brand: BrandRow,
   constructorUrl: string,
-  ceoSelectionsOverride?: Record<string, string>
+  ceoSelectionsOverride?: Record<string, string | string[]>
 ): Promise<BrandNotificationData> {
-  const ceoSel =
+  const ceoSel: Record<string, string | string[]> =
     ceoSelectionsOverride ??
     (() => {
       try {
@@ -184,16 +199,17 @@ async function collectBrandNotificationData(
       }
     })()
 
-  const finalConceptId = ceoSel.concept || brand.concept_id || null
+  const finalConceptId = firstId(ceoSel.concept) || brand.concept_id || null
   const finalExtIds: string[] = (() => {
-    if (ceoSel.externalNaming) return [ceoSel.externalNaming]
+    const overrideIds = asIdArray(ceoSel.externalNaming)
+    if (overrideIds.length > 0) return overrideIds
     try {
       return JSON.parse(brand.external_naming_ids || '[]')
     } catch {
       return []
     }
   })()
-  const finalIntId = ceoSel.internalNaming || brand.internal_naming_id || null
+  const finalIntId = firstId(ceoSel.internalNaming) || brand.internal_naming_id || null
 
   const [conceptRow, intNamingRow, prPackageRow] = await Promise.all([
     finalConceptId
@@ -831,21 +847,31 @@ brands.patch('/:id/status', async c => {
           const ceoSelectionsData = body.ceoSelections ?? {}
           const resolvedSelections: Record<string, string> = {}
 
-          if (ceoSelectionsData.concept) {
+          const conceptId = firstId(ceoSelectionsData.concept)
+          if (conceptId) {
             const row = await c.env.DB.prepare('SELECT name FROM concepts WHERE id = ?')
-              .bind(ceoSelectionsData.concept)
+              .bind(conceptId)
               .first<{ name: string }>()
             if (row) resolvedSelections.concept = row.name
           }
-          if (ceoSelectionsData.externalNaming) {
-            const row = await c.env.DB.prepare('SELECT name FROM external_namings WHERE id = ?')
-              .bind(ceoSelectionsData.externalNaming)
-              .first<{ name: string }>()
-            if (row) resolvedSelections.externalNaming = row.name
+
+          const externalNamingIds = asIdArray(ceoSelectionsData.externalNaming)
+          if (externalNamingIds.length > 0) {
+            const placeholders = externalNamingIds.map(() => '?').join(',')
+            const rows = await c.env.DB.prepare(
+              `SELECT name FROM external_namings WHERE id IN (${placeholders})`
+            )
+              .bind(...externalNamingIds)
+              .all<{ name: string }>()
+            if (rows.results.length > 0) {
+              resolvedSelections.externalNaming = rows.results.map(r => r.name).join(', ')
+            }
           }
-          if (ceoSelectionsData.internalNaming) {
+
+          const internalNamingId = firstId(ceoSelectionsData.internalNaming)
+          if (internalNamingId) {
             const row = await c.env.DB.prepare('SELECT name FROM internal_namings WHERE id = ?')
-              .bind(ceoSelectionsData.internalNaming)
+              .bind(internalNamingId)
               .first<{ name: string }>()
             if (row) resolvedSelections.internalNaming = row.name
           }
@@ -870,7 +896,7 @@ brands.patch('/:id/status', async c => {
       .first<BrandRow>()
 
     if (brand) {
-      const ceoSel: Record<string, string> = (() => {
+      const ceoSel: Record<string, string | string[]> = (() => {
         try {
           return JSON.parse(brand.ceo_selections || '{}')
         } catch {
@@ -878,16 +904,17 @@ brands.patch('/:id/status', async c => {
         }
       })()
 
-      const finalConceptId = ceoSel.concept || brand.concept_id || null
+      const finalConceptId = firstId(ceoSel.concept) || brand.concept_id || null
       const finalExtIds: string[] = (() => {
-        if (ceoSel.externalNaming) return [ceoSel.externalNaming]
+        const overrideIds = asIdArray(ceoSel.externalNaming)
+        if (overrideIds.length > 0) return overrideIds
         try {
           return JSON.parse(brand.external_naming_ids || '[]')
         } catch {
           return []
         }
       })()
-      const finalIntId = ceoSel.internalNaming || brand.internal_naming_id || null
+      const finalIntId = firstId(ceoSel.internalNaming) || brand.internal_naming_id || null
 
       const componentSelections: Record<string, string> = (() => {
         try {
