@@ -257,7 +257,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
 
             <div class="absolute bottom-0 left-0 right-0 p-4 z-[3]">
               <h3
-                class="text-white font-medium text-[18px] leading-6 tracking-[-0.4492px] line-clamp-2"
+                class="text-white font-medium text-[18px] leading-6 tracking-[-0.4492px] truncate"
               >
                 {{ concept.name }}
               </h3>
