@@ -20,18 +20,16 @@ binding = "ASSETS_BUCKET"
 bucket_name = "brand-constructor-assets"
 
 # Development environment
+# Note: SLACK_BOT_TOKEN and SLACK_CHANNEL_* are stored as encrypted secrets
+# (see `wrangler secret list`). Do NOT put them here as plaintext vars.
 [vars]
 ENVIRONMENT = "development"
 CORS_ORIGINS = "http://localhost:5173,http://localhost:5174"
 CONSTRUCTOR_URL = "http://localhost:5174"
-SLACK_CHANNEL_STRATEGY = "C0ANN1XJSTS"
-SLACK_CHANNEL_PR = "C0AMCBX3DEK"
-SLACK_CHANNEL_DESIGN = "C0AMTR5FLTC"
-SLACK_CHANNEL_APPROVALS = "C0AMSELFLJJ"
 
 # Production environment
 [env.production]
-vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev", CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev", SLACK_CHANNEL_STRATEGY = "C0ANN1XJSTS", SLACK_CHANNEL_PR = "C0AMCBX3DEK", SLACK_CHANNEL_DESIGN = "C0AMTR5FLTC", SLACK_CHANNEL_APPROVALS = "C0AMSELFLJJ" }
+vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev", CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev" }
 
 [[env.production.d1_databases]]
 binding = "DB"
