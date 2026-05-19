@@ -11,6 +11,8 @@ import type {
   BrandMarketingPackageData,
   BrandDeliverablesData,
   BrandVisualComponentsData,
+  BrandCeoComments,
+  CeoCommentMeta,
   NewConceptBrief,
   NewNamingBrief,
   Brand,
@@ -34,7 +36,7 @@ export const CEO_RESELECT_EXTERNAL_NAMING_LIMIT = 3
 
 function getInitialStepData(): BrandStepData {
   return {
-    stepLayoutVersion: 1,
+    stepLayoutVersion: 2,
     brandBasics: {
       geo: [],
       launchDate: '',
@@ -58,7 +60,6 @@ function getInitialStepData(): BrandStepData {
       comment: '',
       newNamingFeedback: null,
     },
-    previewComment: '',
     marketingPackage: {
       selectedId: null,
       comment: '',
@@ -81,7 +82,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   const brandId = ref<string | null>(null)
   const brandInternalName = ref<string | null>(null)
   const brandStatus = ref<string>('draft')
-  const brandCeoComments = ref<Record<string, string> | null>(null)
+  const brandCeoComments = ref<BrandCeoComments | null>(null)
   const brandCeoSelections = ref<Record<string, string | string[]> | null>(null)
   const successType = ref<'saved' | 'submitted' | 'needs_revision' | 'approved'>('saved')
   const currentStep = ref(1)
@@ -120,7 +121,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
 
   const saveCeoSelectionsError = ref<string | null>(null)
 
-  const totalSteps = 9
+  const totalSteps = 8
 
   const progressPercent = computed(() => {
     return Math.round((currentStep.value / totalSteps) * 100)
@@ -160,15 +161,15 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
           (inn.newNamingFeedback !== null && inn.newNamingFeedback.trim() !== '')
         )
       }
-      case 6:
+      case 5:
         return stepData.value.marketingPackage.selectedId !== null
-      case 7: {
+      case 6: {
         const del = stepData.value.deliverables
         const hasAnythingEnabled = del.legalLanding || del.partnerLanding
         if (hasAnythingEnabled && del.developmentDeadline === '') return false
         return true
       }
-      case 8: {
+      case 7: {
         const vc = stepData.value.visualComponents
         if (vc.delegateToDesigners) return true
         const selectionCount = Object.keys(vc.selections).length
@@ -247,10 +248,6 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
 
   function setInternalNamingFeedback(feedback: string | null) {
     stepData.value.internalNaming.newNamingFeedback = feedback
-  }
-
-  function setPreviewComment(comment: string) {
-    stepData.value.previewComment = comment
   }
 
   function setMarketingPackage(data: Partial<BrandMarketingPackageData>) {
@@ -363,7 +360,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
         currentStep.value = migrateIncomingCurrentStep(parsed.currentStep, layoutV)
         stepData.value = {
           ...sd,
-          stepLayoutVersion: 1,
+          stepLayoutVersion: 2,
         }
         return true
       }
@@ -491,16 +488,91 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
    * Updates a single CEO comment section locally. Empty string removes the key.
    * Persistence happens later when CEO triggers approve/needs_revision via
    * PATCH /:id/status, which accepts the full `ceoComments` payload.
+   *
+   * The stored shape is `CeoCommentMeta` (`value` + `resolved` + `resolvedAt`).
+   * Setting a new value resets `resolved` to `false` — re-editing a comment
+   * implicitly invalidates a previous resolve.
    */
   function setCeoCommentValue(sectionKey: string, value: string) {
     const trimmed = value.trim()
-    const current = brandCeoComments.value ? { ...brandCeoComments.value } : {}
+    const current: BrandCeoComments = brandCeoComments.value
+      ? { ...brandCeoComments.value }
+      : {}
     if (trimmed) {
-      current[sectionKey] = trimmed
+      const prev = current[sectionKey]
+      const sameText = prev?.value === trimmed
+      current[sectionKey] = {
+        value: trimmed,
+        resolved: sameText ? prev.resolved : false,
+        resolvedAt: sameText ? prev.resolvedAt : null,
+      }
     } else {
       delete current[sectionKey]
     }
     brandCeoComments.value = Object.keys(current).length > 0 ? current : null
+  }
+
+  const saveCeoCommentResolvedError = ref<string | null>(null)
+  const saveCeoCommentResolvedLoading = ref<Set<string>>(new Set())
+
+  /**
+   * Persists resolve/unresolve of a CEO comment for a single section.
+   * Uses optimistic update with rollback on failure.
+   *
+   * Allowed only for the brand owner (worker enforces) and only while the
+   * brand is in `needs_revision`. Concurrent calls for the same section are
+   * blocked via `saveCeoCommentResolvedLoading`.
+   */
+  async function setCeoCommentResolved(sectionKey: string, resolved: boolean): Promise<boolean> {
+    if (!brandId.value) {
+      saveCeoCommentResolvedError.value = 'No brand id'
+      return false
+    }
+    if (saveCeoCommentResolvedLoading.value.has(sectionKey)) {
+      return false
+    }
+    const current = brandCeoComments.value
+    const existing = current?.[sectionKey]
+    if (!existing) {
+      saveCeoCommentResolvedError.value = `No CEO comment for section "${sectionKey}"`
+      return false
+    }
+
+    saveCeoCommentResolvedError.value = null
+    saveCeoCommentResolvedLoading.value = new Set([
+      ...saveCeoCommentResolvedLoading.value,
+      sectionKey,
+    ])
+
+    const optimistic: CeoCommentMeta = {
+      value: existing.value,
+      resolved,
+      resolvedAt: resolved ? new Date().toISOString() : null,
+    }
+    const prevSnapshot: BrandCeoComments | null = current ? { ...current } : null
+    brandCeoComments.value = { ...current, [sectionKey]: optimistic }
+
+    try {
+      const data = await apiPatch<Brand>(
+        `/api/brands/${brandId.value}/ceo-comments/resolve`,
+        { section: sectionKey, resolved }
+      )
+      brandCeoComments.value = data.ceoComments ?? null
+      return true
+    } catch (error) {
+      brandCeoComments.value = prevSnapshot
+      saveCeoCommentResolvedError.value =
+        error instanceof Error ? error.message : 'Failed to update CEO comment'
+      return false
+    } finally {
+      const next = new Set(saveCeoCommentResolvedLoading.value)
+      next.delete(sectionKey)
+      saveCeoCommentResolvedLoading.value = next
+    }
+  }
+
+  function isCeoCommentResolveLoading(sectionKey: string): boolean {
+    return saveCeoCommentResolvedLoading.value.has(sectionKey)
   }
 
   /**
@@ -683,7 +755,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     step: number,
     status?: string,
     internalName?: string,
-    ceoComments?: Record<string, string> | null,
+    ceoComments?: BrandCeoComments | null,
     ceoSelections?: Record<string, string | string[]> | null
   ) {
     brandId.value = id
@@ -695,7 +767,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     const migratedStep = migrateIncomingCurrentStep(step, layoutVersion)
     stepData.value = {
       ...data,
-      stepLayoutVersion: layoutVersion ?? 1,
+      stepLayoutVersion: 2,
     }
     currentStep.value = migratedStep
     isDraft.value = false
@@ -813,7 +885,6 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setInternalNaming,
     selectInternalNaming,
     setInternalNamingFeedback,
-    setPreviewComment,
     setMarketingPackage,
     setDeliverables,
     setVisualComponents,
@@ -853,6 +924,9 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     commitEditSection,
     cancelEditSection,
     setCeoCommentValue,
+    setCeoCommentResolved,
+    isCeoCommentResolveLoading,
+    saveCeoCommentResolvedError,
     setCeoSelectionValue,
     ceoReselectDraft,
     resetCeoReselectDraft,

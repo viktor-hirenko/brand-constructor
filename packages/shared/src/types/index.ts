@@ -47,7 +47,10 @@ export type {
   BrandVisualComponentsData,
   NewConceptBrief,
   NewNamingBrief,
+  CeoCommentMeta,
+  BrandCeoComments,
   CreateBrandPayload,
   UpdateBrandPayload,
   UpdateBrandStatusPayload,
+  UpdateCeoCommentResolvedPayload,
 } from './brand'

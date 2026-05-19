@@ -18,7 +18,12 @@ import {
   type BrandNotificationData,
 } from '../utils/slack'
 import { BRAND_APPROVAL_ROLES, isBrandBriefCreatorRole } from '@brand-constructor/shared'
-import type { Brand, BrandStatus } from '@brand-constructor/shared/types'
+import type {
+  Brand,
+  BrandCeoComments,
+  BrandStatus,
+  CeoCommentMeta,
+} from '@brand-constructor/shared/types'
 
 const VALID_STATUSES: BrandStatus[] = [
   'draft',
@@ -59,7 +64,7 @@ const createBrandSchema = z.object({
   developmentDeadline: z.string().max(30).optional(),
   newNamingBrief: z.any().nullish(),
   stepData: z.any().optional(),
-  currentStep: z.number().int().min(1).max(9).optional(),
+  currentStep: z.number().int().min(1).max(8).optional(),
 })
 
 const updateBrandSchema = z.object({
@@ -85,20 +90,119 @@ const updateBrandSchema = z.object({
   developmentDeadline: z.string().max(30).optional(),
   newNamingBrief: z.any().nullish(),
   stepData: z.any().optional(),
-  currentStep: z.number().int().min(1).max(9).optional(),
+  currentStep: z.number().int().min(1).max(8).optional(),
 })
 
 const ceoSelectionValueSchema = z.union([z.string(), z.array(z.string())])
 
+/**
+ * Wire format for a CEO comment: either the legacy raw string (kept for
+ * backward-compat with older clients) or the modern meta object. The handler
+ * normalises both shapes to `CeoCommentMeta` before persisting.
+ */
+const ceoCommentMetaSchema = z.object({
+  value: z.string().max(5000),
+  resolved: z.boolean(),
+  resolvedAt: z.string().nullable(),
+})
+
+const ceoCommentValueSchema = z.union([z.string().max(5000), ceoCommentMetaSchema])
+
 const updateStatusSchema = z.object({
   status: z.enum(['draft', 'submitted', 'needs_revision', 'approved', 'rejected']),
-  ceoComments: z.record(z.string()).optional(),
+  ceoComments: z.record(ceoCommentValueSchema).optional(),
   ceoSelections: z.record(ceoSelectionValueSchema).optional(),
 })
 
 const patchCeoSelectionsSchema = z.object({
   ceoSelections: z.record(ceoSelectionValueSchema),
 })
+
+/** Body schema for `PATCH /:id/ceo-comments/resolve`. */
+const patchCeoCommentResolveSchema = z.object({
+  section: z.string().min(1).max(100),
+  resolved: z.boolean(),
+})
+
+/** Section keys that may carry a `resolved` flag (everything except `general`). */
+const RESOLVABLE_SECTION_KEYS = new Set([
+  'basics',
+  'concept',
+  'externalNaming',
+  'internalNaming',
+  'marketingPackage',
+  'deliverables',
+  'visualComponents',
+])
+
+/**
+ * Normalises wire-format CEO comments (legacy string OR meta object) into the
+ * persisted shape `CeoCommentMeta`. Legacy strings become `resolved: false`
+ * with `resolvedAt: null`.
+ */
+function normaliseCeoCommentsForStorage(
+  raw: Record<string, string | CeoCommentMeta>
+): BrandCeoComments {
+  const out: BrandCeoComments = {}
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === 'string') {
+      out[key] = { value, resolved: false, resolvedAt: null }
+    } else {
+      out[key] = {
+        value: value.value,
+        resolved: value.resolved,
+        resolvedAt: value.resolvedAt,
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * Reads `ceo_comments` JSON from the DB row and upgrades any legacy plain
+ * strings to `CeoCommentMeta`. Always returns the modern shape, so callers
+ * never need to handle the union themselves.
+ */
+function parseCeoCommentsFromRow(raw: string | null): BrandCeoComments | null {
+  if (!raw) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object') return null
+  const result: BrandCeoComments = {}
+  for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+    if (typeof value === 'string') {
+      result[key] = { value, resolved: false, resolvedAt: null }
+    } else if (value && typeof value === 'object') {
+      const meta = value as Partial<CeoCommentMeta>
+      result[key] = {
+        value: typeof meta.value === 'string' ? meta.value : '',
+        resolved: Boolean(meta.resolved),
+        resolvedAt: typeof meta.resolvedAt === 'string' ? meta.resolvedAt : null,
+      }
+    }
+  }
+  return Object.keys(result).length > 0 ? result : null
+}
+
+/**
+ * Flattens `BrandCeoComments` to `Record<string, string>` for downstream
+ * consumers (Slack notifications, audit log) that don't care about resolved
+ * state.
+ */
+function flattenCeoCommentsToValues(comments: BrandCeoComments | null): Record<string, string> {
+  if (!comments) return {}
+  const out: Record<string, string> = {}
+  for (const [key, meta] of Object.entries(comments)) {
+    if (meta.value.trim()) {
+      out[key] = meta.value
+    }
+  }
+  return out
+}
 
 /**
  * CEO selection values can be either a single id (string) or a list of ids
@@ -172,7 +276,7 @@ function rowToBrand(row: BrandRow): Brand {
     componentsComment: row.components_comment,
     delegateToDesigners: Boolean(row.delegate_to_designers),
     newConceptBrief: row.new_concept_brief ? JSON.parse(row.new_concept_brief) : null,
-    ceoComments: row.ceo_comments ? JSON.parse(row.ceo_comments) : null,
+    ceoComments: parseCeoCommentsFromRow(row.ceo_comments),
     ceoSelections: row.ceo_selections ? JSON.parse(row.ceo_selections) : null,
     developmentDeadline: row.development_deadline,
     newNamingBrief: row.new_naming_brief ? JSON.parse(row.new_naming_brief) : null,
@@ -251,7 +355,6 @@ async function collectBrandNotificationData(
   }
 
   let brandBasicsComment: string | null = null
-  let ceoComments: Record<string, string> | null = null
 
   try {
     const stepData = brand.step_data ? JSON.parse(brand.step_data) : null
@@ -262,11 +365,11 @@ async function collectBrandNotificationData(
     /* step_data parse failure is non-critical */
   }
 
-  try {
-    ceoComments = brand.ceo_comments ? JSON.parse(brand.ceo_comments) : null
-  } catch {
-    ceoComments = null
-  }
+  // Slack notifications consume the flat `Record<string, string>` shape — drop
+  // resolved/resolvedAt metadata before forwarding.
+  const ceoCommentsForSlack = flattenCeoCommentsToValues(parseCeoCommentsFromRow(brand.ceo_comments))
+  const ceoComments: Record<string, string> | null =
+    Object.keys(ceoCommentsForSlack).length > 0 ? ceoCommentsForSlack : null
 
   let rawSelections: Record<string, string> = {}
   try {
@@ -708,6 +811,87 @@ brands.patch('/:id/ceo-selections', async c => {
   return c.json({ success: true, data: rowToBrand(row!) })
 })
 
+/**
+ * Toggle the `resolved` flag of a single CEO comment.
+ *
+ * Used by the PO on the returned-from-CEO view ("Позначити як вирішений" /
+ * "Повернути"). Only the brief owner may call this, and only while the brand
+ * is in `needs_revision`. The comment must already exist in `ceo_comments`
+ * (we don't create new entries here).
+ */
+brands.patch('/:id/ceo-comments/resolve', async c => {
+  const id = c.req.param('id')
+  const user = c.get('user')
+  const rawBody = await c.req.json()
+  const parsed = patchCeoCommentResolveSchema.safeParse(rawBody)
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+      400
+    )
+  }
+
+  const { section, resolved } = parsed.data
+
+  if (!RESOLVABLE_SECTION_KEYS.has(section)) {
+    return c.json(
+      { success: false, error: `Section "${section}" is not resolvable` },
+      400
+    )
+  }
+
+  const existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
+    .bind(id)
+    .first<BrandRow>()
+
+  if (!existing) {
+    return c.json({ success: false, error: 'Brand not found' }, 404)
+  }
+
+  if (existing.created_by !== user.id) {
+    return c.json(
+      { success: false, error: 'Only the brand owner can resolve CEO comments' },
+      403
+    )
+  }
+
+  if (existing.status !== 'needs_revision') {
+    return c.json(
+      {
+        success: false,
+        error: 'CEO comments can only be resolved while brand is needs_revision',
+      },
+      400
+    )
+  }
+
+  const current = parseCeoCommentsFromRow(existing.ceo_comments)
+  if (!current || !current[section]) {
+    return c.json(
+      { success: false, error: `No CEO comment to resolve for section "${section}"` },
+      404
+    )
+  }
+
+  const now = new Date().toISOString()
+  const updated: BrandCeoComments = {
+    ...current,
+    [section]: {
+      value: current[section].value,
+      resolved,
+      resolvedAt: resolved ? now : null,
+    },
+  }
+
+  await c.env.DB.prepare(`UPDATE brands SET ceo_comments = ?, updated_at = ? WHERE id = ?`)
+    .bind(JSON.stringify(updated), now, id)
+    .run()
+
+  const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
+  return c.json({ success: true, data: rowToBrand(row!) })
+})
+
 brands.patch('/:id/status', async c => {
   const id = c.req.param('id')
   const user = c.get('user')
@@ -772,8 +956,9 @@ brands.patch('/:id/status', async c => {
   }
 
   if (body.ceoComments !== undefined) {
+    const normalised = normaliseCeoCommentsForStorage(body.ceoComments)
     updates.push('ceo_comments = ?')
-    values.push(JSON.stringify(body.ceoComments))
+    values.push(JSON.stringify(normalised))
   }
   if (body.ceoSelections !== undefined) {
     updates.push('ceo_selections = ?')
@@ -843,7 +1028,14 @@ brands.patch('/:id/status', async c => {
             c.executionCtx.waitUntil(sendSlackMessage(c.env.SLACK_BOT_TOKEN, message))
           }
         } else {
-          const ceoCommentsData = body.ceoComments ?? {}
+          // Slack message builders take flat `Record<string, string>`; pull
+          // `.value` out of any meta-form entries before forwarding.
+          const ceoCommentsRaw = body.ceoComments ?? {}
+          const ceoCommentsData: Record<string, string> = {}
+          for (const [k, v] of Object.entries(ceoCommentsRaw)) {
+            const text = typeof v === 'string' ? v : v.value
+            if (text && text.trim()) ceoCommentsData[k] = text
+          }
           const ceoSelectionsData = body.ceoSelections ?? {}
           const resolvedSelections: Record<string, string> = {}
 

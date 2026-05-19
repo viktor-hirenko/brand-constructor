@@ -289,7 +289,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: selectedPackage.value.name,
       sectionKey: 'marketingPackage',
       icon: 'package',
-      step: 6,
+      step: 5,
       comment: store.stepData.marketingPackage.comment?.trim() || '',
     })
   }
@@ -302,7 +302,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Так',
       sectionKey: 'deliverables',
       icon: 'scale',
-      step: 7,
+      step: 6,
       comment: deliverablesComment,
     })
   }
@@ -312,7 +312,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Так',
       sectionKey: 'deliverables',
       icon: 'handshake',
-      step: 7,
+      step: 6,
     })
   }
   const devDeadline = deliverables.value.developmentDeadline?.trim() ?? ''
@@ -322,7 +322,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: formatDate(devDeadline),
       sectionKey: 'deliverables',
       icon: 'calendar',
-      step: 7,
+      step: 6,
     })
   }
   if (visualComponents.value.delegateToDesigners) {
@@ -331,7 +331,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: 'Делеговано дизайнерам',
       sectionKey: 'visualComponents',
       icon: 'sparkles',
-      step: 8,
+      step: 7,
       comment: visualComponents.value.comment?.trim() || '',
     })
   } else if (componentSelectionCount.value > 0) {
@@ -344,7 +344,7 @@ const summaryItems = computed<SummaryItem[]>(() => {
       value: lines.join('\n') || `${componentSelectionCount.value} обрано`,
       sectionKey: 'visualComponents',
       icon: 'layers',
-      step: 8,
+      step: 7,
       comment: visualComponents.value.comment?.trim() || '',
     })
   }
@@ -425,7 +425,7 @@ const CEO_COMMENT_SECTION_LABELS: Record<string, string> = {
 const hasCeoComments = computed(() => {
   const comments = store.brandCeoComments
   if (!comments) return false
-  return Object.values(comments).some(v => v.trim().length > 0)
+  return Object.values(comments).some(meta => meta.value.trim().length > 0)
 })
 
 function ceoSelectionAsString(value: string | string[] | undefined): string | null {
@@ -437,6 +437,21 @@ function ceoSelectionAsArray(value: string | string[] | undefined): string[] {
   if (Array.isArray(value)) return value
   if (typeof value === 'string' && value) return [value]
   return []
+}
+
+/**
+ * PDF generator (`usePrintBrand`) and the legacy yellow banner template both
+ * expect `Record<string, string>` — flatten the meta map before passing it in.
+ */
+function flattenCeoCommentsForPdf(
+  comments: Record<string, { value: string }> | null
+): Record<string, string> | null {
+  if (!comments) return null
+  const out: Record<string, string> = {}
+  for (const [k, meta] of Object.entries(comments)) {
+    if (meta.value.trim()) out[k] = meta.value
+  }
+  return Object.keys(out).length > 0 ? out : null
 }
 
 const hasCeoSelections = computed(() => {
@@ -553,7 +568,7 @@ function hasCeoCommentForSection(item: SummaryItem): boolean {
   const comments = store.brandCeoComments
   if (!comments) return false
   const comment = comments[item.sectionKey]
-  return !!comment && comment.trim().length > 0
+  return !!comment && comment.value.trim().length > 0
 }
 
 const ceoComments = reactive<Record<string, string>>({
@@ -705,9 +720,9 @@ watch(
   () => store.brandCeoComments,
   comments => {
     if (comments) {
-      for (const [key, value] of Object.entries(comments)) {
+      for (const [key, meta] of Object.entries(comments)) {
         if (key in ceoComments) {
-          ceoComments[key] = value
+          ceoComments[key] = meta.value
         }
       }
     }
@@ -856,13 +871,13 @@ const revisionWarning = computed<string | null>(() => {
  * Uses the section key (same as SectionCommentBlock) to locate the slice.
  */
 function editSection(step: number, sectionKey: string) {
-  store.beginEditSection(sectionKey, 9)
+  store.beginEditSection(sectionKey, 8)
   router.push(`/constructor/step/${step}`)
 }
 
 /** CEO flow only — keeps the legacy “Повернутись” behaviour. */
 function goToStep(step: number) {
-  store.setReturnToStep(9)
+  store.setReturnToStep(8)
   router.push(`/constructor/step/${step}`)
 }
 
@@ -1053,9 +1068,8 @@ async function handlePrintBrand() {
       internalNamingName: selectedInternalNaming.value?.name ?? null,
       prPackageName: selectedPackage.value?.name ?? null,
       componentTypes,
-      ceoComments: store.brandCeoComments,
+      ceoComments: flattenCeoCommentsForPdf(store.brandCeoComments),
       ceoSelections: Object.keys(ceoSelectionsResolved).length > 0 ? ceoSelectionsResolved : null,
-      previewComment: store.stepData.previewComment || undefined,
     }
 
     await downloadPdf(data)
@@ -1074,8 +1088,8 @@ async function handlePrintBrand() {
           :title="unifiedReviewTitle"
           :status="brandStatus"
           :subtitle="unifiedReviewSubtitle"
-          :current-step="reviewMode === 'po-draft' ? 9 : undefined"
-          :total-steps="reviewMode === 'po-draft' ? 9 : undefined"
+          :current-step="reviewMode === 'po-draft' ? 8 : undefined"
+          :total-steps="reviewMode === 'po-draft' ? 8 : undefined"
           :progress-percent="reviewMode === 'po-draft' ? 100 : undefined"
           :info-override="reviewMode === 'po-draft' ? poDraftInfoOverride : undefined"
         />
@@ -1245,7 +1259,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="PR Package"
-            :edit-step="reviewMode === 'po-draft' ? 6 : undefined"
+            :edit-step="reviewMode === 'po-draft' ? 5 : undefined"
             @edit="step => editSection(step, 'marketingPackage')"
           >
             <ReviewPrPackageBlock
@@ -1265,7 +1279,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Deliverables"
-            :edit-step="reviewMode === 'po-draft' ? 7 : undefined"
+            :edit-step="reviewMode === 'po-draft' ? 6 : undefined"
             @edit="step => editSection(step, 'deliverables')"
           >
             <ReviewDeliverablesBlock
@@ -1285,7 +1299,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Visual Components"
-            :edit-step="reviewMode === 'po-draft' ? 8 : undefined"
+            :edit-step="reviewMode === 'po-draft' ? 7 : undefined"
             @edit="step => editSection(step, 'visualComponents')"
           >
             <ReviewVisualComponentsBlock :summary="visualComponentsSummary" />
@@ -1361,7 +1375,7 @@ async function handlePrintBrand() {
           :share-copied="shareSuccess"
           :pdf-loading="isPdfLoading"
           @submit="handleStatusChange('submitted')"
-          @back="backToStep(8)"
+          @back="backToStep(7)"
           @share="handleShare"
           @pdf="handlePrintBrand"
         />
@@ -1442,9 +1456,9 @@ async function handlePrintBrand() {
             :key="key"
             class="text-sm text-amber-900"
           >
-            <template v-if="comment && comment.trim()">
+            <template v-if="comment && comment.value.trim()">
               <span class="font-medium">{{ CEO_COMMENT_SECTION_LABELS[key] ?? key }}:</span>
-              {{ comment }}
+              {{ comment.value }}
             </template>
           </div>
         </div>
