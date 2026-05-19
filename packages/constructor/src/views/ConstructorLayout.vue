@@ -49,6 +49,7 @@ const isCeoFinalize = computed(() => {
 /** PO on final step in draft — same shell as CEO finalize (Figma Product view). */
 const isPoDraftReview = computed(() => {
   if (route.meta.ceoReselect) return false
+  if (route.meta.poEdit) return false
   if ((route.meta.step as number | undefined) !== 8) return false
   if (authStore.isCeoOrAdmin) return false
   return store.brandStatus === 'draft'
@@ -58,9 +59,14 @@ const isPoDraftReview = computed(() => {
  * PO viewing a brief returned from CEO (`needs_revision`).
  * Uses the same shell as CEO finalize / PO draft review — no wizard header,
  * no wizard footer, BrandPreviewPanel on the right (Figma 1958:3720).
+ *
+ * NOTE: PO edit routes (`route.meta.poEdit`) also live on step 8 with
+ * status `needs_revision`, but they must NOT be treated as returned-review —
+ * they have their own header/footer/right panel (ConceptPreviewSlider, etc.).
  */
 const isPoReturnedReview = computed(() => {
   if (route.meta.ceoReselect) return false
+  if (route.meta.poEdit) return false
   if ((route.meta.step as number | undefined) !== 8) return false
   if (authStore.isCeoOrAdmin) return false
   return store.brandStatus === 'needs_revision'
@@ -284,6 +290,26 @@ function handleCeoReselectSliderCancel() {
   store.setCeoReselectConceptPreview(poConceptId.value)
 }
 
+/** Concept shown in the right-panel slider while PO edits concept (choice mode). */
+const poEditPreviewConcept = computed(() => {
+  const id = store.stepData.concept.previewId ?? store.stepData.concept.selectedId
+  if (!id) return null
+  return concepts.value.find(c => c.id === id) ?? null
+})
+
+const poEditCeoConceptId = computed(() => {
+  const sel = store.brandCeoSelections?.concept
+  return typeof sel === 'string' ? sel : Array.isArray(sel) ? (sel[0] ?? null) : null
+})
+
+const poEditSliderTopLabel = computed<string | null>(() => {
+  const previewId = store.stepData.concept.previewId
+  if (!previewId) return null
+  if (previewId === poEditCeoConceptId.value) return 'Вибір CEO'
+  if (previewId === store.stepData.concept.selectedId) return 'Ваш попередній вибір'
+  return null
+})
+
 /** Mobile-preview concept for naming sub-pages: confirmed CEO if any, else PO. */
 const ceoReselectMobilePreviewConcept = computed(() => {
   if (route.name === 'ceo-reselect-concept-external-naming') {
@@ -291,6 +317,36 @@ const ceoReselectMobilePreviewConcept = computed(() => {
   }
   return selectedConcept.value
 })
+
+/** Full concept record for PO edit naming steps (gallery_url_1 mobile preview). */
+const poEditMobilePreviewConceptFull = ref<Concept | null>(null)
+
+async function loadPoEditMobilePreviewConcept() {
+  if (!isPoEdit.value) return
+  if (route.name === 'po-edit-concept') return
+
+  const id = store.stepData.concept.selectedId
+  if (!id) {
+    poEditMobilePreviewConceptFull.value = null
+    return
+  }
+
+  const fromList = concepts.value.find(c => c.id === id)
+  if (fromList?.gallery_url_1?.trim()) {
+    poEditMobilePreviewConceptFull.value = fromList
+    return
+  }
+
+  try {
+    poEditMobilePreviewConceptFull.value = await apiGet<Concept>(`/api/concepts/${id}`)
+  } catch {
+    poEditMobilePreviewConceptFull.value = fromList ?? null
+  }
+}
+
+const poEditMobilePreviewConcept = computed(
+  () => poEditMobilePreviewConceptFull.value ?? selectedConcept.value,
+)
 
 function confirmConceptFromSlider() {
   const id = store.stepData.concept.previewId ?? store.stepData.concept.selectedId
@@ -397,7 +453,7 @@ async function openConceptDetails() {
 }
 
 function loadPreviewData() {
-  if (isCeoReselect.value) {
+  if (isCeoReselect.value || isPoEdit.value) {
     conceptsPerPage.value = 100
     externalPerPage.value = 100
     internalPerPage.value = 100
@@ -437,6 +493,18 @@ watch(currentStep, loadPreviewData)
 watch(isCeoReselect, v => {
   if (v) loadPreviewData()
 })
+watch(isPoEdit, v => {
+  if (v) {
+    loadPreviewData()
+    void loadPoEditMobilePreviewConcept()
+  }
+})
+watch(
+  () => [store.stepData.concept.selectedId, route.name] as const,
+  () => {
+    if (isPoEdit.value) void loadPoEditMobilePreviewConcept()
+  },
+)
 
 const {
   loadVariants: loadStep9Variants,
@@ -627,12 +695,20 @@ watch(currentStep, step => {
         <BrandPreviewPanel />
       </div>
 
-      <!-- Right Panel: PO edit preview (same as CEO reselect — BrandPreviewPanel) -->
+      <!-- Right Panel: PO edit — concept choice uses ConceptPreviewSlider;
+           external/internal naming sub-routes use ConceptMobilePreview (same as CEO reselect) -->
       <div
         v-else-if="isPoEdit"
-        class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
+        class="relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
       >
-        <BrandPreviewPanel />
+        <ConceptPreviewSlider
+          v-if="route.name === 'po-edit-concept' && route.query.mode !== 'post-apply'"
+          :concept="poEditPreviewConcept"
+          :is-final-selected="false"
+          :top-label="poEditSliderTopLabel"
+          hide-primary-action
+        />
+        <ConceptMobilePreview v-else :concept="poEditMobilePreviewConcept" />
       </div>
 
       <!-- Right Panel: CEO re-select preview -->

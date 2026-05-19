@@ -178,9 +178,8 @@ async function handleApplyAll() {
 
 function handleGoToEditConcept() {
   showEditExternalBeforeConceptModal.value = false
-  // Navigate to concept edit — will be a po-edit route in Stage 7;
-  // for now fall back to the step to keep edit mode working.
-  editSection(2, 'concept')
+  const bid = store.brandId
+  if (bid) router.push(`/constructor/brand/${bid}/po-edit/concept`)
 }
 
 const {
@@ -1073,15 +1072,18 @@ function editSection(step: number, sectionKey: string) {
         showEditExternalBeforeConceptModal.value = true
         return
       }
-      router.push(`/constructor/brand/${bid}/po-edit/external-naming`)
+      const query = isCeoExternalApplied.value ? { mode: 'post-apply' } : {}
+      router.push({ path: `/constructor/brand/${bid}/po-edit/external-naming`, query })
       return
     }
     if (sectionKey === 'concept') {
-      router.push(`/constructor/brand/${bid}/po-edit/concept`)
+      const query = isCeoConceptApplied.value ? { mode: 'post-apply' } : {}
+      router.push({ path: `/constructor/brand/${bid}/po-edit/concept`, query })
       return
     }
     if (sectionKey === 'internalNaming') {
-      router.push(`/constructor/brand/${bid}/po-edit/internal-naming`)
+      const query = isCeoInternalApplied.value ? { mode: 'post-apply' } : {}
+      router.push({ path: `/constructor/brand/${bid}/po-edit/internal-naming`, query })
       return
     }
   }

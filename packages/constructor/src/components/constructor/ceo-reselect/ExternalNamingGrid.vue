@@ -64,15 +64,15 @@ function formatPrice(price: number | null | undefined): string {
     <div
       v-for="naming in visibleNamings"
       :key="naming.id"
-      class="relative rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 transition-all"
+      class="relative box-border rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 border-2 border-solid transition-[border-color,opacity] duration-150"
       :class="[
         isSold(naming)
-          ? 'border border-black/10 cursor-not-allowed'
+          ? 'border-black/10 cursor-not-allowed'
           : isSelected(naming)
-            ? 'border-2 border-[#030213] cursor-pointer'
+            ? 'border-[#030213] cursor-pointer'
             : isDisabledForSelection(naming)
-              ? 'border border-black/10 opacity-40 cursor-not-allowed'
-              : 'border border-black/10 hover:border-primary/50 cursor-pointer',
+              ? 'border-black/10 opacity-40 cursor-not-allowed'
+              : 'border-black/10 hover:border-[#030213]/40 cursor-pointer',
       ]"
       @click="handleClick(naming)"
     >

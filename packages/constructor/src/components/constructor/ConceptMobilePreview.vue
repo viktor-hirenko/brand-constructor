@@ -7,10 +7,11 @@ const props = defineProps<{
   concept: Concept | null
 }>()
 
+/** Admin: gallery_url_1 = "Gallery Image 1 (Mobile Preview)" — same as CEO reselect naming step. */
 const mobileSrc = computed(() => {
   const c = props.concept
   if (!c) return null
-  const url = c.gallery_url_2 || c.gallery_url_1
+  const url = c.gallery_url_1
   return url && url.trim() !== '' ? getAssetUrl(url) : null
 })
 </script>
@@ -40,7 +41,7 @@ const mobileSrc = computed(() => {
         v-else
         class="w-full h-full flex items-center justify-center text-sm text-muted-foreground p-6 text-center"
       >
-        Немає мобільного превʼю (gallery_url_2)
+        Немає мобільного превʼю (gallery_url_1)
       </div>
     </div>
   </div>

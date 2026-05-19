@@ -2,20 +2,26 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
-import { useAuthStore } from '@/stores/auth'
-import { useApiList, apiGet } from '@/composables/useApi'
+import { useApiList, apiGet, getAssetUrl } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
 import PoEditFooter from '@/components/constructor/po-edit/PoEditFooter.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
 const store = useConstructorStore()
-const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
 const brandId = computed(() => route.params.id as string)
+
+/**
+ * post-apply = PO already applied CEO variant and now wants to re-edit.
+ *   Shows single "Обраний концепт" applied card + full alternatives grid.
+ * choice (default) = shows "PO previous" + "CEO pick" side-by-side.
+ */
+const isPostApply = computed(() => route.query.mode === 'post-apply')
 
 const {
   data: concepts,
@@ -36,29 +42,104 @@ const ceoConcept = computed(() => {
 })
 
 const poConcept = ref<Concept | null>(null)
-async function loadPoConcept() {
-  const id = poConceptId.value
+async function loadPoConceptById(id: string | null) {
   if (!id) { poConcept.value = null; return }
   try {
     poConcept.value = await apiGet<Concept>(`/api/concepts/${id}`)
   } catch { poConcept.value = null }
 }
 
-/** The concept currently chosen by PO in this edit session (starts at CEO pick). */
+/**
+ * In post-apply: start from currently applied (= poConceptId = already CEO's concept).
+ * In choice: start from CEO pick so it's pre-selected for one-click confirm.
+ */
 const selectedId = ref<string | null>(
   (() => {
+    if (isPostApply.value) {
+      return store.stepData.concept.selectedId ?? null
+    }
     const sel = store.brandCeoSelections?.concept
     return typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
   })()
 )
 
-const availableConcepts = computed(() =>
-  concepts.value.filter(c => c.id !== poConceptId.value)
-)
+/**
+ * The PO's original concept BEFORE the current edit session started.
+ * Persisted in sessionStorage keyed by brandId so «Назад» from external-naming
+ * can restore the correct value even after the store was mutated by goDali().
+ */
+const originalPoConceptId = ref<string | null>(null)
+
+function getOriginalPoConceptKey() {
+  return `po_edit_original_concept_${brandId.value}`
+}
+
+function getOriginalExternalNamingKey() {
+  return `po_edit_original_external_${brandId.value}`
+}
+
+/** Concept chosen on «Далі» before save — restored after F5 on naming page. */
+function getPendingConceptKey() {
+  return `po_edit_pending_concept_${brandId.value}`
+}
+
+function savePendingConcept(id: string) {
+  sessionStorage.setItem(getPendingConceptKey(), id)
+}
+
+function saveOriginalPoConceptId(id: string | null) {
+  if (!id) return
+  sessionStorage.setItem(getOriginalPoConceptKey(), id)
+}
+
+function saveOriginalExternalNaming() {
+  const ids = store.stepData.externalNaming.selectedIds ?? []
+  sessionStorage.setItem(getOriginalExternalNamingKey(), JSON.stringify(ids))
+}
+
+function restoreOriginalExternalNaming() {
+  const raw = sessionStorage.getItem(getOriginalExternalNamingKey())
+  if (!raw) return
+  try {
+    const ids: string[] = JSON.parse(raw)
+    store.setExternalNaming({ selectedIds: ids, newNamingBrief: null })
+  } catch { /* ignore */ }
+}
+
+function loadOriginalPoConceptId(): string | null {
+  return sessionStorage.getItem(getOriginalPoConceptKey())
+}
+
+function clearOriginalPoConceptId() {
+  sessionStorage.removeItem(getOriginalPoConceptKey())
+  sessionStorage.removeItem(getOriginalExternalNamingKey())
+  sessionStorage.removeItem(getPendingConceptKey())
+}
+
+/**
+ * choice mode:    exclude PO original (shown in dual header) AND CEO pick (shown in dual header).
+ *                 Grid shows only "other" alternatives — neither of the two shown at top.
+ * post-apply mode: exclude only the applied concept (= poConceptId, shown as single applied card).
+ *                 Grid includes PO's old original as a regular option.
+ */
+const availableConcepts = computed(() => {
+  if (isPostApply.value) {
+    // post-apply: only exclude the applied (current) concept
+    return concepts.value.filter(c => c.id !== poConceptId.value)
+  }
+  // choice: exclude both PO original and CEO pick
+  const ceoId = ceoConcept.value?.id ?? null
+  return concepts.value.filter(c => c.id !== poConceptId.value && c.id !== ceoId)
+})
 
 const primaryDisabled = computed(() => !selectedId.value)
 
 const isSaving = ref(false)
+
+const comment = computed({
+  get: () => store.stepData.concept.comment ?? '',
+  set: (val: string) => store.setConcept({ comment: val }),
+})
 
 const themeOptions = [
   { value: 'light', label: 'Світла тема' },
@@ -73,34 +154,78 @@ function loadConcepts() {
 }
 
 onMounted(() => {
-  store.beginEditSection('concept', 8)
-  loadPoConcept()
+  // Restore or initialize originalPoConceptId from sessionStorage.
+  // On first open: store.stepData.concept.selectedId is PO's real original concept.
+  // On «Назад» return: sessionStorage still has the real original saved from first open.
+  const persisted = loadOriginalPoConceptId()
+  if (persisted) {
+    originalPoConceptId.value = persisted
+  } else {
+    // First time opening this edit session — snapshot the real PO concept.
+    originalPoConceptId.value = store.stepData.concept.selectedId ?? null
+    saveOriginalPoConceptId(originalPoConceptId.value)
+  }
+
+  // Begin edit section only on first open (no editingSection yet).
+  if (!store.editingSection) {
+    store.beginEditSection('concept', 8)
+  } else {
+    // Returning from external-naming: cancelEditSection was called there,
+    // which restored store.stepData.concept — now re-open the section to keep
+    // cancel working from concept screen too.
+    store.beginEditSection('concept', 8)
+  }
+
+  // Pre-select CEO pick (choice mode) — always show CEO as highlighted.
+  if (!isPostApply.value) {
+    const sel = store.brandCeoSelections?.concept
+    const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
+    if (ceoId) selectedId.value = ceoId
+  }
+
+  // Seed previewId so the right-panel slider shows immediately on open.
+  if (selectedId.value) store.setConcept({ previewId: selectedId.value })
+
+  // Always load PO concept by originalPoConceptId (not the possibly mutated store value).
+  loadPoConceptById(originalPoConceptId.value)
   loadConcepts()
 })
 
 watch(localMode, loadConcepts)
 
+/** Update both the local selectedId and the store previewId so the right-panel slider reacts. */
+function selectConcept(id: string) {
+  selectedId.value = id
+  store.setConcept({ previewId: id })
+}
+
 function goCancel() {
+  // Restore externalNaming to what it was before the edit session started.
+  restoreOriginalExternalNaming()
+  clearOriginalPoConceptId()
   store.cancelEditSection()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 
 async function goDali() {
   if (!selectedId.value) return
-  store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
-  const conceptChanged = selectedId.value !== poConceptId.value
+  const conceptChanged = selectedId.value !== originalPoConceptId.value
 
   if (conceptChanged) {
-    // Concept changed → chained flow: must pick new external naming
-    // Clear PO external selections (they belonged to the old concept)
+    // Save original externalNaming BEFORE clearing it, so «Скасувати» can restore it.
+    saveOriginalExternalNaming()
+    savePendingConcept(selectedId.value)
+    store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept/external-naming`)
   } else {
-    // Same concept → just save + return
+    // Same concept as PO's original → save + return
+    store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     isSaving.value = true
     await store.saveBrand()
     isSaving.value = false
     store.commitEditSection()
+    clearOriginalPoConceptId()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }
@@ -114,16 +239,71 @@ async function goDali() {
           Concept Selection
         </h1>
         <p class="text-[16px] leading-6 text-[#717182] tracking-[-0.3125px]">
-          Ви можете залишити варіант CEO або обрати інший.
+          {{ isPostApply ? "Оберіть концепт та перегляньте прев'ю праворуч." : 'Ви можете залишити варіант CEO або обрати інший.' }}
         </p>
       </div>
 
-      <!-- PO previous + CEO pick side by side -->
-      <div class="grid grid-cols-2 gap-4 max-w-[506px]">
+      <!-- post-apply: single applied concept card -->
+      <div v-if="isPostApply" class="flex flex-col gap-3">
+        <p class="text-[16px] font-medium leading-6 text-[#414141] tracking-[-0.3125px]">
+          Обраний концепт
+        </p>
+        <div v-if="poConcept" class="relative w-[248px] h-[248px] rounded-2xl overflow-hidden border-2 border-[#030213]">
+          <img
+            v-if="poConcept.visual_url"
+            :src="getAssetUrl(poConcept.visual_url)"
+            :alt="poConcept.name"
+            class="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div class="absolute inset-x-0 bottom-0 px-4 pt-8 pb-4 bg-gradient-to-t from-black/70 to-transparent">
+            <p class="text-[16px] font-medium text-white truncate">{{ poConcept.name }}</p>
+          </div>
+          <!-- Checkmark badge -->
+          <div class="absolute top-[7px] left-[7px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_5px_rgba(0,0,0,0.2)] flex items-center justify-center">
+            <svg class="size-4 text-[#030213]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        </div>
+        <div v-else class="w-[248px] h-[248px] rounded-2xl border border-black/10 bg-[#f3f3f5] flex items-center justify-center">
+          <span class="text-sm text-[#717182]">—</span>
+        </div>
+      </div>
+
+      <!-- choice: PO previous + CEO pick side by side, same size -->
+      <div v-else class="grid grid-cols-2 gap-4 max-w-[506px]">
         <!-- PO previous -->
         <div class="flex flex-col gap-2">
           <p class="text-[14px] font-medium leading-4 text-[#717182]">Ваш попередній вибір</p>
-          <CustomerPickPreview :concept="poConcept" />
+          <div
+            v-if="poConcept"
+            class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted cursor-pointer border-2"
+            :class="selectedId === poConcept.id ? 'border-[#030213]' : 'border-black/10'"
+            @click="selectConcept(poConcept.id)"
+          >
+            <img
+              v-if="poConcept.visual_url"
+              :src="getAssetUrl(poConcept.visual_url)"
+              :alt="poConcept.name"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent">
+              <p class="text-[16px] font-medium text-white truncate">{{ poConcept.name }}</p>
+            </div>
+            <div
+              v-if="selectedId === poConcept.id"
+              class="absolute top-1.5 left-1.5 size-7 rounded-full bg-white flex items-center justify-center"
+            >
+              <svg class="size-4 text-[#030213]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </div>
+          <div v-else class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center">
+            <span class="text-sm text-[#717182]">—</span>
+          </div>
         </div>
 
         <!-- CEO pick (pre-selected) -->
@@ -133,11 +313,11 @@ async function goDali() {
             v-if="ceoConcept"
             class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted cursor-pointer border-2"
             :class="selectedId === ceoConcept.id ? 'border-[#030213]' : 'border-black/10'"
-            @click="selectedId = ceoConcept!.id"
+            @click="selectConcept(ceoConcept.id)"
           >
             <img
               v-if="ceoConcept.visual_url"
-              :src="ceoConcept.visual_url"
+              :src="getAssetUrl(ceoConcept.visual_url)"
               :alt="ceoConcept.name"
               class="w-full h-full object-cover"
               loading="lazy"
@@ -154,17 +334,19 @@ async function goDali() {
               </svg>
             </div>
           </div>
-          <p v-else class="text-[14px] text-[#717182] italic">Не вказано</p>
+          <div v-else class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center">
+            <span class="text-sm text-[#717182]">—</span>
+          </div>
         </div>
       </div>
 
       <hr class="border-t border-black/10 max-w-[506px]" />
 
-      <!-- Other concepts -->
+      <!-- Other / available concepts grid -->
       <div class="flex flex-col gap-3">
         <div class="flex items-center justify-between max-w-[506px]">
           <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-            Інші концепти
+            {{ isPostApply ? 'Доступні концепти' : 'Інші концепти' }}
           </p>
           <SegmentedControl
             v-model="localMode"
@@ -184,9 +366,11 @@ async function goDali() {
           :concepts="availableConcepts"
           :selected-id="selectedId"
           :preview-id="selectedId"
-          @select="id => (selectedId = id)"
+          @select="selectConcept"
         />
       </div>
+
+      <StepCommentField v-model="comment" label="Коментар замовника" />
     </div>
 
     <PoEditFooter

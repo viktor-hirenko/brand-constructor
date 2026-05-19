@@ -19,6 +19,8 @@ const props = withDefaults(
     confirmDisabled?: boolean
     /** When true, primary action emits `cancelSelection` instead of `confirmSelection`. */
     cancelMode?: boolean
+    /** Hide only the action button while keeping name and topLabel visible. */
+    hidePrimaryAction?: boolean
   }>(),
   {
     hideHeader: false,
@@ -26,6 +28,7 @@ const props = withDefaults(
     confirmLabel: '',
     confirmDisabled: false,
     cancelMode: false,
+    hidePrimaryAction: false,
   }
 )
 
@@ -247,6 +250,7 @@ onUnmounted(() => {
           </span>
         </div>
         <button
+          v-if="!hidePrimaryAction"
           type="button"
           :disabled="computedConfirmDisabled"
           class="inline-flex items-center justify-center gap-2 h-12 text-base font-medium tracking-[-0.31px] transition-all shrink-0 disabled:cursor-not-allowed rounded-[8px] px-5"
