@@ -669,11 +669,15 @@ const ceoFinalizeView = computed(
 /** PO final step in draft — Figma Product view (1566:27958). */
 const poDraftView = computed(() => !isCeoView.value && brandStatus.value === 'draft')
 
-const unifiedReviewLayout = computed(() => ceoFinalizeView.value || poDraftView.value)
-
-const reviewMode = computed<'ceo' | 'po-draft'>(() =>
-  ceoFinalizeView.value ? 'ceo' : 'po-draft'
+const unifiedReviewLayout = computed(
+  () => ceoFinalizeView.value || poDraftView.value || isPoReturnedView.value
 )
+
+const reviewMode = computed<'ceo' | 'po-draft' | 'po-returned'>(() => {
+  if (ceoFinalizeView.value) return 'ceo'
+  if (isPoReturnedView.value) return 'po-returned'
+  return 'po-draft'
+})
 
 const poDraftInfoOverride = {
   title: 'Бриф готовий!',
@@ -696,6 +700,12 @@ const unifiedReviewTitle = computed(() =>
 const unifiedReviewSubtitle = computed(() =>
   reviewMode.value === 'po-draft' ? 'Перевірте всі дані перед відправкою' : undefined
 )
+
+/**
+ * `Редагувати` button is available in PO draft AND PO returned-from-CEO views,
+ * but NOT in CEO finalize view (CEO uses `Змінити вибір` instead).
+ */
+const isPoEditable = computed(() => reviewMode.value !== 'ceo')
 
 const externalNamingItems = computed(() =>
   selectedExternalNamings.value.map(n => ({
@@ -1162,11 +1172,18 @@ async function handlePrintBrand() {
   <div v-if="unifiedReviewLayout" class="flex flex-col flex-1 min-h-0 h-full">
     <div class="flex-1 min-h-0 overflow-y-auto">
       <div class="px-8 py-8 flex flex-col gap-6">
-        <!-- Returned-from-CEO: show attention banner instead of ReviewHeader info block -->
-        <ReturnedFromCeoBanner
-          v-if="isPoReturnedView"
-          :attention-count="attentionCounter"
-        />
+        <!-- Returned-from-CEO: brand name + status badge + attention banner -->
+        <template v-if="isPoReturnedView">
+          <ReviewHeader
+            :title="brandHeaderTitle"
+            :status="brandStatus"
+            :info-override="null"
+          />
+          <ReturnedFromCeoBanner
+            v-if="attentionCounter > 0"
+            :attention-count="attentionCounter"
+          />
+        </template>
         <ReviewHeader
           v-else
           :title="unifiedReviewTitle"
@@ -1181,7 +1198,7 @@ async function handlePrintBrand() {
         <div class="space-y-4">
           <ReviewSection
             title="Brand Basics"
-            :edit-step="reviewMode === 'po-draft' ? 1 : undefined"
+            :edit-step="isPoEditable ? 1 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('basics')"
             @edit="step => editSection(step, 'basics')"
           >
@@ -1278,7 +1295,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Concept"
-            :edit-step="reviewMode === 'po-draft' ? 2 : undefined"
+            :edit-step="isPoEditable ? 2 : undefined"
             :change-choice="reviewMode === 'ceo'"
             :has-unresolved="hasSectionUnresolvedComment('concept')"
             @edit="step => editSection(step, 'concept')"
@@ -1311,7 +1328,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="External Naming"
-            :edit-step="reviewMode === 'po-draft' ? 3 : undefined"
+            :edit-step="isPoEditable ? 3 : undefined"
             :change-choice="reviewMode === 'ceo'"
             :has-unresolved="hasSectionUnresolvedComment('externalNaming')"
             @edit="step => editSection(step, 'externalNaming')"
@@ -1341,7 +1358,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Internal Naming"
-            :edit-step="reviewMode === 'po-draft' ? 4 : undefined"
+            :edit-step="isPoEditable ? 4 : undefined"
             :change-choice="reviewMode === 'ceo'"
             :has-unresolved="hasSectionUnresolvedComment('internalNaming')"
             @edit="step => editSection(step, 'internalNaming')"
@@ -1371,7 +1388,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="PR Package"
-            :edit-step="reviewMode === 'po-draft' ? 5 : undefined"
+            :edit-step="isPoEditable ? 5 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('marketingPackage')"
             @edit="step => editSection(step, 'marketingPackage')"
           >
@@ -1398,7 +1415,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Deliverables"
-            :edit-step="reviewMode === 'po-draft' ? 6 : undefined"
+            :edit-step="isPoEditable ? 6 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('deliverables')"
             @edit="step => editSection(step, 'deliverables')"
           >
@@ -1425,7 +1442,7 @@ async function handlePrintBrand() {
 
           <ReviewSection
             title="Visual Components"
-            :edit-step="reviewMode === 'po-draft' ? 7 : undefined"
+            :edit-step="isPoEditable ? 7 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('visualComponents')"
             @edit="step => editSection(step, 'visualComponents')"
           >
@@ -1508,6 +1525,7 @@ async function handlePrintBrand() {
                 : 'Відправити на розгляд'
           "
           :submit-disabled="submitBlocked"
+          :show-back="!isPoReturnedView"
           :show-share="showShareButton"
           :show-pdf="showPdfButton"
           :share-copied="shareSuccess"

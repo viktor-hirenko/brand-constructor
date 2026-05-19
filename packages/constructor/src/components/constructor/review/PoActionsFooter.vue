@@ -8,6 +8,11 @@ interface PoActionsFooterProps {
    * Used in returned-from-CEO view when attention counter > 0.
    */
   submitDisabled?: boolean
+  /**
+   * Whether to show the "Назад" button. Defaults to true (PO draft wizard flow).
+   * Hidden in returned-from-CEO view where there is no wizard step to go back to.
+   */
+  showBack?: boolean
   /** Secondary actions — typically false in draft. */
   showShare?: boolean
   showPdf?: boolean
@@ -19,6 +24,7 @@ withDefaults(defineProps<PoActionsFooterProps>(), {
   loading: false,
   submitLabel: 'Відправити на розгляд',
   submitDisabled: false,
+  showBack: true,
   showShare: false,
   showPdf: false,
   shareCopied: false,
@@ -58,6 +64,7 @@ const emit = defineEmits<{
     </button>
 
     <button
+      v-if="showBack"
       type="button"
       class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02]"
       @click="emit('back')"
