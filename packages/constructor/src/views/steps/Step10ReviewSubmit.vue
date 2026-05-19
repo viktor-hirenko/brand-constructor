@@ -735,6 +735,15 @@ const ceoFinalizeView = computed(
     isCeoView.value && (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
 )
 
+/**
+ * CEO viewing a brand that was already sent back to PO for revision.
+ * Read-only frozen view — CEO already did their work, waits for PO to resubmit.
+ * No editable comments, no footer actions.
+ */
+const ceoFrozenView = computed(
+  () => isCeoView.value && brandStatus.value === 'needs_revision'
+)
+
 /** PO final step in draft — Figma Product view (1566:27958). */
 const poDraftView = computed(() => !isCeoView.value && brandStatus.value === 'draft')
 
@@ -784,6 +793,13 @@ const reviewHeaderInfoOverride = computed(() => {
     }
     // Counter reached 0 — explicitly hide the info block (null = no block)
     return null
+  }
+  if (ceoFrozenView.value) {
+    return {
+      title: 'Бриф направлено на доопрацювання PO',
+      description: 'Очікуємо на повторне погодження. Поточні дані можуть оновлюватись.',
+      iconVariant: 'warning' as const,
+    }
   }
   return undefined
 })
@@ -1396,7 +1412,7 @@ async function handlePrintBrand() {
                 section-key="basics"
                 :po-comment="getPoCommentForSection('basics')"
                 :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('basics') : (ceoComments.basics ?? '')"
-                :ceo-editable="reviewMode === 'ceo'"
+                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
                 :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('basics')"
                 :ceo-resolved="isSectionCeoCommentResolved('basics')"
                 :can-resolve="isPoOwner"
@@ -1411,7 +1427,7 @@ async function handlePrintBrand() {
           <ReviewSection
             title="Concept"
             :edit-step="isPoEditable ? 2 : undefined"
-            :change-choice="reviewMode === 'ceo'"
+            :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('concept')"
             :needs-choice="isPoReturnedView && isCeoChoiceAnAlternative('concept', store.brandCeoSelections?.concept ?? '') && !isCeoConceptApplied"
             @edit="step => editSection(step, 'concept')"
@@ -1433,7 +1449,7 @@ async function handlePrintBrand() {
                 section-key="concept"
                 :po-comment="getPoCommentForSection('concept')"
                 :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('concept') : (ceoComments.concept ?? '')"
-                :ceo-editable="reviewMode === 'ceo'"
+                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
                 :highlighted="reviewMode === 'ceo' && isSectionHighlighted('concept')"
                 :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('concept')"
                 :ceo-resolved="isSectionCeoCommentResolved('concept')"
@@ -1449,7 +1465,7 @@ async function handlePrintBrand() {
           <ReviewSection
             title="External Naming"
             :edit-step="isPoEditable ? 3 : undefined"
-            :change-choice="reviewMode === 'ceo'"
+            :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('externalNaming')"
             :needs-choice="isPoReturnedView && isCeoChoiceAnAlternative('externalNaming', store.brandCeoSelections?.externalNaming ?? '') && !isCeoExternalApplied"
             @edit="step => editSection(step, 'externalNaming')"
@@ -1468,7 +1484,7 @@ async function handlePrintBrand() {
                 section-key="externalNaming"
                 :po-comment="getPoCommentForSection('externalNaming')"
                 :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('externalNaming') : (ceoComments.externalNaming ?? '')"
-                :ceo-editable="reviewMode === 'ceo'"
+                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
                 :highlighted="reviewMode === 'ceo' && isSectionHighlighted('externalNaming')"
                 :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('externalNaming')"
                 :ceo-resolved="isSectionCeoCommentResolved('externalNaming')"
@@ -1484,7 +1500,7 @@ async function handlePrintBrand() {
           <ReviewSection
             title="Internal Naming"
             :edit-step="isPoEditable ? 4 : undefined"
-            :change-choice="reviewMode === 'ceo'"
+            :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('internalNaming')"
             :needs-choice="isPoReturnedView && isCeoChoiceAnAlternative('internalNaming', store.brandCeoSelections?.internalNaming ?? '') && !isCeoInternalApplied"
             @edit="step => editSection(step, 'internalNaming')"
@@ -1503,7 +1519,7 @@ async function handlePrintBrand() {
                 section-key="internalNaming"
                 :po-comment="getPoCommentForSection('internalNaming')"
                 :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('internalNaming') : (ceoComments.internalNaming ?? '')"
-                :ceo-editable="reviewMode === 'ceo'"
+                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
                 :highlighted="reviewMode === 'ceo' && isSectionHighlighted('internalNaming')"
                 :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('internalNaming')"
                 :ceo-resolved="isSectionCeoCommentResolved('internalNaming')"
@@ -1531,7 +1547,7 @@ async function handlePrintBrand() {
                 section-key="marketingPackage"
                 :po-comment="getPoCommentForSection('marketingPackage')"
                 :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('marketingPackage') : (ceoComments.marketingPackage ?? '')"
-                :ceo-editable="reviewMode === 'ceo'"
+                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
                 :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('marketingPackage')"
                 :ceo-resolved="isSectionCeoCommentResolved('marketingPackage')"
                 :can-resolve="isPoOwner"
@@ -1558,7 +1574,7 @@ async function handlePrintBrand() {
                 section-key="deliverables"
                 :po-comment="getPoCommentForSection('deliverables')"
                 :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('deliverables') : (ceoComments.deliverables ?? '')"
-                :ceo-editable="reviewMode === 'ceo'"
+                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
                 :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('deliverables')"
                 :ceo-resolved="isSectionCeoCommentResolved('deliverables')"
                 :can-resolve="isPoOwner"
@@ -1582,7 +1598,7 @@ async function handlePrintBrand() {
                 section-key="visualComponents"
                 :po-comment="getPoCommentForSection('visualComponents')"
                 :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('visualComponents') : (ceoComments.visualComponents ?? '')"
-                :ceo-editable="reviewMode === 'ceo'"
+                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
                 :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('visualComponents')"
                 :ceo-resolved="isSectionCeoCommentResolved('visualComponents')"
                 :can-resolve="isPoOwner"
@@ -1645,7 +1661,7 @@ async function handlePrintBrand() {
           @revise="handleStatusChange('needs_revision')"
         />
         <PoActionsFooter
-          v-else
+          v-else-if="!ceoFrozenView"
           :loading="statusActionLoading || isSaving"
           :submit-label="
             isPoReturnedView
