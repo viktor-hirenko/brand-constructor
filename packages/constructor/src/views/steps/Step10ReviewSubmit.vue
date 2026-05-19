@@ -30,6 +30,7 @@ import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliv
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
 import CeoActionsFooter from '@/components/constructor/review/CeoActionsFooter.vue'
 import PoActionsFooter from '@/components/constructor/review/PoActionsFooter.vue'
+import SimpleModal from '@/components/ui/SimpleModal.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -155,8 +156,31 @@ const hasConceptMismatch = computed(() => {
     !isCeoConceptApplied.value
 })
 
+// ─── Dependency-guard modals (Figma 1985:4362, 1985:4657) ───────────────────
+
+/** Modal 1: PO tries to apply CEO external naming while CEO concept is still pending. */
+const showApplyExternalBeforeConceptModal = ref(false)
+/** Modal 2: PO tries to edit external naming while concept mismatch exists. */
+const showEditExternalBeforeConceptModal = ref(false)
+
 async function handleApplyCeoVariant(section: 'concept' | 'externalNaming' | 'internalNaming') {
+  if (section === 'externalNaming' && hasConceptMismatch.value) {
+    showApplyExternalBeforeConceptModal.value = true
+    return
+  }
   await store.applyCeoVariant(section)
+}
+
+async function handleApplyAll() {
+  showApplyExternalBeforeConceptModal.value = false
+  await store.applyCeoConceptAndExternal()
+}
+
+function handleGoToEditConcept() {
+  showEditExternalBeforeConceptModal.value = false
+  // Navigate to concept edit — will be a po-edit route in Stage 7;
+  // for now fall back to the step to keep edit mode working.
+  editSection(2, 'concept')
 }
 
 const {
@@ -1034,6 +1058,11 @@ const revisionWarning = computed<string | null>(() => {
  * Uses the section key (same as SectionCommentBlock) to locate the slice.
  */
 function editSection(step: number, sectionKey: string) {
+  // Guard: editing External Naming while concept mismatch exists is blocked.
+  if (sectionKey === 'externalNaming' && isPoReturnedView.value && hasConceptMismatch.value) {
+    showEditExternalBeforeConceptModal.value = true
+    return
+  }
   store.beginEditSection(sectionKey, 8)
   router.push(`/constructor/step/${step}`)
 }
@@ -2299,4 +2328,27 @@ async function handlePrintBrand() {
       </template>
     </Step10ReviewScrollLayout>
   </div>
+
+  <!-- Modal 1 (Figma 1985:4362): PO applies CEO external naming while concept mismatch -->
+  <SimpleModal
+    v-if="showApplyExternalBeforeConceptModal"
+    title="Застосувати варіант CEO?"
+    body="Ці назви прив'язані до іншого концепту. Разом із ними буде застосовано концепт обраний СЕО."
+    cancel-label="Скасувати"
+    primary-label="Застосувати все"
+    :primary-loading="store.isApplyingCeoVariant"
+    @cancel="showApplyExternalBeforeConceptModal = false"
+    @primary="handleApplyAll"
+  />
+
+  <!-- Modal 2 (Figma 1985:4657): PO tries to edit external naming with concept mismatch -->
+  <SimpleModal
+    v-if="showEditExternalBeforeConceptModal"
+    title="Потрібно обрати концепт"
+    body="Щоб редагувати назви, спочатку оберіть концепт. Застосуйте варіант СЕО або оберіть інший."
+    cancel-label="Скасувати"
+    primary-label="Редагувати концепт"
+    @cancel="showEditExternalBeforeConceptModal = false"
+    @primary="handleGoToEditConcept"
+  />
 </template>
