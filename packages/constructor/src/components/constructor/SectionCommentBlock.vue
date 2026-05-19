@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import CeoCommentCard from '@/components/constructor/review/CeoCommentCard.vue'
 
 interface SectionCommentBlockProps {
   /** Section identifier from CEO_COMMENT_SECTIONS (concept, externalNaming, ...). */
@@ -20,6 +21,17 @@ interface SectionCommentBlockProps {
   debounceMs?: number
   /** Always show textarea (e.g. general comment block) — no dashed CTA. */
   alwaysExpanded?: boolean
+  /**
+   * When true, the CEO comment is shown as CeoCommentCard with resolve UI.
+   * Used in PO needs_revision view. Requires `ceoResolved` and `canResolve`.
+   */
+  showResolveUi?: boolean
+  /** Whether this CEO comment is marked as resolved by PO. */
+  ceoResolved?: boolean
+  /** Whether the current user can resolve/unresolve (brand owner only). */
+  canResolve?: boolean
+  /** Whether a resolve/unresolve request is in flight for this section. */
+  ceoResolveLoading?: boolean
 }
 
 const props = withDefaults(defineProps<SectionCommentBlockProps>(), {
@@ -30,11 +42,19 @@ const props = withDefaults(defineProps<SectionCommentBlockProps>(), {
   placeholder: 'Додайте ваші коментарі або побажання…',
   debounceMs: 600,
   alwaysExpanded: false,
+  showResolveUi: false,
+  ceoResolved: false,
+  canResolve: false,
+  ceoResolveLoading: false,
 })
 
 const emit = defineEmits<{
   /** Fired (debounced) when CEO comment value changes. Empty string means cleared. */
   'update:ceoComment': [value: string]
+  /** Fired when PO clicks "Позначити як вирішений". */
+  resolve: []
+  /** Fired when PO clicks "Повернути" (unresolve). */
+  unresolve: []
 }>()
 
 const draft = ref<string>(props.ceoComment ?? '')
@@ -204,7 +224,18 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
       </label>
     </template>
 
-    <!-- Read-only CEO comment (PO/admin reading existing comments) -->
+    <!-- Read-only CEO comment with resolve UI (PO returned-from-CEO view) -->
+    <CeoCommentCard
+      v-else-if="hasCeoComment && showResolveUi"
+      :value="ceoComment ?? ''"
+      :resolved="ceoResolved"
+      :loading="ceoResolveLoading"
+      :can-resolve="canResolve"
+      @resolve="emit('resolve')"
+      @unresolve="emit('unresolve')"
+    />
+
+    <!-- Read-only CEO comment without resolve UI (legacy / other contexts) -->
     <div
       v-else-if="hasCeoComment"
       class="flex flex-col gap-1 rounded-lg border border-amber-200 bg-amber-50 p-4"

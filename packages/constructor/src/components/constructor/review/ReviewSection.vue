@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UnresolvedDot from '@/components/ui/UnresolvedDot.vue'
+
 interface ReviewSectionProps {
   title: string
   /** Render the "Змінити вибір" button in the header. */
@@ -9,6 +11,12 @@ interface ReviewSectionProps {
   highlighted?: boolean
   /** No card chrome (border/hr) — for loose blocks only if needed. */
   borderless?: boolean
+  /**
+   * Shows a blue 6×6 dot indicator in the section header.
+   * True when the section has at least one unresolved CEO comment
+   * (returned-from-CEO PO view).
+   */
+  hasUnresolved?: boolean
 }
 
 const props = withDefaults(defineProps<ReviewSectionProps>(), {
@@ -16,6 +24,7 @@ const props = withDefaults(defineProps<ReviewSectionProps>(), {
   editStep: undefined,
   highlighted: false,
   borderless: false,
+  hasUnresolved: false,
 })
 
 const emit = defineEmits<{
@@ -44,11 +53,14 @@ function onEditClick() {
     ]"
   >
     <header class="flex items-center justify-between h-14 pl-4 pr-2">
-      <h3
-        class="text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]"
-      >
-        {{ title }}
-      </h3>
+      <div class="flex items-center gap-2">
+        <h3
+          class="text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]"
+        >
+          {{ title }}
+        </h3>
+        <UnresolvedDot v-if="hasUnresolved" />
+      </div>
       <button
         v-if="editStep != null"
         type="button"

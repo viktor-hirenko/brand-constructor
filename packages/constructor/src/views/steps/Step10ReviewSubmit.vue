@@ -38,6 +38,42 @@ const authStore = useAuthStore()
 
 const isCeoView = computed(() => authStore.isCeoOrAdmin)
 
+/** True when PO is viewing a brief that was returned from CEO (needs_revision). */
+const isPoReturnedView = computed(
+  () => !isCeoView.value && brandStatus.value === 'needs_revision'
+)
+
+/** True if the current user is the brand owner (can resolve CEO comments). */
+const isPoOwner = computed(
+  () => !isCeoView.value && !!store.brandId
+)
+
+/**
+ * Returns true when `sectionKey` has a CEO comment that PO hasn't resolved yet.
+ * Only meaningful in the returned-from-CEO view.
+ */
+function hasSectionUnresolvedComment(sectionKey: string): boolean {
+  if (!isPoReturnedView.value) return false
+  const meta = store.brandCeoComments?.[sectionKey]
+  return !!meta && meta.value.trim().length > 0 && !meta.resolved
+}
+
+function isSectionCeoCommentResolved(sectionKey: string): boolean {
+  return store.brandCeoComments?.[sectionKey]?.resolved ?? false
+}
+
+function getSectionCeoCommentValue(sectionKey: string): string {
+  return store.brandCeoComments?.[sectionKey]?.value ?? ''
+}
+
+async function handleCeoCommentResolve(sectionKey: string) {
+  await store.setCeoCommentResolved(sectionKey, true)
+}
+
+async function handleCeoCommentUnresolve(sectionKey: string) {
+  await store.setCeoCommentResolved(sectionKey, false)
+}
+
 const {
   data: concepts,
   fetchData: fetchConcepts,
@@ -1098,6 +1134,7 @@ async function handlePrintBrand() {
           <ReviewSection
             title="Brand Basics"
             :edit-step="reviewMode === 'po-draft' ? 1 : undefined"
+            :has-unresolved="hasSectionUnresolvedComment('basics')"
             @edit="step => editSection(step, 'basics')"
           >
             <ReviewSectionRow
@@ -1178,9 +1215,15 @@ async function handlePrintBrand() {
               <SectionCommentBlock
                 section-key="basics"
                 :po-comment="getPoCommentForSection('basics')"
-                :ceo-comment="ceoComments.basics ?? ''"
+                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('basics') : (ceoComments.basics ?? '')"
                 :ceo-editable="reviewMode === 'ceo'"
+                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('basics')"
+                :ceo-resolved="isSectionCeoCommentResolved('basics')"
+                :can-resolve="isPoOwner"
+                :ceo-resolve-loading="store.isCeoCommentResolveLoading('basics')"
                 @update:ceo-comment="value => handleCeoCommentBySection('basics', value)"
+                @resolve="handleCeoCommentResolve('basics')"
+                @unresolve="handleCeoCommentUnresolve('basics')"
               />
             </template>
           </ReviewSection>
@@ -1189,6 +1232,7 @@ async function handlePrintBrand() {
             title="Concept"
             :edit-step="reviewMode === 'po-draft' ? 2 : undefined"
             :change-choice="reviewMode === 'ceo'"
+            :has-unresolved="hasSectionUnresolvedComment('concept')"
             @edit="step => editSection(step, 'concept')"
             @change="startCeoReselectBySection('concept')"
           >
@@ -1203,10 +1247,16 @@ async function handlePrintBrand() {
               <SectionCommentBlock
                 section-key="concept"
                 :po-comment="getPoCommentForSection('concept')"
-                :ceo-comment="ceoComments.concept ?? ''"
+                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('concept') : (ceoComments.concept ?? '')"
                 :ceo-editable="reviewMode === 'ceo'"
                 :highlighted="reviewMode === 'ceo' && isSectionHighlighted('concept')"
+                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('concept')"
+                :ceo-resolved="isSectionCeoCommentResolved('concept')"
+                :can-resolve="isPoOwner"
+                :ceo-resolve-loading="store.isCeoCommentResolveLoading('concept')"
                 @update:ceo-comment="value => handleCeoCommentBySection('concept', value)"
+                @resolve="handleCeoCommentResolve('concept')"
+                @unresolve="handleCeoCommentUnresolve('concept')"
               />
             </template>
           </ReviewSection>
@@ -1215,6 +1265,7 @@ async function handlePrintBrand() {
             title="External Naming"
             :edit-step="reviewMode === 'po-draft' ? 3 : undefined"
             :change-choice="reviewMode === 'ceo'"
+            :has-unresolved="hasSectionUnresolvedComment('externalNaming')"
             @edit="step => editSection(step, 'externalNaming')"
             @change="startCeoReselectBySection('externalNaming')"
           >
@@ -1226,10 +1277,16 @@ async function handlePrintBrand() {
               <SectionCommentBlock
                 section-key="externalNaming"
                 :po-comment="getPoCommentForSection('externalNaming')"
-                :ceo-comment="ceoComments.externalNaming ?? ''"
+                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('externalNaming') : (ceoComments.externalNaming ?? '')"
                 :ceo-editable="reviewMode === 'ceo'"
                 :highlighted="reviewMode === 'ceo' && isSectionHighlighted('externalNaming')"
+                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('externalNaming')"
+                :ceo-resolved="isSectionCeoCommentResolved('externalNaming')"
+                :can-resolve="isPoOwner"
+                :ceo-resolve-loading="store.isCeoCommentResolveLoading('externalNaming')"
                 @update:ceo-comment="value => handleCeoCommentBySection('externalNaming', value)"
+                @resolve="handleCeoCommentResolve('externalNaming')"
+                @unresolve="handleCeoCommentUnresolve('externalNaming')"
               />
             </template>
           </ReviewSection>
@@ -1238,6 +1295,7 @@ async function handlePrintBrand() {
             title="Internal Naming"
             :edit-step="reviewMode === 'po-draft' ? 4 : undefined"
             :change-choice="reviewMode === 'ceo'"
+            :has-unresolved="hasSectionUnresolvedComment('internalNaming')"
             @edit="step => editSection(step, 'internalNaming')"
             @change="startCeoReselectBySection('internalNaming')"
           >
@@ -1249,10 +1307,16 @@ async function handlePrintBrand() {
               <SectionCommentBlock
                 section-key="internalNaming"
                 :po-comment="getPoCommentForSection('internalNaming')"
-                :ceo-comment="ceoComments.internalNaming ?? ''"
+                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('internalNaming') : (ceoComments.internalNaming ?? '')"
                 :ceo-editable="reviewMode === 'ceo'"
                 :highlighted="reviewMode === 'ceo' && isSectionHighlighted('internalNaming')"
+                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('internalNaming')"
+                :ceo-resolved="isSectionCeoCommentResolved('internalNaming')"
+                :can-resolve="isPoOwner"
+                :ceo-resolve-loading="store.isCeoCommentResolveLoading('internalNaming')"
                 @update:ceo-comment="value => handleCeoCommentBySection('internalNaming', value)"
+                @resolve="handleCeoCommentResolve('internalNaming')"
+                @unresolve="handleCeoCommentUnresolve('internalNaming')"
               />
             </template>
           </ReviewSection>
@@ -1260,6 +1324,7 @@ async function handlePrintBrand() {
           <ReviewSection
             title="PR Package"
             :edit-step="reviewMode === 'po-draft' ? 5 : undefined"
+            :has-unresolved="hasSectionUnresolvedComment('marketingPackage')"
             @edit="step => editSection(step, 'marketingPackage')"
           >
             <ReviewPrPackageBlock
@@ -1270,9 +1335,15 @@ async function handlePrintBrand() {
               <SectionCommentBlock
                 section-key="marketingPackage"
                 :po-comment="getPoCommentForSection('marketingPackage')"
-                :ceo-comment="ceoComments.marketingPackage ?? ''"
+                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('marketingPackage') : (ceoComments.marketingPackage ?? '')"
                 :ceo-editable="reviewMode === 'ceo'"
+                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('marketingPackage')"
+                :ceo-resolved="isSectionCeoCommentResolved('marketingPackage')"
+                :can-resolve="isPoOwner"
+                :ceo-resolve-loading="store.isCeoCommentResolveLoading('marketingPackage')"
                 @update:ceo-comment="value => handleCeoCommentBySection('marketingPackage', value)"
+                @resolve="handleCeoCommentResolve('marketingPackage')"
+                @unresolve="handleCeoCommentUnresolve('marketingPackage')"
               />
             </template>
           </ReviewSection>
@@ -1280,6 +1351,7 @@ async function handlePrintBrand() {
           <ReviewSection
             title="Deliverables"
             :edit-step="reviewMode === 'po-draft' ? 6 : undefined"
+            :has-unresolved="hasSectionUnresolvedComment('deliverables')"
             @edit="step => editSection(step, 'deliverables')"
           >
             <ReviewDeliverablesBlock
@@ -1290,9 +1362,15 @@ async function handlePrintBrand() {
               <SectionCommentBlock
                 section-key="deliverables"
                 :po-comment="getPoCommentForSection('deliverables')"
-                :ceo-comment="ceoComments.deliverables ?? ''"
+                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('deliverables') : (ceoComments.deliverables ?? '')"
                 :ceo-editable="reviewMode === 'ceo'"
+                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('deliverables')"
+                :ceo-resolved="isSectionCeoCommentResolved('deliverables')"
+                :can-resolve="isPoOwner"
+                :ceo-resolve-loading="store.isCeoCommentResolveLoading('deliverables')"
                 @update:ceo-comment="value => handleCeoCommentBySection('deliverables', value)"
+                @resolve="handleCeoCommentResolve('deliverables')"
+                @unresolve="handleCeoCommentUnresolve('deliverables')"
               />
             </template>
           </ReviewSection>
@@ -1300,6 +1378,7 @@ async function handlePrintBrand() {
           <ReviewSection
             title="Visual Components"
             :edit-step="reviewMode === 'po-draft' ? 7 : undefined"
+            :has-unresolved="hasSectionUnresolvedComment('visualComponents')"
             @edit="step => editSection(step, 'visualComponents')"
           >
             <ReviewVisualComponentsBlock :summary="visualComponentsSummary" />
@@ -1307,9 +1386,15 @@ async function handlePrintBrand() {
               <SectionCommentBlock
                 section-key="visualComponents"
                 :po-comment="getPoCommentForSection('visualComponents')"
-                :ceo-comment="ceoComments.visualComponents ?? ''"
+                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('visualComponents') : (ceoComments.visualComponents ?? '')"
                 :ceo-editable="reviewMode === 'ceo'"
+                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('visualComponents')"
+                :ceo-resolved="isSectionCeoCommentResolved('visualComponents')"
+                :can-resolve="isPoOwner"
+                :ceo-resolve-loading="store.isCeoCommentResolveLoading('visualComponents')"
                 @update:ceo-comment="value => handleCeoCommentBySection('visualComponents', value)"
+                @resolve="handleCeoCommentResolve('visualComponents')"
+                @unresolve="handleCeoCommentUnresolve('visualComponents')"
               />
             </template>
           </ReviewSection>
