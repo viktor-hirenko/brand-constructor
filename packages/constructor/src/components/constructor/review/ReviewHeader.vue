@@ -4,6 +4,12 @@ import { computed } from 'vue'
 interface InfoOverride {
   title: string
   description: string
+  /**
+   * Override the info-block icon. Default `'check'` (circled check used for
+   * status-based info blocks like "Бриф готовий!" / "Бриф на розгляді").
+   * Use `'warning'` for the PO returned-from-CEO attention banner.
+   */
+  iconVariant?: 'check' | 'warning'
 }
 
 interface ReviewHeaderProps {
@@ -54,6 +60,7 @@ const badge = computed<BadgeMeta | null>(() => {
 interface InfoMeta {
   title: string
   description: string
+  iconVariant?: 'check' | 'warning'
 }
 
 const info = computed<InfoMeta | null>(() => {
@@ -85,6 +92,7 @@ const displayInfo = computed<InfoMeta | null>(() => {
     return {
       title: props.infoOverride.title,
       description: props.infoOverride.description,
+      iconVariant: props.infoOverride.iconVariant ?? 'check',
     }
   }
   return info.value
@@ -135,7 +143,25 @@ const showProgress = computed(
 
     <div v-if="displayInfo" class="rounded-2xl bg-[#f3f3f5] px-6 py-6">
       <div class="flex items-start gap-3 mb-2">
+        <!-- Warning icon: PO returned-from-CEO attention banner -->
         <svg
+          v-if="displayInfo.iconVariant === 'warning'"
+          class="size-6 shrink-0 text-[#C97D00]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </svg>
+        <!-- Default check icon: status-driven info blocks -->
+        <svg
+          v-else
           class="size-6 shrink-0 text-foreground/80"
           viewBox="0 0 24 24"
           fill="none"

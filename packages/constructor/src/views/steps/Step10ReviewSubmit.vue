@@ -30,7 +30,6 @@ import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliv
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
 import CeoActionsFooter from '@/components/constructor/review/CeoActionsFooter.vue'
 import PoActionsFooter from '@/components/constructor/review/PoActionsFooter.vue'
-import ReturnedFromCeoBanner from '@/components/constructor/review/ReturnedFromCeoBanner.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -683,7 +682,37 @@ const poDraftInfoOverride = {
   title: 'Бриф готовий!',
   description:
     'Перегляньте всю інформацію справа. Ви можете поділитися брифом або зберегти його для подальшої роботи.',
+  iconVariant: 'check' as const,
 } as const
+
+/**
+ * Pluralised section noun for the PO returned-from-CEO attention banner
+ * ("4 секції потребують уваги" / "1 секція" / "5 секцій").
+ */
+function sectionWord(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return 'секція'
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'секції'
+  return 'секцій'
+}
+
+/**
+ * ReviewHeader info-block override — varies by reviewMode:
+ *  - po-draft     → "Бриф готовий!" (check icon)
+ *  - po-returned  → "N секцій потребують уваги" (warning icon) — Figma 1973:7893
+ *  - ceo          → no override (status-driven default "Бриф на розгляді")
+ */
+const reviewHeaderInfoOverride = computed(() => {
+  if (reviewMode.value === 'po-draft') return poDraftInfoOverride
+  if (reviewMode.value === 'po-returned' && attentionCounter.value > 0) {
+    return {
+      title: `${attentionCounter.value} ${sectionWord(attentionCounter.value)} потребують уваги`,
+      description:
+        'Перегляньте коментарі та зміни від СЕО і оновіть бриф перед повторним відправленням.',
+      iconVariant: 'warning' as const,
+    }
+  }
+  return undefined
+})
 
 const brandHeaderTitle = computed(
   () =>
@@ -693,9 +722,11 @@ const brandHeaderTitle = computed(
     'Новий бренд'
 )
 
-const unifiedReviewTitle = computed(() =>
-  reviewMode.value === 'po-draft' ? 'Final review' : brandHeaderTitle.value
-)
+const unifiedReviewTitle = computed(() => {
+  if (reviewMode.value === 'po-draft') return 'Final review'
+  // po-returned + ceo both show brand name as header
+  return brandHeaderTitle.value
+})
 
 const unifiedReviewSubtitle = computed(() =>
   reviewMode.value === 'po-draft' ? 'Перевірте всі дані перед відправкою' : undefined
@@ -1172,27 +1203,14 @@ async function handlePrintBrand() {
   <div v-if="unifiedReviewLayout" class="flex flex-col flex-1 min-h-0 h-full">
     <div class="flex-1 min-h-0 overflow-y-auto">
       <div class="px-8 py-8 flex flex-col gap-6">
-        <!-- Returned-from-CEO: brand name + status badge + attention banner -->
-        <template v-if="isPoReturnedView">
-          <ReviewHeader
-            :title="brandHeaderTitle"
-            :status="brandStatus"
-            :info-override="null"
-          />
-          <ReturnedFromCeoBanner
-            v-if="attentionCounter > 0"
-            :attention-count="attentionCounter"
-          />
-        </template>
         <ReviewHeader
-          v-else
           :title="unifiedReviewTitle"
           :status="brandStatus"
           :subtitle="unifiedReviewSubtitle"
           :current-step="reviewMode === 'po-draft' ? 8 : undefined"
           :total-steps="reviewMode === 'po-draft' ? 8 : undefined"
           :progress-percent="reviewMode === 'po-draft' ? 100 : undefined"
-          :info-override="reviewMode === 'po-draft' ? poDraftInfoOverride : undefined"
+          :info-override="reviewHeaderInfoOverride"
         />
 
         <div class="space-y-4">

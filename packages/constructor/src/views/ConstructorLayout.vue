@@ -39,7 +39,7 @@ const isCeoReselect = computed(() => route.meta.ceoReselect === true)
 
 const isCeoFinalize = computed(() => {
   if (route.meta.ceoReselect) return false
-  if ((route.meta.step as number | undefined) !== 9) return false
+  if ((route.meta.step as number | undefined) !== 8) return false
   if (!authStore.isCeoOrAdmin) return false
   const status = store.brandStatus
   return status === 'submitted' || status === 'needs_revision'
@@ -48,9 +48,21 @@ const isCeoFinalize = computed(() => {
 /** PO on final step in draft — same shell as CEO finalize (Figma Product view). */
 const isPoDraftReview = computed(() => {
   if (route.meta.ceoReselect) return false
-  if ((route.meta.step as number | undefined) !== 9) return false
+  if ((route.meta.step as number | undefined) !== 8) return false
   if (authStore.isCeoOrAdmin) return false
   return store.brandStatus === 'draft'
+})
+
+/**
+ * PO viewing a brief returned from CEO (`needs_revision`).
+ * Uses the same shell as CEO finalize / PO draft review — no wizard header,
+ * no wizard footer, BrandPreviewPanel on the right (Figma 1958:3720).
+ */
+const isPoReturnedReview = computed(() => {
+  if (route.meta.ceoReselect) return false
+  if ((route.meta.step as number | undefined) !== 8) return false
+  if (authStore.isCeoOrAdmin) return false
+  return store.brandStatus === 'needs_revision'
 })
 
 const currentStep = computed(() => (route.meta.step as number) || 1)
@@ -67,18 +79,18 @@ watch(
 )
 
 const stepTitle = computed(() => {
-  if (currentStep.value === 9 && store.brandInternalName) {
+  if (currentStep.value === 8 && store.brandInternalName) {
     return store.brandInternalName
   }
   return (route.meta.title as string) || ''
 })
 const stepSubtitle = computed(() => (route.meta.subtitle as string) || '')
-const totalSteps = 9
+const totalSteps = 8
 const progressPercent = computed(() => Math.round((currentStep.value / totalSteps) * 100))
 
 const isFirstStep = computed(() => currentStep.value === 1)
 const isLastStep = computed(() => currentStep.value === totalSteps)
-const isFullWidth = computed(() => [6, 7].includes(currentStep.value))
+const isFullWidth = computed(() => [5, 6].includes(currentStep.value))
 const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'))
 
 interface ExternalNamingPreview extends ExternalNaming {
@@ -401,8 +413,7 @@ function loadPreviewData() {
     currentStep.value !== 2 &&
     currentStep.value !== 3 &&
     currentStep.value !== 4 &&
-    currentStep.value !== 5 &&
-    currentStep.value !== 9
+    currentStep.value !== 8
   )
     return
   conceptsPerPage.value = 100
@@ -447,7 +458,7 @@ const prevSelections = ref<Record<string, string>>({})
 watch(
   () => store.stepData?.visualComponents?.selections,
   newSel => {
-    if (currentStep.value === 8) loadStep9Variants()
+    if (currentStep.value === 7) loadStep9Variants()
 
     const sel = (newSel ?? {}) as Record<string, string>
     const sidebarKey = Object.keys(sel).find(k => k.includes('sidebar'))
@@ -472,8 +483,8 @@ watch(
 )
 
 watch(currentStep, step => {
+  if (step === 7) loadStep9Variants()
   if (step === 8) loadStep9Variants()
-  if (step === 9) loadStep9Variants()
 })
 </script>
 
@@ -487,28 +498,30 @@ watch(currentStep, step => {
       <div
         :class="[
           isFullWidth && !isCeoReselect ? 'w-full' : 'w-[42%]',
-          isCeoFinalize || isCeoReselect || isPoDraftReview ? 'bg-[#f9f9fb]' : 'bg-muted/30',
+          isCeoFinalize || isCeoReselect || isPoDraftReview || isPoReturnedReview
+            ? 'bg-[#f9f9fb]'
+            : 'bg-muted/30',
         ]"
         class="flex flex-col min-h-0"
       >
         <div
           class="min-h-0 flex-1"
           :class="[
-            isCeoFinalize || isCeoReselect || isPoDraftReview
+            isCeoFinalize || isCeoReselect || isPoDraftReview || isPoReturnedReview
               ? 'flex flex-col overflow-hidden'
               : 'px-12 pt-5 pb-6',
             isCeoReselect ? 'px-8 pt-8 pb-0' : '',
-            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && currentStep === 9
+            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview && currentStep === 8
               ? 'flex flex-col overflow-hidden'
               : '',
-            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && currentStep !== 9
+            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview && currentStep !== 8
               ? 'overflow-y-auto'
               : '',
           ]"
         >
           <div
-            v-if="!isCeoFinalize && !isCeoReselect && !isPoDraftReview"
-            :class="currentStep === 9 ? 'shrink-0' : ''"
+            v-if="!isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview"
+            :class="currentStep === 8 ? 'shrink-0' : ''"
           >
             <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
               {{ stepTitle }}
@@ -518,12 +531,9 @@ watch(currentStep, step => {
             </p>
 
             <div class="mb-8">
-              <div class="flex justify-between items-center mb-2">
+              <div class="mb-2">
                 <span class="text-sm text-muted-foreground tracking-[-0.15px]">
                   Крок {{ currentStep }} з {{ totalSteps }}
-                </span>
-                <span class="text-sm text-muted-foreground tracking-[-0.15px]">
-                  {{ progressPercent }}%
                 </span>
               </div>
               <div class="h-2 bg-muted rounded-full overflow-hidden">
@@ -537,7 +547,7 @@ watch(currentStep, step => {
 
           <div
             :class="
-              isCeoFinalize || isCeoReselect || currentStep === 9
+              isCeoFinalize || isCeoReselect || isPoReturnedReview || currentStep === 8
                 ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
                 : ''
             "
@@ -547,7 +557,7 @@ watch(currentStep, step => {
         </div>
 
         <div
-          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect && !isPoDraftReview"
+          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview"
           class="shrink-0 px-12 py-6 border-t border-border"
         >
           <div v-if="store.editingSection" class="flex items-center gap-3">
@@ -608,9 +618,9 @@ watch(currentStep, step => {
         </div>
       </div>
 
-      <!-- Right Panel: CEO finalize / PO draft final preview -->
+      <!-- Right Panel: CEO finalize / PO draft / PO returned-from-CEO final preview -->
       <div
-        v-if="isCeoFinalize || isPoDraftReview"
+        v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview"
         class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
       >
         <BrandPreviewPanel />
@@ -775,164 +785,8 @@ watch(currentStep, step => {
           <ConceptMobilePreview :concept="selectedConcept" />
         </template>
 
-        <!-- Step 5 Preview (Brand Preview) -->
-        <template v-else-if="currentStep === 5">
-          <!-- Brand card (Figma base + REDO) -->
-          <div
-            class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] flex"
-          >
-            <!-- Concept image -->
-            <div class="w-[192px] h-[192px] rounded-[10px] overflow-hidden bg-muted shrink-0 m-6">
-              <img
-                v-if="selectedConcept?.visual_url"
-                :src="getAssetUrl(selectedConcept.visual_url)"
-                :alt="selectedConcept.name"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="w-full h-full flex items-center justify-center text-muted-foreground"
-              >
-                <svg
-                  class="size-10 opacity-30"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                  <circle cx="9" cy="9" r="2" />
-                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                </svg>
-              </div>
-            </div>
-
-            <!-- Right info column -->
-            <div class="flex-1 flex flex-col justify-center py-6 pr-6 gap-3">
-              <!-- Concept (no edit button) -->
-              <div v-if="selectedConcept">
-                <p class="text-xs text-muted-foreground mb-1 leading-4">Концепт</p>
-                <p class="text-base font-medium text-foreground leading-6 tracking-[-0.31px] mb-2">
-                  {{ selectedConcept.name }}
-                </p>
-                <button
-                  type="button"
-                  class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all"
-                  @click="openConceptDetails"
-                >
-                  Переглянути деталі
-                </button>
-              </div>
-
-              <!-- External naming(s) - single header, grouped list -->
-              <div v-if="selectedExternalNamings.length > 0">
-                <div class="flex items-center gap-2 mb-1">
-                  <svg
-                    class="size-4 text-muted-foreground"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"
-                    />
-                    <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-                  </svg>
-                  <span class="text-xs text-muted-foreground leading-4">
-                    {{ selectedExternalNamings.length === 1 ? 'Зовнішня назва' : 'Зовнішні назви' }}
-                  </span>
-                </div>
-                <div class="space-y-1">
-                  <div
-                    v-for="naming in selectedExternalNamings"
-                    :key="naming.id"
-                    class="flex flex-wrap items-center gap-2"
-                  >
-                    <p class="text-base font-medium text-foreground leading-6 tracking-[-0.31px]">
-                      {{ naming.name }}
-                    </p>
-                    <span
-                      v-if="getExternalDomain(naming) !== '—'"
-                      class="text-sm text-muted-foreground"
-                      >{{ getExternalDomain(naming) }}</span
-                    >
-                    <span
-                      v-if="getExternalPrice(naming) !== '—'"
-                      class="text-sm text-muted-foreground"
-                      >{{ getExternalPrice(naming) }}</span
-                    >
-                  </div>
-                </div>
-              </div>
-              <div v-else>
-                <div class="flex items-center gap-2 mb-1">
-                  <svg
-                    class="size-4 text-muted-foreground"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"
-                    />
-                    <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-                  </svg>
-                  <span class="text-xs text-muted-foreground leading-4">Зовнішня назва</span>
-                </div>
-                <p class="text-base font-medium text-muted-foreground leading-6 tracking-[-0.31px]">
-                  —
-                </p>
-              </div>
-
-              <!-- Internal naming -->
-              <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <svg
-                    class="size-4 text-muted-foreground"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                    <rect width="20" height="14" x="2" y="6" rx="2" />
-                  </svg>
-                  <span class="text-xs text-muted-foreground leading-4">Внутрішня назва</span>
-                </div>
-                <p
-                  class="text-base font-medium leading-6 tracking-[-0.31px]"
-                  :class="selectedInternalNaming ? 'text-foreground' : 'text-muted-foreground'"
-                >
-                  {{
-                    selectedInternalNaming?.name ||
-                    store.stepData.internalNaming.newNamingFeedback ||
-                    '—'
-                  }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Brief cards for new items moved to left panel (Step6BrandPreview) to avoid duplication -->
-        </template>
-
-        <!-- Step 9 Preview: iPhone with layered Visual Components -->
-        <template v-else-if="currentStep === 8">
+        <!-- Step 7 Preview: iPhone with layered Visual Components -->
+        <template v-else-if="currentStep === 7">
           <div class="flex flex-col items-center justify-center h-full">
             <div class="flex items-center gap-2 mb-6 text-muted-foreground">
               <svg
@@ -1061,8 +915,8 @@ watch(currentStep, step => {
           </div>
         </template>
 
-        <!-- Step 10 Preview: Brand summary card + iPhone -->
-        <template v-else-if="currentStep === 9">
+        <!-- Step 8 Preview: Brand summary card + iPhone -->
+        <template v-else-if="currentStep === 8">
           <div class="space-y-8">
             <!-- Brand summary card -->
             <div class="p-6 bg-card border border-black/10 rounded-xl shadow-lg flex gap-6">
@@ -1183,7 +1037,7 @@ watch(currentStep, step => {
                     v-if="!hasStep9Selections"
                     class="h-full flex items-center justify-center p-4 text-center bg-white/90 backdrop-blur-sm rounded-[27px]"
                   >
-                    <p class="text-xs text-muted-foreground">Оберіть компоненти на кроці 8</p>
+                    <p class="text-xs text-muted-foreground">Оберіть компоненти на кроці 7</p>
                   </div>
                   <div
                     v-else
