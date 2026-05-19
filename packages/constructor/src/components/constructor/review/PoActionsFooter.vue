@@ -3,6 +3,11 @@ interface PoActionsFooterProps {
   loading?: boolean
   /** Primary submit label (depends on new brief vs standard submit). */
   submitLabel?: string
+  /**
+   * Hard-disables the submit button regardless of loading state.
+   * Used in returned-from-CEO view when attention counter > 0.
+   */
+  submitDisabled?: boolean
   /** Secondary actions — typically false in draft. */
   showShare?: boolean
   showPdf?: boolean
@@ -13,6 +18,7 @@ interface PoActionsFooterProps {
 withDefaults(defineProps<PoActionsFooterProps>(), {
   loading: false,
   submitLabel: 'Відправити на розгляд',
+  submitDisabled: false,
   showShare: false,
   showPdf: false,
   shareCopied: false,
@@ -31,8 +37,8 @@ const emit = defineEmits<{
   <div class="space-y-3">
     <button
       type="button"
-      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50"
-      :disabled="loading"
+      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      :disabled="loading || submitDisabled"
       @click="emit('submit')"
     >
       <svg

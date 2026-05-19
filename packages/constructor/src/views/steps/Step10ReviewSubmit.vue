@@ -30,6 +30,7 @@ import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliv
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
 import CeoActionsFooter from '@/components/constructor/review/CeoActionsFooter.vue'
 import PoActionsFooter from '@/components/constructor/review/PoActionsFooter.vue'
+import ReturnedFromCeoBanner from '@/components/constructor/review/ReturnedFromCeoBanner.vue'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -73,6 +74,47 @@ async function handleCeoCommentResolve(sectionKey: string) {
 async function handleCeoCommentUnresolve(sectionKey: string) {
   await store.setCeoCommentResolved(sectionKey, false)
 }
+
+/**
+ * Section keys tracked for the attention counter.
+ * `general` is excluded per spec — it has no resolved state and doesn't block submit.
+ */
+const ATTENTION_SECTION_KEYS = [
+  'basics',
+  'concept',
+  'externalNaming',
+  'internalNaming',
+  'marketingPackage',
+  'deliverables',
+  'visualComponents',
+] as const
+
+/**
+ * Number of sections that require PO attention:
+ * - has an unresolved CEO comment, OR
+ * - CEO proposed an alternative that PO hasn't applied/overridden yet.
+ * `general` comment is excluded (per spec).
+ */
+const attentionCounter = computed(() => {
+  if (!isPoReturnedView.value) return 0
+  let count = 0
+  for (const key of ATTENTION_SECTION_KEYS) {
+    const meta = store.brandCeoComments?.[key]
+    const hasUnresolvedComment = meta && meta.value.trim().length > 0 && !meta.resolved
+    const isLibraryKey = (k: string): k is CeoLibraryTab =>
+      CEO_LIBRARY_KEYS.includes(k as CeoLibraryTab)
+    const selectionValue = store.brandCeoSelections?.[key]
+    const hasUndecidedAlternative =
+      isLibraryKey(key) &&
+      selectionValue != null &&
+      isCeoChoiceAnAlternative(key, selectionValue)
+    if (hasUnresolvedComment || hasUndecidedAlternative) count++
+  }
+  return count
+})
+
+/** Blocks the "На погодження CEO" submit button when any section still needs attention. */
+const submitBlocked = computed(() => isPoReturnedView.value && attentionCounter.value > 0)
 
 const {
   data: concepts,
@@ -1120,7 +1162,13 @@ async function handlePrintBrand() {
   <div v-if="unifiedReviewLayout" class="flex flex-col flex-1 min-h-0 h-full">
     <div class="flex-1 min-h-0 overflow-y-auto">
       <div class="px-8 py-8 flex flex-col gap-6">
+        <!-- Returned-from-CEO: show attention banner instead of ReviewHeader info block -->
+        <ReturnedFromCeoBanner
+          v-if="isPoReturnedView"
+          :attention-count="attentionCounter"
+        />
         <ReviewHeader
+          v-else
           :title="unifiedReviewTitle"
           :status="brandStatus"
           :subtitle="unifiedReviewSubtitle"
@@ -1453,8 +1501,13 @@ async function handlePrintBrand() {
           v-else
           :loading="statusActionLoading || isSaving"
           :submit-label="
-            hasNewBrief ? 'Відправити в роботу' : 'Відправити на розгляд'
+            isPoReturnedView
+              ? 'На погодження CEO'
+              : hasNewBrief
+                ? 'Відправити в роботу'
+                : 'Відправити на розгляд'
           "
+          :submit-disabled="submitBlocked"
           :show-share="showShareButton"
           :show-pdf="showPdfButton"
           :share-copied="shareSuccess"
