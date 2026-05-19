@@ -39,8 +39,8 @@ function onEditClick() {
   <section
     v-else
     :class="[
-      'rounded-xl border bg-[#f3f3f5] transition-colors',
-      highlighted ? 'border-amber-400 ring-2 ring-amber-200' : 'border-black/10',
+      'rounded-2xl border bg-white transition-colors',
+      highlighted ? 'border-amber-400 ring-2 ring-amber-200' : 'border-[#EDEDED]',
     ]"
   >
     <header class="flex items-center justify-between h-14 pl-4 pr-2">
