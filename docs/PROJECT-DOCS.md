@@ -122,7 +122,7 @@ LIBRARY_WRITE_PERMISSIONS = {
 
 ## 6. API-ендпоінти
 
-Базова URL: `https://brand-constructor-api-production.upstars-marbella.workers.dev/api`
+Базова URL: `https://brand-constructor-api-production.upstars-landings.workers.dev/api`
 
 ### Авторизація
 | Метод | Ендпоінт | Авт. | Опис |
@@ -364,7 +364,7 @@ vars = { ENVIRONMENT = "production", CORS_ORIGIN = "https://brand-constructor.pa
 
 **Frontend** (`packages/frontend/.env.production`):
 ```
-VITE_API_URL=https://brand-constructor-api-production.upstars-marbella.workers.dev
+VITE_API_URL=https://brand-constructor-api-production.upstars-landings.workers.dev
 VITE_GOOGLE_CLIENT_ID=<your-google-client-id>
 ```
 

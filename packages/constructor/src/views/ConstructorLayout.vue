@@ -46,13 +46,13 @@ const isCeoFinalize = computed(() => {
   return status === 'submitted' || status === 'needs_revision'
 })
 
-/** PO on final step in draft — same shell as CEO finalize (Figma Product view). */
+/** PO on final step in draft OR submitted — same shell as CEO finalize (Figma Product view). */
 const isPoDraftReview = computed(() => {
   if (route.meta.ceoReselect) return false
   if (route.meta.poEdit) return false
   if ((route.meta.step as number | undefined) !== 8) return false
   if (authStore.isCeoOrAdmin) return false
-  return store.brandStatus === 'draft'
+  return store.brandStatus === 'draft' || store.brandStatus === 'submitted'
 })
 
 /**

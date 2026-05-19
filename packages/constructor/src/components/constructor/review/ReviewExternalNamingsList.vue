@@ -42,7 +42,7 @@ const showDual = computed(() => props.ceoItems.length > 0 && !props.ceoApplied)
         class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
       >
         <span class="text-[#5B5B62]">•</span>
-        <span class="font-medium text-[#1A1A1A]">{{ item.name }}</span>
+        <span class="text-[#1A1A1A]">{{ item.name }}</span>
         <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
       </li>
     </ul>
@@ -60,7 +60,7 @@ const showDual = computed(() => props.ceoItems.length > 0 && !props.ceoApplied)
           class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
         >
           <span class="text-[#5B5B62]">•</span>
-          <span class="font-medium text-[#1A1A1A]">{{ item.name }}</span>
+          <span class="text-[#1A1A1A]">{{ item.name }}</span>
           <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
         </li>
       </ul>
@@ -75,7 +75,7 @@ const showDual = computed(() => props.ceoItems.length > 0 && !props.ceoApplied)
           class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
         >
           <span class="text-[#5B5B62]">•</span>
-          <span class="font-medium text-[#1A1A1A]">{{ item.name }}</span>
+          <span class="text-[#1A1A1A]">{{ item.name }}</span>
           <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
         </li>
       </ul>
@@ -101,7 +101,7 @@ const showDual = computed(() => props.ceoItems.length > 0 && !props.ceoApplied)
         class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
       >
         <span class="text-[#5B5B62]">•</span>
-        <span class="font-medium text-[#1A1A1A]">{{ item.name }}</span>
+        <span class="text-[#1A1A1A]">{{ item.name }}</span>
         <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
       </li>
     </ul>

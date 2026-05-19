@@ -6,7 +6,7 @@
 **Документ створено**: 2026-05-19
 **Останнє оновлення**: 2026-05-19
 **Версія документа**: v1.1
-**Статус**: 🟡 Active — Stage 1 завершено, очікую підтвердження для Stage 2
+**Статус**: 🟡 Active — Stages 1–8 завершено, залишилось Stage 9 (QA/cleanup)
 
 ---
 
@@ -665,36 +665,37 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Stage 8 — Post-apply edit views (1 день)
+### Stage 8 — Post-apply edit views ✅ (1 день)
 
 **Гілка**: `feat/po-edit-post-apply`
+**Виконано**: 2026-05-19
+**Реальний час**: ~30 хв
 
-**Discovery**:
-- [ ] Перевірити чи можна перевикористати `CeoReselectConceptStep.vue` як основу або робити окремо.
+**Підхід**: route query `?mode=post-apply` передається з Step10 при кліку `Редагувати` на applied секції. Три PoEdit views читають `route.query.mode` і відповідно змінюють layout.
 
-**Files to touch**:
-- `packages/constructor/src/views/po-edit/PoEditConceptView.vue` (додати mode `post-apply`)
-- `packages/constructor/src/views/po-edit/PoEditExternalNamingView.vue` (додати mode `post-apply`)
-- `packages/constructor/src/views/po-edit/PoEditInternalNamingView.vue` (додати mode `post-apply`)
-- `packages/constructor/src/views/steps/Step10ReviewSubmit.vue` (`Редагувати` → визначити mode)
+**Files touched**:
+- `packages/constructor/src/views/po-edit/PoEditConceptView.vue` — додано `isPostApply` computed, single applied card "Обраний концепт" (248×248 з checkmark badge), grid "Доступні концепти"
+- `packages/constructor/src/views/po-edit/PoEditExternalNamingView.vue` — `isPostApply` mode: "Обрані назви" блок замість CustomerNamingsRow + приховано CEO pick block
+- `packages/constructor/src/views/po-edit/PoEditInternalNamingView.vue` — `isPostApply` mode: "Обрана назва" single card + no pre-select override
+- `packages/constructor/src/views/steps/Step10ReviewSubmit.vue` — `editSection` передає `{ mode: 'post-apply' }` query для applied секцій; `handleGoToEditConcept` виправлено на po-edit route
 
 **Checklist**:
-- [ ] У кожному PoEdit view додати mode `post-apply`:
-  - Top: single card "Обраний концепт" / "Обрані назви" / "Обрана назва".
-  - Below: `Доступні концепти` (або відповідне) + grid з усіх альтернатив (включно з PO original).
-  - Footer без змін.
-- [ ] Step10: при кліку `Редагувати` на applied секції → mode `post-apply`.
-- [ ] Перевірити, що chained-from-concept (Stage 7) працює і для post-apply (якщо PO змінює applied concept → також треба redo external naming).
-
-**Acceptance**:
-- Figma `1985:1527 / 1985:3356 / 1985:4010` відтворено.
-- PO може передумати після apply і вибрати інший варіант (або повернутись до свого оригінального).
+- [x] `PoEditConceptView`: post-apply mode — single applied card + "Доступні концепти" grid
+- [x] `PoEditExternalNamingView`: post-apply mode — "Обрані назви" + grid, CEO pick прихований
+- [x] `PoEditInternalNamingView`: post-apply mode — "Обрана назва" single card + grid
+- [x] Step10 `editSection`: передає `?mode=post-apply` для applied concept/external/internal
+- [x] `handleGoToEditConcept`: виправлено на `router.push('.../po-edit/concept')`
+- [x] chained-from-concept flow працює і для post-apply (concept changed → chained external)
+- [x] Type-check ✅
 
 **Manual checks**:
-- [ ] Apply CEO concept → клік `Редагувати` → відкрився post-apply view → grid містить PO old concept.
-- [ ] Вибрати PO old concept → Зберегти → applied state зник, тепер показуємо "Вибір замовника" і CEO alternative знову з'явилась.
+- [ ] Apply CEO concept → клік `Редагувати` → відкрився post-apply view з "Обраний концепт" card.
+- [ ] Вибрати інший концепт → Далі → відкрилась chained external naming view.
+- [ ] Вибрати PO old concept → Далі → Зберегти → applied state зник (показується "Вибір замовника").
+- [ ] Apply CEO external naming → `Редагувати` → post-apply view з "Обрані назви".
+- [ ] Apply CEO internal naming → `Редагувати` → post-apply view з "Обрана назва".
 
-**Estimated**: 1 day
+**Estimated**: 1 day ➜ **Actual**: ~30 хв
 
 ---
 

@@ -223,7 +223,7 @@ const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
     </button>
 
     <!-- Applied state: single card with "Обраний концепт" label (Figma 1981:1694) -->
-    <div v-else-if="ceoApplied" class="flex flex-col gap-2">
+    <div v-if="!showDual && ceoApplied" class="flex flex-col gap-2">
       <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Обраний концепт</p>
       <div
         v-if="concept && previewUrl"
@@ -252,7 +252,7 @@ const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
     </div>
 
     <!-- Single-card layout (PO draft / CEO with no alternative / PO returned no alt) -->
-    <div v-else class="flex flex-col gap-2">
+    <div v-if="!showDual && !ceoApplied" class="flex flex-col gap-2">
       <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Вибір Замовника</p>
       <div
         v-if="concept && previewUrl"

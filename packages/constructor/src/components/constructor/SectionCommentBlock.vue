@@ -238,13 +238,13 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
     <!-- Read-only CEO comment without resolve UI (legacy / other contexts) -->
     <div
       v-else-if="hasCeoComment"
-      class="flex flex-col gap-1 rounded-lg border border-amber-200 bg-amber-50 p-4"
+      class="flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
     >
-      <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-amber-800">
+      <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар CEO
       </p>
       <p
-        class="text-[16px] leading-6 tracking-[-0.1504px] text-amber-900 whitespace-pre-line"
+        class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line"
       >
         {{ ceoComment }}
       </p>
