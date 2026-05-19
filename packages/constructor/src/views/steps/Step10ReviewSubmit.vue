@@ -540,22 +540,25 @@ const showPoSubmitButton = computed(
 )
 
 const showShareButton = computed(() => {
-  if (brandStatus.value === 'approved') {
-    return true
-  }
+  // No Share button in returned-from-CEO view — only "На погодження CEO" shows.
+  if (isPoReturnedView.value) return false
+  if (brandStatus.value === 'approved') return true
   return (
     !isCeoView.value &&
     (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
   )
 })
 
-const showPdfButton = computed(
-  () =>
+const showPdfButton = computed(() => {
+  // No PDF button in returned-from-CEO view.
+  if (isPoReturnedView.value) return false
+  return (
     brandStatus.value === 'submitted' ||
     brandStatus.value === 'needs_revision' ||
     brandStatus.value === 'approved' ||
     brandStatus.value === 'rejected'
-)
+  )
+})
 
 const CEO_COMMENT_SECTION_LABELS: Record<string, string> = {
   concept: 'Concept',
@@ -771,13 +774,17 @@ function sectionWord(n: number): string {
  */
 const reviewHeaderInfoOverride = computed(() => {
   if (reviewMode.value === 'po-draft') return poDraftInfoOverride
-  if (reviewMode.value === 'po-returned' && attentionCounter.value > 0) {
-    return {
-      title: `${attentionCounter.value} ${sectionWord(attentionCounter.value)} потребують уваги`,
-      description:
-        'Перегляньте коментарі та зміни від СЕО і оновіть бриф перед повторним відправленням.',
-      iconVariant: 'warning' as const,
+  if (reviewMode.value === 'po-returned') {
+    if (attentionCounter.value > 0) {
+      return {
+        title: `${attentionCounter.value} ${sectionWord(attentionCounter.value)} потребують уваги`,
+        description:
+          'Перегляньте коментарі та зміни від СЕО і оновіть бриф перед повторним відправленням.',
+        iconVariant: 'warning' as const,
+      }
     }
+    // Counter reached 0 — explicitly hide the info block (null = no block)
+    return null
   }
   return undefined
 })
@@ -1058,10 +1065,25 @@ const revisionWarning = computed<string | null>(() => {
  * Uses the section key (same as SectionCommentBlock) to locate the slice.
  */
 function editSection(step: number, sectionKey: string) {
-  // Guard: editing External Naming while concept mismatch exists is blocked.
-  if (sectionKey === 'externalNaming' && isPoReturnedView.value && hasConceptMismatch.value) {
-    showEditExternalBeforeConceptModal.value = true
-    return
+  const bid = store.brandId
+  // In returned-from-CEO view, concept/external/internal use dedicated po-edit routes.
+  if (isPoReturnedView.value && bid) {
+    if (sectionKey === 'externalNaming') {
+      if (hasConceptMismatch.value) {
+        showEditExternalBeforeConceptModal.value = true
+        return
+      }
+      router.push(`/constructor/brand/${bid}/po-edit/external-naming`)
+      return
+    }
+    if (sectionKey === 'concept') {
+      router.push(`/constructor/brand/${bid}/po-edit/concept`)
+      return
+    }
+    if (sectionKey === 'internalNaming') {
+      router.push(`/constructor/brand/${bid}/po-edit/internal-naming`)
+      return
+    }
   }
   store.beginEditSection(sectionKey, 8)
   router.push(`/constructor/step/${step}`)

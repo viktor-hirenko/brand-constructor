@@ -15,7 +15,6 @@ export interface PrintBrandData {
   componentTypes: Record<string, ComponentTypeInfo>
   ceoComments?: Record<string, string> | null
   ceoSelections?: Record<string, string> | null
-  previewComment?: string
 }
 
 const CEO_SECTION_LABELS: Record<string, string> = {
@@ -208,16 +207,7 @@ export function usePrintBrand() {
       )
     }
 
-    // 6. Brand Preview
-    if (data.previewComment) {
-      content.push(
-        ...buildSectionContent('Brand Preview', [
-          { label: "Коментар до прев'ю", value: val(data.previewComment) },
-        ])
-      )
-    }
-
-    // 7. PR Package
+    // 6. PR Package
     if (data.prPackageName) {
       content.push(
         ...buildSectionContent('PR Package', [
@@ -227,7 +217,7 @@ export function usePrintBrand() {
       )
     }
 
-    // 8. Deliverables
+    // 7. Deliverables
     content.push(
       ...buildSectionContent('Deliverables', [
         { label: 'Legal Landing', value: sd.deliverables.legalLanding ? 'Так' : 'Ні' },
@@ -237,7 +227,7 @@ export function usePrintBrand() {
       ])
     )
 
-    // 9. Visual Components
+    // 8. Visual Components
     const vcRows: SectionRow[] = []
     if (sd.visualComponents.delegateToDesigners) {
       vcRows.push({ label: 'Режим', value: 'Делеговано дизайнерам' })
@@ -249,7 +239,7 @@ export function usePrintBrand() {
     vcRows.push({ label: 'Коментар', value: val(sd.visualComponents.comment) })
     content.push(...buildSectionContent('Visual Components', vcRows))
 
-    // 10. CEO Comments
+    // 9. CEO Comments
     if (data.ceoComments && Object.values(data.ceoComments).some(v => v?.trim())) {
       const ceoRows = Object.entries(data.ceoComments)
         .filter(([, v]) => v?.trim())
@@ -260,7 +250,7 @@ export function usePrintBrand() {
       content.push(...buildSectionContent('Коментарі CEO', ceoRows))
     }
 
-    // 11. CEO Alternatives
+    // 10. CEO Alternatives
     if (data.ceoSelections && Object.values(data.ceoSelections).some(v => v?.trim())) {
       const selRows = Object.entries(data.ceoSelections)
         .filter(([, v]) => v?.trim())

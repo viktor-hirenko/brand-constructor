@@ -36,6 +36,7 @@ const { scale: shellScale } = useViewportScale({
  * layout that matches Figma 1473:23546.
  */
 const isCeoReselect = computed(() => route.meta.ceoReselect === true)
+const isPoEdit = computed(() => route.meta.poEdit === true)
 
 const isCeoFinalize = computed(() => {
   if (route.meta.ceoReselect) return false
@@ -497,8 +498,8 @@ watch(currentStep, step => {
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div
         :class="[
-          isFullWidth && !isCeoReselect ? 'w-full' : 'w-[42%]',
-          isCeoFinalize || isCeoReselect || isPoDraftReview || isPoReturnedReview
+          isFullWidth && !isCeoReselect && !isPoEdit ? 'w-full' : 'w-[42%]',
+          isCeoFinalize || isCeoReselect || isPoEdit || isPoDraftReview || isPoReturnedReview
             ? 'bg-[#f9f9fb]'
             : 'bg-muted/30',
         ]"
@@ -507,20 +508,20 @@ watch(currentStep, step => {
         <div
           class="min-h-0 flex-1"
           :class="[
-            isCeoFinalize || isCeoReselect || isPoDraftReview || isPoReturnedReview
+            isCeoFinalize || isCeoReselect || isPoEdit || isPoDraftReview || isPoReturnedReview
               ? 'flex flex-col overflow-hidden'
               : 'px-12 pt-5 pb-6',
-            isCeoReselect ? 'px-8 pt-8 pb-0' : '',
-            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview && currentStep === 8
+            isCeoReselect || isPoEdit ? 'px-8 pt-8 pb-0' : '',
+            !isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview && currentStep === 8
               ? 'flex flex-col overflow-hidden'
               : '',
-            !isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview && currentStep !== 8
+            !isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview && currentStep !== 8
               ? 'overflow-y-auto'
               : '',
           ]"
         >
           <div
-            v-if="!isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview"
+            v-if="!isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview"
             :class="currentStep === 8 ? 'shrink-0' : ''"
           >
             <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
@@ -547,7 +548,7 @@ watch(currentStep, step => {
 
           <div
             :class="
-              isCeoFinalize || isCeoReselect || isPoReturnedReview || currentStep === 8
+              isCeoFinalize || isCeoReselect || isPoEdit || isPoReturnedReview || currentStep === 8
                 ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
                 : ''
             "
@@ -557,7 +558,7 @@ watch(currentStep, step => {
         </div>
 
         <div
-          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect && !isPoDraftReview && !isPoReturnedReview"
+          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview"
           class="shrink-0 px-12 py-6 border-t border-border"
         >
           <div v-if="store.editingSection" class="flex items-center gap-3">
@@ -621,6 +622,14 @@ watch(currentStep, step => {
       <!-- Right Panel: CEO finalize / PO draft / PO returned-from-CEO final preview -->
       <div
         v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview"
+        class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
+      >
+        <BrandPreviewPanel />
+      </div>
+
+      <!-- Right Panel: PO edit preview (same as CEO reselect — BrandPreviewPanel) -->
+      <div
+        v-else-if="isPoEdit"
         class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
       >
         <BrandPreviewPanel />

@@ -77,6 +77,7 @@ const resolvedButtonHovered = ref(false)
         @mouseleave="resolvedButtonHovered = false"
       >
         <svg
+          v-if="!resolvedButtonHovered"
           class="size-3.5 shrink-0"
           viewBox="0 0 24 24"
           fill="none"

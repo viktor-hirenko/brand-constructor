@@ -24,6 +24,19 @@ function ceoReselectGuard(to: RouteLocationNormalized) {
   return true
 }
 
+function poEditGuard(to: RouteLocationNormalized) {
+  const auth = useAuthStore()
+  const store = useConstructorStore()
+  const id = to.params.id as string
+  if (auth.isCeoOrAdmin) {
+    return { path: `/constructor/brand/${id}` }
+  }
+  if (store.brandStatus !== 'needs_revision') {
+    return { path: `/constructor/brand/${id}` }
+  }
+  return true
+}
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -39,20 +52,20 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor/brand/:id',
     name: 'brand-view',
     component: () => import('@/views/ConstructorLayout.vue'),
-    meta: { requiresAuth: true, step: 9, title: 'Save', subtitle: 'Фінальний огляд' },
+    meta: { requiresAuth: true, step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
     children: [
       {
         path: '',
         name: 'brand-view-review',
         component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
-        meta: { step: 9, title: 'Save', subtitle: 'Фінальний огляд' },
+        meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
       },
       {
         path: 'ceo-reselect/concept',
         name: 'ceo-reselect-concept',
         component: () => import('@/views/ceo-reselect/CeoReselectConceptStep.vue'),
         meta: {
-          step: 9,
+          step: 8,
           ceoReselect: true,
           ceoOnly: true,
           title: 'CEO — Concept',
@@ -65,7 +78,7 @@ const routes: RouteRecordRaw[] = [
         name: 'ceo-reselect-concept-external-naming',
         component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingStep.vue'),
         meta: {
-          step: 9,
+          step: 8,
           ceoReselect: true,
           ceoOnly: true,
           title: 'CEO — External Naming',
@@ -78,7 +91,7 @@ const routes: RouteRecordRaw[] = [
         name: 'ceo-reselect-external-naming',
         component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingStep.vue'),
         meta: {
-          step: 9,
+          step: 8,
           ceoReselect: true,
           ceoOnly: true,
           title: 'CEO — External Naming',
@@ -91,13 +104,42 @@ const routes: RouteRecordRaw[] = [
         name: 'ceo-reselect-internal-naming',
         component: () => import('@/views/ceo-reselect/CeoReselectInternalNamingStep.vue'),
         meta: {
-          step: 9,
+          step: 8,
           ceoReselect: true,
           ceoOnly: true,
           title: 'CEO — Internal Naming',
           subtitle: '',
         },
         beforeEnter: ceoReselectGuard,
+      },
+      // PO edit routes (returned-from-CEO flow)
+      {
+        path: 'po-edit/concept',
+        name: 'po-edit-concept',
+        component: () => import('@/views/po-edit/PoEditConceptView.vue'),
+        meta: { step: 8, poEdit: true, title: 'Редагувати концепт', subtitle: '' },
+        beforeEnter: poEditGuard,
+      },
+      {
+        path: 'po-edit/concept/external-naming',
+        name: 'po-edit-concept-external-naming',
+        component: () => import('@/views/po-edit/PoEditExternalNamingView.vue'),
+        meta: { step: 8, poEdit: true, title: 'Редагувати External Naming', subtitle: '' },
+        beforeEnter: poEditGuard,
+      },
+      {
+        path: 'po-edit/external-naming',
+        name: 'po-edit-external-naming',
+        component: () => import('@/views/po-edit/PoEditExternalNamingView.vue'),
+        meta: { step: 8, poEdit: true, title: 'Редагувати External Naming', subtitle: '' },
+        beforeEnter: poEditGuard,
+      },
+      {
+        path: 'po-edit/internal-naming',
+        name: 'po-edit-internal-naming',
+        component: () => import('@/views/po-edit/PoEditInternalNamingView.vue'),
+        meta: { step: 8, poEdit: true, title: 'Редагувати Internal Naming', subtitle: '' },
+        beforeEnter: poEditGuard,
       },
     ],
     beforeEnter: async to => {
@@ -129,7 +171,6 @@ const routes: RouteRecordRaw[] = [
             comment: brand.internalNamingComment ?? '',
             newNamingFeedback: null,
           },
-          previewComment: '',
           marketingPackage: {
             selectedId: brand.prPackageId ?? null,
             comment: brand.prPackageComment ?? '',
@@ -149,7 +190,7 @@ const routes: RouteRecordRaw[] = [
         store.loadBrand(
           brandId,
           stepData,
-          brand.currentStep ?? 9,
+          brand.currentStep ?? 8,
           brand.status,
           brand.internalName ?? undefined,
           brand.ceoComments ?? undefined,
@@ -225,32 +266,26 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/5',
         name: 'step-5',
-        component: () => import('@/views/steps/Step6BrandPreview.vue'),
-        meta: { step: 5, title: 'Brand Preview', subtitle: 'Перегляд бренду' },
+        component: () => import('@/views/steps/Step7MarketingPackage.vue'),
+        meta: { step: 5, title: 'Marketing Package', subtitle: 'PR пакет для запуску' },
       },
       {
         path: 'step/6',
         name: 'step-6',
-        component: () => import('@/views/steps/Step7MarketingPackage.vue'),
-        meta: { step: 6, title: 'Marketing Package', subtitle: 'PR пакет для запуску' },
+        component: () => import('@/views/steps/Step8Deliverables.vue'),
+        meta: { step: 6, title: 'Deliverables', subtitle: 'Додаткові опції' },
       },
       {
         path: 'step/7',
         name: 'step-7',
-        component: () => import('@/views/steps/Step8Deliverables.vue'),
-        meta: { step: 7, title: 'Deliverables', subtitle: 'Додаткові опції' },
+        component: () => import('@/views/steps/Step9VisualComponents.vue'),
+        meta: { step: 7, title: 'Visual Components ⭐', subtitle: 'Візуальні компоненти' },
       },
       {
         path: 'step/8',
         name: 'step-8',
-        component: () => import('@/views/steps/Step9VisualComponents.vue'),
-        meta: { step: 8, title: 'Visual Components ⭐', subtitle: 'Візуальні компоненти' },
-      },
-      {
-        path: 'step/9',
-        name: 'step-9',
         component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
-        meta: { step: 9, title: 'Save', subtitle: 'Фінальний огляд' },
+        meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
       },
     ],
   },

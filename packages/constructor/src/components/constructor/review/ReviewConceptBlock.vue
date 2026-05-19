@@ -211,8 +211,7 @@ const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
         </div>
       </div>
     </div>
-
-    <!-- "Застосувати варіант CEO" button shown below dual-view -->
+    <!-- Apply button inside dual block -->
     <button
       v-if="showDual && showApplyCeo"
       type="button"

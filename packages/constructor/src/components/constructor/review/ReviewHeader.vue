@@ -88,6 +88,8 @@ const info = computed<InfoMeta | null>(() => {
 })
 
 const displayInfo = computed<InfoMeta | null>(() => {
+  // Explicit null means "hide the info block regardless of status"
+  if (props.infoOverride === null) return null
   if (props.infoOverride) {
     return {
       title: props.infoOverride.title,
