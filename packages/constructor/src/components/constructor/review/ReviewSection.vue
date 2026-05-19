@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import UnresolvedDot from '@/components/ui/UnresolvedDot.vue'
+import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue'
 
 interface ReviewSectionProps {
   title: string
@@ -13,10 +14,14 @@ interface ReviewSectionProps {
   borderless?: boolean
   /**
    * Shows a blue 6×6 dot indicator in the section header.
-   * True when the section has at least one unresolved CEO comment
-   * (returned-from-CEO PO view).
+   * True when the section has at least one unresolved CEO comment.
    */
   hasUnresolved?: boolean
+  /**
+   * When true, shows "Потрібно обрати варіант" amber badge in the header.
+   * Used for Concept/External/Internal sections when CEO proposed an alternative.
+   */
+  needsChoice?: boolean
 }
 
 const props = withDefaults(defineProps<ReviewSectionProps>(), {
@@ -25,6 +30,7 @@ const props = withDefaults(defineProps<ReviewSectionProps>(), {
   highlighted: false,
   borderless: false,
   hasUnresolved: false,
+  needsChoice: false,
 })
 
 const emit = defineEmits<{
@@ -53,13 +59,14 @@ function onEditClick() {
     ]"
   >
     <header class="flex items-center justify-between h-14 pl-4 pr-2">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
         <h3
           class="text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]"
         >
           {{ title }}
         </h3>
-        <UnresolvedDot v-if="hasUnresolved" />
+        <UnresolvedDot v-if="hasUnresolved && !needsChoice" />
+        <SectionStatusBadge v-if="needsChoice" variant="attention" />
       </div>
       <button
         v-if="editStep != null"

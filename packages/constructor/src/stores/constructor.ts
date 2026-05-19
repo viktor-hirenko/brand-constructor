@@ -575,6 +575,90 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     return saveCeoCommentResolvedLoading.value.has(sectionKey)
   }
 
+  const isApplyingCeoVariant = ref(false)
+  const applyCeoVariantError = ref<string | null>(null)
+
+  /**
+   * Applies CEO's suggested alternative for a single section to PO's stepData,
+   * then persists via saveBrand().
+   *
+   * `concept` — overwrites stepData.concept.selectedId and clears externalNaming
+   *   selectedIds (they belonged to the old concept and are now invalid).
+   * `externalNaming` — overwrites stepData.externalNaming.selectedIds.
+   *   ⚠️  Caller must first check hasConceptMismatch: if CEO also suggests a
+   *   different concept that hasn't been applied yet, show the modal instead of
+   *   calling this directly.
+   * `internalNaming` — overwrites stepData.internalNaming.selectedId.
+   */
+  async function applyCeoVariant(
+    section: 'concept' | 'externalNaming' | 'internalNaming'
+  ): Promise<boolean> {
+    if (!brandId.value) return false
+    isApplyingCeoVariant.value = true
+    applyCeoVariantError.value = null
+    try {
+      const sel = brandCeoSelections.value
+      if (section === 'concept') {
+        const ceoConcept = readSelectionAsString(sel?.concept)
+        if (!ceoConcept) return false
+        stepData.value.concept.selectedId = ceoConcept
+        stepData.value.concept.newConceptBrief = null
+        // External namings belong to the old concept — clear them.
+        stepData.value.externalNaming.selectedIds = []
+        stepData.value.externalNaming.newNamingBrief = null
+      } else if (section === 'externalNaming') {
+        const ceoExt = readSelectionAsArray(sel?.externalNaming)
+        if (ceoExt.length === 0) return false
+        stepData.value.externalNaming.selectedIds = ceoExt.slice(0, 3)
+        stepData.value.externalNaming.newNamingBrief = null
+      } else {
+        const ceoInt = readSelectionAsString(sel?.internalNaming)
+        if (!ceoInt) return false
+        stepData.value.internalNaming.selectedId = ceoInt
+        stepData.value.internalNaming.newNamingFeedback = null
+      }
+      return await saveBrand()
+    } catch (error) {
+      applyCeoVariantError.value =
+        error instanceof Error ? error.message : 'Failed to apply CEO variant'
+      return false
+    } finally {
+      isApplyingCeoVariant.value = false
+    }
+  }
+
+  /**
+   * Atomically applies both CEO concept AND external naming in one saveBrand()
+   * call. Used by the "Застосувати все" button in the dependency-guard modal.
+   */
+  async function applyCeoConceptAndExternal(): Promise<boolean> {
+    if (!brandId.value) return false
+    isApplyingCeoVariant.value = true
+    applyCeoVariantError.value = null
+    try {
+      const sel = brandCeoSelections.value
+      const ceoConcept = readSelectionAsString(sel?.concept)
+      const ceoExt = readSelectionAsArray(sel?.externalNaming)
+      if (!ceoConcept) return false
+      stepData.value.concept.selectedId = ceoConcept
+      stepData.value.concept.newConceptBrief = null
+      if (ceoExt.length > 0) {
+        stepData.value.externalNaming.selectedIds = ceoExt.slice(0, 3)
+        stepData.value.externalNaming.newNamingBrief = null
+      } else {
+        stepData.value.externalNaming.selectedIds = []
+        stepData.value.externalNaming.newNamingBrief = null
+      }
+      return await saveBrand()
+    } catch (error) {
+      applyCeoVariantError.value =
+        error instanceof Error ? error.message : 'Failed to apply CEO variants'
+      return false
+    } finally {
+      isApplyingCeoVariant.value = false
+    }
+  }
+
   /**
    * Records CEO-picked alternative for concept/external/internal sections.
    * Empty string clears the override. Same persistence model as comments.
@@ -927,6 +1011,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     setCeoCommentResolved,
     isCeoCommentResolveLoading,
     saveCeoCommentResolvedError,
+    applyCeoVariant,
+    applyCeoConceptAndExternal,
+    isApplyingCeoVariant,
+    applyCeoVariantError,
     setCeoSelectionValue,
     ceoReselectDraft,
     resetCeoReselectDraft,

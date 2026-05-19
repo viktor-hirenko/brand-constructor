@@ -115,6 +115,50 @@ const attentionCounter = computed(() => {
 /** Blocks the "На погодження CEO" submit button when any section still needs attention. */
 const submitBlocked = computed(() => isPoReturnedView.value && attentionCounter.value > 0)
 
+// ─── Applied-state helpers (PO returned view) ───────────────────────────────
+
+/**
+ * True when PO already applied the CEO concept (stepData.concept.selectedId
+ * now matches ceoSelections.concept). We don't store a separate flag; derive
+ * from the current state.
+ */
+const isCeoConceptApplied = computed(() => {
+  if (!isPoReturnedView.value) return false
+  const ceoConcept = ceoSelectionAsString(store.brandCeoSelections?.concept)
+  if (!ceoConcept) return false
+  return store.stepData.concept.selectedId === ceoConcept
+})
+
+const isCeoExternalApplied = computed(() => {
+  if (!isPoReturnedView.value) return false
+  const ceoExt = ceoSelectionAsArray(store.brandCeoSelections?.externalNaming)
+  if (ceoExt.length === 0) return false
+  const poExt = store.stepData.externalNaming.selectedIds
+  if (poExt.length !== ceoExt.length) return false
+  return ceoExt.every(id => poExt.includes(id))
+})
+
+const isCeoInternalApplied = computed(() => {
+  if (!isPoReturnedView.value) return false
+  const ceoInt = ceoSelectionAsString(store.brandCeoSelections?.internalNaming)
+  if (!ceoInt) return false
+  return store.stepData.internalNaming.selectedId === ceoInt
+})
+
+/**
+ * CEO proposed a different concept AND it hasn't been applied yet.
+ * Blocks editing External Naming until concept is resolved.
+ */
+const hasConceptMismatch = computed(() => {
+  if (!isPoReturnedView.value) return false
+  return isCeoChoiceAnAlternative('concept', store.brandCeoSelections?.concept ?? '') &&
+    !isCeoConceptApplied.value
+})
+
+async function handleApplyCeoVariant(section: 'concept' | 'externalNaming' | 'internalNaming') {
+  await store.applyCeoVariant(section)
+}
+
 const {
   data: concepts,
   fetchData: fetchConcepts,
@@ -1316,6 +1360,7 @@ async function handlePrintBrand() {
             :edit-step="isPoEditable ? 2 : undefined"
             :change-choice="reviewMode === 'ceo'"
             :has-unresolved="hasSectionUnresolvedComment('concept')"
+            :needs-choice="isPoReturnedView && isCeoChoiceAnAlternative('concept', store.brandCeoSelections?.concept ?? '') && !isCeoConceptApplied"
             @edit="step => editSection(step, 'concept')"
             @change="startCeoReselectBySection('concept')"
           >
@@ -1324,7 +1369,11 @@ async function handlePrintBrand() {
               :ceo-concept="reviewCeoConceptForBlock"
               :mode="mode"
               :is-new-concept="isNewConcept"
+              :show-apply-ceo="isPoReturnedView && isCeoChoiceAnAlternative('concept', store.brandCeoSelections?.concept ?? '') && !isCeoConceptApplied"
+              :apply-loading="store.isApplyingCeoVariant"
+              :ceo-applied="isCeoConceptApplied"
               @preview="openConceptPreview($event)"
+              @apply-ceo="handleApplyCeoVariant('concept')"
             />
             <template #comment>
               <SectionCommentBlock
@@ -1349,12 +1398,17 @@ async function handlePrintBrand() {
             :edit-step="isPoEditable ? 3 : undefined"
             :change-choice="reviewMode === 'ceo'"
             :has-unresolved="hasSectionUnresolvedComment('externalNaming')"
+            :needs-choice="isPoReturnedView && isCeoChoiceAnAlternative('externalNaming', store.brandCeoSelections?.externalNaming ?? '') && !isCeoExternalApplied"
             @edit="step => editSection(step, 'externalNaming')"
             @change="startCeoReselectBySection('externalNaming')"
           >
             <ReviewExternalNamingsList
               :items="externalNamingItems"
               :ceo-items="ceoExternalItemsForReview"
+              :show-apply-ceo="isPoReturnedView && isCeoChoiceAnAlternative('externalNaming', store.brandCeoSelections?.externalNaming ?? '') && !isCeoExternalApplied"
+              :apply-loading="store.isApplyingCeoVariant"
+              :ceo-applied="isCeoExternalApplied"
+              @apply-ceo="handleApplyCeoVariant('externalNaming')"
             />
             <template #comment>
               <SectionCommentBlock
@@ -1379,12 +1433,17 @@ async function handlePrintBrand() {
             :edit-step="isPoEditable ? 4 : undefined"
             :change-choice="reviewMode === 'ceo'"
             :has-unresolved="hasSectionUnresolvedComment('internalNaming')"
+            :needs-choice="isPoReturnedView && isCeoChoiceAnAlternative('internalNaming', store.brandCeoSelections?.internalNaming ?? '') && !isCeoInternalApplied"
             @edit="step => editSection(step, 'internalNaming')"
             @change="startCeoReselectBySection('internalNaming')"
           >
             <ReviewInternalNamingBlock
               :po-value="selectedInternalNaming?.name || internalFeedback || 'Не обрано'"
               :ceo-name="ceoInternalNameForReview"
+              :show-apply-ceo="isPoReturnedView && isCeoChoiceAnAlternative('internalNaming', store.brandCeoSelections?.internalNaming ?? '') && !isCeoInternalApplied"
+              :apply-loading="store.isApplyingCeoVariant"
+              :ceo-applied="isCeoInternalApplied"
+              @apply-ceo="handleApplyCeoVariant('internalNaming')"
             />
             <template #comment>
               <SectionCommentBlock
