@@ -6,7 +6,8 @@ import { useApiList, apiGet } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
-import CeoReselectFooter from '@/components/constructor/ceo-reselect/CeoReselectFooter.vue'
+import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
 const store = useConstructorStore()
@@ -107,99 +108,93 @@ function goNext() {
 </script>
 
 <template>
-  <div class="flex flex-col h-full min-h-0">
-    <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 pr-2 pb-4">
-      <div>
-        <h1 class="text-2xl font-medium text-[#0a0a0a] tracking-[0.0703px] mb-2 leading-8">
-          Concept Selection
-        </h1>
-        <p class="text-[16px] leading-6 text-[#717182] tracking-[-0.3125px]">
-          Оберіть концепт та перегляньте прев’ю праворуч.
-        </p>
-      </div>
+  <EditFlowStepShell
+    title="Concept Selection"
+    subtitle="Оберіть концепт та перегляньте прев’ю праворуч."
+  >
+    <!-- Customer's pick (independent of theme filter) -->
+    <CustomerPickPreview :concept="poConcept" />
 
-      <!-- Customer's pick (independent of theme filter) -->
-      <CustomerPickPreview :concept="poConcept" />
+    <!-- Divider after customer pick -->
+    <div
+      class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+      aria-hidden="true"
+    />
 
-      <!-- Divider after customer pick -->
-      <div
-        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-        aria-hidden="true"
-      />
-
-      <!-- Theme toggle (light / dark) — filters available concepts -->
-      <div
-        class="inline-flex self-start rounded-full bg-[#ececf0] p-1 gap-1 border border-black/5"
-        role="group"
-        aria-label="Тема інтерфейсу"
+    <!-- Theme toggle (light / dark) — filters available concepts -->
+    <div
+      class="inline-flex self-start rounded-full bg-[#ececf0] p-1 gap-1 border border-black/5"
+      role="group"
+      aria-label="Тема інтерфейсу"
+    >
+      <button
+        type="button"
+        class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
+        :class="
+          localMode === 'light'
+            ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
+            : 'text-[#6e6e6e] hover:text-foreground'
+        "
+        @click="setMode('light')"
       >
-        <button
-          type="button"
-          class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
-          :class="
-            localMode === 'light'
-              ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
-              : 'text-[#6e6e6e] hover:text-foreground'
-          "
-          @click="setMode('light')"
-        >
-          Світла тема
-        </button>
-        <button
-          type="button"
-          class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
-          :class="
-            localMode === 'dark'
-              ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
-              : 'text-[#6e6e6e] hover:text-foreground'
-          "
-          @click="setMode('dark')"
-        >
-          Темна тема
-        </button>
-      </div>
-
-      <!-- Available concepts -->
-      <div class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-          Доступні концепти
-        </p>
-
-        <div v-if="loading" class="flex items-center justify-center py-16">
-          <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-        </div>
-        <div v-else-if="error" class="text-center py-12 text-red-500">
-          <p class="mb-3">{{ error }}</p>
-          <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
-            Спробувати знову
-          </button>
-        </div>
-        <ConceptGrid
-          v-else
-          :concepts="availableConcepts"
-          :preview-id="stagedPreviewId"
-          :selected-id="stagedConfirmedId"
-          @select="handleSelectConcept"
-        />
-      </div>
-
-      <StepCommentField
-        v-model="conceptComment"
-        label="Коментар СЕО"
-        placeholder="Додайте коментар СЕО..."
-      />
-
-      <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
-        {{ store.saveCeoSelectionsError }}
-      </p>
+        Світла тема
+      </button>
+      <button
+        type="button"
+        class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
+        :class="
+          localMode === 'dark'
+            ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
+            : 'text-[#6e6e6e] hover:text-foreground'
+        "
+        @click="setMode('dark')"
+      >
+        Темна тема
+      </button>
     </div>
 
-    <CeoReselectFooter
-      cancel-label="Скасувати"
-      primary-label="Далі"
-      :primary-disabled="primaryDisabled"
-      @cancel="goBack"
-      @primary="goNext"
+    <!-- Available concepts -->
+    <div class="flex flex-col gap-3">
+      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+        Доступні концепти
+      </p>
+
+      <div v-if="loading" class="flex items-center justify-center py-16">
+        <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+      <div v-else-if="error" class="text-center py-12 text-red-500">
+        <p class="mb-3">{{ error }}</p>
+        <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
+          Спробувати знову
+        </button>
+      </div>
+      <ConceptGrid
+        v-else
+        :concepts="availableConcepts"
+        :preview-id="stagedPreviewId"
+        :selected-id="stagedConfirmedId"
+        @select="handleSelectConcept"
+      />
+    </div>
+
+    <StepCommentField
+      v-model="conceptComment"
+      label="Коментар СЕО"
+      placeholder="Додайте коментар СЕО..."
     />
-  </div>
+
+    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+      {{ store.saveCeoSelectionsError }}
+    </p>
+
+    <template #footer>
+      <EditFlowFooter
+        cancel-label="Скасувати"
+        primary-label="Далі"
+        :primary-disabled="primaryDisabled"
+        @cancel="goBack"
+        @primary="goNext"
+      />
+    </template>
+  </EditFlowStepShell>
 </template>

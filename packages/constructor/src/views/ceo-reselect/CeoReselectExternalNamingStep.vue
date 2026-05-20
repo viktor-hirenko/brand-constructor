@@ -6,7 +6,8 @@ import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
 import CustomerNamingsRow from '@/components/constructor/ceo-reselect/CustomerNamingsRow.vue'
-import CeoReselectFooter from '@/components/constructor/ceo-reselect/CeoReselectFooter.vue'
+import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
 const store = useConstructorStore()
@@ -135,74 +136,66 @@ const externalComment = computed({
   get: () => store.brandCeoComments?.externalNaming?.value ?? '',
   set: (value: string) => store.setCeoCommentValue('externalNaming', value),
 })
+
+const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
 </script>
 
 <template>
-  <div class="flex flex-col h-full min-h-0">
-    <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 pr-2 pb-4">
-      <div>
-        <h1 class="text-2xl font-medium text-[#0a0a0a] tracking-[0.0703px] mb-2 leading-8">
-          External Naming
-        </h1>
-        <p class="text-[16px] leading-6 text-[#717182] tracking-[-0.3125px]">
-          Оберіть до {{ CEO_RESELECT_EXTERNAL_NAMING_LIMIT }}-х назв, що пройдуть перевірку
-          юристами на можливі ризики.
-        </p>
-      </div>
-
-      <!-- Loader covers the whole body (customer row + grid) while API is in-flight -->
-      <div v-if="loading" class="flex items-center justify-center py-16">
-        <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
-
-      <div v-else-if="error" class="text-center py-12 text-red-500">
-        <p class="mb-3">{{ error }}</p>
-        <button type="button" class="text-primary underline text-sm" @click="loadNamings">
-          Спробувати знову
-        </button>
-      </div>
-
-      <template v-else>
-        <template v-if="!isChainedFromConcept">
-          <CustomerNamingsRow :namings="poExternalMini" />
-        </template>
-
-        <div
-          class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-          aria-hidden="true"
-        />
-
-        <div class="flex flex-col gap-3">
-          <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-            Варіанти назв для обраного концепту
-          </p>
-          <ExternalNamingGrid
-            :namings="namings"
-            :selected-ids="stagedExternalIds"
-            :exclude-ids="excludedFromGrid"
-            :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-            @toggle="handleToggle"
-          />
-        </div>
-      </template>
-
-      <StepCommentField
-        v-model="externalComment"
-        label="Коментар СЕО"
-        placeholder="Додайте коментар СЕО..."
-      />
-
-      <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
-        {{ store.saveCeoSelectionsError }}
-      </p>
+  <EditFlowStepShell title="External Naming" :subtitle="subtitleText">
+    <!-- Loader covers the whole body (customer row + grid) while API is in-flight -->
+    <div v-if="loading" class="flex items-center justify-center py-16">
+      <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
     </div>
 
-    <CeoReselectFooter
-      :cancel-label="cancelLabel"
-      primary-label="Зберегти"
-      :primary-disabled="primaryDisabled"
-      @cancel="goCancel"
-      @primary="goSave"
+    <div v-else-if="error" class="text-center py-12 text-red-500">
+      <p class="mb-3">{{ error }}</p>
+      <button type="button" class="text-primary underline text-sm" @click="loadNamings">
+        Спробувати знову
+      </button>
+    </div>
+
+    <template v-else>
+      <template v-if="!isChainedFromConcept">
+        <CustomerNamingsRow :namings="poExternalMini" />
+      </template>
+
+      <div
+        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+        aria-hidden="true"
+      />
+
+      <div class="flex flex-col gap-3">
+        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+          Варіанти назв для обраного концепту
+        </p>
+        <ExternalNamingGrid
+          :namings="namings"
+          :selected-ids="stagedExternalIds"
+          :exclude-ids="excludedFromGrid"
+          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+          @toggle="handleToggle"
+        />
+      </div>
+    </template>
+
+    <StepCommentField
+      v-model="externalComment"
+      label="Коментар СЕО"
+      placeholder="Додайте коментар СЕО..."
     />
-  </div>
+
+    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+      {{ store.saveCeoSelectionsError }}
+    </p>
+
+    <template #footer>
+      <EditFlowFooter
+        :cancel-label="cancelLabel"
+        primary-label="Зберегти"
+        :primary-disabled="primaryDisabled"
+        @cancel="goCancel"
+        @primary="goSave"
+      />
+    </template>
+  </EditFlowStepShell>
 </template>

@@ -1,12 +1,16 @@
 <script setup lang="ts">
-interface PoEditFooterProps {
+/**
+ * Shared sticky footer for CEO re-select and PO edit step screens.
+ * Replaces the byte-for-byte duplicate `CeoReselectFooter` + `PoEditFooter`.
+ */
+interface EditFlowFooterProps {
   cancelLabel?: string
   primaryLabel?: string
   primaryDisabled?: boolean
   loading?: boolean
 }
 
-withDefaults(defineProps<PoEditFooterProps>(), {
+withDefaults(defineProps<EditFlowFooterProps>(), {
   cancelLabel: 'Скасувати',
   primaryLabel: 'Зберегти',
   primaryDisabled: false,
