@@ -56,6 +56,31 @@ const isPoDraftReview = computed(() => {
 })
 
 /**
+ * External team (Strategy / UI / PR / Design) viewing an approved brief — read-only.
+ * Uses the same Figma "Product view" shell as PO draft / CEO finalize:
+ * no wizard header, no wizard footer, BrandPreviewPanel on the right.
+ */
+const isExternalTeamReview = computed(() => {
+  if (route.meta.ceoReselect) return false
+  if (route.meta.poEdit) return false
+  if ((route.meta.step as number | undefined) !== 8) return false
+  if (authStore.isCeoOrAdmin) return false
+  if (authStore.canStartNewBrandBrief) return false
+  return store.brandStatus === 'approved'
+})
+
+/** Aggregate flag — any review-shell layout (no wizard header/footer). */
+const isReviewShell = computed(
+  () =>
+    isCeoFinalize.value ||
+    isCeoReselect.value ||
+    isPoEdit.value ||
+    isPoDraftReview.value ||
+    isPoReturnedReview.value ||
+    isExternalTeamReview.value
+)
+
+/**
  * PO viewing a brief returned from CEO (`needs_revision`).
  * Uses the same shell as CEO finalize / PO draft review — no wizard header,
  * no wizard footer, BrandPreviewPanel on the right (Figma 1958:3720).
@@ -567,29 +592,27 @@ watch(currentStep, step => {
       <div
         :class="[
           isFullWidth && !isCeoReselect && !isPoEdit ? 'w-full' : 'w-[42%]',
-          isCeoFinalize || isCeoReselect || isPoEdit || isPoDraftReview || isPoReturnedReview
-            ? 'bg-[#f9f9fb]'
-            : 'bg-muted/30',
+          isReviewShell ? 'bg-[#f9f9fb]' : 'bg-muted/30',
         ]"
         class="flex flex-col min-h-0"
       >
         <div
           class="min-h-0 flex-1"
           :class="[
-            isCeoFinalize || isCeoReselect || isPoEdit || isPoDraftReview || isPoReturnedReview
+            isReviewShell
               ? 'flex flex-col overflow-hidden'
               : 'px-12 pt-5 pb-6',
             isCeoReselect || isPoEdit ? 'px-8 pt-8 pb-0' : '',
-            !isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview && currentStep === 8
+            !isReviewShell && currentStep === 8
               ? 'flex flex-col overflow-hidden'
               : '',
-            !isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview && currentStep !== 8
+            !isReviewShell && currentStep !== 8
               ? 'overflow-y-auto'
               : '',
           ]"
         >
           <div
-            v-if="!isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview"
+            v-if="!isReviewShell"
             :class="currentStep === 8 ? 'shrink-0' : ''"
           >
             <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
@@ -616,7 +639,7 @@ watch(currentStep, step => {
 
           <div
             :class="
-              isCeoFinalize || isCeoReselect || isPoEdit || isPoReturnedReview || currentStep === 8
+              isReviewShell || currentStep === 8
                 ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
                 : ''
             "
@@ -626,7 +649,7 @@ watch(currentStep, step => {
         </div>
 
         <div
-          v-if="!isViewMode && !isCeoFinalize && !isCeoReselect && !isPoEdit && !isPoDraftReview && !isPoReturnedReview"
+          v-if="!isViewMode && !isReviewShell"
           class="shrink-0 px-12 py-6 border-t border-border"
         >
           <div v-if="store.editingSection" class="flex items-center gap-3">
@@ -687,9 +710,9 @@ watch(currentStep, step => {
         </div>
       </div>
 
-      <!-- Right Panel: CEO finalize / PO draft / PO returned-from-CEO final preview -->
+      <!-- Right Panel: CEO finalize / PO draft / PO returned / external team approved preview -->
       <div
-        v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview"
+        v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isExternalTeamReview"
         class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
       >
         <BrandPreviewPanel />

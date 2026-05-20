@@ -461,15 +461,20 @@ brands.get('/', async c => {
   const offset = (page - 1) * perPage
 
   const canSeeAll = (BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)
+  const isCreator = isBrandBriefCreatorRole(user.role)
 
   let query: string
   const params: (string | number)[] = []
 
   if (canSeeAll) {
     query = 'SELECT * FROM brands WHERE 1=1'
-  } else {
+  } else if (isCreator) {
     query = 'SELECT * FROM brands WHERE created_by = ?'
     params.push(user.id)
+  } else {
+    // External teams (strategy / ui_designer / pr_marketing / product_designer)
+    // can only browse approved brands.
+    query = "SELECT * FROM brands WHERE status = 'approved'"
   }
 
   if (status) {
@@ -489,9 +494,11 @@ brands.get('/', async c => {
 
   if (canSeeAll) {
     countQuery = 'SELECT COUNT(*) as count FROM brands WHERE 1=1'
-  } else {
+  } else if (isCreator) {
     countQuery = 'SELECT COUNT(*) as count FROM brands WHERE created_by = ?'
     countParams.push(user.id)
+  } else {
+    countQuery = "SELECT COUNT(*) as count FROM brands WHERE status = 'approved'"
   }
 
   if (status) {
@@ -516,14 +523,23 @@ brands.get('/:id', async c => {
   const id = c.req.param('id')
   const user = c.get('user')
   const canSeeAll = (BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)
+  const isCreator = isBrandBriefCreatorRole(user.role)
 
   let row: BrandRow | null
 
   if (canSeeAll) {
+    // admin / head_dhc / cpo_ceo see any brand in any status
     row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
-  } else {
+  } else if (isCreator) {
+    // product_owner sees only their own brands (any status)
     row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ? AND created_by = ?')
       .bind(id, user.id)
+      .first<BrandRow>()
+  } else {
+    // strategy_identity / ui_designer / pr_marketing / product_designer
+    // see ONLY approved brands (read-only via Slack links)
+    row = await c.env.DB.prepare("SELECT * FROM brands WHERE id = ? AND status = 'approved'")
+      .bind(id)
       .first<BrandRow>()
   }
 
