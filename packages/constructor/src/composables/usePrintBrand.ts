@@ -18,6 +18,7 @@ export interface PrintBrandData {
 }
 
 const CEO_SECTION_LABELS: Record<string, string> = {
+  basics: 'Основна інформація',
   concept: 'Концепт',
   externalNaming: 'Зовнішня назва',
   internalNaming: 'Внутрішня назва',

@@ -11,7 +11,7 @@ interface PoActionsFooterProps {
   /**
    * Whether to render the primary "submit" button at all.
    * Defaults to true to preserve existing PO flows. Pass false on the
-   * approved read-only view where only Share + PDF should remain.
+   * approved read-only view where only Download PDF should remain.
    */
   showSubmit?: boolean
   /**
@@ -109,7 +109,7 @@ const emit = defineEmits<{
     <button
       v-if="showPdf"
       type="button"
-      class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-black/10 text-foreground rounded-xl hover:bg-black/[0.02] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       :disabled="pdfLoading"
       @click="emit('pdf')"
     >
