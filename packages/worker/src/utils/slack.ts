@@ -81,6 +81,7 @@ export interface BrandNotificationData {
 }
 
 export const CEO_COMMENT_LABELS: Record<string, string> = {
+  basics: 'Основна інформація',
   concept: 'Концепт',
   externalNaming: 'Зовнішня назва',
   internalNaming: 'Внутрішня назва',
