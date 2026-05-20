@@ -12,9 +12,8 @@ const sidebarLayers = computed(() => buildLayers(false))
 onMounted(loadVariants)
 
 watch(
-  () => store.stepData?.visualComponents?.selections,
-  () => loadVariants(),
-  { deep: true }
+  () => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join(','),
+  loadVariants
 )
 </script>
 
