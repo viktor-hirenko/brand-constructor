@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { Env, Variables } from '../types'
+import { createBrandSchema, updateBrandSchema } from '../schemas/brand'
 import { generateId } from '../utils/id'
 import {
   sendSlackMessage,
@@ -40,58 +41,6 @@ const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
   approved: [],
   rejected: [],
 }
-
-const createBrandSchema = z.object({
-  internalName: z.string().max(300).nullish(),
-  geo: z.string().max(500).optional(),
-  launchDate: z.string().max(30).optional(),
-  mode: z.enum(['light', 'dark']).nullish(),
-  conceptId: z.string().max(100).nullish(),
-  conceptComment: z.string().max(5000).optional(),
-  externalNamingIds: z.array(z.string().max(100)).max(3).optional(),
-  externalNamingComment: z.string().max(5000).optional(),
-  internalNamingId: z.string().max(100).nullish(),
-  internalNamingComment: z.string().max(5000).optional(),
-  prPackageId: z.string().max(100).nullish(),
-  prPackageComment: z.string().max(5000).optional(),
-  legalLanding: z.boolean().optional(),
-  partnerLanding: z.boolean().optional(),
-  deliverablesComment: z.string().max(5000).optional(),
-  componentSelections: z.record(z.string()).optional(),
-  componentsComment: z.string().max(5000).optional(),
-  delegateToDesigners: z.boolean().optional(),
-  newConceptBrief: z.any().nullish(),
-  developmentDeadline: z.string().max(30).optional(),
-  newNamingBrief: z.any().nullish(),
-  stepData: z.any().optional(),
-  currentStep: z.number().int().min(1).max(8).optional(),
-})
-
-const updateBrandSchema = z.object({
-  internalName: z.string().max(300).nullish(),
-  geo: z.string().max(500).optional(),
-  launchDate: z.string().max(30).optional(),
-  mode: z.enum(['light', 'dark']).nullish(),
-  conceptId: z.string().max(100).nullish(),
-  conceptComment: z.string().max(5000).optional(),
-  externalNamingIds: z.array(z.string().max(100)).max(3).optional(),
-  externalNamingComment: z.string().max(5000).optional(),
-  internalNamingId: z.string().max(100).nullish(),
-  internalNamingComment: z.string().max(5000).optional(),
-  prPackageId: z.string().max(100).nullish(),
-  prPackageComment: z.string().max(5000).optional(),
-  legalLanding: z.boolean().optional(),
-  partnerLanding: z.boolean().optional(),
-  deliverablesComment: z.string().max(5000).optional(),
-  componentSelections: z.record(z.string()).optional(),
-  componentsComment: z.string().max(5000).optional(),
-  delegateToDesigners: z.boolean().optional(),
-  newConceptBrief: z.any().nullish(),
-  developmentDeadline: z.string().max(30).optional(),
-  newNamingBrief: z.any().nullish(),
-  stepData: z.any().optional(),
-  currentStep: z.number().int().min(1).max(8).optional(),
-})
 
 const ceoSelectionValueSchema = z.union([z.string(), z.array(z.string())])
 
@@ -134,6 +83,51 @@ const RESOLVABLE_SECTION_KEYS = new Set([
   'deliverables',
   'visualComponents',
 ])
+
+type UpdateBrandBody = z.infer<typeof updateBrandSchema>
+type FieldTransform = 'direct' | 'nullish' | 'bool' | 'json' | 'json_nullable'
+
+interface UpdatableField {
+  key: keyof UpdateBrandBody
+  column: string
+  transform: FieldTransform
+}
+
+const UPDATABLE_FIELDS: UpdatableField[] = [
+  { key: 'internalName',         column: 'internal_name',          transform: 'nullish'       },
+  { key: 'geo',                  column: 'geo',                    transform: 'direct'        },
+  { key: 'launchDate',           column: 'launch_date',            transform: 'direct'        },
+  { key: 'mode',                 column: 'mode',                   transform: 'nullish'       },
+  { key: 'conceptId',            column: 'concept_id',             transform: 'nullish'       },
+  { key: 'conceptComment',       column: 'concept_comment',        transform: 'direct'        },
+  { key: 'externalNamingIds',    column: 'external_naming_ids',    transform: 'json'          },
+  { key: 'externalNamingComment',column: 'external_naming_comment',transform: 'direct'        },
+  { key: 'internalNamingId',     column: 'internal_naming_id',     transform: 'nullish'       },
+  { key: 'internalNamingComment',column: 'internal_naming_comment',transform: 'direct'        },
+  { key: 'prPackageId',          column: 'pr_package_id',          transform: 'nullish'       },
+  { key: 'prPackageComment',     column: 'pr_package_comment',     transform: 'direct'        },
+  { key: 'legalLanding',         column: 'legal_landing',          transform: 'bool'          },
+  { key: 'partnerLanding',       column: 'partner_landing',        transform: 'bool'          },
+  { key: 'deliverablesComment',  column: 'deliverables_comment',   transform: 'direct'        },
+  { key: 'componentSelections',  column: 'component_selections',   transform: 'json'          },
+  { key: 'componentsComment',    column: 'components_comment',     transform: 'direct'        },
+  { key: 'delegateToDesigners',  column: 'delegate_to_designers',  transform: 'bool'          },
+  { key: 'newConceptBrief',      column: 'new_concept_brief',      transform: 'json_nullable' },
+  { key: 'developmentDeadline',  column: 'development_deadline',   transform: 'direct'        },
+  { key: 'newNamingBrief',       column: 'new_naming_brief',       transform: 'json_nullable' },
+  { key: 'stepData',             column: 'step_data',              transform: 'json'          },
+  { key: 'currentStep',          column: 'current_step',           transform: 'direct'        },
+]
+
+function applyFieldTransform(value: unknown, transform: FieldTransform): string | number | null {
+  switch (transform) {
+    case 'direct':       return value as string | number
+    case 'nullish':      return (value as string | null | undefined) ?? null
+    case 'bool':         return (value as boolean) ? 1 : 0
+    case 'json':         return JSON.stringify(value)
+    case 'json_nullable':return value != null ? JSON.stringify(value) : null
+  }
+}
 
 /**
  * Normalises wire-format CEO comments (legacy string OR meta object) into the
@@ -656,108 +650,30 @@ brands.put('/:id', async c => {
 
   const body = parsed.data
 
-  const existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ? AND created_by = ?')
-    .bind(id, user.id)
+  const existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
+    .bind(id)
     .first<BrandRow>()
 
   if (!existing) {
     return c.json({ success: false, error: 'Brand not found' }, 404)
   }
 
+  if (existing.created_by !== user.id) {
+    return c.json(
+      { success: false, error: 'Access denied. Wizard edits are only allowed by the brand owner.' },
+      403
+    )
+  }
+
   const updates: string[] = []
   const values: (string | number | null)[] = []
 
-  if (body.internalName !== undefined) {
-    updates.push('internal_name = ?')
-    values.push(body.internalName ?? null)
-  }
-  if (body.geo !== undefined) {
-    updates.push('geo = ?')
-    values.push(body.geo)
-  }
-  if (body.launchDate !== undefined) {
-    updates.push('launch_date = ?')
-    values.push(body.launchDate)
-  }
-  if (body.mode !== undefined) {
-    updates.push('mode = ?')
-    values.push(body.mode ?? null)
-  }
-  if (body.conceptId !== undefined) {
-    updates.push('concept_id = ?')
-    values.push(body.conceptId ?? null)
-  }
-  if (body.conceptComment !== undefined) {
-    updates.push('concept_comment = ?')
-    values.push(body.conceptComment)
-  }
-  if (body.externalNamingIds !== undefined) {
-    updates.push('external_naming_ids = ?')
-    values.push(JSON.stringify(body.externalNamingIds))
-  }
-  if (body.externalNamingComment !== undefined) {
-    updates.push('external_naming_comment = ?')
-    values.push(body.externalNamingComment)
-  }
-  if (body.internalNamingId !== undefined) {
-    updates.push('internal_naming_id = ?')
-    values.push(body.internalNamingId ?? null)
-  }
-  if (body.internalNamingComment !== undefined) {
-    updates.push('internal_naming_comment = ?')
-    values.push(body.internalNamingComment)
-  }
-  if (body.prPackageId !== undefined) {
-    updates.push('pr_package_id = ?')
-    values.push(body.prPackageId ?? null)
-  }
-  if (body.prPackageComment !== undefined) {
-    updates.push('pr_package_comment = ?')
-    values.push(body.prPackageComment)
-  }
-  if (body.legalLanding !== undefined) {
-    updates.push('legal_landing = ?')
-    values.push(body.legalLanding ? 1 : 0)
-  }
-  if (body.partnerLanding !== undefined) {
-    updates.push('partner_landing = ?')
-    values.push(body.partnerLanding ? 1 : 0)
-  }
-  if (body.deliverablesComment !== undefined) {
-    updates.push('deliverables_comment = ?')
-    values.push(body.deliverablesComment)
-  }
-  if (body.componentSelections !== undefined) {
-    updates.push('component_selections = ?')
-    values.push(JSON.stringify(body.componentSelections))
-  }
-  if (body.componentsComment !== undefined) {
-    updates.push('components_comment = ?')
-    values.push(body.componentsComment)
-  }
-  if (body.delegateToDesigners !== undefined) {
-    updates.push('delegate_to_designers = ?')
-    values.push(body.delegateToDesigners ? 1 : 0)
-  }
-  if (body.newConceptBrief !== undefined) {
-    updates.push('new_concept_brief = ?')
-    values.push(body.newConceptBrief != null ? JSON.stringify(body.newConceptBrief) : null)
-  }
-  if (body.developmentDeadline !== undefined) {
-    updates.push('development_deadline = ?')
-    values.push(body.developmentDeadline)
-  }
-  if (body.newNamingBrief !== undefined) {
-    updates.push('new_naming_brief = ?')
-    values.push(body.newNamingBrief != null ? JSON.stringify(body.newNamingBrief) : null)
-  }
-  if (body.stepData !== undefined) {
-    updates.push('step_data = ?')
-    values.push(JSON.stringify(body.stepData))
-  }
-  if (body.currentStep !== undefined) {
-    updates.push('current_step = ?')
-    values.push(body.currentStep)
+  for (const field of UPDATABLE_FIELDS) {
+    const value = body[field.key]
+    if (value !== undefined) {
+      updates.push(`${field.column} = ?`)
+      values.push(applyFieldTransform(value, field.transform))
+    }
   }
 
   if (updates.length === 0) {
