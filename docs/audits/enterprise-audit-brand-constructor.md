@@ -27,7 +27,7 @@
 
 ## Current Progress
 
-- **Completed findings:** F-02 ✅, F-01 ✅, F-03 ✅, F-14 ✅, F-17 ✅, F-20 ✅, F-12 ✅, F-13 ✅, F-15 ✅, F-16 ✅, F-18 ✅, F-19 ✅, F-06 ✅, F-22 ✅, F-21 ✅, F-07 ✅, F-11 ✅, F-10 ✅
+- **Completed findings:** F-02 ✅, F-01 ✅, F-03 ✅, F-14 ✅, F-17 ✅, F-20 ✅, F-12 ✅, F-13 ✅, F-15 ✅, F-16 ✅, F-18 ✅, F-19 ✅, F-06 ✅, F-22 ✅, F-21 ✅, F-07 ✅, F-11 ✅, F-10 ✅, F-09 ✅
 - **In progress:** —
 - **Phase 1 COMPLETE ✅ — deployed to prod 2026-05-20**
 - **Phase 2 COMPLETE ✅ — deployed to prod 2026-05-20**
@@ -36,7 +36,8 @@
 - **F-07 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
 - **F-11 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
 - **F-10 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
-- **Next:** Phase 3 — только Opus 4.7, только по явному запросу. F-09 → F-08 → F-04 → F-05.
+- **F-09 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
+- **Next:** Phase 3 — только Opus 4.7, только по явному запросу. F-08 → F-04 → F-05.
 - **Recommended model for Phase 3:** Opus 4.7, один finding за чат
 - **Last update:** 2026-05-21
 
@@ -231,13 +232,54 @@ F-22 — remove unused `rejected` brand status from the entire stack. Severity �
 
 ---
 
-### F-09 — Split `packages/worker/src/routes/brands.ts` (1282 lines)
-- **Status:** TODO
+### F-09 — Split `packages/worker/src/routes/brands.ts` (1203 lines)
+- **Status:** DONE
+- **Date completed:** 2026-05-21
 - **Severity:** 🟡 Important
 - **Phase:** 3
-- **Model recommendation:** Opus 4.7
-- **Target files:** `packages/worker/src/routes/brands.ts`
-- **Plan outline:** split into `brands.crud.ts`, `brands.status.ts`, `brands.ceo.ts`, `brands.notifications.ts`.
+- **Model used:** Opus 4.7
+- **Target files:** `packages/worker/src/routes/brands.ts` (1203 → 27 lines, thin shell)
+- **Architecture:** The single 1203-line monolith is now a thin Hono shell that mounts three role-aligned sub-routers via `brands.route('/', subRouter)`. Pure utilities (helpers, types, zod schemas, constants) live in `utils/brands.ts`; the Slack notification-payload assembler is its own tiny module next to the only handler that calls it. Public surface (`export default brands` consumed by `index.ts` at `/api/brands`) is byte-for-byte preserved.
+- **Files added:**
+  - `packages/worker/src/utils/brands.ts` (268 lines) — pure module, no Hono / no D1. Exports `BrandRow`, `rowToBrand`, `firstId`, `asIdArray`, `applyFieldTransform`, `parseCeoCommentsFromRow`, `flattenCeoCommentsToValues`, `normaliseCeoCommentsForStorage`, types `FieldTransform` / `UpdatableField` / `UpdateBrandBody`, constants `STATUS_TRANSITIONS` / `RESOLVABLE_SECTION_KEYS` / `UPDATABLE_FIELDS`, and zod schemas `updateStatusSchema` / `patchCeoSelectionsSchema` / `patchCeoCommentResolveSchema`.
+  - `packages/worker/src/routes/brands.notifications.ts` (184 lines) — `collectBrandNotificationData()` only. Imports helpers from `utils/brands.ts` and Slack types from `utils/slack.ts`. Used twice by `brands.status.ts` (submitted/needs_revision branch + approved branch).
+  - `packages/worker/src/routes/brands.crud.ts` (310 lines) — Hono sub-router. `GET /` (list with RBAC + pagination), `GET /:id`, `POST /` (create draft), `PUT /:id` (wizard update — F-18 UPDATABLE_FIELDS + F-21 409-guard), `DELETE /:id` (F-17 atomic batch).
+  - `packages/worker/src/routes/brands.ceo.ts` (147 lines) — Hono sub-router. `PATCH /:id/ceo-selections`, `PATCH /:id/ceo-comments/resolve`.
+  - `packages/worker/src/routes/brands.status.ts` (362 lines) — Hono sub-router with the single `PATCH /:id/status` handler. **F-04 zone preserved verbatim**: status-transition guard, role guards, conditional `ceo_comments` / `ceo_selections` reset on resubmit, submitted/needs_revision Slack-dispatch block (with new-briefs-vs-not branching), and the entire approve-batch (ceoSel parse → finalConceptId/ExtIds/IntId → batchStatements builder → `DB.batch(...)` → 4 Slack `Promise.allSettled` messages). The only changes are imports — no expression in the handler body was edited.
+- **Files modified:** `packages/worker/src/routes/brands.ts` (1203 → 27 lines) — now imports the three sub-routers and composes them via `.route('/', subRouter)`. The default export is unchanged (still the same shape consumed by `index.ts`).
+- **Files NOT touched:** `packages/worker/src/index.ts` (mount path `/api/brands` unchanged), `packages/worker/src/utils/slack.ts` (F-10 owns the Slack module), every other route in `packages/worker/src/routes/`.
+- **Routing model:** Hono v4.6 `parent.route('/', child)` merges all `child.METHOD(path, …)` handlers into `parent` with a no-op prefix. There are no method+path conflicts across the three sub-routers — each tuple `(GET '/')`, `(GET '/:id')`, `(POST '/')`, `(PUT '/:id')`, `(DELETE '/:id')`, `(PATCH '/:id/ceo-selections')`, `(PATCH '/:id/ceo-comments/resolve')`, `(PATCH '/:id/status')` is unique. `index.ts` still mounts the assembled root at `/api/brands`, so every external URL resolves to the same handler as before.
+- **Dead-code drop:** removed unused `VALID_STATUSES: BrandStatus[]` constant (declared at the top of the legacy file but never referenced anywhere — actual validation flows through `z.enum(['draft','submitted','needs_revision','approved'])` inside `updateStatusSchema`). One inert local (`componentSelections` parsed inside the approve block) is kept verbatim to match the legacy behaviour byte-for-byte.
+- **Verification:**
+  - `pnpm --filter @brand-constructor/worker type-check` ✓ (0 errors)
+  - `pnpm --filter @brand-constructor/worker build` ✓ (wrangler dry-run, 335.98 KiB / 63.72 KiB gzipped — pre-refactor parity)
+  - Linter: 0 issues across the 6 new/changed files
+  - Skipped curl-smoke: only one D1 binding exists in `wrangler.toml` (the production database is shared by both default and `env.production`), so a local `wrangler dev` would write into prod data. Deferred to manual QA after deploy.
+- **F-04 NOT touched:** the approve-batch logic and the surrounding Slack dispatch sites are byte-for-byte identical to the pre-refactor file (same `c.executionCtx.waitUntil(Promise.allSettled([...]))` shape, same try/catch boundaries, same conditional branches). F-09 only moved the handler into a new module and rewrote its imports.
+- **Manual QA after deploy:** see deploy section below — full PO + CEO flow on a fresh test brand (draft → wizard → submit → CEO sees in `bc-approvals` → CEO approve → command channels receive 4 messages).
+- **Suggested commit message:**
+  ```
+  refactor(worker): F-09 — split routes/brands.ts (1203 lines) into modular sub-routers
+
+  The single 1203-line monolith is now a thin Hono shell composing three
+  role-aligned sub-routers via parent.route('/', subRouter):
+    - brands.crud.ts        — list, get-by-id, create, wizard-update, delete
+    - brands.ceo.ts         — CEO override paths (selections + comment resolve)
+    - brands.status.ts      — PATCH /:id/status (F-04 zone — approve batch +
+                              Slack dispatch — moved verbatim, only imports
+                              rewritten)
+
+  Pure utilities, types, zod schemas, and constants moved to
+  utils/brands.ts. The Slack notification-payload assembler lives in
+  routes/brands.notifications.ts next to its single caller.
+
+  Public surface preserved: index.ts still mounts the assembled router at
+  /api/brands and every (method, path) tuple resolves to the same handler
+  as before. The unused VALID_STATUSES constant was dropped (z.enum(...)
+  inside updateStatusSchema is the real validator).
+
+  Refs: docs/audits/enterprise-audit-brand-constructor.md F-09
+  ```
 
 ---
 
