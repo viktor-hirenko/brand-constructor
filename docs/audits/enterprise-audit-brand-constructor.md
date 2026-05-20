@@ -27,7 +27,7 @@
 
 ## Current Progress
 
-- **Completed findings:** F-02 ✅, F-01 ✅, F-03 ✅, F-14 ✅, F-17 ✅, F-20 ✅, F-12 ✅, F-13 ✅, F-15 ✅, F-16 ✅, F-18 ✅, F-19 ✅, F-06 ✅, F-22 ✅, F-21 ✅, F-07 ✅, F-11 ✅, F-10 ✅, F-09 ✅, F-08 ✅
+- **Completed findings:** F-02 ✅, F-01 ✅, F-03 ✅, F-14 ✅, F-17 ✅, F-20 ✅, F-12 ✅, F-13 ✅, F-15 ✅, F-16 ✅, F-18 ✅, F-19 ✅, F-06 ✅, F-22 ✅, F-21 ✅, F-07 ✅, F-11 ✅, F-10 ✅, F-09 ✅, F-08 ✅, F-04 ✅
 - **In progress:** —
 - **Phase 1 COMPLETE ✅ — deployed to prod 2026-05-20**
 - **Phase 2 COMPLETE ✅ — deployed to prod 2026-05-20**
@@ -38,7 +38,8 @@
 - **F-10 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
 - **F-09 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
 - **F-08 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
-- **Next:** Phase 3 — только Opus 4.7, только по явному запросу. F-04 → F-05.
+- **F-04 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
+- **Next:** Phase 3 — только Opus 4.7, только по явному запросу. F-05 — last remaining Phase 3 finding.
 - **Recommended model for Phase 3:** Opus 4.7, один finding за чат
 - **Last update:** 2026-05-21
 
@@ -135,14 +136,53 @@ F-22 — remove unused `rejected` brand status from the entire stack. Severity �
 ---
 
 ### F-04 — Non-atomic approve flow in `PATCH /:id/status`
-- **Status:** TODO
+- **Status:** DONE
+- **Date completed:** 2026-05-21
 - **Severity:** 🔴 Critical
 - **Phase:** 3 (promoted from S-sized due to fragility of CEO/approve flow)
-- **Model recommendation:** Opus 4.7
-- **Target files:** `packages/worker/src/routes/brands.ts:911-1239` (particularly 966-988 + 1135-1198)
-- **Problem:** Brand status flips to `approved` in a standalone UPDATE; library marking (concepts/external/internal/pr_packages → `status='used'`) happens in a separate batch later. If the batch fails after status update, the same library item can be picked again for another brand.
-- **Recommended change:** Single `db.batch([...])` with status update + library marks; only enqueue Slack `waitUntil` after batch succeeds.
-- **Notes:** Touches approve flow (CEO/PO). Per workflow rules, do NOT take this in a Sonnet Thinking session.
+- **Model used:** Opus 4.7
+- **Target files:** `packages/worker/src/routes/brands.status.ts` (single PATCH `/:id/status` handler — was moved verbatim from the legacy `brands.ts:911-1239` zone during F-09; F-04 is the first behavioral change to this zone since the F-09 refactor).
+- **Problem:** Brand status flipped to `approved` in a standalone `UPDATE` (formerly line 107-109 of `brands.status.ts`); library marking (`concepts`/`external_namings`/`internal_namings`/`pr_packages` → `status='used'`) happened in a separate `db.batch(...)` later in the same handler. Between the two writes there was a window: if the marks batch failed (transient D1 error, network blip), the brand was already persisted as `approved` but the library elements remained `available` — the same library item could be picked again for another brand (race).
+- **Files changed:**
+  - `packages/worker/src/routes/brands.status.ts` — folded the standalone first `UPDATE brands SET status='approved', updated_at=?, [ceo_comments=?, ceo_selections=?]` into the same `db.batch([...])` as the library marks. For the `approved` branch, the first standalone `UPDATE` is **skipped** (early `if (targetStatus !== 'approved')` guard). All brand columns that the approve flow writes (status, updated_at, optional ceo_comments, optional ceo_selections, optional concept_id / external_naming_ids / internal_naming_id from CEO overrides) are now collected into a single `UPDATE brands SET ... WHERE id = ?` statement that is pushed **first** into `batchStatements`, alongside the library marks. The batch is then executed via `await c.env.DB.batch(batchStatements)`. D1 batch is all-or-nothing, so on failure the brand stays in its current status (`submitted` or `needs_revision`) and library elements remain `available`.
+- **Source of `ceoSel`:** previously the handler did a second `SELECT * FROM brands WHERE id = ?` after the first UPDATE specifically to read the freshly-written `ceo_selections` JSON. After F-04 that second SELECT is no longer needed — the handler uses `body.ceoSelections ?? JSON.parse(existing.ceo_selections || '{}')` (where `existing` is the pre-batch row already loaded at the top of the handler). Semantically identical: `body` wins when sent in the PATCH, otherwise the previously-persisted value from PATCH `/:id/ceo-selections` is used.
+- **Slack dispatch ordering:** the 4 approve channels (`buildStrategyMessage` / `buildPrMarketingMessage` / `buildProductDesignMessage` / `buildApprovedWorkflowMessage` × `sendSlackMessage`, wrapped in `Promise.allSettled` via `c.executionCtx.waitUntil`) are now enqueued **only after** `await c.env.DB.batch(...)` returns successfully. If the batch throws, the handler short-circuits with `500 { success: false, error: 'Failed to approve brand: atomic database update failed. No changes were applied.' }` before reaching the Slack dispatch site — so no notifications fire for a brand that never actually became approved.
+- **Refresh-after-batch:** the Slack-prep path loads a fresh `BrandRow` after the batch (so `collectBrandNotificationData` sees post-batch values of `ceo_comments` etc.) and forwards it together with the `effectiveCeoSel` override. The `collectBrandNotificationData` contract is unchanged — `brands.notifications.ts` was not touched.
+- **Error handling:**
+  - Batch failure → wrapped in a single `try { await c.env.DB.batch(...) } catch { console.error('Approve atomic batch failed:', err); return c.json({ success: false, error: '…' }, 500) }`. This is the only new explicit error response in the file. The 4 pre-existing return shapes (400 validation, 400 invalid transition, 403 ownership, 403 RBAC, 404 not found) are unchanged.
+  - Slack failure → kept in the existing `try { … } catch (err) { console.error('Slack notification error (approved):', err) }`. Slack failures never fail the HTTP response (intentional — D1 already committed, the contract with the client is fulfilled).
+  - Non-approved branches (draft→submitted, needs_revision→submitted, submitted→needs_revision) → behavior unchanged, including the submitted/needs_revision Slack flow.
+- **What was NOT touched:** `utils/brands.ts`, `utils/slack.ts`, `routes/brands.notifications.ts`, `routes/brands.ts` (the F-09 shell), every other route in `packages/worker/src/routes/`, and the entire frontend / constructor side. Public response contract `{ success: true, data: Brand }` is preserved byte-for-byte for the happy path. The unhappy path now returns a clean 500 with a descriptive message instead of an unhandled exception bubbling up to Hono's default handler (which would have produced a generic 500 with no JSON body).
+- **One inert local dropped:** the `componentSelections` JSON parse that lived inside the legacy approve branch (kept verbatim by F-09 to match pre-refactor byte-for-byte) was unused — `componentSelections` was never read from. Removed during F-04 as it lives inside the rewritten approve branch.
+- **Verification:**
+  - `pnpm --filter @brand-constructor/worker type-check` ✓ (0 errors)
+  - `pnpm --filter @brand-constructor/worker build` ✓ (wrangler dry-run, 335.73 KiB / 63.76 KiB gzipped — matches F-09 parity within rounding)
+  - `ReadLints` on `routes/brands.status.ts` → 0 issues
+- **Manual QA after deploy:** see deploy section at the end of the document — full PO + CEO end-to-end flow on a fresh test brand (create draft → wizard → submit → CEO sees in `bc-approvals` → CEO approve → brand row shows `status=approved` AND all 4 command channels receive the message).
+- **Suggested commit message:**
+  ```
+  fix(worker): F-04 — atomic approve flow via single db.batch + post-success Slack
+
+  PATCH /api/brands/:id/status approve branch used to flip the brand to
+  'approved' in a standalone UPDATE and then mark library elements
+  (concepts/external_namings/internal_namings/pr_packages → status='used')
+  in a separate db.batch. If the marks batch failed mid-flight, the brand
+  was already 'approved' but library elements remained 'available' — the
+  same item could be picked again for another brand (race).
+
+  Approve now folds the brand status flip + optional CEO override columns
+  (concept_id / external_naming_ids / internal_naming_id) + all library
+  marks into a single db.batch. D1 batch is all-or-nothing: on failure the
+  brand stays in its previous status and library elements remain
+  available. Slack dispatch (4 channels via waitUntil(Promise.allSettled))
+  is enqueued ONLY after the batch successfully commits.
+
+  Non-approved branches (draft→submitted, needs_revision→submitted,
+  submitted→needs_revision) keep the standalone UPDATE — no library marks
+  are involved in those transitions.
+
+  Refs: docs/audits/enterprise-audit-brand-constructor.md F-04
+  ```
 
 ---
 
