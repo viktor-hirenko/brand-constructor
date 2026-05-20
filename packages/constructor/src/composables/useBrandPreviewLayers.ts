@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
-import { getAssetUrl, getAuthHeader } from '@/composables/useApi'
+import { getAssetUrl, apiGet } from '@/composables/useApi'
 import { useConstructorStore } from '@/stores/constructor'
 import { logSilent } from '@/utils/log'
 import type { ComponentVariant } from '@brand-constructor/shared/types'
@@ -75,14 +75,10 @@ export function useBrandPreviewLayers(): UseBrandPreviewLayersResult {
     for (const typeId of typeIds) {
       if (variantsCache.value[typeId]) continue
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
-          { headers: getAuthHeader() }
+        const data = await apiGet<{ type: { name: string }; variants: ComponentVariant[] }>(
+          `/api/components/types/${typeId}/variants?status=all`
         )
-        if (res.ok) {
-          const json = await res.json()
-          variantsCache.value[typeId] = json.data?.variants || []
-        }
+        variantsCache.value[typeId] = data.variants || []
       } catch (err) {
         logSilent('useBrandPreviewLayers/fetchVariants', err)
       }

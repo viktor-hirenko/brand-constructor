@@ -3,7 +3,7 @@ import { computed, onMounted, onBeforeUnmount, ref, reactive, watch, nextTick } 
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
-import { useApiList, apiPatch } from '@/composables/useApi'
+import { useApiList, apiPatch, apiGet } from '@/composables/useApi'
 import { logSilent } from '@/utils/log'
 import type {
   Concept,
@@ -17,7 +17,6 @@ import {
   type PrintBrandData,
   type ComponentTypeInfo,
 } from '@/composables/usePrintBrand'
-import { getAuthHeader } from '@/composables/useApi'
 import Step10ReviewScrollLayout from '@/components/constructor/Step10ReviewScrollLayout.vue'
 import SectionCommentBlock from '@/components/constructor/SectionCommentBlock.vue'
 import ReviewHeader from '@/components/constructor/review/ReviewHeader.vue'
@@ -285,19 +284,13 @@ async function loadComponentSelectionDetails() {
   const result: Record<string, { typeName: string; variantName: string }> = {}
   const promises = Object.entries(selections).map(async ([typeId, variantId]) => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
-        { headers: getAuthHeader() }
+      const data = await apiGet<{ type: { name: string }; variants: Array<{ id: string; name: string }> }>(
+        `/api/components/types/${typeId}/variants?status=all`
       )
-      if (res.ok) {
-        const json = await res.json()
-        const typeName = json.data?.type?.name ?? typeId
-        const variants = json.data?.variants || []
-        const variant = variants.find((v: { id: string; name: string }) => v.id === variantId)
-        result[typeId] = { typeName, variantName: variant?.name ?? variantId }
-      } else {
-        result[typeId] = { typeName: typeId, variantName: variantId }
-      }
+      const typeName = data.type?.name ?? typeId
+      const variants = data.variants || []
+      const variant = variants.find(v => v.id === variantId)
+      result[typeId] = { typeName, variantName: variant?.name ?? variantId }
     } catch (err) {
       logSilent('Step10/loadComponentSelectionDetails', err)
       result[typeId] = { typeName: typeId, variantName: variantId }
@@ -1283,19 +1276,13 @@ async function handlePrintBrand() {
 
     const fetchPromises = Object.entries(selections).map(async ([typeId, variantId]) => {
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
-          { headers: getAuthHeader() }
+        const data = await apiGet<{ type: { name: string }; variants: Array<{ id: string; name: string }> }>(
+          `/api/components/types/${typeId}/variants?status=all`
         )
-        if (res.ok) {
-          const json = await res.json()
-          const typeName = json.data?.type?.name ?? 'Невідомий тип'
-          const variants = json.data?.variants || []
-          const variant = variants.find((v: { id: string; name: string }) => v.id === variantId)
-          componentTypes[typeId] = { typeName, variantName: variant?.name ?? 'Невідомий варіант' }
-        } else {
-          componentTypes[typeId] = { typeName: 'Невідомий тип', variantName: 'Невідомий варіант' }
-        }
+        const typeName = data.type?.name ?? 'Невідомий тип'
+        const variants = data.variants || []
+        const variant = variants.find(v => v.id === variantId)
+        componentTypes[typeId] = { typeName, variantName: variant?.name ?? 'Невідомий варіант' }
       } catch (err) {
         logSilent('Step10/handlePrintBrand', err)
         componentTypes[typeId] = { typeName: 'Невідомий тип', variantName: 'Невідомий варіант' }

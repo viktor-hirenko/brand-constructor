@@ -9,7 +9,7 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number):
     timer = setTimeout(() => fn(...args), delay)
   }) as T
 }
-import { getAuthHeader, apiPatch } from '@/composables/useApi'
+import { apiPatch, apiPost, apiPut } from '@/composables/useApi'
 import { migrateIncomingCurrentStep } from '@/utils/stepMigration'
 import type {
   BrandStepData,
@@ -879,12 +879,17 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
 
   const saveError = ref<string | null>(null)
 
+  interface SaveBrandResult {
+    id?: string
+    status?: string
+    internalName?: string | null
+  }
+
   async function saveBrand(): Promise<boolean> {
     isSaving.value = true
     saveError.value = null
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || ''
       const sd = stepData.value
 
       const conceptForApi = { ...sd.concept }
@@ -915,40 +920,20 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
         currentStep: currentStep.value,
       }
 
-      let response: Response
+      let result: SaveBrandResult
 
       if (brandId.value) {
-        response = await fetch(`${apiUrl}/api/brands/${brandId.value}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify(payload),
-        })
+        result = await apiPut<SaveBrandResult>(`/api/brands/${brandId.value}`, payload)
       } else {
-        response = await fetch(`${apiUrl}/api/brands`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify({ internalName: null, ...payload }),
-        })
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save brand')
-      }
-
-      const result = await response.json()
-      if (result.data) {
-        if (!brandId.value && result.data.id) {
-          brandId.value = result.data.id
+        result = await apiPost<SaveBrandResult>('/api/brands', { internalName: null, ...payload })
+        if (result.id) {
+          brandId.value = result.id
           clearDraftFromStorage()
         }
-        if (result.data.status) {
-          brandStatus.value = result.data.status
-        }
-        if (result.data.internalName) {
-          brandInternalName.value = result.data.internalName
-        }
       }
+
+      if (result.status) brandStatus.value = result.status
+      if (result.internalName) brandInternalName.value = result.internalName
 
       return true
     } catch (error) {
