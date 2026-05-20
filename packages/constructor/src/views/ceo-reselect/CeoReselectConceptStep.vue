@@ -7,6 +7,7 @@ import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
 import CeoReselectFooter from '@/components/constructor/ceo-reselect/CeoReselectFooter.vue'
+import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -86,6 +87,11 @@ function handleSelectConcept(conceptId: string) {
 function setMode(mode: 'light' | 'dark') {
   localMode.value = mode
 }
+
+const conceptComment = computed({
+  get: () => store.brandCeoComments?.concept?.value ?? '',
+  set: (value: string) => store.setCeoCommentValue('concept', value),
+})
 
 function goBack() {
   router.push(`/constructor/brand/${brandId.value}`)
@@ -176,6 +182,12 @@ function goNext() {
           @select="handleSelectConcept"
         />
       </div>
+
+      <StepCommentField
+        v-model="conceptComment"
+        label="Коментар СЕО"
+        placeholder="Додайте коментар СЕО..."
+      />
 
       <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
         {{ store.saveCeoSelectionsError }}

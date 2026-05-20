@@ -7,6 +7,7 @@ import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
 import CustomerNamingsRow from '@/components/constructor/ceo-reselect/CustomerNamingsRow.vue'
 import CeoReselectFooter from '@/components/constructor/ceo-reselect/CeoReselectFooter.vue'
+import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -129,6 +130,11 @@ async function goSave() {
 }
 
 const cancelLabel = computed(() => (isChainedFromConcept.value ? 'Назад' : 'Скасувати'))
+
+const externalComment = computed({
+  get: () => store.brandCeoComments?.externalNaming?.value ?? '',
+  set: (value: string) => store.setCeoCommentValue('externalNaming', value),
+})
 </script>
 
 <template>
@@ -179,6 +185,12 @@ const cancelLabel = computed(() => (isChainedFromConcept.value ? 'Назад' : 
           />
         </div>
       </template>
+
+      <StepCommentField
+        v-model="externalComment"
+        label="Коментар СЕО"
+        placeholder="Додайте коментар СЕО..."
+      />
 
       <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
         {{ store.saveCeoSelectionsError }}

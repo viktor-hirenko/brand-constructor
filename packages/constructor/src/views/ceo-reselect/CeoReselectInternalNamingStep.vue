@@ -7,6 +7,7 @@ import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
 import CustomerInternalNamingPreview from '@/components/constructor/ceo-reselect/CustomerInternalNamingPreview.vue'
 import CeoReselectFooter from '@/components/constructor/ceo-reselect/CeoReselectFooter.vue'
+import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -69,6 +70,11 @@ async function goSave() {
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }
+
+const internalComment = computed({
+  get: () => store.brandCeoComments?.internalNaming?.value ?? '',
+  set: (value: string) => store.setCeoCommentValue('internalNaming', value),
+})
 </script>
 
 <template>
@@ -111,6 +117,12 @@ async function goSave() {
           />
         </div>
       </template>
+
+      <StepCommentField
+        v-model="internalComment"
+        label="Коментар СЕО"
+        placeholder="Додайте коментар СЕО..."
+      />
 
       <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
         {{ store.saveCeoSelectionsError }}
