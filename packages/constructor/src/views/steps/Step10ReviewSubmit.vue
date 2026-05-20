@@ -3,7 +3,8 @@ import { computed, onMounted, onBeforeUnmount, ref, reactive, watch, nextTick } 
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
-import { useApiList, apiPatch, apiGet } from '@/composables/useApi'
+import { apiPatch, apiGet } from '@/composables/useApi'
+import { useLibrariesStore } from '@/stores/libraries'
 import { logSilent } from '@/utils/log'
 import type {
   Concept,
@@ -36,6 +37,12 @@ const router = useRouter()
 const { downloadPdf } = usePrintBrand()
 const store = useConstructorStore()
 const authStore = useAuthStore()
+const librariesStore = useLibrariesStore()
+
+const concepts = computed(() => librariesStore.concepts)
+const externalNamings = computed(() => librariesStore.externalNamings)
+const internalNamings = computed(() => librariesStore.internalNamings)
+const prPackages = computed(() => librariesStore.prPackages)
 
 const isCeoView = computed(() => authStore.isCeoOrAdmin)
 
@@ -182,39 +189,8 @@ function handleGoToEditConcept() {
   if (bid) router.push(`/constructor/brand/${bid}/po-edit/concept`)
 }
 
-const {
-  data: concepts,
-  fetchData: fetchConcepts,
-  perPage: cPerPage,
-} = useApiList<Concept>('/api/concepts')
-const {
-  data: externalNamings,
-  fetchData: fetchExternalNamings,
-  perPage: ePerPage,
-} = useApiList<ExternalNaming>('/api/namings/external')
-const {
-  data: internalNamings,
-  fetchData: fetchInternalNamings,
-  perPage: iPerPage,
-} = useApiList<InternalNaming>('/api/namings/internal')
-const {
-  data: prPackages,
-  fetchData: fetchPrPackages,
-  perPage: pPerPage,
-} = useApiList<PrPackage>('/api/pr-packages')
-
 onMounted(() => {
-  cPerPage.value = 100
-  ePerPage.value = 100
-  iPerPage.value = 100
-  pPerPage.value = 100
-  const brandFilter: Record<string, string> = store.brandId
-    ? { available_for_brand: store.brandId }
-    : {}
-  fetchConcepts(brandFilter)
-  fetchExternalNamings(brandFilter)
-  fetchInternalNamings(brandFilter)
-  fetchPrPackages(brandFilter)
+  librariesStore.load(store.brandId)
   loadComponentSelectionDetails()
 
   if (store.step10ScrollTop > 0) {

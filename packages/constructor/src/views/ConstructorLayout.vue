@@ -3,7 +3,8 @@ import { computed, watch, ref, onMounted } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
-import { useApiList, getAssetUrl, apiGet } from '@/composables/useApi'
+import { getAssetUrl, apiGet } from '@/composables/useApi'
+import { useLibrariesStore } from '@/stores/libraries'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import { useViewportScale } from '@/composables/useViewportScale'
 import { logSilent } from '@/utils/log'
@@ -19,6 +20,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useConstructorStore()
 const authStore = useAuthStore()
+const librariesStore = useLibrariesStore()
 
 /**
  * Fits the fixed 1311×810 shell into the current viewport via CSS scale so
@@ -219,21 +221,9 @@ const activeBriefItems = computed(() => {
   return []
 })
 
-const {
-  data: concepts,
-  fetchData: fetchConcepts,
-  perPage: conceptsPerPage,
-} = useApiList<Concept>('/api/concepts')
-const {
-  data: externalNamings,
-  fetchData: fetchExternalNamings,
-  perPage: externalPerPage,
-} = useApiList<ExternalNamingPreview>('/api/namings/external')
-const {
-  data: internalNamings,
-  fetchData: fetchInternalNamings,
-  perPage: internalPerPage,
-} = useApiList<InternalNaming>('/api/namings/internal')
+const concepts = computed(() => librariesStore.concepts)
+const externalNamings = computed(() => librariesStore.externalNamings as ExternalNamingPreview[])
+const internalNamings = computed(() => librariesStore.internalNamings)
 
 const brandBasics = computed(() => store.stepData?.brandBasics)
 const hasGeo = computed(() => (brandBasics.value?.geo?.length ?? 0) > 0)
@@ -477,36 +467,12 @@ async function openConceptDetails() {
 }
 
 function loadPreviewData() {
-  if (isCeoReselect.value || isPoEdit.value) {
-    conceptsPerPage.value = 100
-    externalPerPage.value = 100
-    internalPerPage.value = 100
-    const params: Record<string, string> = { status: 'active' }
-    if (store.brandId) {
-      params.available_for_brand = store.brandId
-    }
-    fetchConcepts(params)
-    fetchExternalNamings(params)
-    fetchInternalNamings(params)
-    return
-  }
-  if (
-    currentStep.value !== 2 &&
-    currentStep.value !== 3 &&
-    currentStep.value !== 4 &&
-    currentStep.value !== 8
-  )
-    return
-  conceptsPerPage.value = 100
-  externalPerPage.value = 100
-  internalPerPage.value = 100
-  const params: Record<string, string> = { status: 'active' }
-  if (store.brandId) {
-    params.available_for_brand = store.brandId
-  }
-  fetchConcepts(params)
-  fetchExternalNamings(params)
-  fetchInternalNamings(params)
+  const shouldLoad =
+    isCeoReselect.value ||
+    isPoEdit.value ||
+    [2, 3, 4, 8].includes(currentStep.value)
+  if (!shouldLoad) return
+  librariesStore.load(store.brandId)
 }
 
 onMounted(() => {
