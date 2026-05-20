@@ -31,15 +31,13 @@ const VALID_STATUSES: BrandStatus[] = [
   'submitted',
   'needs_revision',
   'approved',
-  'rejected',
 ]
 
 const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
   draft: ['submitted'],
-  submitted: ['approved', 'needs_revision', 'rejected'],
+  submitted: ['approved', 'needs_revision'],
   needs_revision: ['submitted', 'approved'],
   approved: [],
-  rejected: [],
 }
 
 const ceoSelectionValueSchema = z.union([z.string(), z.array(z.string())])
@@ -58,7 +56,7 @@ const ceoCommentMetaSchema = z.object({
 const ceoCommentValueSchema = z.union([z.string().max(5000), ceoCommentMetaSchema])
 
 const updateStatusSchema = z.object({
-  status: z.enum(['draft', 'submitted', 'needs_revision', 'approved', 'rejected']),
+  status: z.enum(['draft', 'submitted', 'needs_revision', 'approved']),
   ceoComments: z.record(ceoCommentValueSchema).optional(),
   ceoSelections: z.record(ceoSelectionValueSchema).optional(),
 })
@@ -867,12 +865,12 @@ brands.patch('/:id/status', async c => {
     }
   }
 
-  if (['approved', 'needs_revision', 'rejected'].includes(targetStatus)) {
+  if (['approved', 'needs_revision'].includes(targetStatus)) {
     if (!(BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)) {
       return c.json(
         {
           success: false,
-          error: 'Forbidden: only CPO/CEO, Admin, or Head DHC can approve/reject brands',
+          error: 'Forbidden: only CPO/CEO, Admin, or Head DHC can approve or send back for revision',
         },
         403
       )

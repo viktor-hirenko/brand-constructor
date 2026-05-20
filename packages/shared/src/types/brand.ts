@@ -1,4 +1,4 @@
-export type BrandStatus = 'draft' | 'submitted' | 'needs_revision' | 'approved' | 'rejected'
+export type BrandStatus = 'draft' | 'submitted' | 'needs_revision' | 'approved'
 
 export interface BrandBasicsData {
   geo: string[]

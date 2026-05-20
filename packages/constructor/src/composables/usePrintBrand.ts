@@ -33,7 +33,6 @@ const STATUS_LABELS: Record<string, string> = {
   submitted: 'На розгляді',
   needs_revision: 'Потребує доопрацювання',
   approved: 'Затверджено',
-  rejected: 'Відхилено',
 }
 
 interface SectionRow {

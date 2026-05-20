@@ -16,7 +16,7 @@ interface ReviewHeaderProps {
   /** Brand internal name (when known) or fallback "New Brand". */
   title: string
   /** Brand status — drives the badge/info block. */
-  status: 'submitted' | 'needs_revision' | 'approved' | 'rejected' | string
+  status: 'submitted' | 'needs_revision' | 'approved' | string
   /** Optional line under the title (e.g. PO final step instruction). */
   subtitle?: string
   /** Step index for progress row (PO draft). */
@@ -50,8 +50,6 @@ const badge = computed<BadgeMeta | null>(() => {
       return { text: 'Потрібно доопрацювати', classes: 'bg-amber-50 text-amber-700' }
     case 'approved':
       return { text: 'Затверджено', classes: 'bg-green-50 text-green-700' }
-    case 'rejected':
-      return { text: 'Відхилено', classes: 'bg-red-50 text-red-700' }
     default:
       return null
   }

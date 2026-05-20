@@ -31,7 +31,6 @@ const STATUS_TABS = [
   { key: 'submitted', label: 'Submitted' },
   { key: 'approved', label: 'Approved' },
   { key: 'needs_revision', label: 'Needs Revision' },
-  { key: 'rejected', label: 'Rejected' },
 ]
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
@@ -39,7 +38,6 @@ const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
   submitted: { label: 'Submitted', cls: 'badge--blue' },
   approved: { label: 'Approved', cls: 'badge--green' },
   needs_revision: { label: 'Needs Revision', cls: 'badge--amber' },
-  rejected: { label: 'Rejected', cls: 'badge--red' },
 }
 
 function loadBrands() {
