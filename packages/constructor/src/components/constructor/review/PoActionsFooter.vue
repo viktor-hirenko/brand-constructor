@@ -9,6 +9,12 @@ interface PoActionsFooterProps {
    */
   submitDisabled?: boolean
   /**
+   * Whether to render the primary "submit" button at all.
+   * Defaults to true to preserve existing PO flows. Pass false on the
+   * approved read-only view where only Share + PDF should remain.
+   */
+  showSubmit?: boolean
+  /**
    * Whether to show the "Назад" button. Defaults to true (PO draft wizard flow).
    * Hidden in returned-from-CEO view where there is no wizard step to go back to.
    */
@@ -24,6 +30,7 @@ withDefaults(defineProps<PoActionsFooterProps>(), {
   loading: false,
   submitLabel: 'Відправити на розгляд',
   submitDisabled: false,
+  showSubmit: true,
   showBack: true,
   showShare: false,
   showPdf: false,
@@ -42,6 +49,7 @@ const emit = defineEmits<{
 <template>
   <div class="space-y-3">
     <button
+      v-if="showSubmit"
       type="button"
       class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       :disabled="loading || submitDisabled"

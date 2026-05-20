@@ -39,15 +39,6 @@ const authStore = useAuthStore()
 
 const isCeoView = computed(() => authStore.isCeoOrAdmin)
 
-/**
- * External team viewer — strategy_identity / ui_designer / pr_marketing / product_designer.
- * Reads only approved briefs (backend enforces this). Sees the full brief read-only
- * with no footer actions, no edit / submit / CEO buttons.
- */
-const isExternalTeamView = computed(
-  () => !isCeoView.value && !authStore.canStartNewBrandBrief
-)
-
 /** True when PO is viewing a brief that was returned from CEO (needs_revision). */
 const isPoReturnedView = computed(
   () => !isCeoView.value && brandStatus.value === 'needs_revision'
@@ -758,13 +749,15 @@ const poDraftView = computed(() => !isCeoView.value && brandStatus.value === 'dr
 
 /** PO viewing their submitted brand (awaiting CEO review) — read-only unified layout. */
 const poSubmittedView = computed(
-  () => !isCeoView.value && !isExternalTeamView.value && brandStatus.value === 'submitted'
+  () => !isCeoView.value && brandStatus.value === 'submitted'
 )
 
-/** External team (Strategy / UI / PR / Design) viewing approved brief — read-only. */
-const externalTeamView = computed(
-  () => isExternalTeamView.value && brandStatus.value === 'approved'
-)
+/**
+ * Approved brief — read-only view shown to ANY role (PO, CEO/admin, external teams).
+ * Same Figma "Product view" shell as PO draft. No edit, no submit, no CEO actions.
+ * Footer keeps only Share + Download PDF.
+ */
+const approvedReadOnlyView = computed(() => brandStatus.value === 'approved')
 
 const unifiedReviewLayout = computed(
   () =>
@@ -772,16 +765,16 @@ const unifiedReviewLayout = computed(
     poDraftView.value ||
     isPoReturnedView.value ||
     poSubmittedView.value ||
-    externalTeamView.value
+    approvedReadOnlyView.value
 )
 
 const reviewMode = computed<
-  'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'external-team'
+  'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'approved'
 >(() => {
   if (ceoFinalizeView.value) return 'ceo'
   if (isPoReturnedView.value) return 'po-returned'
   if (poSubmittedView.value) return 'po-submitted'
-  if (externalTeamView.value) return 'external-team'
+  if (approvedReadOnlyView.value) return 'approved'
   return 'po-draft'
 })
 
@@ -817,7 +810,7 @@ const reviewHeaderInfoOverride = computed(() => {
       iconVariant: 'check' as const,
     }
   }
-  if (reviewMode.value === 'external-team') {
+  if (reviewMode.value === 'approved') {
     return {
       title: 'Бриф затверджено',
       description: 'Це фінальна версія брифу, погоджена СЕО.',
@@ -872,7 +865,7 @@ const isPoEditable = computed(
   () =>
     reviewMode.value !== 'ceo' &&
     reviewMode.value !== 'po-submitted' &&
-    reviewMode.value !== 'external-team'
+    reviewMode.value !== 'approved'
 )
 
 const externalNamingItems = computed(() =>
@@ -1743,7 +1736,7 @@ async function handlePrintBrand() {
           @revise="handleStatusChange('needs_revision')"
         />
         <PoActionsFooter
-          v-else-if="!ceoFrozenView && reviewMode !== 'po-submitted' && reviewMode !== 'external-team'"
+          v-else-if="!ceoFrozenView && reviewMode !== 'po-submitted'"
           :loading="statusActionLoading || isSaving"
           :submit-label="
             isPoReturnedView
@@ -1753,7 +1746,8 @@ async function handlePrintBrand() {
                 : 'Відправити на розгляд'
           "
           :submit-disabled="submitBlocked"
-          :show-back="!isPoReturnedView"
+          :show-submit="reviewMode !== 'approved'"
+          :show-back="!isPoReturnedView && reviewMode !== 'approved'"
           :show-share="showShareButton"
           :show-pdf="showPdfButton"
           :share-copied="shareSuccess"

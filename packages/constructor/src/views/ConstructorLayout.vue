@@ -56,16 +56,14 @@ const isPoDraftReview = computed(() => {
 })
 
 /**
- * External team (Strategy / UI / PR / Design) viewing an approved brief — read-only.
+ * Approved brief — read-only review (any role: PO, CEO/admin, external teams).
  * Uses the same Figma "Product view" shell as PO draft / CEO finalize:
  * no wizard header, no wizard footer, BrandPreviewPanel on the right.
  */
-const isExternalTeamReview = computed(() => {
+const isApprovedReview = computed(() => {
   if (route.meta.ceoReselect) return false
   if (route.meta.poEdit) return false
   if ((route.meta.step as number | undefined) !== 8) return false
-  if (authStore.isCeoOrAdmin) return false
-  if (authStore.canStartNewBrandBrief) return false
   return store.brandStatus === 'approved'
 })
 
@@ -77,7 +75,7 @@ const isReviewShell = computed(
     isPoEdit.value ||
     isPoDraftReview.value ||
     isPoReturnedReview.value ||
-    isExternalTeamReview.value
+    isApprovedReview.value
 )
 
 /**
@@ -710,9 +708,9 @@ watch(currentStep, step => {
         </div>
       </div>
 
-      <!-- Right Panel: CEO finalize / PO draft / PO returned / external team approved preview -->
+      <!-- Right Panel: CEO finalize / PO draft / PO returned / approved read-only preview -->
       <div
-        v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isExternalTeamReview"
+        v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isApprovedReview"
         class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
       >
         <BrandPreviewPanel />
