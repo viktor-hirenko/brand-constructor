@@ -663,6 +663,17 @@ brands.put('/:id', async c => {
     )
   }
 
+  const EDITABLE_STATUSES: readonly BrandStatus[] = ['draft', 'needs_revision'] as const
+  if (!EDITABLE_STATUSES.includes(existing.status as BrandStatus)) {
+    return c.json(
+      {
+        success: false,
+        error: `Brand in status "${existing.status}" cannot be edited via wizard. Use the dedicated CEO/PO/status endpoints.`,
+      },
+      409
+    )
+  }
+
   const updates: string[] = []
   const values: (string | number | null)[] = []
 
