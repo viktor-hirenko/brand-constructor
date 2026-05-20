@@ -214,9 +214,16 @@ const routes: RouteRecordRaw[] = [
       if (!stepMatch) return true
 
       const targetStep = parseInt(stepMatch[1])
+      const store = useConstructorStore()
+
+      // Restore unsaved draft (e.g. after F5 / accidental tab close) before the
+      // wizard mounts. Only applies to new-brand sessions that have no server ID yet.
+      if (!store.brandId) {
+        store.restoreDraftFromStorage()
+      }
+
       if (targetStep <= 1) return true
 
-      const store = useConstructorStore()
       if (targetStep > store.currentStep) {
         return { path: `/constructor/step/${store.currentStep}` }
       }
