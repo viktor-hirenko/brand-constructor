@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, reactive, watch, nextTick } from 'vue'
+import { computed, onMounted, ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { apiPatch, apiGet } from '@/composables/useApi'
 import { useLibrariesStore } from '@/stores/libraries'
+import { useReviewComponentSelections } from '@/composables/useReviewComponentSelections'
 import { logSilent } from '@/utils/log'
 import type {
   Concept,
@@ -18,7 +19,6 @@ import {
   type PrintBrandData,
   type ComponentTypeInfo,
 } from '@/composables/usePrintBrand'
-import Step10ReviewScrollLayout from '@/components/constructor/Step10ReviewScrollLayout.vue'
 import SectionCommentBlock from '@/components/constructor/SectionCommentBlock.vue'
 import ReviewHeader from '@/components/constructor/review/ReviewHeader.vue'
 import ReviewSection from '@/components/constructor/review/ReviewSection.vue'
@@ -192,26 +192,6 @@ function handleGoToEditConcept() {
 onMounted(() => {
   librariesStore.load(store.brandId)
   loadComponentSelectionDetails()
-
-  if (store.step10ScrollTop > 0) {
-    const savedScroll = store.step10ScrollTop
-    nextTick(() => {
-      const container = getScrollContainer()
-      if (container) {
-        container.scrollTop = savedScroll
-      }
-    })
-  }
-
-  // Restore CEO review scroll position after returning from a ceo-reselect page.
-  restoreReviewScroll()
-})
-
-onBeforeUnmount(() => {
-  const container = getScrollContainer()
-  if (container) {
-    store.setStep10ScrollTop(container.scrollTop)
-  }
 })
 
 const basics = computed(() => store.stepData.brandBasics)
@@ -251,221 +231,8 @@ const componentSelectionCount = computed(
   () => Object.keys(visualComponents.value.selections).length
 )
 
-const componentSelectionDetails = ref<Record<string, { typeName: string; variantName: string }>>({})
-
-async function loadComponentSelectionDetails() {
-  const selections = store.stepData?.visualComponents?.selections ?? {}
-  if (Object.keys(selections).length === 0) return
-
-  const result: Record<string, { typeName: string; variantName: string }> = {}
-  const promises = Object.entries(selections).map(async ([typeId, variantId]) => {
-    try {
-      const data = await apiGet<{ type: { name: string }; variants: Array<{ id: string; name: string }> }>(
-        `/api/components/types/${typeId}/variants?status=all`
-      )
-      const typeName = data.type?.name ?? typeId
-      const variants = data.variants || []
-      const variant = variants.find(v => v.id === variantId)
-      result[typeId] = { typeName, variantName: variant?.name ?? variantId }
-    } catch (err) {
-      logSilent('Step10/loadComponentSelectionDetails', err)
-      result[typeId] = { typeName: typeId, variantName: variantId }
-    }
-  })
-  await Promise.all(promises)
-  componentSelectionDetails.value = result
-}
-
-interface SummaryItem {
-  label: string
-  value: string
-  sectionKey: string
-  icon:
-    | 'globe'
-    | 'calendar'
-    | 'file-text'
-    | 'message'
-    | 'sun'
-    | 'moon'
-    | 'palette'
-    | 'tag'
-    | 'briefcase'
-    | 'package'
-    | 'scale'
-    | 'handshake'
-    | 'layers'
-    | 'sparkles'
-  step: number
-  comment?: string
-}
-
-const summaryItems = computed<SummaryItem[]>(() => {
-  const items: SummaryItem[] = []
-
-  const basicsComment = basics.value.comment?.trim() || ''
-
-  if (basics.value.geo.length > 0) {
-    items.push({
-      label: 'GEO',
-      value: basics.value.geo.join(', '),
-      sectionKey: 'basics',
-      icon: 'globe',
-      step: 1,
-    })
-  }
-  if (basics.value.launchDate) {
-    items.push({
-      label: 'Плануєма дата запуску',
-      value: formatDate(basics.value.launchDate),
-      sectionKey: 'basics',
-      icon: 'calendar',
-      step: 1,
-    })
-  }
-  if (basics.value.linkedProduct) {
-    items.push({
-      label: 'Звʼязок з іншим продуктом',
-      value: basics.value.linkedProduct,
-      sectionKey: 'basics',
-      icon: 'file-text',
-      step: 1,
-      comment: basicsComment,
-    })
-  }
-  if (mode.value) {
-    items.push({
-      label: 'Mode',
-      value: mode.value === 'dark' ? 'Dark Mode' : 'Light Mode',
-      sectionKey: 'mode',
-      icon: mode.value === 'dark' ? 'moon' : 'sun',
-      step: 2,
-    })
-  }
-  if (selectedConcept.value) {
-    items.push({
-      label: 'Concept',
-      value: selectedConcept.value.name,
-      sectionKey: 'concept',
-      icon: 'palette',
-      step: 2,
-      comment: store.stepData.concept.comment?.trim() || '',
-    })
-  } else if (isNewConcept.value) {
-    items.push({
-      label: 'Concept',
-      value: 'Новий концепт (бриф)',
-      sectionKey: 'concept',
-      icon: 'palette',
-      step: 2,
-      comment: store.stepData.concept.comment?.trim() || '',
-    })
-  }
-  if (selectedExternalNamings.value.length > 0) {
-    items.push({
-      label: 'External Naming',
-      value: selectedExternalNamings.value.map(n => n.name).join(', '),
-      sectionKey: 'externalNaming',
-      icon: 'tag',
-      step: 3,
-      comment: store.stepData.externalNaming.comment?.trim() || '',
-    })
-  } else if (isNewNaming.value) {
-    items.push({
-      label: 'External Naming',
-      value: 'Новий неймінг (бриф)',
-      sectionKey: 'externalNaming',
-      icon: 'tag',
-      step: 3,
-      comment: store.stepData.externalNaming.comment?.trim() || '',
-    })
-  }
-  if (selectedInternalNaming.value) {
-    items.push({
-      label: 'Internal Naming',
-      value: selectedInternalNaming.value.name,
-      sectionKey: 'internalNaming',
-      icon: 'briefcase',
-      step: 4,
-      comment: store.stepData.internalNaming.comment?.trim() || '',
-    })
-  } else if (internalFeedback.value) {
-    items.push({
-      label: 'Internal Naming',
-      value: internalFeedback.value,
-      sectionKey: 'internalNaming',
-      icon: 'briefcase',
-      step: 4,
-      comment: store.stepData.internalNaming.comment?.trim() || '',
-    })
-  }
-  if (selectedPackage.value) {
-    items.push({
-      label: 'Marketing Package',
-      value: selectedPackage.value.name,
-      sectionKey: 'marketingPackage',
-      icon: 'package',
-      step: 5,
-      comment: store.stepData.marketingPackage.comment?.trim() || '',
-    })
-  }
-
-  const deliverablesComment = deliverables.value.comment?.trim() || ''
-
-  if (deliverables.value.legalLanding) {
-    items.push({
-      label: 'Legal Landing',
-      value: 'Так',
-      sectionKey: 'deliverables',
-      icon: 'scale',
-      step: 6,
-      comment: deliverablesComment,
-    })
-  }
-  if (deliverables.value.partnerLanding) {
-    items.push({
-      label: 'Partner Landing',
-      value: 'Так',
-      sectionKey: 'deliverables',
-      icon: 'handshake',
-      step: 6,
-    })
-  }
-  const devDeadline = deliverables.value.developmentDeadline?.trim() ?? ''
-  if (devDeadline) {
-    items.push({
-      label: 'Дедлайн розробки',
-      value: formatDate(devDeadline),
-      sectionKey: 'deliverables',
-      icon: 'calendar',
-      step: 6,
-    })
-  }
-  if (visualComponents.value.delegateToDesigners) {
-    items.push({
-      label: 'Visual Components',
-      value: 'Делеговано дизайнерам',
-      sectionKey: 'visualComponents',
-      icon: 'sparkles',
-      step: 7,
-      comment: visualComponents.value.comment?.trim() || '',
-    })
-  } else if (componentSelectionCount.value > 0) {
-    const lines = Object.keys(visualComponents.value.selections).map(typeId => {
-      const info = componentSelectionDetails.value[typeId]
-      return info ? `${info.typeName}: ${info.variantName}` : typeId
-    })
-    items.push({
-      label: 'Visual Components',
-      value: lines.join('\n') || `${componentSelectionCount.value} обрано`,
-      sectionKey: 'visualComponents',
-      icon: 'layers',
-      step: 7,
-      comment: visualComponents.value.comment?.trim() || '',
-    })
-  }
-
-  return items
-})
+const { componentSelectionDetails, loadComponentSelectionDetails } =
+  useReviewComponentSelections()
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -481,16 +248,7 @@ const saveError = computed(() => store.saveError)
 const statusActionLoading = ref(false)
 const statusActionError = ref<string | null>(null)
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Чернетка', color: 'bg-gray-100 text-gray-700' },
-  submitted: { label: 'На розгляді', color: 'bg-blue-100 text-blue-700' },
-  needs_revision: { label: 'Потребує доопрацювання', color: 'bg-amber-100 text-amber-700' },
-  approved: { label: 'Затверджено', color: 'bg-green-100 text-green-700' },
-  rejected: { label: 'Відхилено', color: 'bg-red-100 text-red-700' },
-}
-
 const brandStatus = computed(() => store.brandStatus ?? 'draft')
-const statusInfo = computed(() => STATUS_LABELS[brandStatus.value] ?? STATUS_LABELS.draft)
 
 const hasNewBrief = computed(() => {
   return (
@@ -499,10 +257,6 @@ const hasNewBrief = computed(() => {
     store.stepData?.internalNaming?.newNamingFeedback != null
   )
 })
-
-const showCeoReview = computed(
-  () => isCeoView.value && !hasNewBrief.value && brandStatus.value === 'submitted'
-)
 
 const showPoSubmitButton = computed(
   () =>
@@ -518,25 +272,8 @@ const showPdfButton = computed(() => {
   return (
     brandStatus.value === 'submitted' ||
     brandStatus.value === 'needs_revision' ||
-    brandStatus.value === 'approved' ||
-    brandStatus.value === 'rejected'
+    brandStatus.value === 'approved'
   )
-})
-
-const CEO_COMMENT_SECTION_LABELS: Record<string, string> = {
-  concept: 'Concept',
-  externalNaming: 'External Naming',
-  internalNaming: 'Internal Naming',
-  marketingPackage: 'PR пакет',
-  deliverables: 'Deliverables',
-  visualComponents: 'Visual Components',
-  general: 'Загальний коментар',
-}
-
-const hasCeoComments = computed(() => {
-  const comments = store.brandCeoComments
-  if (!comments) return false
-  return Object.values(comments).some(meta => meta.value.trim().length > 0)
 })
 
 function ceoSelectionAsString(value: string | string[] | undefined): string | null {
@@ -551,8 +288,8 @@ function ceoSelectionAsArray(value: string | string[] | undefined): string[] {
 }
 
 /**
- * PDF generator (`usePrintBrand`) and the legacy yellow banner template both
- * expect `Record<string, string>` — flatten the meta map before passing it in.
+ * PDF generator (`usePrintBrand`) expects `Record<string, string>` —
+ * flatten the CEO comment meta map before passing it in.
  */
 function flattenCeoCommentsForPdf(
   comments: Record<string, { value: string }> | null
@@ -564,41 +301,6 @@ function flattenCeoCommentsForPdf(
   }
   return Object.keys(out).length > 0 ? out : null
 }
-
-const hasCeoSelections = computed(() => {
-  const selections = store.brandCeoSelections
-  if (!selections) return false
-  return Object.values(selections).some(v => {
-    if (typeof v === 'string') return v.trim().length > 0
-    if (Array.isArray(v)) return v.length > 0
-    return false
-  })
-})
-
-const resolvedCeoConcept = computed<string | null>(() => {
-  const id = ceoSelectionAsString(store.brandCeoSelections?.concept)
-  if (!id) return null
-  return concepts.value.find(c => c.id === id)?.name ?? null
-})
-
-const resolvedCeoExternalNames = computed<string[]>(() => {
-  const ids = ceoSelectionAsArray(store.brandCeoSelections?.externalNaming)
-  return ids
-    .map(id => externalNamings.value.find(n => n.id === id)?.name)
-    .filter((n): n is string => Boolean(n))
-})
-
-const resolvedCeoExternal = computed<string | null>(() => {
-  const names = resolvedCeoExternalNames.value
-  if (names.length === 0) return null
-  return names.join(', ')
-})
-
-const resolvedCeoInternal = computed<string | null>(() => {
-  const id = ceoSelectionAsString(store.brandCeoSelections?.internalNaming)
-  if (!id) return null
-  return internalNamings.value.find(n => n.id === id)?.name ?? null
-})
 
 type CeoLibraryTab = 'concept' | 'externalNaming' | 'internalNaming'
 
@@ -655,33 +357,6 @@ const ceoInternalNameForReview = computed(() => {
   return internalNamings.value.find(n => n.id === id)?.name ?? null
 })
 
-const hasCeoAlternativeFooterSummary = computed(() => {
-  const s = store.brandCeoSelections
-  if (!s) return false
-  for (const key of CEO_LIBRARY_KEYS) {
-    const v = s[key]
-    if (v != null && isCeoChoiceAnAlternative(key, v)) return true
-  }
-  return false
-})
-
-// Ref на Step10ReviewScrollLayout — используется для поиска скроллируемого контейнера
-const scrollLayoutRef = ref<InstanceType<typeof Step10ReviewScrollLayout> | null>(null)
-
-function getScrollContainer(): HTMLElement | null {
-  const el = scrollLayoutRef.value?.$el as HTMLElement | undefined
-  if (!el) return null
-  return el.querySelector<HTMLElement>('.overflow-y-auto') ?? null
-}
-
-function hasCeoCommentForSection(item: SummaryItem): boolean {
-  if (brandStatus.value !== 'needs_revision') return false
-  const comments = store.brandCeoComments
-  if (!comments) return false
-  const comment = comments[item.sectionKey]
-  return !!comment && comment.value.trim().length > 0
-}
-
 const ceoComments = reactive<Record<string, string>>({
   basics: '',
   concept: '',
@@ -708,8 +383,8 @@ const ceoFrozenView = computed(
   () => isCeoView.value && brandStatus.value === 'needs_revision'
 )
 
-/** PO final step in draft — Figma Product view (1566:27958). */
-const poDraftView = computed(() => !isCeoView.value && brandStatus.value === 'draft')
+/** PO final step in draft — Figma Product view (1566:27958). Same shell for CEO viewing a draft. */
+const poDraftView = computed(() => brandStatus.value === 'draft')
 
 /** PO viewing their submitted brand (awaiting CEO review) — read-only unified layout. */
 const poSubmittedView = computed(
@@ -717,20 +392,17 @@ const poSubmittedView = computed(
 )
 
 /**
- * Approved brief — read-only view shown to ANY role (PO, CEO/admin, external teams).
- * Same Figma "Product view" shell as PO draft. No edit, no submit, no CEO actions.
- * Footer keeps only Download PDF (Share hidden per PRD).
+ * Approved brief — read-only terminal view shown to ANY role (PO, CEO/admin,
+ * external teams). Same Figma "Product view" shell as PO draft. No edit, no
+ * submit, no CEO actions. Footer keeps only Download PDF.
+ *
+ * NOTE: `rejected` is not handled here on purpose — there is no UI path that
+ * sets `rejected` in the current product (CEO can only approve or send for
+ * revision). The leftover `rejected` enum value lives only in the worker
+ * `STATUS_TRANSITIONS` table and the admin filter tab; cleaning that up is
+ * tracked as a separate finding.
  */
 const approvedReadOnlyView = computed(() => brandStatus.value === 'approved')
-
-const unifiedReviewLayout = computed(
-  () =>
-    ceoFinalizeView.value ||
-    poDraftView.value ||
-    isPoReturnedView.value ||
-    poSubmittedView.value ||
-    approvedReadOnlyView.value
-)
 
 const reviewMode = computed<
   'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'approved'
@@ -823,7 +495,7 @@ const unifiedReviewSubtitle = computed(() =>
 
 /**
  * `Редагувати` button is available in PO draft AND PO returned-from-CEO views,
- * but NOT in CEO finalize view (CEO uses `Змінити вибір` instead).
+ * but NOT in CEO finalize, PO submitted or approved read-only view.
  */
 const isPoEditable = computed(
   () =>
@@ -892,31 +564,9 @@ function handleCeoCommentBySection(key: string, value: string) {
   }
 }
 
-const REVIEW_SCROLL_KEY = 'ceo-review-scroll-top'
-
-function saveReviewScroll() {
-  const container = getScrollContainer()
-  if (container) {
-    sessionStorage.setItem(REVIEW_SCROLL_KEY, String(container.scrollTop))
-  }
-}
-
-function restoreReviewScroll() {
-  const saved = sessionStorage.getItem(REVIEW_SCROLL_KEY)
-  if (!saved) return
-  sessionStorage.removeItem(REVIEW_SCROLL_KEY)
-  const top = Number(saved)
-  if (!Number.isFinite(top) || top <= 0) return
-  nextTick(() => {
-    const container = getScrollContainer()
-    if (container) container.scrollTop = top
-  })
-}
-
 function startCeoReselectBySection(key: string) {
   const bid = store.brandId
   if (!bid) return
-  saveReviewScroll()
   if (key === 'concept') {
     store.seedCeoReselectFromBrand('concept')
     router.push(`/constructor/brand/${bid}/ceo-reselect/concept`)
@@ -951,19 +601,6 @@ const nonEmptyCeoComments = computed(() => {
   return result
 })
 
-/** Marks the first summary row per section so the comment block renders only once per section. */
-const firstItemIndexPerSection = computed(() => {
-  const seen = new Set<string>()
-  const indexes = new Set<number>()
-  summaryItems.value.forEach((item, idx) => {
-    if (!seen.has(item.sectionKey)) {
-      seen.add(item.sectionKey)
-      indexes.add(idx)
-    }
-  })
-  return indexes
-})
-
 const SECTION_TO_COMMENT_KEY: Record<string, string> = {
   basics: 'basics',
   mode: 'concept',
@@ -975,52 +612,12 @@ const SECTION_TO_COMMENT_KEY: Record<string, string> = {
   visualComponents: 'visualComponents',
 }
 
-function getCeoCommentForItem(item: SummaryItem): string {
-  const key = SECTION_TO_COMMENT_KEY[item.sectionKey] ?? item.sectionKey
-  return ceoComments[key] ?? ''
-}
-
-function showInlineCommentForItem(item: SummaryItem, index: number): boolean {
-  if (!firstItemIndexPerSection.value.has(index)) return false
-  const isReviewable = brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision'
-  if (isCeoView.value && isReviewable) return true
-  if (!isCeoView.value && brandStatus.value === 'needs_revision') {
-    return getCeoCommentForItem(item).trim().length > 0
-  }
-  return false
-}
-
-function handleCeoCommentUpdate(item: SummaryItem, value: string) {
-  const key = SECTION_TO_COMMENT_KEY[item.sectionKey] ?? item.sectionKey
-  ceoComments[key] = value
-  store.setCeoCommentValue(key, value)
-  if (value.trim()) {
-    revisionMissingSections.value.delete(key)
-    if (revisionMissingSections.value.size === 0) {
-      revisionRequiresAnyComment.value = false
-    }
-  }
-}
-
 function handleGeneralCeoCommentUpdate(value: string) {
   ceoComments.general = value
   store.setCeoCommentValue('general', value)
   if (value.trim()) {
     revisionRequiresAnyComment.value = false
   }
-}
-
-const RESELECTABLE_SECTIONS = new Set(['concept', 'externalNaming', 'internalNaming'])
-
-function showCeoChangeChoice(item: SummaryItem, index: number): boolean {
-  if (!isCeoView.value) return false
-  if (brandStatus.value !== 'submitted' && brandStatus.value !== 'needs_revision') return false
-  if (!firstItemIndexPerSection.value.has(index)) return false
-  return RESELECTABLE_SECTIONS.has(item.sectionKey)
-}
-
-function startCeoReselect(item: SummaryItem) {
-  startCeoReselectBySection(item.sectionKey)
 }
 
 function openConceptPreview(concept?: Concept | null) {
@@ -1312,8 +909,10 @@ async function handlePrintBrand() {
 </script>
 
 <template>
-  <!-- Unified review layout: CEO finalize + PO draft (Figma Product view) -->
-  <div v-if="unifiedReviewLayout" class="flex flex-col flex-1 min-h-0 h-full">
+  <!-- Unified review layout — covers all five active modes:
+       CEO finalize, PO draft, PO submitted, PO returned-from-CEO, approved
+       read-only. -->
+  <div class="flex flex-col flex-1 min-h-0 h-full">
     <div class="flex-1 min-h-0 overflow-y-auto">
       <div class="px-8 py-8 flex flex-col gap-6">
         <ReviewHeader
@@ -1719,690 +1318,6 @@ async function handlePrintBrand() {
         />
       </div>
     </div>
-  </div>
-
-  <!-- Default (Product Owner) view: keep the historical layout -->
-  <div v-else class="flex flex-col flex-1 min-h-0 gap-6 h-full">
-    <div class="shrink-0 space-y-6">
-      <!-- Status badge -->
-      <div v-if="store.brandId" class="flex items-center gap-2">
-        <span
-          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
-          :class="statusInfo.color"
-        >
-          {{ statusInfo.label }}
-        </span>
-      </div>
-
-      <!-- Banner -->
-      <div class="bg-primary/5 rounded-xl p-6">
-        <div class="flex items-center gap-3 text-primary mb-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="size-6"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
-          <h3 class="text-base font-medium">
-            {{ showCeoReview ? 'Бриф на розгляд' : 'Бриф готовий!' }}
-          </h3>
-        </div>
-        <p class="text-sm text-muted-foreground">
-          {{
-            showCeoReview
-              ? 'Перегляньте бриф та залиште коментарі. Затвердіть або поверніть на доопрацювання.'
-              : 'Перегляньте всю інформацію справа. Ви можете поділитися брифом або зберегти його для подальшої роботи.'
-          }}
-        </p>
-      </div>
-    </div>
-
-    <Step10ReviewScrollLayout ref="scrollLayoutRef" :ceo-unified-scroll="showCeoReview">
-      <template #summary>
-        <!-- CEO Comments Display (when brand returned for revision) -->
-        <div
-          v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoComments"
-          class="bg-[rgba(217,217,217,0.2)] rounded-xl p-4 space-y-2"
-        >
-          <div class="flex items-center gap-2 mb-1">
-            <svg
-              class="size-5 text-[#5B5B62] shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-              <path d="M12 9v4" />
-              <path d="M12 17h.01" />
-            </svg>
-            <h4 class="text-sm font-semibold text-[#5B5B62]">Коментарі CEO</h4>
-          </div>
-          <div
-            v-for="(comment, key) in store.brandCeoComments"
-            :key="key"
-            class="text-sm text-[#3D3D3D]"
-          >
-            <template v-if="comment && comment.value.trim()">
-              <span class="font-medium">{{ CEO_COMMENT_SECTION_LABELS[key] ?? key }}:</span>
-              {{ comment.value }}
-            </template>
-          </div>
-        </div>
-
-        <!-- CEO Selections Display for PO (when brand returned for revision) -->
-        <div
-          v-if="!showCeoReview && brandStatus === 'needs_revision' && hasCeoSelections"
-          class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2"
-        >
-          <div class="flex items-center gap-2 mb-1">
-            <svg
-              class="size-5 text-blue-600 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"
-              />
-            </svg>
-            <h4 class="text-sm font-semibold text-blue-800">Альтернативи CEO</h4>
-          </div>
-          <ul class="list-disc list-inside space-y-0.5 text-sm text-blue-900">
-            <li v-if="resolvedCeoConcept || store.brandCeoSelections?.concept">
-              <span v-if="resolvedCeoConcept">Концепт: {{ resolvedCeoConcept }}</span>
-              <span v-else class="inline-block h-[1em] w-32 rounded bg-blue-200/60 align-middle" />
-            </li>
-            <li v-if="resolvedCeoExternal || store.brandCeoSelections?.externalNaming">
-              <span v-if="resolvedCeoExternal">Зовн. назва: {{ resolvedCeoExternal }}</span>
-              <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
-            </li>
-            <li v-if="resolvedCeoInternal || store.brandCeoSelections?.internalNaming">
-              <span v-if="resolvedCeoInternal">Внутр. назва: {{ resolvedCeoInternal }}</span>
-              <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
-            </li>
-          </ul>
-        </div>
-
-        <div
-          v-for="(item, idx) in summaryItems"
-          :key="`${item.label}-${item.step}-${idx}`"
-          class="w-full p-4 rounded-lg border"
-          :class="
-            hasCeoCommentForSection(item)
-              ? 'bg-[#f3f3f5] border-black/10'
-              : 'bg-[#f3f3f5] border-black/10'
-          "
-        >
-          <div class="flex items-start gap-3">
-            <!-- Globe -->
-            <svg
-              v-if="item.icon === 'globe'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-              <path d="M2 12h20" />
-            </svg>
-            <!-- Calendar -->
-            <svg
-              v-else-if="item.icon === 'calendar'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M8 2v4" />
-              <path d="M16 2v4" />
-              <rect width="18" height="18" x="3" y="4" rx="2" />
-              <path d="M3 10h18" />
-            </svg>
-            <!-- File-text -->
-            <svg
-              v-else-if="item.icon === 'file-text'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-              <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-              <path d="M10 9H8" />
-              <path d="M16 13H8" />
-              <path d="M16 17H8" />
-            </svg>
-            <!-- Message (comment) -->
-            <svg
-              v-else-if="item.icon === 'message'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
-            </svg>
-            <!-- Sun -->
-            <svg
-              v-else-if="item.icon === 'sun'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-            <!-- Moon -->
-            <svg
-              v-else-if="item.icon === 'moon'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
-            <!-- Palette -->
-            <svg
-              v-else-if="item.icon === 'palette'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
-              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
-              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
-              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
-              <path
-                d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"
-              />
-            </svg>
-            <!-- Tag -->
-            <svg
-              v-else-if="item.icon === 'tag'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"
-              />
-              <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-            </svg>
-            <!-- Briefcase -->
-            <svg
-              v-else-if="item.icon === 'briefcase'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-              <rect width="20" height="14" x="2" y="6" rx="2" />
-            </svg>
-            <!-- Package -->
-            <svg
-              v-else-if="item.icon === 'package'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
-              />
-              <path d="M12 22V12" />
-              <polyline points="3.29 7 12 12 20.71 7" />
-              <path d="m7.5 4.27 9 5.15" />
-            </svg>
-            <!-- Scale -->
-            <svg
-              v-else-if="item.icon === 'scale'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-              <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-              <path d="M7 21h10" />
-              <path d="M12 3v18" />
-              <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
-            </svg>
-            <!-- Handshake -->
-            <svg
-              v-else-if="item.icon === 'handshake'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m11 17 2 2a1 1 0 1 0 3-3" />
-              <path
-                d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"
-              />
-              <path d="m21 3 1 11h-2" />
-              <path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" />
-              <path d="M3 4h8" />
-            </svg>
-            <!-- Layers -->
-            <svg
-              v-else-if="item.icon === 'layers'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"
-              />
-              <path
-                d="m6.08 9.5-3.5 1.6a1 1 0 0 0 0 1.81l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9a1 1 0 0 0 0-1.83l-3.5-1.59"
-              />
-              <path
-                d="m6.08 14.5-3.5 1.6a1 1 0 0 0 0 1.81l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9a1 1 0 0 0 0-1.83l-3.5-1.59"
-              />
-            </svg>
-            <!-- Sparkles -->
-            <svg
-              v-else-if="item.icon === 'sparkles'"
-              class="size-5 text-primary flex-shrink-0 mt-0.5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
-              />
-              <path d="M20 3v4" />
-              <path d="M22 5h-4" />
-              <path d="M4 17v2" />
-              <path d="M5 18H3" />
-            </svg>
-
-            <div class="flex-1 min-w-0">
-              <p class="text-sm text-muted-foreground mb-1">{{ item.label }}</p>
-              <div class="flex items-start gap-2">
-                <p class="text-sm whitespace-pre-line flex-1">{{ item.value }}</p>
-                <button
-                  v-if="item.sectionKey === 'concept' && selectedConcept"
-                  type="button"
-                  class="shrink-0 inline-flex items-center justify-center size-8 rounded-full border border-black/10 hover:bg-black/[0.03] transition-colors"
-                  aria-label="Переглянути концепт"
-                  @click="() => openConceptPreview()"
-                >
-                  <svg
-                    class="size-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button
-            v-if="!isCeoView && (brandStatus === 'draft' || brandStatus === 'needs_revision')"
-            type="button"
-            class="mt-3 h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-            @click="goToStep(item.step)"
-          >
-            Редагувати
-          </button>
-
-          <button
-            v-if="showCeoChangeChoice(item, idx)"
-            type="button"
-            class="mt-3 inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] border border-black/10 text-sm font-medium hover:bg-black/[0.02] transition-all"
-            @click="startCeoReselect(item)"
-          >
-            <svg
-              class="size-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-              <path d="M21 3v5h-5" />
-              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-              <path d="M8 16H3v5" />
-            </svg>
-            Змінити вибір
-          </button>
-
-          <SectionCommentBlock
-            v-if="showInlineCommentForItem(item, idx)"
-            class="mt-3"
-            :section-key="SECTION_TO_COMMENT_KEY[item.sectionKey] ?? item.sectionKey"
-            :po-comment="item.comment ?? ''"
-            :ceo-comment="getCeoCommentForItem(item)"
-            :ceo-editable="
-              isCeoView && (brandStatus === 'submitted' || brandStatus === 'needs_revision')
-            "
-            :highlighted="isSectionHighlighted(item.sectionKey)"
-            @update:ceo-comment="value => handleCeoCommentUpdate(item, value)"
-          />
-        </div>
-      </template>
-      <template #footer>
-        <!-- General CEO comment block (replaces the previous accordion) -->
-        <div
-          v-if="showCeoReview && (brandStatus === 'submitted' || brandStatus === 'needs_revision')"
-          class="pt-4 border-t border-black/10"
-        >
-          <p class="text-sm font-medium text-foreground mb-2">Загальний коментар</p>
-          <SectionCommentBlock
-            section-key="general"
-            :ceo-comment="ceoComments.general"
-            :ceo-editable="true"
-            :highlighted="!!revisionWarning"
-            empty-label="+ Загальний коментар CEO"
-            placeholder="Додайте ваші коментарі або побажання..."
-            @update:ceo-comment="handleGeneralCeoCommentUpdate"
-          />
-        </div>
-
-        <!-- Error messages -->
-        <div
-          v-if="saveError || statusActionError"
-          class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm"
-        >
-          {{ statusActionError || saveError }}
-        </div>
-
-        <!-- CEO Selections indicator -->
-        <div
-          v-if="showCeoReview && hasCeoAlternativeFooterSummary"
-          class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-700 text-sm"
-        >
-          <p class="font-medium mb-1">Обрані альтернативи CEO:</p>
-          <ul class="list-disc list-inside space-y-0.5">
-            <li v-if="reviewCeoConceptForBlock">
-              <span v-if="resolvedCeoConcept">Концепт: {{ resolvedCeoConcept }}</span>
-              <span v-else class="inline-block h-[1em] w-32 rounded bg-blue-200/60 align-middle" />
-            </li>
-            <li v-if="ceoExternalItemsForReview.length > 0">
-              <span v-if="resolvedCeoExternal">Зовн. назва: {{ resolvedCeoExternal }}</span>
-              <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
-            </li>
-            <li v-if="ceoInternalNameForReview">
-              <span v-if="resolvedCeoInternal">Внутр. назва: {{ resolvedCeoInternal }}</span>
-              <span v-else class="inline-block h-[1em] w-36 rounded bg-blue-200/60 align-middle" />
-            </li>
-          </ul>
-        </div>
-
-        <!-- CEO Action Buttons -->
-        <div
-          v-if="showCeoReview && (brandStatus === 'submitted' || brandStatus === 'needs_revision')"
-          class="grid grid-cols-1 gap-3 pt-4 border-t border-black/10"
-        >
-          <button
-            class="flex items-center justify-center gap-2 px-6 py-3.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
-            :disabled="statusActionLoading"
-            @click="handleStatusChange('approved')"
-          >
-            <svg
-              class="size-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            {{ statusActionLoading ? 'Зачекайте...' : 'Затвердити' }}
-          </button>
-          <button
-            :class="[
-              'flex items-center justify-center gap-2 px-6 py-3.5 text-white rounded-xl transition-colors text-sm font-medium disabled:opacity-50',
-              revisionWarning
-                ? 'bg-amber-600 ring-2 ring-amber-300 hover:bg-amber-700'
-                : 'bg-amber-500 hover:bg-amber-600',
-            ]"
-            :disabled="statusActionLoading"
-            @click="handleStatusChange('needs_revision')"
-          >
-            <svg
-              class="size-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-              <path d="M21 3v5h-5" />
-              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-              <path d="M8 16H3v5" />
-            </svg>
-            Повернути на доопрацювання
-          </button>
-          <div
-            v-if="revisionWarning"
-            class="flex items-center gap-2 text-sm text-amber-700"
-            role="alert"
-          >
-            <svg
-              class="size-5 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-              <path d="M12 9v4" />
-              <path d="M12 17h.01" />
-            </svg>
-            <span>{{ revisionWarning }}</span>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div
-          v-if="showPoSubmitButton || showShareButton || showPdfButton"
-          class="space-y-3 pt-4 border-t border-black/10"
-        >
-          <button
-            v-if="showPoSubmitButton"
-            class="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
-            :disabled="statusActionLoading || isSaving"
-            @click="handleStatusChange('submitted')"
-          >
-            <svg
-              class="size-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m22 2-7 20-4-9-9-4Z" />
-              <path d="M22 2 11 13" />
-            </svg>
-            {{
-              statusActionLoading
-                ? 'Відправляємо...'
-                : hasNewBrief
-                  ? 'Відправити в роботу'
-                  : 'Відправити на розгляд'
-            }}
-          </button>
-
-          <button
-            v-if="showShareButton"
-            class="flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50 w-full"
-            :disabled="isSaving"
-            @click="handleShare"
-          >
-            <svg
-              v-if="shareSuccess"
-              class="size-5 text-green-600"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            <svg
-              v-else
-              class="size-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="18" cy="5" r="3" />
-              <circle cx="6" cy="12" r="3" />
-              <circle cx="18" cy="19" r="3" />
-              <line x1="8.59" x2="15.42" y1="13.51" y2="17.49" />
-              <line x1="15.41" x2="8.59" y1="6.51" y2="10.49" />
-            </svg>
-            {{ shareSuccess ? 'Скопійовано!' : 'Share' }}
-          </button>
-
-          <button
-            v-if="showPdfButton"
-            class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="isPdfLoading"
-            @click="handlePrintBrand"
-          >
-            <svg
-              v-if="!isPdfLoading"
-              class="size-4"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" x2="12" y1="15" y2="3" />
-            </svg>
-            <svg
-              v-else
-              class="size-4 animate-spin"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-            {{ isPdfLoading ? 'Генерація PDF...' : 'Завантажити PDF' }}
-          </button>
-        </div>
-      </template>
-    </Step10ReviewScrollLayout>
   </div>
 
   <!-- Modal 1 (Figma 1985:4362): PO applies CEO external naming while concept mismatch -->
