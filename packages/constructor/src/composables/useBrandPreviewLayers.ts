@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 import { getAssetUrl, getAuthHeader } from '@/composables/useApi'
 import { useConstructorStore } from '@/stores/constructor'
+import { logSilent } from '@/utils/log'
 import type { ComponentVariant } from '@brand-constructor/shared/types'
 
 export interface ComponentSlot {
@@ -82,8 +83,8 @@ export function useBrandPreviewLayers(): UseBrandPreviewLayersResult {
           const json = await res.json()
           variantsCache.value[typeId] = json.data?.variants || []
         }
-      } catch {
-        /* skip — slot just won't render */
+      } catch (err) {
+        logSilent('useBrandPreviewLayers/fetchVariants', err)
       }
     }
   }

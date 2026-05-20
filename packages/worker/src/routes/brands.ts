@@ -1259,22 +1259,18 @@ brands.delete('/:id', async c => {
     return c.json({ success: false, error: 'Brand not found' }, 404)
   }
 
-  await c.env.DB.prepare(
-    "UPDATE concepts SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
-  )
-    .bind(id)
-    .run()
-  await c.env.DB.prepare(
-    "UPDATE external_namings SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
-  )
-    .bind(id)
-    .run()
-  await c.env.DB.prepare(
-    "UPDATE internal_namings SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
-  )
-    .bind(id)
-    .run()
-  await c.env.DB.prepare('DELETE FROM brands WHERE id = ?').bind(id).run()
+  await c.env.DB.batch([
+    c.env.DB.prepare(
+      "UPDATE concepts SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+    ).bind(id),
+    c.env.DB.prepare(
+      "UPDATE external_namings SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+    ).bind(id),
+    c.env.DB.prepare(
+      "UPDATE internal_namings SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+    ).bind(id),
+    c.env.DB.prepare('DELETE FROM brands WHERE id = ?').bind(id),
+  ])
 
   return c.json({ success: true, data: null })
 })

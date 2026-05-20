@@ -40,34 +40,6 @@ app.get('/api/health', c => {
   return c.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() })
 })
 
-app.get('/api/debug/pananames', async c => {
-  const signature = c.env.PANANAMES_SIGNATURE
-  const hasSignature = Boolean(signature)
-  const signaturePreview = signature
-    ? `${signature.slice(0, 8)}...${signature.slice(-8)}`
-    : null
-
-  const testDomain = 'testdomain12345xyz.com'
-  const results: Record<string, string> = {}
-
-  if (hasSignature) {
-    try {
-      const resp = await fetch(
-        `https://api.pananames.com/merchant/v2/domains/${testDomain}/check`,
-        {
-          headers: { SIGNATURE: signature, Accept: 'application/json' },
-        }
-      )
-      const body = await resp.text()
-      results['check_domain'] = `HTTP ${resp.status}: ${body.slice(0, 300)}`
-    } catch (e) {
-      results['check_domain'] = `fetch error: ${e}`
-    }
-  }
-
-  return c.json({ hasSignature, signaturePreview, results })
-})
-
 // Asset serving — public, no auth required
 app.get('/api/assets/:entityType/:entityId/:fileName', async c => {
   const key = `${c.req.param('entityType')}/${c.req.param('entityId')}/${c.req.param('fileName')}`

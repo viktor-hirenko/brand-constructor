@@ -1,5 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ADMIN_ROLES } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
+
+function getRequiredRoles(
+  matched: { meta: { roles?: readonly string[] } }[]
+): readonly string[] | undefined {
+  for (let i = matched.length - 1; i >= 0; i--) {
+    const roles = matched[i].meta.roles
+    if (roles?.length) return roles
+  }
+  return undefined
+}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -52,6 +63,7 @@ const router = createRouter({
       path: '/users',
       name: 'users',
       component: () => import('@/views/UsersView.vue'),
+      meta: { roles: [...ADMIN_ROLES] },
     },
     {
       path: '/:pathMatch(.*)*',
@@ -78,6 +90,12 @@ router.beforeEach(to => {
   // Not authenticated → go to login
   if (!authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  const requiredRoles = getRequiredRoles(to.matched)
+  const userRole = authStore.user?.role
+  if (requiredRoles && (!userRole || !requiredRoles.includes(userRole))) {
+    return { name: 'concepts' }
   }
 
   return true

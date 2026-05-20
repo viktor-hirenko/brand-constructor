@@ -1,5 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
+import { logSilent } from '@/utils/log'
+
+function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  return ((...args: unknown[]) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }) as T
+}
 import { getAuthHeader, apiPatch } from '@/composables/useApi'
 import { migrateIncomingCurrentStep } from '@/utils/stepMigration'
 import type {
@@ -332,7 +341,9 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   function clearDraftFromStorage() {
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY)
-    } catch {}
+    } catch (err) {
+      logSilent('clearDraftFromStorage', err)
+    }
   }
 
   function saveDraftToStorage() {
@@ -346,7 +357,9 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
           savedAt: Date.now(),
         })
       )
-    } catch {}
+    } catch (err) {
+      logSilent('saveDraftToStorage', err)
+    }
   }
 
   function restoreDraftFromStorage(): boolean {
@@ -364,11 +377,14 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
         }
         return true
       }
-    } catch {}
+    } catch (err) {
+      logSilent('restoreDraftFromStorage', err)
+    }
     return false
   }
 
-  watch(stepData, saveDraftToStorage, { deep: true })
+  const saveDraftToStorageDebounced = debounce(saveDraftToStorage, 500)
+  watch(stepData, saveDraftToStorageDebounced, { deep: true })
 
   function setReturnToStep(step: number | null) {
     returnToStep.value = step

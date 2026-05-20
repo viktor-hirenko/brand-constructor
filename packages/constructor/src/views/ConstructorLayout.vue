@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useApiList, getAssetUrl, apiGet } from '@/composables/useApi'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import { useViewportScale } from '@/composables/useViewportScale'
+import { logSilent } from '@/utils/log'
 import ConceptDetailOverlay from '@/components/constructor/ConceptDetailOverlay.vue'
 import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
 import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
@@ -470,8 +471,8 @@ async function openConceptDetails() {
       `/api/concepts/${sc.id}`
     )
     detailConcept.value = full
-  } catch {
-    /* залишаємо дані зі списку */
+  } catch (err) {
+    logSilent('ConstructorLayout/loadConceptDetail', err)
   }
 }
 

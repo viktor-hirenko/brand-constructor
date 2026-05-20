@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue';
+import { logSilent } from '@/utils/log';
 import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-constructor/shared/types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -15,7 +16,8 @@ export function getAuthHeader(): Record<string, string> {
     if (!raw) return {};
     const { token } = JSON.parse(raw) as { token: string };
     return token ? { Authorization: `Bearer ${token}` } : {};
-  } catch {
+  } catch (err) {
+    logSilent('getAuthHeader', err);
     return {};
   }
 }

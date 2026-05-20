@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { useApiList, apiPatch } from '@/composables/useApi'
+import { logSilent } from '@/utils/log'
 import type {
   Concept,
   ExternalNaming,
@@ -297,7 +298,8 @@ async function loadComponentSelectionDetails() {
       } else {
         result[typeId] = { typeName: typeId, variantName: variantId }
       }
-    } catch {
+    } catch (err) {
+      logSilent('Step10/loadComponentSelectionDetails', err)
       result[typeId] = { typeName: typeId, variantName: variantId }
     }
   })
@@ -538,15 +540,8 @@ const showPoSubmitButton = computed(
     !isCeoView.value && (brandStatus.value === 'draft' || brandStatus.value === 'needs_revision')
 )
 
-const showShareButton = computed(() => {
-  // No Share button in returned-from-CEO view — only "На погодження CEO" shows.
-  if (isPoReturnedView.value) return false
-  if (brandStatus.value === 'approved') return true
-  return (
-    !isCeoView.value &&
-    (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
-  )
-})
+// Share hidden — not in v2 PRD; teams get brief via Slack/constructor link.
+const showShareButton = computed(() => false)
 
 const showPdfButton = computed(() => {
   // No PDF button in returned-from-CEO view.
@@ -755,7 +750,7 @@ const poSubmittedView = computed(
 /**
  * Approved brief — read-only view shown to ANY role (PO, CEO/admin, external teams).
  * Same Figma "Product view" shell as PO draft. No edit, no submit, no CEO actions.
- * Footer keeps only Share + Download PDF.
+ * Footer keeps only Download PDF (Share hidden per PRD).
  */
 const approvedReadOnlyView = computed(() => brandStatus.value === 'approved')
 
@@ -1179,7 +1174,8 @@ async function handleShare() {
     setTimeout(() => {
       shareSuccess.value = false
     }, 2000)
-  } catch {
+  } catch (err) {
+    logSilent('Step10/copyShareUrl', err)
     const textArea = document.createElement('textarea')
     textArea.value = shareUrl
     document.body.appendChild(textArea)
@@ -1300,7 +1296,8 @@ async function handlePrintBrand() {
         } else {
           componentTypes[typeId] = { typeName: 'Невідомий тип', variantName: 'Невідомий варіант' }
         }
-      } catch {
+      } catch (err) {
+        logSilent('Step10/handlePrintBrand', err)
         componentTypes[typeId] = { typeName: 'Невідомий тип', variantName: 'Невідомий варіант' }
       }
     })
@@ -2408,7 +2405,7 @@ async function handlePrintBrand() {
 
           <button
             v-if="showPdfButton"
-            class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border border-black/10 text-foreground rounded-xl hover:bg-black/[0.02] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="isPdfLoading"
             @click="handlePrintBrand"
           >
