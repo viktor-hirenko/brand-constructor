@@ -27,11 +27,15 @@
 
 ## Current Progress
 
-- **Completed findings:** —
-- **In progress:** F-02 — replace `VITE_ENVIRONMENT === 'development'` with `import.meta.env.DEV`
+- **Completed findings:** F-02 ✅ (commit: see git log)
+- **In progress:** —
 - **Next recommended finding:** F-01 — close/remove public `/api/debug/pananames`
 - **Recommended model for next step:** Sonnet Thinking
 - **Last update:** 2026-05-20
+
+### Open follow-ups noted during prior findings
+
+- _(F-02 scope extension, optional)_: `packages/constructor/src/stores/auth.ts:92`, `packages/frontend/src/stores/auth.ts:85`, `packages/frontend/src/App.vue:23`, `packages/frontend/src/components/ui/AppSidebar.vue:21` still use the runtime `VITE_ENVIRONMENT` flag. They are **fail-closed** (no security regression from env typo), so they were intentionally left out of F-02. Worth normalising in a future cleanup pass — track under F-20 (`logSilent`) or a dedicated small ticket.
 
 ### Phase plan
 
@@ -70,28 +74,45 @@ F-06 (split into 3 PRs) → F-07 → F-11 → F-10 → F-09 → F-08 → F-04 �
 ---
 
 ### F-02 — Replace runtime `VITE_ENVIRONMENT === 'development'` with `import.meta.env.DEV`
-- **Status:** IN_PROGRESS
+- **Status:** DONE
+- **Date completed:** 2026-05-20
 - **Severity:** 🔴 Critical
 - **Phase:** 1 (low-risk security)
-- **Model recommendation:** Sonnet Thinking
-- **Target files:**
-  - `packages/constructor/src/router/index.ts:311`
-  - `packages/frontend/src/router/index.ts:66`
-  - `packages/constructor/src/stores/auth.ts:92` (`fetchCurrentUser` uses the same runtime flag — fold into the fix to keep behaviour identical)
-- **Problem:** Both routers bypass every navigation guard when `import.meta.env.VITE_ENVIRONMENT === 'development'`. A typo in `.env.production` (or env mis-injection in CI) silently disables RBAC across both SPAs. The same runtime flag is also read in `auth.fetchCurrentUser` to decide whether to hit `/api/users/me`.
-- **Recommended change:** Replace the runtime string compare with the compile-time constant `import.meta.env.DEV` (Vite guarantees it is statically `false` in production builds and tree-shakes the branch). Keep behaviour identical in `dev`, fail-closed in `prod`.
-- **Verification steps:**
-  1. `pnpm --filter @brand-constructor/constructor type-check`
-  2. `pnpm --filter @brand-constructor/frontend type-check`
-  3. `pnpm --filter @brand-constructor/constructor build` and `pnpm --filter @brand-constructor/frontend build` (ensure both still build).
-- **Manual QA checklist (after deploy):**
-  - With `vite dev` — open `/constructor` without login → still passes (dev bypass works).
-  - On production build — confirm `/login` redirect for unauthenticated visit to `/constructor/step/1`.
-- **Notes:** Change is conservative — `import.meta.env.DEV` is `true` for `vite dev` / `vite preview --mode development`, `false` for `vite build` (production). No behaviour change is expected in either environment given correct deploy. Only the failure mode (env typo) is fixed.
-- **Date completed:** —
-- **Files changed:** —
-- **Verification result:** —
-- **Suggested commit message:** _(TBD on close)_
+- **Model used:** Sonnet Thinking
+- **Files changed:**
+  - `packages/constructor/src/router/index.ts` (line 311 area — replaced runtime flag + added explanatory comment)
+  - `packages/frontend/src/router/index.ts` (line 66 area — same swap + comment)
+- **Summary of changes:** Two-line semantic swap. Global `router.beforeEach` no longer reads `import.meta.env.VITE_ENVIRONMENT`; it now branches on `import.meta.env.DEV`, a Vite compile-time constant that is statically `false` in `vite build`. An env-variable typo on the deploy can no longer disable RBAC at runtime.
+- **Verification commands run:**
+  ```
+  pnpm --filter @brand-constructor/constructor type-check   # ✓ 0 errors (4.0s)
+  pnpm --filter @brand-constructor/frontend type-check      # ✓ 0 errors (2.4s)
+  pnpm --filter @brand-constructor/constructor build        # ✓ built in 3.96s (no new warnings)
+  pnpm --filter @brand-constructor/frontend build           # ✓ built in 1.19s
+  ```
+- **Verification result:** Both packages type-check and build cleanly. Lint (ReadLints) on the two touched files: 0 errors. Bundle layout for constructor is unchanged (`pdfmake`/`vfs_fonts` still ship as separate lazy chunks).
+- **Manual QA checklist (recommended after deploy):**
+  - Run `vite dev` locally for both apps → unauthenticated visit to `/constructor/step/1` and `/users` still passes (dev bypass active because `DEV=true`).
+  - Production build smoke: unauthenticated visit to `/constructor/step/1` redirects to `/login`, unauthenticated visit to `/users` redirects to `/login`.
+  - Authenticated PO opens `/constructor` → still routed correctly through existing per-route guards.
+- **Risks / notes:**
+  - Out-of-scope (intentional): the same runtime flag is still used in 4 non-security places (`stores/auth.ts` × 2, `App.vue:23`, `AppSidebar.vue:21`). They are fail-closed; no security regression. Tracked in the "Open follow-ups" list above.
+  - No behavioural change is expected for either environment given correctly-set `.env.production` / `.env`. The fix only hardens the failure mode.
+- **Suggested commit message:**
+  ```
+  fix(router,security): drop runtime VITE_ENVIRONMENT bypass, use import.meta.env.DEV
+
+  Both SPA routers (constructor + frontend admin) started beforeEach with
+  `if (import.meta.env.VITE_ENVIRONMENT === 'development') return true`,
+  which disabled every auth/role guard. A typo in `.env.production` or
+  CI env injection could silently turn off RBAC in production.
+
+  Vite's `import.meta.env.DEV` is a compile-time constant — statically
+  `false` for `vite build`. The bypass is now tree-shaken out of any
+  production bundle and cannot be reactivated via env variables.
+
+  Refs: docs/audits/enterprise-audit-brand-constructor.md F-02
+  ```
 
 ---
 

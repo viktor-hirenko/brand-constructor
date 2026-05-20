@@ -308,7 +308,11 @@ const router = createRouter({
 })
 
 router.beforeEach(to => {
-  if (import.meta.env.VITE_ENVIRONMENT === 'development') return true
+  // Skip auth/role guards in local dev. `import.meta.env.DEV` is a Vite
+  // compile-time constant (`true` for `vite dev`, statically `false` for
+  // `vite build`) — guarantees the bypass cannot be re-enabled in production
+  // via an env-variable typo.
+  if (import.meta.env.DEV) return true
 
   const authStore = useAuthStore()
 

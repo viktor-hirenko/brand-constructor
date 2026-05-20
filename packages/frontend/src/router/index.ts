@@ -62,8 +62,10 @@ const router = createRouter({
 })
 
 router.beforeEach(to => {
-  // Skip auth checks in local development mode
-  if (import.meta.env.VITE_ENVIRONMENT === 'development') return true
+  // Skip auth checks in local development mode.
+  // `import.meta.env.DEV` is a Vite compile-time constant — statically `false`
+  // in `vite build`, so an env-variable typo cannot disable guards in prod.
+  if (import.meta.env.DEV) return true
 
   const authStore = useAuthStore()
 
