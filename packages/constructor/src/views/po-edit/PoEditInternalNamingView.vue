@@ -98,18 +98,12 @@ async function goSave() {
     class="po-edit-internal-naming-view"
     title="Internal Naming"
     subtitle="Оберіть назву для внутрішньої комунікації команди."
+    :loading="loading"
+    :error="error"
+    @retry="loadNamings"
   >
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-    </div>
-    <div v-else-if="error" class="text-center py-8 text-red-500">
-      <p class="mb-2">{{ error }}</p>
-      <button type="button" class="text-primary underline text-sm" @click="loadNamings">Спробувати знову</button>
-    </div>
-
-    <template v-else>
-      <!-- post-apply: applied name as interactive grid -->
-      <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
+    <!-- post-apply: applied name as interactive grid -->
+    <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
         <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Обрана назва</p>
         <InternalNamingGrid
           :namings="[poOriginalNaming]"
@@ -160,7 +154,6 @@ async function goSave() {
       </div>
 
       <CeoCommentReadonly :value="ceoCeoComment" />
-    </template>
 
     <template #footer>
       <EditFlowFooter

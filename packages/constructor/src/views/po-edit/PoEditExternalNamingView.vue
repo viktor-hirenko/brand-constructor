@@ -138,65 +138,62 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
 </script>
 
 <template>
-  <EditFlowStepShell class="po-edit-external-naming-view" title="External Naming" :subtitle="subtitleText">
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
+  <EditFlowStepShell
+    class="po-edit-external-naming-view"
+    title="External Naming"
+    :subtitle="subtitleText"
+    :loading="loading"
+    :error="error"
+    @retry="loadNamings"
+  >
+    <!-- post-apply: show applied names as interactive grid (same cards as below) -->
+    <div v-if="isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
+      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Обрані назви</p>
+      <ExternalNamingGrid
+        :namings="poOriginalNamings"
+        :selected-ids="store.stepData.externalNaming.selectedIds"
+        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+        @toggle="handleToggle"
+      />
     </div>
-    <div v-else-if="error" class="text-center py-8 text-red-500">
-      <p class="mb-2">{{ error }}</p>
-      <button type="button" class="text-primary underline text-sm" @click="loadNamings">Спробувати знову</button>
+
+    <!-- standalone: PO's previous picks as interactive grid (top, above CEO) -->
+    <div v-else-if="!isChained && !isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
+      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Ваш попередній вибір</p>
+      <ExternalNamingGrid
+        :namings="poOriginalNamings"
+        :selected-ids="store.stepData.externalNaming.selectedIds"
+        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+        @toggle="handleToggle"
+      />
     </div>
 
-    <template v-else>
-      <!-- post-apply: show applied names as interactive grid (same cards as below) -->
-      <div v-if="isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Обрані назви</p>
-        <ExternalNamingGrid
-          :namings="poOriginalNamings"
-          :selected-ids="store.stepData.externalNaming.selectedIds"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
-      </div>
+    <!-- CEO pick -->
+    <div v-if="!isPostApply && ceoNamings.length > 0" class="flex flex-col gap-3">
+      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Вибір CEO</p>
+      <ExternalNamingGrid
+        :namings="ceoNamings"
+        :selected-ids="store.stepData.externalNaming.selectedIds"
+        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+        @toggle="handleToggle"
+      />
+    </div>
 
-      <!-- standalone: PO's previous picks as interactive grid (top, above CEO) -->
-      <div v-else-if="!isChained && !isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Ваш попередній вибір</p>
-        <ExternalNamingGrid
-          :namings="poOriginalNamings"
-          :selected-ids="store.stepData.externalNaming.selectedIds"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
-      </div>
+    <hr class="border-t border-black/10 max-w-[506px]" />
 
-      <!-- CEO pick -->
-      <div v-if="!isPostApply && ceoNamings.length > 0" class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Вибір CEO</p>
-        <ExternalNamingGrid
-          :namings="ceoNamings"
-          :selected-ids="store.stepData.externalNaming.selectedIds"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
-      </div>
-
-      <hr class="border-t border-black/10 max-w-[506px]" />
-
-      <!-- Other namings for chosen concept (excluding PO original + CEO) -->
-      <div class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-          Інші назви для обраного концепту
-        </p>
-        <ExternalNamingGrid
-          :namings="namings"
-          :selected-ids="store.stepData.externalNaming.selectedIds"
-          :exclude-ids="excludeFromGrid"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
-      </div>
-    </template>
+    <!-- Other namings for chosen concept (excluding PO original + CEO) -->
+    <div class="flex flex-col gap-3">
+      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+        Інші назви для обраного концепту
+      </p>
+      <ExternalNamingGrid
+        :namings="namings"
+        :selected-ids="store.stepData.externalNaming.selectedIds"
+        :exclude-ids="excludeFromGrid"
+        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+        @toggle="handleToggle"
+      />
+    </div>
 
     <CeoCommentReadonly :value="ceoCeoComment" />
 

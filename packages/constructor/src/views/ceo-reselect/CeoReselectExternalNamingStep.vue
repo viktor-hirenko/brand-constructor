@@ -141,42 +141,35 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
 </script>
 
 <template>
-  <EditFlowStepShell class="ceo-reselect-external-naming-step" title="External Naming" :subtitle="subtitleText">
-    <!-- Loader covers the whole body (customer row + grid) while API is in-flight -->
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-    </div>
-
-    <div v-else-if="error" class="text-center py-12 text-red-500">
-      <p class="mb-3">{{ error }}</p>
-      <button type="button" class="text-primary underline text-sm" @click="loadNamings">
-        Спробувати знову
-      </button>
-    </div>
-
-    <template v-else>
-      <template v-if="!isChainedFromConcept">
-        <CustomerNamingsRow :namings="poExternalMini" />
-      </template>
-
-      <div
-        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-        aria-hidden="true"
-      />
-
-      <div class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-          Варіанти назв для обраного концепту
-        </p>
-        <ExternalNamingGrid
-          :namings="namings"
-          :selected-ids="stagedExternalIds"
-          :exclude-ids="excludedFromGrid"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
-      </div>
+  <EditFlowStepShell
+    class="ceo-reselect-external-naming-step"
+    title="External Naming"
+    :subtitle="subtitleText"
+    :loading="loading"
+    :error="error"
+    @retry="loadNamings"
+  >
+    <template v-if="!isChainedFromConcept">
+      <CustomerNamingsRow :namings="poExternalMini" />
     </template>
+
+    <div
+      class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+      aria-hidden="true"
+    />
+
+    <div class="flex flex-col gap-3">
+      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+        Варіанти назв для обраного концепту
+      </p>
+      <ExternalNamingGrid
+        :namings="namings"
+        :selected-ids="stagedExternalIds"
+        :exclude-ids="excludedFromGrid"
+        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+        @toggle="handleToggle"
+      />
+    </div>
 
     <StepCommentField
       v-model="externalComment"

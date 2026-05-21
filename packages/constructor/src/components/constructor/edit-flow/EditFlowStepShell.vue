@@ -3,15 +3,30 @@
  * Shared chrome for CEO re-select and PO edit step screens — outer flex column,
  * scrollable body, identical header (title + subtitle). Body goes into the
  * default slot, footer into the `#footer` slot.
+ *
+ * Pass `loading` / `error` + listen to `retry` to centralise the full-body
+ * async boundary that is shared across all 6 edit/reselect views.
+ * When `loading` is true or `error` is non-null the default slot is replaced
+ * with the spinner / error-retry UI; the `#footer` slot is always rendered.
  */
 interface EditFlowStepShellProps {
   title: string
   subtitle?: string
+  /** When true, renders a full-body spinner instead of the default slot. */
+  loading?: boolean
+  /** When set, renders an error message with a retry button instead of the default slot. */
+  error?: string | null
 }
 
 withDefaults(defineProps<EditFlowStepShellProps>(), {
   subtitle: '',
+  loading: false,
+  error: null,
 })
+
+const emit = defineEmits<{
+  retry: []
+}>()
 </script>
 
 <template>
@@ -30,7 +45,21 @@ withDefaults(defineProps<EditFlowStepShellProps>(), {
           {{ subtitle }}
         </p>
       </div>
-      <slot />
+
+      <div v-if="loading" class="flex items-center justify-center py-16">
+        <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+      <div v-else-if="error" class="text-center py-12 text-red-500">
+        <p class="mb-3">{{ error }}</p>
+        <button
+          type="button"
+          class="text-primary underline text-sm"
+          @click="emit('retry')"
+        >
+          Спробувати знову
+        </button>
+      </div>
+      <slot v-else />
     </div>
     <div class="edit-flow-step-shell__footer-slot">
       <slot name="footer" />
