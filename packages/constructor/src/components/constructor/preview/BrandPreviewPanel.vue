@@ -1,0 +1,156 @@
+<script setup lang="ts">
+import { computed, onMounted, watch } from 'vue'
+import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
+import { useConstructorStore } from '@/stores/constructor'
+
+const store = useConstructorStore()
+const { loadVariants, buildLayers, hasSelections } = useBrandPreviewLayers()
+
+const mainLayers = computed(() => buildLayers(true))
+const sidebarLayers = computed(() => buildLayers(false))
+
+onMounted(loadVariants)
+
+watch(
+  () => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join(','),
+  loadVariants
+)
+</script>
+
+<template>
+  <aside class="relative w-full h-full flex flex-col gap-6 px-6 py-8 overflow-y-auto bg-white">
+    <header class="space-y-1">
+      <h2 class="text-lg font-medium tracking-[-0.45px] text-foreground inline-flex items-center gap-2">
+        <svg
+          class="size-5 shrink-0 text-[#5B5B62]"
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M5.79167 9.33333C6.08385 9.33333 6.3369 9.5358 6.4012 9.8208L6.72184 11.245C6.94088 12.2167 7.69999 12.9758 8.67171 13.1948L10.0959 13.5155C10.3809 13.5798 10.5833 13.8328 10.5833 14.125C10.5833 14.4172 10.3809 14.6702 10.0959 14.7345L8.67171 15.0552C7.69997 15.2742 6.94087 16.0333 6.72184 17.005L6.4012 18.4292C6.3369 18.7142 6.08385 18.9167 5.79167 18.9167C5.49948 18.9167 5.24643 18.7142 5.18213 18.4292L4.86149 17.005C4.64244 16.0332 3.88273 15.2741 2.91081 15.0552L1.48747 14.7345C1.20247 14.6702 1 14.4172 1 14.125C1 13.8328 1.20247 13.5798 1.48747 13.5155L2.91081 13.1948C3.88273 12.9759 4.64244 12.2168 4.86149 11.245L5.18213 9.8208L5.21468 9.71826C5.31016 9.48847 5.53592 9.33333 5.79167 9.33333ZM5.79167 12.3436C5.41587 13.1213 4.7872 13.7493 4.00944 14.125C4.78698 14.5005 5.41583 15.1282 5.79167 15.9056C6.16729 15.1287 6.79534 14.5006 7.57227 14.125C6.79512 13.7493 6.16725 13.1208 5.79167 12.3436ZM12.4583 1C12.7505 1 13.0036 1.20247 13.0679 1.48747L13.5171 3.48047C13.8449 4.93551 14.9812 6.07182 16.4362 6.39958L18.4292 6.8488C18.7142 6.9131 18.9167 7.16615 18.9167 7.45833C18.9167 7.75052 18.7142 8.00357 18.4292 8.06787L16.4362 8.51709C14.9812 8.84485 13.8449 9.98115 13.5171 11.4362L13.0679 13.4292C13.0036 13.7142 12.7505 13.9167 12.4583 13.9167C12.1661 13.9167 11.9131 13.7142 11.8488 13.4292L11.3996 11.4362C11.0718 9.98115 9.9355 8.84485 8.48047 8.51709L6.48747 8.06787C6.20247 8.00357 6 7.75052 6 7.45833C6 7.16615 6.20247 6.9131 6.48747 6.8488L8.48047 6.39958C9.93543 6.07182 11.0718 4.93549 11.3996 3.48047L11.8488 1.48747L11.8813 1.38493C11.9768 1.15513 12.2026 1 12.4583 1ZM12.4583 4.31624C11.9454 5.78707 10.787 6.94543 9.31624 7.45833C10.7869 7.97115 11.9453 9.12911 12.4583 10.5996C12.9713 9.12935 14.1293 7.97128 15.5996 7.45833C14.1291 6.9453 12.9712 5.78683 12.4583 4.31624Z"
+            fill="currentColor"
+          />
+        </svg>
+        <span>Превʼю</span>
+      </h2>
+    </header>
+
+    <div class="flex items-start justify-center gap-6 flex-1 min-h-0">
+      <!-- Main view: no sidebar -->
+      <div class="flex flex-col items-center">
+        <div class="relative" style="width: 207.5px; height: 421.5px">
+          <img
+            src="/assets/iphone-16-plus-light.png"
+            alt="iPhone preview without sidebar"
+            class="absolute inset-0 object-cover"
+            style="width: 207.5px; height: 421.5px; z-index: 0"
+          />
+          <div
+            class="absolute overflow-hidden"
+            style="left: 6px; top: 6px; width: 192.5px; height: 409.5px; z-index: 10"
+          >
+            <div
+              v-if="!hasSelections"
+              class="h-full flex items-center justify-center p-4 text-center bg-white/90 rounded-[27px]"
+            >
+              <p class="text-xs text-muted-foreground">Компоненти ще не обрано</p>
+            </div>
+            <div
+              v-else
+              class="relative w-full h-full overflow-hidden rounded-[40px]"
+              style="
+                transform: scale(0.667);
+                transform-origin: top left;
+                width: 288.75px;
+                height: 614.25px;
+              "
+            >
+              <div
+                v-for="layer in mainLayers"
+                :key="layer.typeId"
+                class="absolute"
+                :style="{
+                  left: layer.slot.left,
+                  top: layer.slot.top,
+                  width: layer.slot.width,
+                  height: layer.slot.height,
+                  zIndex: layer.slot.zIndex,
+                }"
+              >
+                <img
+                  :src="layer.url"
+                  :alt="layer.typeId"
+                  :class="
+                    layer.slot.contain
+                      ? 'w-full h-full object-contain'
+                      : 'w-full h-full object-cover'
+                  "
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar view -->
+      <div class="flex flex-col items-center">
+        <div class="relative" style="width: 207.5px; height: 421.5px">
+          <img
+            src="/assets/iphone-16-plus-light.png"
+            alt="iPhone preview with sidebar"
+            class="absolute inset-0 object-cover"
+            style="width: 207.5px; height: 421.5px; z-index: 0"
+          />
+          <div
+            class="absolute overflow-hidden"
+            style="left: 6px; top: 6px; width: 192.5px; height: 409.5px; z-index: 10"
+          >
+            <div
+              v-if="!hasSelections"
+              class="h-full flex items-center justify-center p-4 text-center bg-white/90 rounded-[27px]"
+            >
+              <p class="text-xs text-muted-foreground">Компоненти ще не обрано</p>
+            </div>
+            <div
+              v-else
+              class="relative w-full h-full overflow-hidden rounded-[40px]"
+              style="
+                transform: scale(0.667);
+                transform-origin: top left;
+                width: 288.75px;
+                height: 614.25px;
+              "
+            >
+              <div
+                v-for="layer in sidebarLayers"
+                :key="layer.typeId"
+                class="absolute"
+                :style="{
+                  left: layer.slot.left,
+                  top: layer.slot.top,
+                  width: layer.slot.width,
+                  height: layer.slot.height,
+                  zIndex: layer.slot.zIndex,
+                }"
+              >
+                <img
+                  :src="layer.url"
+                  :alt="layer.typeId"
+                  :class="
+                    layer.slot.contain
+                      ? 'w-full h-full object-contain'
+                      : 'w-full h-full object-cover'
+                  "
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</template>
