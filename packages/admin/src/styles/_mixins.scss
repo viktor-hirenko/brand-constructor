@@ -1,0 +1,39 @@
+@use 'variables' as *;
+
+// Generic media query mixin
+// Usage:
+//   @include mq($bp-md)           → min-width: 768px
+//   @include mq(null, $bp-md)     → max-width: 767px
+//   @include mq($bp-sm, $bp-lg)   → range 480px – 1023px
+@mixin mq($from: null, $until: null) {
+  @if $from and $until {
+    @media (min-width: $from) and (max-width: #{$until - 1px}) {
+      @content;
+    }
+  } @else if $from {
+    @media (min-width: $from) {
+      @content;
+    }
+  } @else if $until {
+    @media (max-width: #{$until - 1px}) {
+      @content;
+    }
+  }
+}
+
+// Shorthand helpers
+@mixin mobile {
+  @include mq(null, $bp-md) { @content; }
+}
+
+@mixin tablet {
+  @include mq($bp-md, $bp-lg) { @content; }
+}
+
+@mixin mobile-tablet {
+  @include mq(null, $bp-lg) { @content; }
+}
+
+@mixin desktop {
+  @include mq($bp-lg) { @content; }
+}
