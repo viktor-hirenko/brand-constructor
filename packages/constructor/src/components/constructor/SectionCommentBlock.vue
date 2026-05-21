@@ -150,11 +150,18 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
 </script>
 
 <template>
-  <div class="flex flex-col gap-2" :data-section="sectionKey">
+  <div
+    :class="[
+      'section-comment flex flex-col gap-2',
+      highlighted ? 'section-comment--highlighted' : '',
+      alwaysExpanded ? 'section-comment--always-expanded' : '',
+    ]"
+    :data-section="sectionKey"
+  >
     <!-- Product Owner comment (read-only) -->
     <div
       v-if="hasPoComment"
-      class="flex flex-col gap-1 rounded-lg bg-[rgba(197,197,200,0.2)] p-4"
+      class="section-comment__po flex flex-col gap-1 rounded-lg bg-[rgba(197,197,200,0.2)] p-4"
     >
       <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар замовника
@@ -172,7 +179,7 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
         v-if="!alwaysExpanded && !isExpanded && !hasCeoComment"
         type="button"
         :class="[
-          'w-full inline-flex items-center justify-center gap-1 rounded-lg border border-dashed p-3 transition-colors',
+          'section-comment__ceo-cta w-full inline-flex items-center justify-center gap-1 rounded-lg border border-dashed p-3 transition-colors',
           highlighted
             ? 'border-[#C97D00] hover:bg-black/[0.02]'
             : 'border-[rgba(0,0,0,0.2)] hover:bg-black/[0.02]',
@@ -201,14 +208,14 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
       <label
         v-else
         :class="[
-          'block w-full rounded-lg border bg-[rgba(197,197,200,0.2)] p-4 transition-colors cursor-text',
+          'section-comment__ceo-editor block w-full rounded-lg border bg-[rgba(197,197,200,0.2)] p-4 transition-colors cursor-text',
           highlighted && !hasCeoComment
             ? 'border-[#C97D00]'
             : 'border-transparent focus-within:border-[#c8c7cc]',
         ]"
       >
         <span
-          class="block text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62] mb-1"
+          class="section-comment__ceo-editor-label block text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62] mb-1"
         >
           Коментар CEO
         </span>
@@ -217,7 +224,7 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
           :value="draft"
           rows="1"
           :placeholder="placeholder"
-          class="block w-full resize-none overflow-hidden bg-transparent border-0 p-0 text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:ring-0"
+          class="section-comment__ceo-textarea block w-full resize-none overflow-hidden bg-transparent border-0 p-0 text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:ring-0"
           @input="onInput"
           @blur="onBlur"
         />
@@ -238,7 +245,7 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
     <!-- Read-only CEO comment without resolve UI (legacy / other contexts) -->
     <div
       v-else-if="hasCeoComment"
-      class="flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
+      class="section-comment__ceo-readonly flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
     >
       <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар CEO

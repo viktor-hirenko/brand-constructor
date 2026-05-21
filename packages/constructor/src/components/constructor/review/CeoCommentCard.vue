@@ -29,15 +29,15 @@ const resolvedButtonHovered = ref(false)
 <template>
   <div
     :class="[
-      'rounded-lg bg-[rgba(197,197,200,0.2)] p-4 flex flex-col gap-3 transition-all',
-      !resolved ? 'border-l-[3px] border-blue-500 pl-[13px]' : '',
+      'ceo-comment-card rounded-lg bg-[rgba(197,197,200,0.2)] p-4 flex flex-col gap-3 transition-all',
+      !resolved ? 'border-l-[3px] border-blue-500 pl-[13px] ceo-comment-card--unresolved' : 'ceo-comment-card--resolved',
     ]"
   >
-    <div class="flex flex-col gap-1">
-      <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
+    <div class="ceo-comment-card__body flex flex-col gap-1">
+      <p class="ceo-comment-card__label text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар CEO
       </p>
-      <p class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
+      <p class="ceo-comment-card__value text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
         {{ value }}
       </p>
     </div>
@@ -47,7 +47,7 @@ const resolvedButtonHovered = ref(false)
       <button
         v-if="!resolved"
         type="button"
-        class="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-full border border-black/15 bg-white text-[13px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="ceo-comment-card__resolve-button inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-full border border-black/15 bg-white text-[13px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="loading"
         @click="emit('resolve')"
       >
@@ -70,7 +70,7 @@ const resolvedButtonHovered = ref(false)
       <button
         v-else
         type="button"
-        class="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-full border border-black/15 bg-white text-[13px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="ceo-comment-card__resolve-button inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-full border border-black/15 bg-white text-[13px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="loading"
         @click="emit('unresolve')"
         @mouseenter="resolvedButtonHovered = true"

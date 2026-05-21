@@ -46,7 +46,7 @@ function onEditClick() {
 </script>
 
 <template>
-  <section v-if="borderless" class="space-y-4">
+  <section v-if="borderless" class="review-section review-section--borderless space-y-4">
     <slot />
     <slot name="comment" />
   </section>
@@ -54,14 +54,16 @@ function onEditClick() {
   <section
     v-else
     :class="[
-      'rounded-2xl border bg-white transition-colors',
-      highlighted ? 'border-amber-400 ring-2 ring-amber-200' : 'border-[#EDEDED]',
+      'review-section rounded-2xl border bg-white transition-colors',
+      highlighted ? 'border-amber-400 ring-2 ring-amber-200 review-section--highlighted' : 'border-[#EDEDED]',
+      hasUnresolved && !needsChoice ? 'review-section--has-unresolved' : '',
+      needsChoice ? 'review-section--needs-choice' : '',
     ]"
   >
-    <header class="flex items-center justify-between h-14 pl-4 pr-2">
-      <div class="flex items-center gap-2 flex-wrap">
+    <header class="review-section__header flex items-center justify-between h-14 pl-4 pr-2">
+      <div class="review-section__indicators flex items-center gap-2 flex-wrap">
         <h3
-          class="text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]"
+          class="review-section__title text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]"
         >
           {{ title }}
         </h3>
@@ -71,7 +73,7 @@ function onEditClick() {
       <button
         v-if="editStep != null"
         type="button"
-        class="inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
+        class="review-section__edit-button inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
         @click="onEditClick"
       >
         <svg
@@ -93,7 +95,7 @@ function onEditClick() {
       <button
         v-else-if="changeChoice"
         type="button"
-        class="inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
+        class="review-section__change-button inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
         @click="emit('change')"
       >
         <svg
@@ -114,7 +116,7 @@ function onEditClick() {
       </button>
     </header>
     <hr class="border-t border-black/10" />
-    <div class="p-4 flex flex-col gap-4">
+    <div class="review-section__body p-4 flex flex-col gap-4">
       <slot />
       <slot name="comment" />
     </div>
