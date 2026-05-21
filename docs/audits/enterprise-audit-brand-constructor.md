@@ -1087,3 +1087,15 @@ If anything breaks after the worker deploy (step 1) and before SPA deploys (step
 If something breaks after the SPA deploys:
 - The Pages Function proxy can be disabled by reverting `.env.production` to `VITE_API_URL=https://brand-constructor-api-production.upstars-landings.workers.dev` and rebuilding/redeploying. The SPA then talks to the worker directly (cross-origin); cookies stop flowing in Safari but Bearer-via-`Authorization` would no longer work either (post-F-05 SPA doesn't store tokens in localStorage). Users would need to re-login each tab/session in Safari until rollback completes. Chrome / Firefox would continue to work via cross-site cookies (less secure but functional). Realistically, fix-forward (a small patch to the proxy) is the safer path than a rollback at this layer.
 
+---
+
+## Follow-up audit
+
+All 24 findings in this tracker (F-01 → F-24) are **DONE**.
+
+A separate senior-level audit of the **frontend/constructor polish layer** was conducted on 2026-05-21, after all enterprise-audit refactors were applied. It covers remaining dead code, UI duplications, missing BEM semantic classes, and a 12-PR polish roadmap for `packages/constructor`.
+
+→ **See `docs/audit/SENIOR-CONSTRUCTOR-FRONTEND-AUDIT-2026-05-21.md`**
+
+That document is its own source-of-truth and tracker. This file does not need to be updated further.
+
