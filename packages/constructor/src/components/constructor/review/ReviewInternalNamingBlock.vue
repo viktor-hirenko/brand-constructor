@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 
 interface ReviewInternalNamingBlockProps {
   poValue: string
@@ -57,15 +58,11 @@ const showDual = computed(
         </li>
       </ul>
     </div>
-    <button
+    <ApplyCeoVariantButton
       v-if="showApplyCeo"
-      type="button"
-      class="w-full h-12 rounded-xl border border-black/10 text-[14px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      :disabled="applyLoading"
+      :loading="applyLoading"
       @click="emit('applyCeo')"
-    >
-      {{ applyLoading ? 'Застосовується…' : 'Застосувати варіант CEO' }}
-    </button>
+    />
   </div>
 
   <!-- Single view: PO only -->
