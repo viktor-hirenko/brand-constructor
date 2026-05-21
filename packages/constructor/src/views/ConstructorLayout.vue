@@ -14,8 +14,6 @@ import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.
 import BrandPreviewPanel from '@/components/constructor/BrandPreviewPanel.vue'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
-import LayoutBriefModal from '@/components/constructor/layout/LayoutBriefModal.vue'
-import type { LayoutBriefKind } from '@/components/constructor/layout/LayoutBriefModal.vue'
 import type { Concept, ExternalNaming } from '@brand-constructor/shared/types'
 
 const route = useRoute()
@@ -133,7 +131,6 @@ interface ExternalNamingPreview extends ExternalNaming {
 }
 
 const detailConcept = ref<Concept | null>(null)
-const activeBrief = ref<LayoutBriefKind | null>(null)
 
 const concepts = computed(() => librariesStore.concepts)
 const externalNamings = computed(() => librariesStore.externalNamings as ExternalNamingPreview[])
@@ -619,6 +616,4 @@ watch(currentStep, step => {
       <LayoutPreviewOverlays />
     </div>
   </div>
-
-  <LayoutBriefModal v-model:kind="activeBrief" :current-step="currentStep" />
 </template>

@@ -42,11 +42,11 @@
 
 ## Current Progress
 
-- **Completed:** PR-1 ✅, PR-2 ✅, PR-4 ✅, PR-5 ✅, PR-6 ✅, PR-7 ✅, PR-8 ✅, PR-9 ✅
+- **Completed:** PR-1 ✅, PR-2 ✅, PR-3 ✅, PR-4 ✅, PR-5 ✅, PR-6 ✅, PR-7 ✅, PR-8 ✅, PR-9 ✅, PR-10 ✅, PR-11 ✅, PR-12 ✅
 - **In progress:** —
-- **Blocked:** PR-3 (awaiting product decision on LayoutBriefModal)
+- **Blocked:** —
 - **Needs verification:** —
-- **Next recommended PR:** PR-10 (BEM classes on footers, modals, shells) — Wave 3 continues
+- **Next recommended PR:** Roadmap COMPLETE — Wave 5 items deferred by design
 
 ---
 
@@ -97,7 +97,7 @@
 
 #### PR-3 — Decide fate of `LayoutBriefModal.vue`
 
-- **Status:** `NEEDS_VERIFICATION`
+- **Status:** `DONE` — deleted 2026-05-21; product confirmed modal is dead (no trigger exists, brief data is already editable via NewConceptModal/NewNamingModal/NewInternalNamingModal with initialData on Steps 3/4/5, and PO edit flow on Step 10 uses /po-edit/* routes instead); LayoutBriefModal.vue removed, ConstructorLayout cleaned of import + activeBrief ref + template usage; vue-tsc 0 errors
 - **Priority:** P0
 - **Risk:** Medium — product decision required
 - **Recommended model:** Opus 4.7 (product decision, not a technical one)
@@ -246,7 +246,7 @@
 
 #### PR-10 — BEM classes on footers, modals, shells
 
-- **Status:** `TODO`
+- **Status:** `DONE` — added 2026-05-21; BEM classes on PoActionsFooter, CeoActionsFooter, EditFlowFooter, EditFlowStepShell, SimpleModal, ReviewUnifiedView; vue-tsc passes; zero visual changes; commit d1e3449
 - **Priority:** P1
 - **Risk:** Low
 - **Recommended model:** Sonnet Thinking
@@ -271,7 +271,7 @@
 
 #### PR-11 — BEM classes on edit/reselect view roots and customer-pick components
 
-- **Status:** `TODO`
+- **Status:** `DONE` — added 2026-05-21; root BEM classes on all 6 po-edit/ceo-reselect views (via class fallthrough on EditFlowStepShell), CustomerPickPreview, CustomerNamingsRow, CustomerInternalNamingPreview, ReviewHeader; vue-tsc passes; zero visual changes; commit 114f3c5
 - **Priority:** P1
 - **Risk:** Low
 - **Recommended model:** Sonnet Thinking
@@ -302,7 +302,7 @@
 
 #### PR-12 — Optional `EditFlowAsyncBoundary` or slots in `EditFlowStepShell`
 
-- **Status:** `TODO`
+- **Status:** `DONE` — added 2026-05-21; EditFlowStepShell extended with loading/error/retry; full-body loading removed from PoEditExternalNamingView, PoEditInternalNamingView, CeoReselectExternalNamingStep; partial-loading views (Concept + CeoReselectInternal) unchanged by design; vue-tsc passes; commit 69f5457
 - **Priority:** P2 (optional, do only if loading/error pattern diverges across views)
 - **Risk:** Medium — touches all 6 edit/reselect views
 - **Recommended model:** Opus 4.7
