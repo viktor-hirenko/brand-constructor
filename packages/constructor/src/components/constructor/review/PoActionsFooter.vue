@@ -47,11 +47,11 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div :class="['po-actions-footer space-y-3', loading ? 'po-actions-footer--loading' : '']">
     <button
       v-if="showSubmit"
       type="button"
-      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      class="po-actions-footer__submit w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       :disabled="loading || submitDisabled"
       @click="emit('submit')"
     >
@@ -61,7 +61,7 @@ const emit = defineEmits<{
     <button
       v-if="showBack"
       type="button"
-      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02]"
+      class="po-actions-footer__back w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02]"
       @click="emit('back')"
     >
       Назад
@@ -70,7 +70,7 @@ const emit = defineEmits<{
     <button
       v-if="showShare"
       type="button"
-      class="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50"
+      class="po-actions-footer__share w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50"
       @click="emit('share')"
     >
       <svg
@@ -109,7 +109,7 @@ const emit = defineEmits<{
     <button
       v-if="showPdf"
       type="button"
-      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      class="po-actions-footer__pdf w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       :disabled="pdfLoading"
       @click="emit('pdf')"
     >

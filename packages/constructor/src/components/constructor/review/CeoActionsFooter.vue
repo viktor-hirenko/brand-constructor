@@ -23,11 +23,17 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div
+    :class="[
+      'ceo-actions-footer space-y-3',
+      loading ? 'ceo-actions-footer--loading' : '',
+      warning ? 'ceo-actions-footer--has-warning' : '',
+    ]"
+  >
     <button
       v-if="showApprove"
       type="button"
-      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50"
+      class="ceo-actions-footer__approve w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50"
       :disabled="loading"
       @click="emit('approve')"
     >
@@ -50,7 +56,7 @@ const emit = defineEmits<{
     <button
       v-if="showRevise"
       type="button"
-      class="w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02] disabled:opacity-50"
+      class="ceo-actions-footer__revise w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02] disabled:opacity-50"
       :disabled="loading"
       @click="emit('revise')"
     >
@@ -72,7 +78,7 @@ const emit = defineEmits<{
 
     <p
       v-if="warning"
-      class="flex items-center justify-center gap-2 text-[16px] font-normal leading-6 tracking-[-0.312px] text-[rgba(10,10,10,0.80)]"
+      class="ceo-actions-footer__warning flex items-center justify-center gap-2 text-[16px] font-normal leading-6 tracking-[-0.312px] text-[rgba(10,10,10,0.80)]"
       role="alert"
     >
       <svg

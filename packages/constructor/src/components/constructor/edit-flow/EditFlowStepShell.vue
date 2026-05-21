@@ -15,23 +15,25 @@ withDefaults(defineProps<EditFlowStepShellProps>(), {
 </script>
 
 <template>
-  <div class="flex flex-col h-full min-h-0">
-    <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 pr-2 pb-4">
+  <div class="edit-flow-step-shell flex flex-col h-full min-h-0">
+    <div class="edit-flow-step-shell__body flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 pr-2 pb-4">
       <div>
         <h1
-          class="text-2xl font-medium text-[#0a0a0a] tracking-[0.0703px] mb-2 leading-8"
+          class="edit-flow-step-shell__title text-2xl font-medium text-[#0a0a0a] tracking-[0.0703px] mb-2 leading-8"
         >
           {{ title }}
         </h1>
         <p
           v-if="subtitle"
-          class="text-[16px] leading-6 text-[#717182] tracking-[-0.3125px]"
+          class="edit-flow-step-shell__subtitle text-[16px] leading-6 text-[#717182] tracking-[-0.3125px]"
         >
           {{ subtitle }}
         </p>
       </div>
       <slot />
     </div>
-    <slot name="footer" />
+    <div class="edit-flow-step-shell__footer-slot">
+      <slot name="footer" />
+    </div>
   </div>
 </template>

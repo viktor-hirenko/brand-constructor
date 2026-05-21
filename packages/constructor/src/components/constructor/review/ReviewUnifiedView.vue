@@ -317,7 +317,13 @@ function emitEditSection(step: number, sectionKey: string) {
 </script>
 
 <template>
-  <div class="flex flex-col flex-1 min-h-0 h-full">
+  <div
+    :class="[
+      'review-unified-view flex flex-col flex-1 min-h-0 h-full',
+      `review-unified-view--mode-${reviewMode}`,
+      ceoFrozenView ? 'review-unified-view--ceo-frozen' : '',
+    ]"
+  >
     <div class="flex-1 min-h-0 overflow-y-auto">
       <div class="px-8 py-8 flex flex-col gap-6">
         <ReviewHeader
@@ -330,7 +336,7 @@ function emitEditSection(step: number, sectionKey: string) {
           :info-override="reviewHeaderInfoOverride"
         />
 
-        <div class="space-y-4">
+        <div class="review-unified-view__sections space-y-4">
           <ReviewSection
             title="Brand Basics"
             :edit-step="isPoEditable ? 1 : undefined"
@@ -617,7 +623,7 @@ function emitEditSection(step: number, sectionKey: string) {
           <!-- General CEO comment read-only for PO returned view (Figma 1973:7884) -->
           <div
             v-if="isPoReturnedView && getSectionCeoCommentValue('general')"
-            class="space-y-3"
+            class="review-unified-view__general-comment-po space-y-3"
           >
             <div class="flex items-center gap-2">
               <ChatBubbleIcon class="size-5 shrink-0 text-[#5B5B62]" />
@@ -635,7 +641,7 @@ function emitEditSection(step: number, sectionKey: string) {
             </div>
           </div>
 
-          <div v-if="reviewMode === 'ceo'" class="space-y-3">
+          <div v-if="reviewMode === 'ceo'" class="review-unified-view__general-comment-ceo space-y-3">
             <div class="flex items-center gap-2">
               <ChatBubbleIcon class="size-5 shrink-0 text-[#5B5B62]" />
               <span class="text-base font-medium text-foreground tracking-[-0.31px]">
@@ -657,7 +663,7 @@ function emitEditSection(step: number, sectionKey: string) {
 
         <div
           v-if="saveError || statusActionError"
-          class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm"
+          class="review-unified-view__error bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm"
         >
           {{ statusActionError || saveError }}
         </div>
