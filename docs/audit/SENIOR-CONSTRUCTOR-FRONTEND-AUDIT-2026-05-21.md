@@ -42,11 +42,11 @@
 
 ## Current Progress
 
-- **Completed:** PR-1 ✅, PR-2 ✅, PR-4 ✅, PR-5 ✅, PR-6 ✅, PR-7 ✅, PR-8 ✅
+- **Completed:** PR-1 ✅, PR-2 ✅, PR-4 ✅, PR-5 ✅, PR-6 ✅, PR-7 ✅, PR-8 ✅, PR-9 ✅
 - **In progress:** —
 - **Blocked:** PR-3 (awaiting product decision on LayoutBriefModal)
 - **Needs verification:** —
-- **Next recommended PR:** PR-9 (BEM classes on top review components) — Wave 3 begins
+- **Next recommended PR:** PR-10 (BEM classes on footers, modals, shells) — Wave 3 continues
 
 ---
 
@@ -224,7 +224,7 @@
 
 #### PR-9 — BEM classes on top review components
 
-- **Status:** `TODO`
+- **Status:** `DONE` — added 2026-05-21; BEM root + element + modifier classes added to ReviewSection, SectionCommentBlock, CeoCommentCard; vue-tsc --noEmit passes; zero visual changes
 - **Priority:** P1 (after Wave 1 + Wave 2 are stable)
 - **Risk:** Low — visual-only addition
 - **Recommended model:** Sonnet Thinking
