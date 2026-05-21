@@ -24,3 +24,5 @@ Thumbs.db
 
 # Cloudflare
 .mf/
+# wrangler.toml may contain account_id — track only via git rm --cached if needed
+packages/worker/wrangler.toml

@@ -87,6 +87,11 @@ authRoutes.post('/google', async c => {
     return c.json({ success: false, error: 'Google email is not verified' }, 401)
   }
 
+  // Verify aud matches our Google Client ID to prevent token reuse from other apps
+  if (tokenInfo.aud !== c.env.GOOGLE_CLIENT_ID) {
+    return c.json({ success: false, error: 'Invalid token audience' }, 401)
+  }
+
   // Check expiration
   if (Number(tokenInfo.exp) < Math.floor(Date.now() / 1000)) {
     return c.json({ success: false, error: 'Google credential has expired' }, 401)

@@ -5,6 +5,7 @@ export interface Env {
   CORS_ORIGINS: string
   JWT_SECRET: string
   CONSTRUCTOR_URL: string
+  GOOGLE_CLIENT_ID: string
   SLACK_BOT_TOKEN: string
   SLACK_CHANNEL_STRATEGY: string
   SLACK_CHANNEL_PR: string
