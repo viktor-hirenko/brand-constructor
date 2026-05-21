@@ -43,9 +43,8 @@ pnpm dev          # admin :5173 + constructor :5174 + worker :8787
 ```
 
 Для локального login flow потрібно покласти секрети у `packages/worker/.dev.vars`
-і `VITE_*` у `.env`-файли admin / constructor — див. розділ
-[Secrets & env](./docs/PROJECT-DOCS.md#14-secrets--environment-variables) у
-повній документації.
+і `VITE_*` у `.env`-файли admin / constructor (див. `packages/worker/wrangler.toml`
+та Cloudflare secrets у dashboard).
 
 ### Окремі команди
 
@@ -71,7 +70,7 @@ pnpm deploy:all                 # все одразу
 
 > Worker завжди деплоїться з `--env production`. Без цього прапора деплой
 > впаде — це навмисний захист від випадкового публічного деплою на
-> `*.workers.dev`. Деталі — [PROJECT-DOCS § 13](./docs/PROJECT-DOCS.md#13-deployment).
+> `*.workers.dev`. Деталі — `packages/worker/wrangler.toml` та скрипти `deploy:*` у `package.json`.
 
 ---
 
@@ -79,7 +78,6 @@ pnpm deploy:all                 # все одразу
 
 | Документ | Для кого |
 |---|---|
-| **[docs/PROJECT-DOCS.md](./docs/PROJECT-DOCS.md)** | Розробники, тімлід, security review — архітектура, API, БД, auth, deploy, security |
 | **[docs/security/CLOUDFLARE-HARDENING.md](./docs/security/CLOUDFLARE-HARDENING.md)** | Security review — P0/P1/P2 Cloudflare-side checklist |
 | **[docs/product-spec/](./docs/product-spec/)** | Продукт — PRD v1/v2, бізнес-вимоги, success metrics (source-of-truth, не оновлюється) |
 | **[docs/design-audit/](./docs/design-audit/)** | Дизайн — Figma screen mapping |
@@ -98,7 +96,7 @@ pnpm deploy:all                 # все одразу
 - CORS allowlist через `CORS_ORIGINS`.
 - Усі реальні secrets — у Cloudflare encrypted secrets, ніколи в коді / git.
 
-Повний security overview — у [PROJECT-DOCS § 15](./docs/PROJECT-DOCS.md#15-security-notes).
+Детальний security checklist — у [CLOUDFLARE-HARDENING.md](./docs/security/CLOUDFLARE-HARDENING.md).
 
 ---
 
