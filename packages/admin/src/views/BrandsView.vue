@@ -3,10 +3,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import type { Brand } from '@brand-constructor/shared'
 import { useApiList, apiDelete } from '@/composables/useApi'
 import { useTableSort } from '@/composables/useTableSort'
+import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 
 type BrandWithAuthor = Brand & { author_name?: string }
+
+const authStore = useAuthStore()
+const canDeleteBrand = computed(() => authStore.user?.role === 'admin')
 
 const {
   data: brands,
@@ -184,6 +188,7 @@ async function confirmDeleteBrand() {
             <td>{{ formatDate(brand.updatedAt) }}</td>
             <td class="brands-view__actions" @click.stop>
               <button
+                v-if="canDeleteBrand"
                 class="brands-view__delete-btn"
                 title="Delete"
                 @click="handleDeleteBrand(brand)"

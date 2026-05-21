@@ -273,19 +273,14 @@ crud.put('/:id', async c => {
 crud.delete('/:id', async c => {
   const id = c.req.param('id')
   const user = c.get('user')
-  const isAdmin = user.role === 'admin' || user.role === 'head_dhc'
 
-  let existing: BrandRow | null
-
-  if (isAdmin) {
-    existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
-      .bind(id)
-      .first<BrandRow>()
-  } else {
-    existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ? AND created_by = ?')
-      .bind(id, user.id)
-      .first<BrandRow>()
+  if (user.role !== 'admin') {
+    return c.json({ success: false, error: 'Forbidden' }, 403)
   }
+
+  const existing = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
+    .bind(id)
+    .first<BrandRow>()
 
   if (!existing) {
     return c.json({ success: false, error: 'Brand not found' }, 404)
