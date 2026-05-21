@@ -8,18 +8,22 @@ import './styles/app.css';
 const app = createApp(App);
 
 app.use(createPinia());
-app.use(router);
 
-// F-05: hydrate the auth store from the HttpOnly cookie BEFORE the first
-// router navigation resolves. Otherwise an authenticated user reloading a
-// guarded route would see a brief login bounce (router.beforeEach would
-// observe `isAuthenticated === false` while /api/auth/me is still in
-// flight). Wrapped in an async IIFE rather than top-level await so the
-// bundle stays compatible with Vite's default browser target (Safari 14
-// has no TLA support).
+// F-05 / F-24: hydrate the auth store from the HttpOnly cookie BEFORE
+// installing the router. Vue Router 4's `app.use(router)` synchronously
+// kicks off the initial navigation via `router.install()` → internal
+// `push(window.location)`, which runs the beforeEach guard immediately.
+// If the router is installed before /api/auth/me resolves, the guard sees
+// `user.value === null` and bounces an authenticated F5 to /login even
+// though the cookie is valid. Installing the router only after the await
+// guarantees the very first navigation sees the final auth state.
+// Wrapped in an async IIFE rather than top-level await so the bundle
+// stays compatible with Vite's default browser target (Safari 14 has no
+// TLA support).
 void (async () => {
   const authStore = useAuthStore();
   await authStore.fetchCurrentUser();
+  app.use(router);
   await router.isReady();
   app.mount('#app');
 })();

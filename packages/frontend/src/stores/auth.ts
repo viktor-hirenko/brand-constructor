@@ -54,6 +54,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
+    // F-23: clear local auth state BEFORE the network call so that any
+    // synchronous router navigation triggered by the caller sees
+    // isAuthenticated === false. Previously user.value = null ran only
+    // after the fetch resolved (~50–200ms later), which let the router
+    // guard bounce the user back to /concepts on Sign-out.
+    user.value = null
+    csrfToken.value = null
     try {
       const apiBase = import.meta.env.VITE_API_URL || ''
       await fetch(`${apiBase}/api/auth/logout`, {
@@ -61,10 +68,8 @@ export const useAuthStore = defineStore('auth', () => {
         credentials: 'include',
       })
     } catch {
-      // network failure — local state still cleared; cookie expires on its own
+      // network failure — local state already cleared; cookie expires on its own
     }
-    user.value = null
-    csrfToken.value = null
   }
 
   async function fetchCurrentUser(): Promise<void> {

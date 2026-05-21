@@ -73,13 +73,24 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(to => {
+router.beforeEach(async to => {
   // Skip auth checks in local development mode.
   // `import.meta.env.DEV` is a Vite compile-time constant — statically `false`
   // in `vite build`, so an env-variable typo cannot disable guards in prod.
   if (import.meta.env.DEV) return true
 
   const authStore = useAuthStore()
+
+  // F-24: wait for the first /api/auth/me to settle before deciding whether
+  // to redirect. main.ts kicks off fetchCurrentUser() before mount, but in
+  // Vue Router 4 the initial navigation can resolve in the window between
+  // `app.use(router)` and `await router.isReady()` — in that window
+  // user.value is still null and a refreshed authenticated user would get
+  // bounced to /login. This wait makes the guard correct regardless of the
+  // bootstrap ordering or any cached-bundle / hot-reload edge cases.
+  if (!authStore.initialized) {
+    await authStore.fetchCurrentUser()
+  }
 
   // Already authenticated → redirect away from login page
   if (to.name === 'login') {

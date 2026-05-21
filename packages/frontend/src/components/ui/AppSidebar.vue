@@ -48,8 +48,12 @@ function handleNavClick() {
   emit('close')
 }
 
-function handleLogout() {
-  authStore.logout()
+async function handleLogout() {
+  // F-23: await store mutation before navigating. Combined with the
+  // store-side fix (clear user/csrfToken before fetch), this guarantees
+  // the beforeEach guard sees isAuthenticated === false and does not
+  // bounce the redirect back to /concepts.
+  await authStore.logout()
   router.push({ name: 'login' })
 }
 </script>

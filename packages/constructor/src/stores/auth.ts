@@ -71,6 +71,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
+    // F-23: clear local auth state BEFORE the network call. There is no
+    // Sign-out UI in the constructor SPA today, but Option B from the
+    // tracker keeps both stores symmetric so the same router-guard race
+    // condition cannot re-appear if a Sign-out button is added later.
+    user.value = null;
+    csrfToken.value = null;
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
       await fetch(`${apiBase}/api/auth/logout`, {
@@ -78,12 +84,10 @@ export const useAuthStore = defineStore('auth', () => {
         credentials: 'include',
       });
     } catch {
-      // Network failure — local state is still cleared so the UI logs out
-      // immediately. The HttpOnly cookie will eventually expire on its own
-      // (24h TTL); user can also re-login to overwrite it.
+      // Network failure — local state is already cleared so the UI logs
+      // out immediately. The HttpOnly cookie will eventually expire on
+      // its own (24h TTL); user can also re-login to overwrite it.
     }
-    user.value = null;
-    csrfToken.value = null;
   }
 
   async function fetchCurrentUser(): Promise<void> {

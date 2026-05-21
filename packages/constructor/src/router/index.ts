@@ -314,7 +314,7 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(to => {
+router.beforeEach(async to => {
   // Skip auth/role guards in local dev. `import.meta.env.DEV` is a Vite
   // compile-time constant (`true` for `vite dev`, statically `false` for
   // `vite build`) — guarantees the bypass cannot be re-enabled in production
@@ -322,6 +322,14 @@ router.beforeEach(to => {
   if (import.meta.env.DEV) return true
 
   const authStore = useAuthStore()
+
+  // F-24: wait for the first /api/auth/me to settle before deciding whether
+  // to redirect. See packages/frontend/src/router/index.ts for the full
+  // rationale — same race between Vue Router's initial navigation and the
+  // `await fetchCurrentUser()` in main.ts.
+  if (!authStore.initialized) {
+    await authStore.fetchCurrentUser()
+  }
 
   if (to.name === 'login') {
     if (authStore.isAuthenticated) return { path: '/constructor' }
