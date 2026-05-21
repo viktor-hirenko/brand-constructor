@@ -95,6 +95,7 @@ async function goSave() {
 
 <template>
   <EditFlowStepShell
+    class="po-edit-internal-naming-view"
     title="Internal Naming"
     subtitle="Оберіть назву для внутрішньої комунікації команди."
   >

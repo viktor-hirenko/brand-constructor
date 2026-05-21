@@ -141,7 +141,7 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
 </script>
 
 <template>
-  <EditFlowStepShell title="External Naming" :subtitle="subtitleText">
+  <EditFlowStepShell class="ceo-reselect-external-naming-step" title="External Naming" :subtitle="subtitleText">
     <!-- Loader covers the whole body (customer row + grid) while API is in-flight -->
     <div v-if="loading" class="flex items-center justify-center py-16">
       <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />

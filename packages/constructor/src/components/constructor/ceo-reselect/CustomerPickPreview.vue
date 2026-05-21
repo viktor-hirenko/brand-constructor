@@ -16,13 +16,13 @@ const previewUrl = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+  <div class="customer-pick-preview flex flex-col gap-3">
+    <p class="customer-pick-preview__label text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
       Вибір замовника
     </p>
     <div
       v-if="concept && previewUrl"
-      class="relative w-[162px] h-[162px] rounded-2xl overflow-hidden bg-muted shrink-0"
+      class="customer-pick-preview__image-wrapper relative w-[162px] h-[162px] rounded-2xl overflow-hidden bg-muted shrink-0"
     >
       <img
         :src="previewUrl"
@@ -41,7 +41,7 @@ const previewUrl = computed(() => {
     </div>
     <p
       v-else
-      class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
+      class="customer-pick-preview__empty text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
     >
       Концепт не обрано
     </p>

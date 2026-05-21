@@ -107,14 +107,14 @@ const showProgress = computed(
 </script>
 
 <template>
-  <header class="space-y-6">
-    <div class="space-y-2">
+  <header class="review-header space-y-6">
+    <div class="review-header__heading space-y-2">
       <div class="flex items-center gap-3 flex-wrap">
-        <h1 class="text-3xl font-medium tracking-[-0.6px] text-foreground">{{ title }}</h1>
+        <h1 class="review-header__title text-3xl font-medium tracking-[-0.6px] text-foreground">{{ title }}</h1>
         <span
           v-if="badge"
           :class="[
-            'inline-flex items-center h-6 px-2 py-1 rounded-full text-xs font-medium tracking-[-0.15px]',
+            'review-header__badge inline-flex items-center h-6 px-2 py-1 rounded-full text-xs font-medium tracking-[-0.15px]',
             badge.classes,
           ]"
         >
@@ -123,13 +123,13 @@ const showProgress = computed(
       </div>
       <p
         v-if="subtitle"
-        class="text-base text-muted-foreground tracking-[-0.31px]"
+        class="review-header__subtitle text-base text-muted-foreground tracking-[-0.31px]"
       >
         {{ subtitle }}
       </p>
     </div>
 
-    <div v-if="showProgress" class="space-y-2">
+    <div v-if="showProgress" class="review-header__progress space-y-2">
       <div class="text-sm text-muted-foreground tracking-[-0.15px]">
         Крок {{ currentStep }} з {{ totalSteps }}
       </div>
@@ -141,7 +141,7 @@ const showProgress = computed(
       </div>
     </div>
 
-    <div v-if="displayInfo" class="rounded-2xl bg-[#f3f3f5] px-6 py-6">
+    <div v-if="displayInfo" class="review-header__info rounded-2xl bg-[#f3f3f5] px-6 py-6">
       <div class="flex items-start gap-3 mb-2">
         <!-- Warning icon: PO returned-from-CEO attention banner -->
         <svg

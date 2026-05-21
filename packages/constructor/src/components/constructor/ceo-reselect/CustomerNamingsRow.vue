@@ -19,13 +19,13 @@ function formatPrice(price: number | null | undefined): string {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+  <div class="customer-namings-row flex flex-col gap-3">
+    <p class="customer-namings-row__label text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
       Вибір замовника
     </p>
     <div
       v-if="namings.length > 0"
-      class="grid grid-cols-3 gap-2 max-w-[506px]"
+      class="customer-namings-row__grid grid grid-cols-3 gap-2 max-w-[506px]"
     >
       <div
         v-for="n in namings"
@@ -53,7 +53,7 @@ function formatPrice(price: number | null | undefined): string {
     </div>
     <p
       v-else
-      class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
+      class="customer-namings-row__empty text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
     >
       Назви не обрано
     </p>

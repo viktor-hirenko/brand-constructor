@@ -138,7 +138,7 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
 </script>
 
 <template>
-  <EditFlowStepShell title="External Naming" :subtitle="subtitleText">
+  <EditFlowStepShell class="po-edit-external-naming-view" title="External Naming" :subtitle="subtitleText">
     <div v-if="loading" class="flex items-center justify-center py-16">
       <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
     </div>

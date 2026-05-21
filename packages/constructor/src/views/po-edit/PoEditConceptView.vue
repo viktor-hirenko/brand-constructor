@@ -196,7 +196,7 @@ async function goDali() {
 </script>
 
 <template>
-  <EditFlowStepShell title="Concept Selection" :subtitle="subtitleText">
+  <EditFlowStepShell class="po-edit-concept-view" title="Concept Selection" :subtitle="subtitleText">
     <!-- post-apply: single applied concept card -->
     <div v-if="isPostApply" class="flex flex-col gap-3">
       <p class="text-[16px] font-medium leading-6 text-[#414141] tracking-[-0.3125px]">

@@ -80,6 +80,7 @@ const internalComment = computed({
 
 <template>
   <EditFlowStepShell
+    class="ceo-reselect-internal-naming-step"
     title="Internal Naming"
     subtitle="Оберіть назву для внутрішньої комунікації команди."
   >

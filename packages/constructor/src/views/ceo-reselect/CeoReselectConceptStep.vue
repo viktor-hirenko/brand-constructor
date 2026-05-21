@@ -111,6 +111,7 @@ function goNext() {
 
 <template>
   <EditFlowStepShell
+    class="ceo-reselect-concept-step"
     title="Concept Selection"
     subtitle="Оберіть концепт та перегляньте прев’ю праворуч."
   >
