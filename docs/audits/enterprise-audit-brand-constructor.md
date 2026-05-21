@@ -29,20 +29,14 @@
 
 - **Completed findings:** F-02 ✅, F-01 ✅, F-03 ✅, F-14 ✅, F-17 ✅, F-20 ✅, F-12 ✅, F-13 ✅, F-15 ✅, F-16 ✅, F-18 ✅, F-19 ✅, F-06 ✅, F-22 ✅, F-21 ✅, F-07 ✅, F-11 ✅, F-10 ✅, F-09 ✅, F-08 ✅, F-04 ✅, F-05 ✅
 - **In progress:** —
+- **Newly discovered post-Phase-3 deploy:** **F-23 — admin SPA Sign-out UI race condition** (server-side logout works; UI does not redirect to /login until reload). Severity 🟡. **OPEN — not fixed in deploy chat by user policy.**
 - **Phase 1 COMPLETE ✅ — deployed to prod 2026-05-20**
 - **Phase 2 COMPLETE ✅ — deployed to prod 2026-05-20**
-- **Phase 3 COMPLETE ✅ (all 8 findings: F-06 + F-22 + F-21 + F-07 + F-11 + F-10 + F-09 + F-08 + F-04 + F-05)**
-- **🎉 ENTERPRISE AUDIT COMPLETE ✅ — all 22 findings closed.**
+- **Phase 3 — code DEPLOYED to prod 2026-05-21**, partial smoke passed; **NOT signed off** because F-23 surfaced during the 18-pt smoke (item #8 — "Sign out clears cookie + redirects to /login"). Server-side cookie clear works (`POST /api/auth/logout` → 200, `Set-Cookie: auth_token=; Max-Age=0`), but admin SPA stays on `/concepts` due to a router-guard / `handleLogout` race condition. Full Phase 3 sign-off blocked on F-23 fix + targeted re-smoke (single item).
 - **F-06 COMPLETE ✅ — smoke passed 2026-05-20**
-- **F-22 + F-21 COMPLETE ✅ — local commits, awaiting deploy**
-- **F-07 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
-- **F-11 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
-- **F-10 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
-- **F-09 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
-- **F-08 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
-- **F-04 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
-- **F-05 COMPLETE ✅ — local commit, awaiting deploy (worker + constructor pages + frontend pages, coordinated)**
-- **Next:** deploy all accumulated Phase 3 findings to prod, then full-stack smoke. See "Pending production deploy" section at the bottom of the document.
+- **F-22 + F-21 + F-07 + F-11 + F-10 + F-09 + F-08 + F-04 deployed 2026-05-21** — no regressions observed during the partial smoke (login, session persistence, role-aware sidebar, concept library list all OK on the admin SPA).
+- **F-05 deployed 2026-05-21** — partially verified: cookie has correct flags (HttpOnly/Secure/SameSite=Lax — implicitly proven by the fact that `Application → Clear site data` is the only way to log out, i.e. cookie is not JS-accessible), CSRF-gated mutating requests pending verification in next smoke pass, **Sign-out button blocked by F-23**.
+- **Next:** open new chat for F-23 fix (Sonnet sized, ~15 min). After fix → redeploy frontend Pages → re-run smoke items #5–9 + #18. Then mark Phase 3 fully verified.
 - **Last update:** 2026-05-21
 
 ### Open follow-ups noted during prior findings
@@ -51,7 +45,8 @@
 - _(F-21, new)_: server-side status freeze on `PUT /api/brands/:id` is missing — see finding below.
 - _(F-22, new)_: `rejected` brand status is unused in the entire UI / product flow — leftover from v1 PRD; cleanup tracked as a separate finding to coordinate worker + shared types + admin filter + constructor maps.
 - _(F-07, new)_: `LayoutBriefModal.vue` (extracted in F-07) is wired but currently unreachable — no UI surface in `packages/constructor` calls `openLayoutBrief()`. The underlying brief data (`store.stepData.{concept,externalNaming,internalNaming}.new*Brief*`) is still populated by `NewConceptModal.vue` / `NewNamingModal.vue` / `NewInternalNamingModal.vue`, so the data path is alive. Two options for a future cleanup: (a) re-wire a "Переглянути бриф" button on Step 2/3/4 right-panel previews to surface the brief; (b) delete the modal + brief computeds entirely if product confirms the preview is no longer required. Decision deferred — not blocking. Same applies to dead helpers `getExternalDomain`/`getExternalPrice` that were removed inline during F-07 (no other callers found in the repo).
-- _(F-05 cleanup, scheduled)_: drop the `Authorization: Bearer` backward-compat fallback in `packages/worker/src/middleware/auth.ts` (the entire `cookieToken` `else` branch), the `token` field from the `/api/auth/google` response body in `packages/worker/src/routes/auth.ts`, and the `localStorage.removeItem(LEGACY_STORAGE_KEY)` cleanup blocks at the top of both `stores/auth.ts` files. Wait at least 24h after F-05 production deploy (exceeds JWT TTL — guarantees all in-flight Bearer tokens have expired). One small commit per package, no behaviour change for any client at that point. Same time: rename `authMethod: 'cookie' | 'bearer' | 'dev'` to `'cookie' | 'dev'` in `types.ts` and the matching skip in `middleware/csrf.ts`.
+- _(F-05 cleanup, scheduled)_: drop the `Authorization: Bearer` backward-compat fallback in `packages/worker/src/middleware/auth.ts` (the entire `cookieToken` `else` branch), the `token` field from the `/api/auth/google` response body in `packages/worker/src/routes/auth.ts`, and the `localStorage.removeItem(LEGACY_STORAGE_KEY)` cleanup blocks at the top of both `stores/auth.ts` files. Wait at least 24h after F-05 production deploy (exceeds JWT TTL — guarantees all in-flight Bearer tokens have expired). One small commit per package, no behaviour change for any client at that point. Same time: rename `authMethod: 'cookie' | 'bearer' | 'dev'` to `'cookie' | 'dev'` in `types.ts` and the matching skip in `middleware/csrf.ts`. **HOLD until F-23 is fixed and Phase 3 is fully signed off** — don't compound deploys while smoke is still red.
+- _(F-23, new — surfaced during F-05 production smoke 2026-05-21)_: admin SPA Sign-out UI race condition. Server-side logout is correct (`POST /api/auth/logout` returns 200 with `Set-Cookie: auth_token=; Max-Age=0`), but the UI stays on `/concepts` because `handleLogout` in `packages/frontend/src/components/ui/AppSidebar.vue` fires `authStore.logout()` without `await` and immediately calls `router.push({ name: 'login' })`; the `beforeEach` guard in `packages/frontend/src/router/index.ts` (lines 76–93) sees `authStore.isAuthenticated === true` (because `user.value = null` runs only after the fetch completes) and redirects back to `/concepts`. F5 after the click correctly drops the user to `/login` (confirms cookie was deleted), so the effect is a UX-only bug, **not** a security regression. **DO NOT FIX in the production-deploy chat** — covered fully in the F-23 finding below.
 
 ### Phase plan
 
@@ -67,6 +62,9 @@ F-06 (split into 3 PRs) → F-07 → F-11 → F-10 → F-09 → F-08 → F-04 �
 **Newly discovered (post-Phase-2):**
 F-21 — server-side status freeze on `PUT /api/brands/:id`. Severity 🟡, Sonnet Thinking sized.
 F-22 — remove unused `rejected` brand status from the entire stack. Severity 🟢, Sonnet Thinking sized.
+
+**Newly discovered (post-Phase-3 deploy, during production smoke 2026-05-21):**
+F-23 — admin SPA Sign-out UI race condition. Severity 🟡 (UX only, not security), Sonnet sized. Blocks Phase 3 sign-off.
 
 > F-04 (atomic approve flow) is critical/security but touches the most fragile worker path; promoted to Opus-only despite being M-sized.
 
@@ -846,9 +844,93 @@ Refs: docs/audits/enterprise-audit-brand-constructor.md F-05
 
 ---
 
+### F-23 — Admin SPA Sign-out button race condition (cookie cleared, UI stuck)
+- **Status:** OPEN — surfaced during F-05 production smoke 2026-05-21. **Not fixed in deploy chat by user policy** (smoke chat = no code changes).
+- **Date discovered:** 2026-05-21
+- **Severity:** 🟡 Medium (UX-only — security posture is intact: cookie is deleted server-side, store is cleared, and F5 correctly drops the user to `/login`)
+- **Phase:** N/A (post-deploy regression / latent bug exposed by F-05's new logout endpoint)
+- **Suggested model:** Sonnet Thinking (S-sized, ~15 min)
+- **Affected package:** `packages/frontend` (admin SPA only). Constructor SPA does **not** expose a Sign-out UI button, so the same `logout()` shape in `packages/constructor/src/stores/auth.ts` does not surface the bug there — but should be reshaped at the same time to prevent the symmetric trap if a Sign-out button is added later.
+- **Symptom (reproduction):**
+  1. Logged in as any role on `https://brand-constructor.pages.dev` (verified with `product_writer` 2026-05-21).
+  2. Click **Sign out** in the sidebar footer.
+  3. Expected: redirect to `/login`, cookie cleared.
+  4. Actual: stays on `/concepts`, sidebar still shows user/role, cookie *is* cleared on the server, store *is* reset, but the URL does not change until a manual reload (F5 → correctly drops to `/login`).
+- **Evidence collected during smoke:**
+  - DevTools → Network → `POST /api/auth/logout` → **200**, response body `{"success":true,"data":null}`.
+  - Server-side cookie deletion path is verified separately (the entire stack works when cookie is dropped via `Application → Clear site data` — that flow correctly redirects to `/login` on next request).
+- **Root cause (confirmed by code reading):**
+  - `packages/frontend/src/components/ui/AppSidebar.vue` (lines 83–88):
+    ```ts
+    function handleLogout() {
+      authStore.logout()           // async, fire-and-forget — no await
+      router.push({ name: 'login' })  // executes synchronously
+    }
+    ```
+  - `packages/frontend/src/stores/auth.ts` (lines 56–68): `user.value = null` runs **after** `await fetch(...)` completes (~50–200 ms later).
+  - `packages/frontend/src/router/index.ts` (lines 76–93): `beforeEach` guard for `to.name === 'login'` redirects to `{ name: 'concepts' }` **if `authStore.isAuthenticated` is still truthy**. At the moment of `router.push({ name: 'login' })`, the fetch is still in flight, so `user.value` is still set, so the guard fires the redirect back to `/concepts`.
+  - Net effect: cookie is deleted server-side, store is eventually cleared, but the UI never navigates because the only navigation attempt happened before the store mutation.
+- **Suggested fix (next chat — DO NOT IMPLEMENT in deploy chat):**
+  - **Option A (minimal, preferred):** Move the local-state clear **before** the network call and `await` the whole flow:
+    ```ts
+    // packages/frontend/src/stores/auth.ts
+    async function logout(): Promise<void> {
+      user.value = null
+      csrfToken.value = null
+      try {
+        const apiBase = import.meta.env.VITE_API_URL || ''
+        await fetch(`${apiBase}/api/auth/logout`, { method: 'POST', credentials: 'include' })
+      } catch {
+        // network failure — local state already cleared; cookie expires on its own
+      }
+    }
+    ```
+    And in `AppSidebar.vue`:
+    ```ts
+    async function handleLogout() {
+      await authStore.logout()
+      router.push({ name: 'login' })
+    }
+    ```
+    Net behavior: store mutation happens synchronously before any router transition, the guard sees `isAuthenticated === false`, redirect to `/login` succeeds. Cookie deletion still fires (the network request is in-flight but no longer gates the UI). If the network fails, the user still appears logged out client-side, and the cookie expires naturally within the JWT TTL window.
+  - **Option B (defensive, optional):** Add the same shape to `packages/constructor/src/stores/auth.ts` `logout()` even though there's no UI caller today — keeps both stores symmetric and prevents the trap from re-appearing if a Sign-out button is added to constructor SPA later.
+  - **Option C (extra safety, not strictly required):** The `beforeEach` guard could be made tolerant to mid-flight transitions (e.g., when navigating *from* an authenticated route *to* `/login`, allow the transition unconditionally). But this is a heavier change and may mask other bugs — defer unless Option A proves insufficient.
+- **Out of scope for the fix chat:**
+  - Re-checking F-05's cookie attributes / CSRF / Safari behavior — those are independent and already part of the standing Phase 3 smoke.
+  - Touching the worker `/api/auth/logout` route — it is correct as-is (returns 200 with proper `Set-Cookie` Max-Age=0).
+- **Smoke after fix (single-item subset of the Phase 3 18-point checklist):**
+  - Item #8 (admin SPA): "Sign out → cookie cleared, redirect to `/login`" — confirm URL changes immediately on click, no F5 needed, no flash of `/concepts` after redirect, sidebar disappears.
+  - Item #5 + #18: re-verify session persistence (F5 stays logged in) and logout/login cycle is clean on both SPAs.
+- **Suggested commit message:**
+  ```
+  fix(frontend,security): F-23 — clear auth store before logout fetch to fix Sign-out UI race
+
+  Refs: docs/audits/enterprise-audit-brand-constructor.md F-23
+  ```
+
+---
+
 ## Pending production deploy
 
 All Phase 3 findings are merged locally on `main` and awaiting a single coordinated production deploy. The deploy is **safe to do in any order** for non-F-05 findings (they are byte-for-byte API-compatible refactors). F-05 introduces the only behavior change visible to clients (cookie-based auth, CSRF requirement, Pages Functions proxy) and dictates the package order.
+
+### Production deploy result — 2026-05-21
+
+- **Worker deploy:** ✅ `wrangler deploy --env production` succeeded. Version ID `ef6befa5-00ad-4c59-acd9-48e88a4666be`. `GET /api/health` → 200 with full security header set (CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, `access-control-allow-credentials: true`).
+- **Constructor Pages deploy:** ✅ `wrangler pages deploy dist --project-name=brand-constructor-app` from `packages/constructor/` (NOT from repo root — see deploy-doc note below). Functions bundle uploaded. `GET https://brand-constructor-app.pages.dev/api/health` → 200 (proxy works).
+- **Admin Pages deploy:** ✅ `wrangler pages deploy dist --project-name=brand-constructor` from `packages/frontend/`. Functions bundle uploaded. `GET https://brand-constructor.pages.dev/api/health` → 200 (proxy works).
+- **Bundle verification:** prod-served bundles (`index-BjOF_z8n.js` admin, `index-Duyr-N3R.js` constructor) match the local `dist/` builds exactly, and grep confirms F-05 markers (`credentials:"include"`, `csrfToken`, `auth/logout`, `X-CSRF-Token`) are present in the served bundles.
+- **Smoke result:** **partial** — F-23 surfaced on item #8 (admin SPA Sign-out). All other items reachable so far (login, role-aware sidebar, concept library, session persistence implied by `Clear site data`-only logout path) appear to work. Remaining items #6 (CSRF gate on mutating requests), #7 (private window isolation), #9 (manual fetch with/without cookie), #10 (XSS-stealable surface), #11–18 (PO+CEO E2E, F-21 freeze, F-22 cleanup, logout/login cycle), and Safari smoke are **not yet performed** — re-run them after F-23 is fixed and the admin SPA is redeployed (item #8 must be green before the rest is meaningful, since they depend on a clean logout/login boundary).
+- **Phase 3 sign-off:** **BLOCKED on F-23.** Do not commit any "Phase 3 verified" marker until F-23 is fixed, frontend is redeployed, and the targeted re-smoke (items #5, #6, #8, #9, #11–18, plus Safari) is green.
+
+### Deploy-doc fix (apply during next deploy)
+
+The original step 2 + step 3 commands in this section read `npx wrangler pages deploy packages/constructor/dist --project-name=brand-constructor-app` from the **repo root**. Run that way, wrangler does **not** pick up `packages/constructor/functions/` (it looks for a `functions/` directory sibling to the `dist/` it was given, relative to the cwd). The first deploy attempt during the 2026-05-21 production run uploaded only static assets — `GET /api/health` returned the SPA HTML (Vue Router fallback) instead of the proxied JSON, which would have broken F-05 cookie flow in Safari. The deploy was redone from each package directory:
+```
+cd packages/constructor && npx wrangler pages deploy dist --project-name=brand-constructor-app
+cd packages/frontend    && npx wrangler pages deploy dist --project-name=brand-constructor
+```
+Confirmed by `✨ Uploading Functions bundle` in the wrangler output. Update this section to use the per-package commands the next time Phase 3 is re-deployed.
 
 ### Accumulated findings per package
 
