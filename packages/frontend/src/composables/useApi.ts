@@ -1,7 +1,11 @@
 import { ref, type Ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-constructor/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
+
+// F-05: HTTP methods that do not require a CSRF token (no side effects).
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 export function getAssetUrl(url: string | null | undefined): string {
   if (!url) return ''
@@ -9,35 +13,31 @@ export function getAssetUrl(url: string | null | undefined): string {
   return url
 }
 
-interface FetchState<T> {
-  data: Ref<T | null>
-  loading: Ref<boolean>
-  error: Ref<string | null>
-}
-
-export function getAuthHeader(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem('brand_constructor_auth')
-    if (!raw) return {}
-    const { token } = JSON.parse(raw) as { token: string }
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  } catch {
-    return {}
-  }
-}
-
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const fullUrl = url.startsWith('/api') ? `${API_BASE}${url}` : url
   const headers: Record<string, string> = {
-    ...getAuthHeader(),
     ...(options.headers as Record<string, string>),
+  }
+
+  // F-05: attach the in-memory CSRF token for mutating requests — see
+  // packages/constructor/src/composables/useApi.ts for the rationale.
+  const method = (options.method || 'GET').toUpperCase()
+  if (!SAFE_METHODS.has(method)) {
+    try {
+      const auth = useAuthStore()
+      if (auth.csrfToken) headers['X-CSRF-Token'] = auth.csrfToken
+    } catch {
+      // Pinia not yet initialised — worker will reject with 403.
+    }
   }
 
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
 
-  const response = await fetch(fullUrl, { ...options, headers })
+  // F-05: include credentials so the HttpOnly auth cookie flows on every
+  // API request.
+  const response = await fetch(fullUrl, { ...options, credentials: 'include', headers })
   const json = await response.json()
 
   if (!response.ok) {

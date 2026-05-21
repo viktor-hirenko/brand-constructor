@@ -3,6 +3,7 @@ import { logger } from 'hono/logger'
 import type { Env, Variables } from './types'
 import { createCorsMiddleware } from './middleware/cors'
 import { authMiddleware } from './middleware/auth'
+import { csrfMiddleware } from './middleware/csrf'
 import conceptsRoutes from './routes/concepts'
 import namingsRoutes from './routes/namings'
 import prPackagesRoutes from './routes/pr-packages'
@@ -56,8 +57,13 @@ app.get('/api/assets/:entityType/:entityId/:fileName', async c => {
 // Auth routes — public, no JWT required
 app.route('/api/auth', authRoutes)
 
-// All other /api/* routes require authentication
+// All other /api/* routes require authentication.
+// F-05: CSRF middleware runs immediately after auth so it can read the
+// `authMethod` / `user` / `jwtIat` context variables set by authMiddleware.
+// CSRF is a no-op for safe methods, dev mode, and legacy Bearer-authed
+// requests (see middleware/csrf.ts for the skip rules).
 app.use('/api/*', authMiddleware)
+app.use('/api/*', csrfMiddleware)
 
 app.route('/api/concepts', conceptsRoutes)
 app.route('/api/namings', namingsRoutes)

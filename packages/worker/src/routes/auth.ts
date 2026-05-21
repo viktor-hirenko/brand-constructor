@@ -1,11 +1,16 @@
 import { Hono } from 'hono'
+import { setCookie, deleteCookie } from 'hono/cookie'
+import type { Context } from 'hono'
 import type { Env, Variables } from '../types'
 import { createJWT } from '../utils/jwt'
+import { createCsrfToken } from '../utils/csrf'
+import { authMiddleware, AUTH_COOKIE_NAME } from '../middleware/auth'
 
 const authRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000
 const MAX_AUTH_ATTEMPTS = 5
+const TOKEN_LIFETIME_SEC = 24 * 60 * 60
 const attempts = new Map<string, { count: number; resetAt: number }>()
 
 function isRateLimited(ip: string): boolean {
@@ -31,6 +36,22 @@ interface GoogleTokenInfo {
   exp: string
   aud: string
   sub: string
+}
+
+// F-05: cookie attributes used both on login (set) and logout (clear).
+// `Secure` is disabled in development so the cookie still flows over plain
+// HTTP from `vite dev` → `wrangler dev`. The dev path of authMiddleware
+// short-circuits via X-Dev-User-Email anyway, so this only matters for
+// staging-style testing that exercises the real cookie flow against a
+// local worker.
+function authCookieOptions(c: Context<{ Bindings: Env; Variables: Variables }>) {
+  const isDev = c.env.ENVIRONMENT === 'development'
+  return {
+    path: '/',
+    httpOnly: true,
+    secure: !isDev,
+    sameSite: 'Lax' as const,
+  }
 }
 
 authRoutes.post('/google', async c => {
@@ -102,21 +123,53 @@ authRoutes.post('/google', async c => {
       name: displayName,
       role: user.role,
       iat: now,
-      exp: now + 24 * 60 * 60, // 24 hours
+      exp: now + TOKEN_LIFETIME_SEC,
     },
     c.env.JWT_SECRET
   )
 
+  // F-05: write the JWT into an HttpOnly Secure SameSite=Lax cookie so the
+  // SPA never holds it in JS-accessible memory or storage.
+  setCookie(c, AUTH_COOKIE_NAME, token, {
+    ...authCookieOptions(c),
+    maxAge: TOKEN_LIFETIME_SEC,
+  })
+
+  const csrfToken = await createCsrfToken({ sub: user.id, iat: now }, c.env.JWT_SECRET)
+
   return c.json({
     success: true,
     data: {
+      // F-05 backward compat: `token` is still returned in the body so that
+      // pre-F-05 SPA bundles cached in users' open tabs can keep authenticating
+      // via Authorization: Bearer for the remainder of their localStorage JWT
+      // lifetime. Post-F-05 SPAs ignore this field entirely (cookie is the
+      // source of truth). Remove together with the Bearer fallback in
+      // authMiddleware once we're confident no pre-F-05 clients remain.
       token,
       user: { id: user.id, email: user.email, name: displayName, role: user.role },
+      csrfToken,
     },
   })
 })
 
+// F-05: session-restore endpoint. Returns the current user (derived from the
+// HttpOnly cookie via authMiddleware) plus a fresh CSRF token. Called by the
+// SPA on every app boot to rehydrate Pinia state without trusting any
+// JS-accessible storage. Uses the per-route authMiddleware mount because
+// authRoutes is registered BEFORE the global app.use('/api/*', authMiddleware)
+// in index.ts (so /google and /logout remain public).
+authRoutes.get('/me', authMiddleware, async c => {
+  const user = c.get('user')
+  const jwtIat = c.get('jwtIat') ?? Math.floor(Date.now() / 1000)
+  const csrfToken = await createCsrfToken({ sub: user.id, iat: jwtIat }, c.env.JWT_SECRET)
+  return c.json({ success: true, data: { user, csrfToken } })
+})
+
 authRoutes.post('/logout', c => {
+  // F-05: clear the HttpOnly cookie unconditionally (no auth required —
+  // logging out an unauthenticated request is a no-op for the browser).
+  deleteCookie(c, AUTH_COOKIE_NAME, authCookieOptions(c))
   return c.json({ success: true, data: null })
 })
 

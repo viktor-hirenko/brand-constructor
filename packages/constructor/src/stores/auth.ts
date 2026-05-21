@@ -3,43 +3,30 @@ import { ref, computed } from 'vue';
 import { isBrandBriefCreatorRole } from '@brand-constructor/shared';
 import type { User } from '@brand-constructor/shared/types';
 
-const STORAGE_KEY = 'brand_constructor_auth';
-const TOKEN_EXPIRE_BUFFER_SEC = 5 * 60;
-
-interface StoredAuth {
-  user: User;
-  token: string;
-}
-
-function loadFromStorage(): StoredAuth | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const stored: StoredAuth = JSON.parse(raw);
-    const payloadB64 = stored.token.split('.')[1];
-    const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp - now <= TOKEN_EXPIRE_BUFFER_SEC) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
-    return stored;
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
+// F-05: one-off cleanup of the pre-F-05 localStorage JWT. The new flow
+// keeps the token in an HttpOnly cookie and user info in Pinia only; the
+// legacy key is now dead. Safe to remove this block in a follow-up after
+// a release or two — `removeItem` on a missing key is a no-op.
+const LEGACY_STORAGE_KEY = 'brand_constructor_auth';
+try {
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+} catch {
+  // SSR / private mode — harmless
 }
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
-  const token = ref<string | null>(null);
+  // F-05: CSRF token derived server-side from the auth JWT. Kept in Pinia
+  // only (never localStorage), refreshed on every /api/auth/me response, and
+  // forwarded by useApi as `X-CSRF-Token` on mutating requests.
+  const csrfToken = ref<string | null>(null);
   const loading = ref(false);
-
-  const stored = loadFromStorage();
-  if (stored) {
-    user.value = stored.user;
-    token.value = stored.token;
-  }
+  // F-05: set to true once `fetchCurrentUser` has resolved at least once,
+  // regardless of whether the user turned out to be authenticated. Router
+  // guards must wait for this before deciding to redirect to /login —
+  // otherwise an authenticated user reloading the page would briefly see a
+  // login bounce while /me is in flight.
+  const initialized = ref(false);
 
   const isAuthenticated = computed(() => user.value !== null);
 
@@ -68,6 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
       const apiBase = import.meta.env.VITE_API_URL || '';
       const response = await fetch(`${apiBase}/api/auth/google`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
       });
@@ -75,40 +63,63 @@ export const useAuthStore = defineStore('auth', () => {
       if (!json.success) throw new Error(json.error || 'Login failed');
 
       user.value = json.data.user as User;
-      token.value = json.data.token as string;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: user.value, token: token.value }));
+      csrfToken.value = (json.data.csrfToken as string | undefined) ?? null;
+      initialized.value = true;
     } finally {
       loading.value = false;
     }
   }
 
-  function logout(): void {
+  async function logout(): Promise<void> {
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      await fetch(`${apiBase}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Network failure — local state is still cleared so the UI logs out
+      // immediately. The HttpOnly cookie will eventually expire on its own
+      // (24h TTL); user can also re-login to overwrite it.
+    }
     user.value = null;
-    token.value = null;
-    localStorage.removeItem(STORAGE_KEY);
+    csrfToken.value = null;
   }
 
   async function fetchCurrentUser(): Promise<void> {
-    if (import.meta.env.VITE_ENVIRONMENT !== 'development') return;
     loading.value = true;
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiBase}/api/users/me`);
+      const response = await fetch(`${apiBase}/api/auth/me`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        user.value = null;
+        csrfToken.value = null;
+        return;
+      }
       const json = await response.json();
       if (json.success) {
-        user.value = json.data as User;
+        user.value = json.data.user as User;
+        csrfToken.value = (json.data.csrfToken as string | undefined) ?? null;
+      } else {
+        user.value = null;
+        csrfToken.value = null;
       }
     } catch {
       user.value = null;
+      csrfToken.value = null;
     } finally {
       loading.value = false;
+      initialized.value = true;
     }
   }
 
   return {
     user,
-    token,
+    csrfToken,
     loading,
+    initialized,
     isAuthenticated,
     userRole,
     isCeoOrAdmin,

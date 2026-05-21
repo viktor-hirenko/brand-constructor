@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import AppSidebar from '@/components/ui/AppSidebar.vue'
 import AppHeader from '@/components/ui/AppHeader.vue'
 
 const route = useRoute()
-const authStore = useAuthStore()
 
 const isLoginPage = computed(() => route.name === 'login')
 const isSidebarOpen = ref(false)
 
+// F-05: session hydration moved to main.ts (top-level await before mount)
+// so router guards see the final auth state on the very first navigation.
 function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value
 }
@@ -18,12 +18,6 @@ function toggleSidebar() {
 function closeSidebar() {
   isSidebarOpen.value = false
 }
-
-onMounted(async () => {
-  if (import.meta.env.VITE_ENVIRONMENT === 'development') {
-    await authStore.fetchCurrentUser()
-  }
-})
 </script>
 
 <template>

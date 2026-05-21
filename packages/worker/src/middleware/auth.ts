@@ -1,7 +1,12 @@
 import { createMiddleware } from 'hono/factory'
+import { getCookie } from 'hono/cookie'
 import type { Env, Variables } from '../types'
 import { LIBRARY_WRITE_PERMISSIONS, ADMIN_ROLES } from '@brand-constructor/shared'
 import { verifyJWT } from '../utils/jwt'
+
+// F-05: cookie name shared between authRoutes (setCookie) and authMiddleware
+// (getCookie). HttpOnly + Secure + SameSite=Lax — see routes/auth.ts.
+export const AUTH_COOKIE_NAME = 'auth_token'
 
 export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Variables }>(
   async (c, next) => {
@@ -29,16 +34,35 @@ export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
       }
 
       c.set('user', user as { id: string; email: string; name: string; role: string })
+      c.set('authMethod', 'dev')
       return next()
     }
 
-    // Production: verify our own JWT signed with JWT_SECRET
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Production: HttpOnly cookie is the canonical credential source post-F-05.
+    // Authorization: Bearer is kept as a temporary fallback so SPA bundles
+    // shipped before the cookie migration (still cached in users' tabs)
+    // continue to work for the remainder of their localStorage JWT lifetime
+    // (up to 24h). Remove this fallback in a follow-up commit once we are
+    // confident no pre-F-05 clients remain.
+    let token: string | null = null
+    let authMethod: 'cookie' | 'bearer' | null = null
+
+    const cookieToken = getCookie(c, AUTH_COOKIE_NAME)
+    if (cookieToken) {
+      token = cookieToken
+      authMethod = 'cookie'
+    } else {
+      const authHeader = c.req.header('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7)
+        authMethod = 'bearer'
+      }
+    }
+
+    if (!token || !authMethod) {
       return c.json({ success: false, error: 'Unauthorized: missing token' }, 401)
     }
 
-    const token = authHeader.substring(7)
     const payload = await verifyJWT(token, c.env.JWT_SECRET)
 
     if (!payload) {
@@ -55,6 +79,8 @@ export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
     }
 
     c.set('user', user)
+    c.set('authMethod', authMethod)
+    c.set('jwtIat', payload.iat)
     return next()
   }
 )

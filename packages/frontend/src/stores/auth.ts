@@ -3,45 +3,23 @@ import { ref, computed } from 'vue'
 import type { User, UserRole } from '@brand-constructor/shared'
 import { ADMIN_ROLES, LIBRARY_WRITE_PERMISSIONS } from '@brand-constructor/shared'
 
-const STORAGE_KEY = 'brand_constructor_auth'
-const TOKEN_EXPIRE_BUFFER_SEC = 5 * 60
-
-interface StoredAuth {
-  user: User
-  token: string
-}
-
-function loadFromStorage(): StoredAuth | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const stored: StoredAuth = JSON.parse(raw)
-    // Decode JWT payload to check expiration
-    const payloadB64 = stored.token.split('.')[1]
-    const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')))
-    const now = Math.floor(Date.now() / 1000)
-    if (payload.exp - now <= TOKEN_EXPIRE_BUFFER_SEC) {
-      localStorage.removeItem(STORAGE_KEY)
-      return null
-    }
-    return stored
-  } catch {
-    localStorage.removeItem(STORAGE_KEY)
-    return null
-  }
+// F-05: one-off cleanup of the pre-F-05 localStorage JWT — see constructor
+// stores/auth.ts for the full rationale.
+const LEGACY_STORAGE_KEY = 'brand_constructor_auth'
+try {
+  localStorage.removeItem(LEGACY_STORAGE_KEY)
+} catch {
+  // harmless
 }
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const token = ref<string | null>(null)
+  // F-05: CSRF token issued by the worker, kept only in memory; forwarded
+  // as X-CSRF-Token on mutating requests by useApi.
+  const csrfToken = ref<string | null>(null)
   const loading = ref(false)
-
-  // Restore session from localStorage on store creation
-  const stored = loadFromStorage()
-  if (stored) {
-    user.value = stored.user
-    token.value = stored.token
-  }
+  // F-05: see constructor stores/auth.ts.
+  const initialized = ref(false)
 
   const isAuthenticated = computed(() => user.value !== null)
   const isAdmin = computed(() =>
@@ -60,6 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
       const apiBase = import.meta.env.VITE_API_URL || ''
       const response = await fetch(`${apiBase}/api/auth/google`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
       })
@@ -67,41 +46,61 @@ export const useAuthStore = defineStore('auth', () => {
       if (!json.success) throw new Error(json.error || 'Login failed')
 
       user.value = json.data.user as User
-      token.value = json.data.token as string
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: user.value, token: token.value }))
+      csrfToken.value = (json.data.csrfToken as string | undefined) ?? null
+      initialized.value = true
     } finally {
       loading.value = false
     }
   }
 
-  function logout(): void {
+  async function logout(): Promise<void> {
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || ''
+      await fetch(`${apiBase}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch {
+      // network failure — local state still cleared; cookie expires on its own
+    }
     user.value = null
-    token.value = null
-    localStorage.removeItem(STORAGE_KEY)
+    csrfToken.value = null
   }
 
-  // Used in development mode to fetch user without JWT
   async function fetchCurrentUser(): Promise<void> {
-    if (import.meta.env.VITE_ENVIRONMENT !== 'development') return
     loading.value = true
     try {
       const apiBase = import.meta.env.VITE_API_URL || ''
-      const response = await fetch(`${apiBase}/api/users/me`)
+      const response = await fetch(`${apiBase}/api/auth/me`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        user.value = null
+        csrfToken.value = null
+        return
+      }
       const json = await response.json()
       if (json.success) {
-        user.value = json.data as User
+        user.value = json.data.user as User
+        csrfToken.value = (json.data.csrfToken as string | undefined) ?? null
+      } else {
+        user.value = null
+        csrfToken.value = null
       }
     } catch {
       user.value = null
+      csrfToken.value = null
     } finally {
       loading.value = false
+      initialized.value = true
     }
   }
 
   return {
     user,
-    token,
+    csrfToken,
     loading,
+    initialized,
     isAuthenticated,
     isAdmin,
     canWriteLibrary,

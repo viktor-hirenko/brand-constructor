@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
-import { getAssetUrl, getAuthHeader } from '@/composables/useApi'
+import { getAssetUrl, apiGet } from '@/composables/useApi'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared/types'
 import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
@@ -217,24 +217,22 @@ function getThumbnailUrl(variant: ComponentVariant): string {
 async function loadComponentTypes() {
   isLoadingTypes.value = true
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/components/types`, {
-      headers: getAuthHeader(),
-    })
-    if (response.ok) {
-      const json = await response.json()
-      const types = (json.data || []) as ComponentType[]
-      if (types.length > 0) {
-        componentTypes.value = types
-          .filter(t => t.id !== 'ct_theme')
-          .map(t => ({
-            ...t,
-            emoji: COMPONENT_EMOJIS[t.name] || '📦',
-          }))
-          .sort((a, b) => (DISPLAY_ORDER[a.id] ?? 99) - (DISPLAY_ORDER[b.id] ?? 99))
-        await Promise.all(types.map(type => loadVariantsForType(type.id)))
-        isLoadingTypes.value = false
-        return
-      }
+    // F-05: refactored from a raw `fetch(... { headers: getAuthHeader() })` to
+    // `apiGet` so the cookie + CSRF + credentials handling is centralised in
+    // useApi and the legacy localStorage-based `getAuthHeader` could be
+    // deleted.
+    const types = await apiGet<ComponentType[]>('/api/components/types')
+    if (types && types.length > 0) {
+      componentTypes.value = types
+        .filter(t => t.id !== 'ct_theme')
+        .map(t => ({
+          ...t,
+          emoji: COMPONENT_EMOJIS[t.name] || '📦',
+        }))
+        .sort((a, b) => (DISPLAY_ORDER[a.id] ?? 99) - (DISPLAY_ORDER[b.id] ?? 99))
+      await Promise.all(types.map(type => loadVariantsForType(type.id)))
+      isLoadingTypes.value = false
+      return
     }
   } catch {
     // API unavailable — use offline fallback (types only, no fake variants)
@@ -247,17 +245,13 @@ async function loadComponentTypes() {
 async function loadVariantsForType(typeId: string) {
   loadingVariants.value[typeId] = true
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL || ''}/api/components/types/${typeId}/variants?status=all`,
-      { headers: getAuthHeader() }
+    const payload = await apiGet<{ variants?: ComponentVariant[] }>(
+      `/api/components/types/${typeId}/variants?status=all`
     )
-    if (response.ok) {
-      const json = await response.json()
-      const variants: ComponentVariant[] = (json.data?.variants || []).filter(
-        (v: ComponentVariant) => v.status !== 'archived' && v.status !== 'draft'
-      )
-      variantsByType.value[typeId] = variants.sort((a, b) => a.name.localeCompare(b.name))
-    }
+    const variants: ComponentVariant[] = (payload?.variants || []).filter(
+      (v: ComponentVariant) => v.status !== 'archived' && v.status !== 'draft'
+    )
+    variantsByType.value[typeId] = variants.sort((a, b) => a.name.localeCompare(b.name))
   } catch {
     variantsByType.value[typeId] = []
   }

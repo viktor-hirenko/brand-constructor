@@ -22,4 +22,14 @@ export interface AuthUser {
 
 export type Variables = {
   user: AuthUser
+  // F-05: how the current request was authenticated. `cookie` is the new
+  // post-F-05 default; `bearer` is a temporary backward-compat path for
+  // unmigrated SPA bundles still in browser tabs; `dev` is the local
+  // X-Dev-User-Email shortcut.
+  authMethod: 'cookie' | 'bearer' | 'dev'
+  // F-05: JWT `iat` of the auth cookie used for this request — re-used by
+  // csrfMiddleware to deterministically derive the expected X-CSRF-Token
+  // without any per-session state. Undefined for `dev` (no JWT) and for
+  // requests that did not yet pass authMiddleware.
+  jwtIat?: number
 }

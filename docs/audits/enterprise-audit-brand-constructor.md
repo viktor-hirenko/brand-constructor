@@ -27,11 +27,13 @@
 
 ## Current Progress
 
-- **Completed findings:** F-02 ✅, F-01 ✅, F-03 ✅, F-14 ✅, F-17 ✅, F-20 ✅, F-12 ✅, F-13 ✅, F-15 ✅, F-16 ✅, F-18 ✅, F-19 ✅, F-06 ✅, F-22 ✅, F-21 ✅, F-07 ✅, F-11 ✅, F-10 ✅, F-09 ✅, F-08 ✅, F-04 ✅
+- **Completed findings:** F-02 ✅, F-01 ✅, F-03 ✅, F-14 ✅, F-17 ✅, F-20 ✅, F-12 ✅, F-13 ✅, F-15 ✅, F-16 ✅, F-18 ✅, F-19 ✅, F-06 ✅, F-22 ✅, F-21 ✅, F-07 ✅, F-11 ✅, F-10 ✅, F-09 ✅, F-08 ✅, F-04 ✅, F-05 ✅
 - **In progress:** —
 - **Phase 1 COMPLETE ✅ — deployed to prod 2026-05-20**
 - **Phase 2 COMPLETE ✅ — deployed to prod 2026-05-20**
-- **F-06 COMPLETE ✅ (Phase 3, first finding) — smoke passed 2026-05-20**
+- **Phase 3 COMPLETE ✅ (all 8 findings: F-06 + F-22 + F-21 + F-07 + F-11 + F-10 + F-09 + F-08 + F-04 + F-05)**
+- **🎉 ENTERPRISE AUDIT COMPLETE ✅ — all 22 findings closed.**
+- **F-06 COMPLETE ✅ — smoke passed 2026-05-20**
 - **F-22 + F-21 COMPLETE ✅ — local commits, awaiting deploy**
 - **F-07 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
 - **F-11 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
@@ -39,8 +41,8 @@
 - **F-09 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
 - **F-08 COMPLETE ✅ — local commit, awaiting deploy (constructor pages only)**
 - **F-04 COMPLETE ✅ — local commit, awaiting deploy (worker only)**
-- **Next:** Phase 3 — только Opus 4.7, только по явному запросу. F-05 — last remaining Phase 3 finding.
-- **Recommended model for Phase 3:** Opus 4.7, один finding за чат
+- **F-05 COMPLETE ✅ — local commit, awaiting deploy (worker + constructor pages + frontend pages, coordinated)**
+- **Next:** deploy all accumulated Phase 3 findings to prod, then full-stack smoke. See "Pending production deploy" section at the bottom of the document.
 - **Last update:** 2026-05-21
 
 ### Open follow-ups noted during prior findings
@@ -49,6 +51,7 @@
 - _(F-21, new)_: server-side status freeze on `PUT /api/brands/:id` is missing — see finding below.
 - _(F-22, new)_: `rejected` brand status is unused in the entire UI / product flow — leftover from v1 PRD; cleanup tracked as a separate finding to coordinate worker + shared types + admin filter + constructor maps.
 - _(F-07, new)_: `LayoutBriefModal.vue` (extracted in F-07) is wired but currently unreachable — no UI surface in `packages/constructor` calls `openLayoutBrief()`. The underlying brief data (`store.stepData.{concept,externalNaming,internalNaming}.new*Brief*`) is still populated by `NewConceptModal.vue` / `NewNamingModal.vue` / `NewInternalNamingModal.vue`, so the data path is alive. Two options for a future cleanup: (a) re-wire a "Переглянути бриф" button on Step 2/3/4 right-panel previews to surface the brief; (b) delete the modal + brief computeds entirely if product confirms the preview is no longer required. Decision deferred — not blocking. Same applies to dead helpers `getExternalDomain`/`getExternalPrice` that were removed inline during F-07 (no other callers found in the repo).
+- _(F-05 cleanup, scheduled)_: drop the `Authorization: Bearer` backward-compat fallback in `packages/worker/src/middleware/auth.ts` (the entire `cookieToken` `else` branch), the `token` field from the `/api/auth/google` response body in `packages/worker/src/routes/auth.ts`, and the `localStorage.removeItem(LEGACY_STORAGE_KEY)` cleanup blocks at the top of both `stores/auth.ts` files. Wait at least 24h after F-05 production deploy (exceeds JWT TTL — guarantees all in-flight Bearer tokens have expired). One small commit per package, no behaviour change for any client at that point. Same time: rename `authMethod: 'cookie' | 'bearer' | 'dev'` to `'cookie' | 'dev'` in `types.ts` and the matching skip in `middleware/csrf.ts`.
 
 ### Phase plan
 
@@ -187,14 +190,117 @@ F-22 — remove unused `rejected` brand status from the entire stack. Severity �
 ---
 
 ### F-05 — JWT in `localStorage` (XSS exposure)
-- **Status:** TODO
+- **Status:** DONE
+- **Date completed:** 2026-05-21
 - **Severity:** 🔴 Critical
 - **Phase:** 3
-- **Model recommendation:** Opus 4.7
-- **Target files:** `packages/constructor/src/stores/auth.ts`, `packages/constructor/src/composables/useApi.ts`, `packages/frontend/src/stores/auth.ts`, `packages/worker/src/routes/auth.ts`
-- **Problem:** Token persisted in `localStorage`; XSS = full account takeover.
-- **Recommended change:** HttpOnly Secure SameSite=Strict cookie issued by worker; remove `getAuthHeader`; CSRF via header token from meta tag.
-- **Notes:** Coordinated frontend + backend change; needs design discussion before implementation. Confirm absence of `v-html` on user-content first.
+- **Model used:** Opus 4.7
+- **Target files (coordinated 3-package change):**
+  - Worker: `packages/worker/src/routes/auth.ts`, `packages/worker/src/middleware/auth.ts`, `packages/worker/src/middleware/cors.ts`, `packages/worker/src/index.ts`, `packages/worker/src/types.ts` (modified); `packages/worker/src/utils/csrf.ts`, `packages/worker/src/middleware/csrf.ts` (new)
+  - Constructor SPA: `packages/constructor/src/stores/auth.ts`, `packages/constructor/src/composables/useApi.ts`, `packages/constructor/src/main.ts`, `packages/constructor/src/views/steps/Step9VisualComponents.vue`, `packages/constructor/.env.production` (modified); `packages/constructor/functions/api/[[path]].ts` (new — Pages Function proxy)
+  - Frontend admin SPA: `packages/frontend/src/stores/auth.ts`, `packages/frontend/src/composables/useApi.ts`, `packages/frontend/src/main.ts`, `packages/frontend/src/App.vue`, `packages/frontend/.env.production` (modified); `packages/frontend/functions/api/[[path]].ts` (new — Pages Function proxy)
+
+#### Architectural decision: Pages Functions proxy (Plan B)
+
+Both SPAs are hosted on `*.pages.dev` and the worker on `*.workers.dev` — two different registrable suffixes on the Public Suffix List, so any cookie set by the worker is **third-party** from the SPA's perspective. Safari ITP blocks third-party cookies entirely (since 2020); Chrome is partway through deprecating them. The naive "issue `SameSite=None; Secure` cookie on the worker domain" approach would have shipped a session that worked in Chrome today, broke entirely in Safari, and degraded in Chrome over the next 12 months.
+
+**Resolution:** added a thin Cloudflare Pages Function at `functions/api/[[path]].ts` in each Pages project. The SPA only ever talks to its own origin (`brand-constructor.pages.dev/api/*` and `brand-constructor-app.pages.dev/api/*`); the Pages Function forwards the request server-to-server to the production worker. Set-Cookie headers from the worker flow back through the proxy unchanged — the browser sees them as coming from the Pages origin and stores them **first-party** on the SPA's own domain. This makes the auth cookie immune to ITP / 3PCD restrictions and unlocks `SameSite=Lax` (which alone is full CSRF protection for non-navigation methods on modern browsers).
+
+The proxy hard-codes the worker URL with `DEFAULT_WORKER_URL` (overridable via `WORKER_URL` Pages env var in the dashboard) so the default deploy works with zero devops configuration. Bodies are buffered (`await request.arrayBuffer()`) rather than streamed, which trades a tiny memory footprint for avoiding Workers fetch's duplex/one-shot limitations on streaming Request forwarding.
+
+#### Auth flow after F-05
+
+1. **Login.** `POST /api/auth/google` (cookie-included). Worker verifies the Google ID token, issues JWT, **and** sets `Set-Cookie: auth_token=<jwt>; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`. Response body is `{ token, user, csrfToken }`. The `token` field is kept for backward-compat with pre-F-05 SPA bundles cached in users' tabs; new SPA bundles ignore it entirely (the cookie is the source of truth) and store `user` + `csrfToken` in Pinia.
+2. **Session restore.** On every app boot, `main.ts` calls `authStore.fetchCurrentUser()` BEFORE `app.mount()` (wrapped in an async IIFE rather than top-level await for Safari 14 build-target compat). That hits `GET /api/auth/me` which the worker auths via the cookie and returns `{ user, csrfToken }`. The store sets `initialized = true` once /me resolves (success or 401) so router guards see the final auth state on the very first navigation — no login-bounce flash.
+3. **Mutating requests.** `useApi.request()` always sends `credentials: 'include'` and, for non-safe methods (POST/PUT/PATCH/DELETE), adds `X-CSRF-Token: <auth.csrfToken>`. The CSRF token is the HMAC-SHA256 of `csrf:<jwt.sub>:<jwt.iat>` keyed with `JWT_SECRET` (see `utils/csrf.ts`) — stateless, deterministic, no per-session storage. The middleware re-derives the expected value from the cookie's verified JWT and compares with constant-time equality.
+4. **Logout.** `POST /api/auth/logout` (cookie-included). Worker clears the cookie via `deleteCookie(c, 'auth_token', ...)` (`Max-Age=0`). Client-side state in Pinia is cleared regardless of network success.
+
+#### Backward-compat rollout (Bearer fallback)
+
+`authMiddleware` tries the cookie first, then falls back to `Authorization: Bearer <token>` if no cookie is present. `csrfMiddleware` skips when `authMethod === 'bearer'` (legacy clients don't send X-CSRF-Token). This means:
+- **During the deploy window** (worker deployed, SPAs not yet): pre-F-05 SPA bundles continue authenticating via Bearer + localStorage exactly as before. The cookie set by the new `/api/auth/google` is irrelevant because the old SPA's `fetch` calls don't include `credentials: 'include'`, so the browser doesn't attach the cookie anyway.
+- **After SPA deploy:** the new SPA always uses cookies + CSRF. No flag flip needed.
+- **Cleanup follow-up:** after one release cycle (≥24h, exceeding the JWT TTL so all in-flight tokens are guaranteed expired), drop the Bearer fallback in `authMiddleware`, the `token` field from the `/google` response body, and the legacy `localStorage.removeItem` cleanup in both auth stores. Tracked under "Open follow-ups" below.
+
+#### Cross-cutting changes
+
+- `getAuthHeader()` export removed from both `useApi.ts` files. The only consumer outside the local `request()` function was `packages/constructor/src/views/steps/Step9VisualComponents.vue` (two raw `fetch` calls for component types + variants); both refactored to `apiGet<>()` so they automatically pick up cookies + CSRF + credentials.
+- `getAssetUrl` continues to return `${API_BASE}${url}`. With `VITE_API_URL=''` in both `.env.production`, that's now a relative `/api/assets/...` — the browser resolves it against the SPA's own origin → Pages Function → worker. The asset endpoint is registered before `app.use('/api/*', authMiddleware)`, so it stays public (no cookie required) and no CSRF applies (GET).
+- Worker CORS gained `credentials: true` and `X-CSRF-Token` in `allowHeaders` — needed for any direct browser→worker call (curl, devtools, accidental direct fetch). The Pages Function path is server-to-server with no CORS check.
+- `frontend/src/App.vue` lost its `onMounted` dev-only `fetchCurrentUser` (now done in `main.ts` for all envs).
+- `v-html` audit: one occurrence found in `packages/frontend/src/components/ui/AppSidebar.vue:75`, rendering `item.icon` from a hard-coded `navItems` array of HTML entities (`&#9830;` etc.). Source is developer-controlled, not user input — no XSS vector. No remediation needed.
+
+#### What was NOT touched
+
+- Existing JWT module (`utils/jwt.ts`) — same HMAC-SHA256 signature, same 24h TTL.
+- F-04 atomic approve flow, F-09 sub-router split, F-10 declarative Slack renderer, F-22 status enum, F-21 server-side status freeze — fully preserved.
+- `/api/users/me` endpoint (admin tool, separate from session restore).
+- The dev-mode `X-Dev-User-Email` shortcut in `authMiddleware` — unchanged; `authMethod` is set to `'dev'` and CSRF middleware skips dev mode entirely.
+
+#### Verification
+
+- `pnpm --filter @brand-constructor/worker type-check` ✓ (0 errors)
+- `pnpm --filter @brand-constructor/worker build` ✓ (wrangler dry-run, 344.36 KiB / 66.08 KiB gzipped — +8.6 KiB over F-04 baseline due to csrf.ts + middleware/csrf.ts)
+- `pnpm --filter @brand-constructor/constructor type-check` ✓ (0 errors)
+- `pnpm --filter @brand-constructor/constructor build` ✓ (same pre-existing chunk-size warning on `pdfmake` / `vfs_fonts`; main bundle 134.02 KiB / 49.84 KiB gzipped — net ≈ unchanged)
+- `pnpm --filter @brand-constructor/frontend type-check` ✓ (0 errors)
+- `pnpm --filter @brand-constructor/frontend build` ✓ (main bundle 117.90 KiB / 45.96 KiB gzipped — net ≈ unchanged)
+- `ReadLints` across worker + constructor + frontend src + both functions/ dirs → 0 issues
+- One build hiccup caught & fixed: top-level await in `main.ts` failed under Vite's default browser target (includes Safari 14, no TLA). Wrapped bootstrap in an async IIFE — no target bump needed.
+
+#### Manual QA after deploy
+
+See "Pending production deploy" section at the bottom of the document — coordinated 3-package smoke is mandatory for F-05.
+
+#### Suggested commit message
+
+```
+fix(worker,constructor,frontend,security): F-05 — JWT in HttpOnly cookie + CSRF + Pages proxy
+
+Token migration:
+  * Worker /api/auth/google now sets `auth_token` as HttpOnly Secure
+    SameSite=Lax cookie via setCookie() (path=/, max-age=24h). The `token`
+    field is still returned in the JSON body during the rollout window so
+    pre-F-05 SPA bundles cached in users' tabs keep authenticating via
+    Authorization: Bearer until their localStorage JWT naturally expires.
+  * Worker /api/auth/me added (per-route authMiddleware) — returns
+    { user, csrfToken } for session-restore on every SPA app boot.
+  * Worker /api/auth/logout now clears the cookie via deleteCookie().
+  * authMiddleware tries cookie first, falls back to Bearer header; sets
+    c.var.authMethod = 'cookie' | 'bearer' | 'dev' for downstream middleware.
+
+Pages Functions proxy (single-origin):
+  * packages/{constructor,frontend}/functions/api/[[path]].ts — transparent
+    reverse proxy from `*.pages.dev/api/*` to the worker. Lets the
+    HttpOnly cookie be first-party on each SPA's pages.dev origin, which
+    is the only way to survive Safari ITP / Chrome 3PCD. Hard-coded
+    WORKER_URL default so the deploy works with zero env config.
+  * Both .env.production files: VITE_API_URL=' ' (empty) so the SPAs
+    always hit the same-origin proxy instead of the worker directly.
+
+CSRF (stateless HMAC):
+  * utils/csrf.ts — HMAC-SHA256(JWT_SECRET, 'csrf:<sub>:<iat>'). Derived
+    deterministically from the verified JWT, no per-session storage.
+  * middleware/csrf.ts — required on mutating methods for cookie-authed
+    requests; skipped for safe methods, dev mode, and the Bearer
+    backward-compat path.
+  * cors.ts: credentials: true, X-CSRF-Token in allowHeaders.
+
+SPA stores + useApi:
+  * Both auth stores rewritten — no more localStorage. user + csrfToken
+    live in Pinia only; rehydrated from `/api/auth/me` on every boot via
+    an async IIFE in main.ts that runs before app.mount(). Legacy
+    'brand_constructor_auth' localStorage key is cleaned up on store
+    init (idempotent, safe to remove after a release).
+  * Both useApi modules: credentials: 'include' on every fetch;
+    X-CSRF-Token attached from authStore.csrfToken on POST/PUT/PATCH/
+    DELETE. getAuthHeader() export removed.
+  * Step9VisualComponents.vue: two raw fetch() calls that used
+    getAuthHeader() refactored to apiGet<>() so they auto-pick up the
+    new auth flow.
+
+Refs: docs/audits/enterprise-audit-brand-constructor.md F-05
+```
 
 ---
 
@@ -737,3 +843,64 @@ F-22 — remove unused `rejected` brand status from the entire stack. Severity �
 - **Verification:** wrangler dry-run ✓. Commit `125a531`.
 - **Manual QA after deploy:** curl `PUT /api/brands/:submitted-id` → 409; `PUT /api/brands/:approved-id` → 409; `PUT /api/brands/:needs_revision-id` (owner) → 200; `PUT /api/brands/:draft-id` (owner) → 200.
 - **Notes:** Was intentionally out of scope for F-19 (which was strictly the 404→403 owner check). `ceo-selections`, `status-change`, and `ceo-reselect` endpoints are separate handlers with their own guards — not affected.
+
+---
+
+## Pending production deploy
+
+All Phase 3 findings are merged locally on `main` and awaiting a single coordinated production deploy. The deploy is **safe to do in any order** for non-F-05 findings (they are byte-for-byte API-compatible refactors). F-05 introduces the only behavior change visible to clients (cookie-based auth, CSRF requirement, Pages Functions proxy) and dictates the package order.
+
+### Accumulated findings per package
+
+- **Worker** (`brand-constructor-api-production.upstars-landings.workers.dev`): F-22 + F-21 + F-10 + F-09 + F-04 + F-05
+- **Constructor SPA** (`brand-constructor-app.pages.dev`): F-22 (frontend bits) + F-07 + F-11 + F-08 + F-05
+- **Frontend admin SPA** (`brand-constructor.pages.dev`): F-22 (frontend bits) + F-05
+
+### Recommended deploy order
+
+1. **Worker first** (`pnpm --filter @brand-constructor/worker deploy:production`).
+   The worker now accepts both new cookie-authed clients (sets `auth_token` cookie, validates X-CSRF-Token) and pre-F-05 Bearer-authed clients (legacy SPA bundles still cached in users' browser tabs). After this step:
+   - Old SPA bundles continue to work via Bearer header (their fetch calls don't include `credentials: 'include'`, so the new cookie is never attached on their requests anyway).
+   - New SPA bundles (when deployed in step 2) immediately use the cookie + CSRF path.
+2. **Both Pages projects, in either order, in the same session** (`npx wrangler pages deploy dist --project-name=brand-constructor-app` and `--project-name=brand-constructor`).
+   - Each SPA's `functions/api/[[path]].ts` ships alongside the `dist/` assets — Cloudflare Pages picks it up automatically (no separate wrangler config needed).
+   - Both `.env.production` files now have `VITE_API_URL=` (empty), so SPAs talk to the same-origin Pages Function proxy, which forwards to the worker. Auth cookies become first-party on each pages.dev origin.
+3. **No DNS / domain / Cloudflare-dashboard changes are required.** `WORKER_URL` defaults to the production worker URL inside both proxy files; only override via Pages env var if/when the worker URL changes (e.g., custom domain migration).
+
+### Production smoke checklist (mandatory — F-05 touches the entire auth surface)
+
+Run all of these against a fresh test brand on production after the deploy. Do **not** mark F-05 as deployed in the tracker until every box is ticked.
+
+**Cookie + CSRF basics (admin SPA, `brand-constructor.pages.dev`):**
+1. Open `brand-constructor.pages.dev` in a logged-out browser → land on `/login`.
+2. Sign in with Google → land on `/concepts` (or the requested redirect). Check DevTools → Application → Cookies → `brand-constructor.pages.dev` → **`auth_token` is present, HttpOnly = ✓, Secure = ✓, SameSite = Lax**.
+3. Verify `localStorage` is **empty** of the legacy `brand_constructor_auth` key (Application → Local Storage → `brand-constructor.pages.dev`).
+4. Open DevTools console → `document.cookie` — **`auth_token` must NOT appear** (HttpOnly hides it from JS).
+5. F5 (hard reload) — session persists, you stay on `/concepts`, no login flash. Sidebar shows your name + role.
+6. Trigger a mutating action (e.g., POST a new naming or PR package → "Save"). DevTools → Network → request headers include `X-CSRF-Token: ...` — response is 2xx. Without that header the worker would return `403 CSRF: missing X-CSRF-Token header`.
+7. Open the same site in a private window → not logged in (cookies are partitioned per session in private mode). Sign in again — independent session.
+8. Click "Sign out" in the sidebar → cookie is cleared (DevTools confirms it's gone or has `Max-Age=0`), redirected to `/login`.
+9. Manually fire `fetch('/api/users', { credentials: 'include' })` from the DevTools console while logged out → 401 (no cookie). While logged in → 200.
+
+**XSS-injection sanity (constructor SPA, `brand-constructor-app.pages.dev`):**
+10. Logged in, in DevTools console: `document.cookie` → no auth token visible (HttpOnly). Try `localStorage.getItem('brand_constructor_auth')` → `null`. The XSS-stealable surface is now empty.
+
+**Full PO + CEO end-to-end flow on a single test brand (covers F-04 atomic approve, F-09 sub-router split, F-10 Slack renderer, F-21 status-freeze, F-22 status enum cleanup, F-07 / F-08 / F-11 constructor refactors, F-05 cookie auth across the whole journey):**
+11. Logged in as a PO on `brand-constructor-app.pages.dev` → create a fresh brand, walk all 8 wizard steps (Step 1 basics → Step 2 concept slider → Step 3/4 namings → Step 5 PR package → Step 6 deliverables → Step 7 visual components → Step 8 review).
+12. Press "Submit" on the review → status flips to `submitted` → Slack `bc-approvals` channel receives the F-10 submit notification.
+13. Switch to a CEO account on `brand-constructor-app.pages.dev` → open the same brand → exercise the CEO review screen: comment, mark a section "needs revision", apply a CEO alternative (concept or naming), then either send back or approve.
+14. Test "Send back for revision" path: CEO submits → brand status flips to `needs_revision` → Slack channel receives F-10 needs-revision notification → PO sees the returned-from-CEO banner on Step 10 → PO edits the relevant section via the PO-edit shell → resubmits → CEO sees the updated state.
+15. Test "Approve" path on a separate test brand: CEO clicks approve → brand status flips to `approved` in **one** D1 batch (F-04 — verify in DevTools that the single PATCH /api/brands/:id/status response is 2xx) → all 4 Slack command channels (strategy, PR, design, approvals) receive their respective F-10-formatted messages.
+16. F-21 server-side freeze: in DevTools console, on the approved brand, fire `apiPut('/api/brands/<approved-id>', { currentStep: 4 })` → 409 with the descriptive "cannot be edited via wizard" error. Then attempt the same on the brand in `submitted` → 409 too. Then on a brand in `needs_revision` (during the PO-edit phase) → 200. Then on `draft` → 200.
+17. F-22 status cleanup: confirm the admin SPA's `BrandsView` tabs are `All / Draft / Submitted / Needs Revision / Approved` (no "Rejected" tab); the constructor's review header badge shows no "rejected" branch.
+18. Logout / login cycle one more time at the end on both SPAs to confirm the cookie clear-then-set roundtrip is clean.
+
+### Rollback plan
+
+If anything breaks after the worker deploy (step 1) and before SPA deploys (step 2):
+- The worker is fully backward-compatible (Bearer fallback). Old SPA bundles continue working as if F-05 didn't ship.
+- Revert is `git revert` of the F-05 worker commit + redeploy worker. No data migration needed (cookies expire naturally; no DB schema changes were made).
+
+If something breaks after the SPA deploys:
+- The Pages Function proxy can be disabled by reverting `.env.production` to `VITE_API_URL=https://brand-constructor-api-production.upstars-landings.workers.dev` and rebuilding/redeploying. The SPA then talks to the worker directly (cross-origin); cookies stop flowing in Safari but Bearer-via-`Authorization` would no longer work either (post-F-05 SPA doesn't store tokens in localStorage). Users would need to re-login each tab/session in Safari until rollback completes. Chrome / Firefox would continue to work via cross-site cookies (less secure but functional). Realistically, fix-forward (a small patch to the proxy) is the safer path than a rollback at this layer.
+

@@ -1,8 +1,14 @@
 import { ref, type Ref } from 'vue';
-import { logSilent } from '@/utils/log';
+import { useAuthStore } from '@/stores/auth';
 import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-constructor/shared/types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// F-05: HTTP methods that do not require a CSRF token (no side effects).
+// Note: this set intentionally excludes TRACE / CONNECT — they are never
+// emitted by the SPA and would be blocked at the CORS preflight stage
+// anyway.
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 export function getAssetUrl(url: string | null | undefined): string {
   if (!url) return '';
@@ -10,30 +16,35 @@ export function getAssetUrl(url: string | null | undefined): string {
   return url;
 }
 
-export function getAuthHeader(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem('brand_constructor_auth');
-    if (!raw) return {};
-    const { token } = JSON.parse(raw) as { token: string };
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  } catch (err) {
-    logSilent('getAuthHeader', err);
-    return {};
-  }
-}
-
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const fullUrl = url.startsWith('/api') ? `${API_BASE}${url}` : url;
   const headers: Record<string, string> = {
-    ...getAuthHeader(),
     ...(options.headers as Record<string, string>),
   };
+
+  // F-05: attach the in-memory CSRF token for mutating requests. The token
+  // is server-derived (HMAC of the JWT cookie's sub+iat) and only the worker
+  // can verify it — see packages/worker/src/middleware/csrf.ts.
+  const method = (options.method || 'GET').toUpperCase();
+  if (!SAFE_METHODS.has(method)) {
+    try {
+      const auth = useAuthStore();
+      if (auth.csrfToken) headers['X-CSRF-Token'] = auth.csrfToken;
+    } catch {
+      // Pinia not yet initialised (e.g. the very first request fired during
+      // app bootstrap). The worker will reject with 403; the caller's normal
+      // error path will trigger a re-login.
+    }
+  }
 
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(fullUrl, { ...options, headers });
+  // F-05: `credentials: 'include'` is required for the HttpOnly auth cookie
+  // to flow on both same-origin (Pages → Pages Function proxy) and direct
+  // cross-origin (workers.dev) requests.
+  const response = await fetch(fullUrl, { ...options, credentials: 'include', headers });
   const json = await response.json();
 
   if (!response.ok) {
