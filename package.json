@@ -1,0 +1,33 @@
+{
+  "name": "brand-constructor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Brand Constructor - Admin Panel + Constructor для створення брендів",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "dev:admin": "pnpm --filter @brand-constructor/admin dev",
+    "dev:constructor": "pnpm --filter @brand-constructor/constructor dev",
+    "dev:worker": "pnpm --filter @brand-constructor/worker dev",
+    "build:admin": "pnpm --filter @brand-constructor/admin build",
+    "build:constructor": "pnpm --filter @brand-constructor/constructor build",
+    "build:worker": "pnpm --filter @brand-constructor/worker build",
+    "deploy": "turbo run build && pnpm deploy:worker:production && cd packages/admin && npx wrangler pages deploy dist --project-name brand-constructor",
+    "deploy:constructor": "pnpm build:constructor && cd packages/constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
+    "deploy:worker:production": "pnpm --filter @brand-constructor/worker run deploy:production",
+    "deploy:all": "turbo run build && pnpm deploy:worker:production && cd packages/admin && npx wrangler pages deploy dist --project-name brand-constructor && cd ../constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
+    "db:migrate": "pnpm --filter @brand-constructor/worker db:migrate",
+    "db:seed": "pnpm --filter @brand-constructor/worker db:seed",
+    "slack:cleanup": "node scripts/cleanup-slack-bot-messages.mjs",
+    "slack:cleanup:dry": "DRY_RUN=true node scripts/cleanup-slack-bot-messages.mjs"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

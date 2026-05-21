@@ -1,0 +1,39 @@
+node_modules/
+dist/
+.turbo/
+.wrangler/
+.dev.vars
+*.local
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cloudflare
+.mf/
+# NOTE: packages/worker/wrangler.toml IS tracked on purpose. It contains only
+# non-sensitive identifiers (D1 database_id, Google OAuth client_id, public
+# bucket/URL names). All real secrets (JWT_SECRET, SLACK_BOT_TOKEN,
+# PANANAMES_SIGNATURE, GOOGLE_CLIENT_SECRET) live as encrypted Cloudflare
+# Secrets — never in this file. account_id is intentionally omitted.
+
+# Accidental shell-redirect artefacts at repo root
+/brand-constructor@*
+/turbo
+
+# Local maintenance backups (created by ad-hoc safety scripts)
+/.git.bak-*
+
