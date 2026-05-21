@@ -3,15 +3,6 @@ import { ref, computed } from 'vue'
 import type { User, UserRole } from '@brand-constructor/shared'
 import { ADMIN_ROLES, LIBRARY_WRITE_PERMISSIONS } from '@brand-constructor/shared'
 
-// F-05: one-off cleanup of the pre-F-05 localStorage JWT — see constructor
-// stores/auth.ts for the full rationale.
-const LEGACY_STORAGE_KEY = 'brand_constructor_auth'
-try {
-  localStorage.removeItem(LEGACY_STORAGE_KEY)
-} catch {
-  // harmless
-}
-
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   // F-05: CSRF token issued by the worker, kept only in memory; forwarded

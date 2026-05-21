@@ -38,32 +38,13 @@ export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
       return next()
     }
 
-    // Production: HttpOnly cookie is the canonical credential source post-F-05.
-    // Authorization: Bearer is kept as a temporary fallback so SPA bundles
-    // shipped before the cookie migration (still cached in users' tabs)
-    // continue to work for the remainder of their localStorage JWT lifetime
-    // (up to 24h). Remove this fallback in a follow-up commit once we are
-    // confident no pre-F-05 clients remain.
-    let token: string | null = null
-    let authMethod: 'cookie' | 'bearer' | null = null
-
+    // Production: HttpOnly cookie is the only credential source post-F-05.
     const cookieToken = getCookie(c, AUTH_COOKIE_NAME)
-    if (cookieToken) {
-      token = cookieToken
-      authMethod = 'cookie'
-    } else {
-      const authHeader = c.req.header('Authorization')
-      if (authHeader?.startsWith('Bearer ')) {
-        token = authHeader.substring(7)
-        authMethod = 'bearer'
-      }
-    }
-
-    if (!token || !authMethod) {
+    if (!cookieToken) {
       return c.json({ success: false, error: 'Unauthorized: missing token' }, 401)
     }
 
-    const payload = await verifyJWT(token, c.env.JWT_SECRET)
+    const payload = await verifyJWT(cookieToken, c.env.JWT_SECRET)
 
     if (!payload) {
       return c.json({ success: false, error: 'Unauthorized: invalid or expired token' }, 401)
@@ -79,7 +60,7 @@ export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
     }
 
     c.set('user', user)
-    c.set('authMethod', authMethod)
+    c.set('authMethod', 'cookie')
     c.set('jwtIat', payload.iat)
     return next()
   }

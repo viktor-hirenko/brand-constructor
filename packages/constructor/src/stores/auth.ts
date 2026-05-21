@@ -3,17 +3,6 @@ import { ref, computed } from 'vue';
 import { isBrandBriefCreatorRole } from '@brand-constructor/shared';
 import type { User } from '@brand-constructor/shared/types';
 
-// F-05: one-off cleanup of the pre-F-05 localStorage JWT. The new flow
-// keeps the token in an HttpOnly cookie and user info in Pinia only; the
-// legacy key is now dead. Safe to remove this block in a follow-up after
-// a release or two — `removeItem` on a missing key is a no-op.
-const LEGACY_STORAGE_KEY = 'brand_constructor_auth';
-try {
-  localStorage.removeItem(LEGACY_STORAGE_KEY);
-} catch {
-  // SSR / private mode — harmless
-}
-
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   // F-05: CSRF token derived server-side from the auth JWT. Kept in Pinia

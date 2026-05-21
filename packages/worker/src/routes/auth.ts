@@ -140,13 +140,6 @@ authRoutes.post('/google', async c => {
   return c.json({
     success: true,
     data: {
-      // F-05 backward compat: `token` is still returned in the body so that
-      // pre-F-05 SPA bundles cached in users' open tabs can keep authenticating
-      // via Authorization: Bearer for the remainder of their localStorage JWT
-      // lifetime. Post-F-05 SPAs ignore this field entirely (cookie is the
-      // source of truth). Remove together with the Bearer fallback in
-      // authMiddleware once we're confident no pre-F-05 clients remain.
-      token,
       user: { id: user.id, email: user.email, name: displayName, role: user.role },
       csrfToken,
     },

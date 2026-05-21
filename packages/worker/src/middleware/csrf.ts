@@ -5,15 +5,10 @@ import { createCsrfToken, timingSafeEqual } from '../utils/csrf'
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 // F-05: CSRF middleware. Runs AFTER authMiddleware (so `user`, `authMethod`,
-// `jwtIat` are already populated on the context). Skip rules, in order:
+// `jwtIat` are already populated on the context). Skip rules:
 //   1) Safe methods (GET/HEAD/OPTIONS) — no body, no side effects.
 //   2) Dev mode (authMethod === 'dev') — no real JWT, no cookies, header
 //      auth via X-Dev-User-Email; CSRF is meaningless here.
-//   3) Legacy Bearer-token clients (authMethod === 'bearer') — pre-F-05 SPA
-//      bundles still in users' open tabs. They don't know about CSRF tokens.
-//      Their auth is also XSS-vulnerable (token in localStorage) so adding
-//      CSRF on top would be security-theater. To be removed in a follow-up
-//      once Bearer support is dropped server-side.
 //
 // Cookie-authed clients (authMethod === 'cookie') always enforce.
 export const csrfMiddleware = createMiddleware<{ Bindings: Env; Variables: Variables }>(
@@ -22,7 +17,7 @@ export const csrfMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
     if (SAFE_METHODS.has(method)) return next()
 
     const authMethod = c.get('authMethod')
-    if (authMethod === 'dev' || authMethod === 'bearer') return next()
+    if (authMethod === 'dev') return next()
 
     if (authMethod !== 'cookie') {
       return c.json({ success: false, error: 'CSRF: no auth context' }, 403)
