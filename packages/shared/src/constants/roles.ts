@@ -41,6 +41,8 @@ export const BRAND_APPROVAL_ROLES = [
 export const BRAND_BRIEF_CREATOR_ROLES = [
   USER_ROLES.PRODUCT_OWNER,
   USER_ROLES.ADMIN,
+  USER_ROLES.HEAD_DHC,
+  USER_ROLES.CPO_CEO,
 ] as const;
 
 export function isBrandBriefCreatorRole(role: string): boolean {

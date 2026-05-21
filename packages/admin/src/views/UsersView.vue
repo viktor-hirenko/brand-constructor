@@ -127,7 +127,7 @@ async function confirmDelete() {
 
 <template>
   <div class="users-view">
-    <div v-if="!authStore.isAdmin" class="users-view__forbidden">
+    <div v-if="!authStore.isStrictAdmin" class="users-view__forbidden">
       Access denied. Admin role required.
     </div>
 

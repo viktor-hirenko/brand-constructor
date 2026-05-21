@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { ADMIN_ROLES } from '@brand-constructor/shared'
+import { USER_ROLES } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 
 function getRequiredRoles(
@@ -63,7 +63,7 @@ const router = createRouter({
       path: '/users',
       name: 'users',
       component: () => import('@/views/UsersView.vue'),
-      meta: { roles: [...ADMIN_ROLES] },
+      meta: { roles: [USER_ROLES.ADMIN] },
     },
     {
       path: '/:pathMatch(.*)*',

@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
 ]
 
 const visibleItems = computed(() =>
-  navItems.filter(item => !item.adminOnly || authStore.isAdmin)
+  navItems.filter(item => !item.adminOnly || authStore.isStrictAdmin)
 )
 
 function isActive(path: string): boolean {

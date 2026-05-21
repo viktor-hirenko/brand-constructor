@@ -19,6 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() =>
     user.value ? (ADMIN_ROLES as readonly string[]).includes(user.value.role) : false
   )
+  const isStrictAdmin = computed(() => user.value?.role === 'admin')
 
   function canWriteLibrary(library: string): boolean {
     if (!user.value) return false
@@ -102,6 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     isAdmin,
+    isStrictAdmin,
     canWriteLibrary,
     loginWithGoogle,
     logout,
