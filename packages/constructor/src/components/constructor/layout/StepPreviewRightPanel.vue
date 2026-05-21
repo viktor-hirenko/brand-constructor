@@ -2,17 +2,16 @@
 /**
  * Right-column preview panel for wizard steps 1, 2, 3/4, 7 and 8.
  *
- * Extracted from ConstructorLayout.vue (F-07) so the layout shell can focus on
- * mode-routing while this component owns the per-step visual previews.
- *
- * The outer 58%-width wrapper (with bg + scroll + padding) is kept inside the
- * component so the parent only needs to render `<StepPreviewRightPanel ... />`
- * in place of the legacy `v-else-if="!isFullWidth"` branch.
+ * Owns the per-step visual previews so `ConstructorLayout` can focus on
+ * mode-routing (CEO finalize / PO returned / approved / draft / etc.).
+ * The outer 58%-width wrapper (background, scroll, padding) is encapsulated
+ * inside this component, so parents render a single `<StepPreviewRightPanel>`
+ * in the non-full-width branch of the layout.
  */
 
 import { getAssetUrl } from '@/composables/useApi'
-import ConceptPreviewSlider from '@/components/constructor/ConceptPreviewSlider.vue'
-import ConceptMobilePreview from '@/components/constructor/ConceptMobilePreview.vue'
+import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
+import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import type { Concept, ExternalNaming, InternalNaming } from '@brand-constructor/shared/types'
 import type { PreviewLayer } from '@/composables/useBrandPreviewLayers'
 

@@ -87,8 +87,8 @@ status.patch('/:id/status', async c => {
   // Brand UPDATE columns shared across all status branches. The `approved`
   // branch later appends concept_id / external_naming_ids / internal_naming_id
   // and folds the whole UPDATE into a single atomic db.batch alongside the
-  // library marks (F-04). All other branches execute it as a standalone
-  // UPDATE here.
+  // library marks (see the approval block below). All other branches
+  // execute it as a standalone UPDATE here.
   const updates: string[] = ['status = ?', 'updated_at = ?']
   const values: (string | number | null)[] = [targetStatus, new Date().toISOString()]
 
@@ -226,16 +226,11 @@ status.patch('/:id/status', async c => {
   }
 
   if (targetStatus === 'approved') {
-    // F-04: status flip + library marks are now a single atomic db.batch.
-    // Previously the brand row UPDATE that flipped status to 'approved' ran
-    // before this block (line 107-109) and library marks ran in a separate
-    // batch below. If the marks batch failed (network blip, D1 transient
-    // error) the brand was already 'approved' but the concept/external/
-    // internal/pr_package rows were still 'available' — the same library
-    // element could be picked again for another brand.
-    //
-    // Now everything is one db.batch. D1 batch is all-or-nothing: on
-    // failure the brand stays in its current status and library elements
+    // The status flip and library `used` marks must be applied atomically:
+    // if the brand row flipped to `approved` while the library marks failed
+    // (network blip, D1 transient error), the same library element could
+    // be picked again for another brand. D1 `db.batch` is all-or-nothing,
+    // so on failure the brand stays in its current status and library rows
     // remain available. Slack is only enqueued AFTER the batch commits.
 
     const effectiveCeoSel: Record<string, string | string[]> = (() => {

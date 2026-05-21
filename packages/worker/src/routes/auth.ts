@@ -8,25 +8,7 @@ import { authMiddleware, AUTH_COOKIE_NAME } from '../middleware/auth'
 
 const authRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000
-const MAX_AUTH_ATTEMPTS = 5
 const TOKEN_LIFETIME_SEC = 24 * 60 * 60
-const attempts = new Map<string, { count: number; resetAt: number }>()
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const entry = attempts.get(ip)
-
-  if (!entry || now > entry.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-    return false
-  }
-
-  if (entry.count >= MAX_AUTH_ATTEMPTS) return true
-
-  entry.count++
-  return false
-}
 
 interface GoogleTokenInfo {
   email: string
@@ -38,12 +20,11 @@ interface GoogleTokenInfo {
   sub: string
 }
 
-// F-05: cookie attributes used both on login (set) and logout (clear).
-// `Secure` is disabled in development so the cookie still flows over plain
-// HTTP from `vite dev` → `wrangler dev`. The dev path of authMiddleware
-// short-circuits via X-Dev-User-Email anyway, so this only matters for
-// staging-style testing that exercises the real cookie flow against a
-// local worker.
+// Shared cookie attributes for login (set) and logout (clear). `Secure` is
+// disabled in development so the cookie still flows over plain HTTP from
+// `vite dev` → `wrangler dev`; this is the ONLY behavioural difference
+// driven by the ENVIRONMENT flag — cookie auth is the single auth path
+// everywhere.
 function authCookieOptions(c: Context<{ Bindings: Env; Variables: Variables }>) {
   const isDev = c.env.ENVIRONMENT === 'development'
   return {
@@ -57,8 +38,19 @@ function authCookieOptions(c: Context<{ Bindings: Env; Variables: Variables }>) 
 authRoutes.post('/google', async c => {
   const ip = c.req.header('CF-Connecting-IP') || 'unknown'
 
-  if (isRateLimited(ip)) {
-    return c.json({ success: false, error: 'Too many login attempts. Try again in 1 minute.' }, 429)
+  // Cloudflare Rate Limiting binding (configured under [env.production] in
+  // wrangler.toml). Counters live per Cloudflare PoP, which is acceptable
+  // here because brute-force traffic from a single IP is pinned to one edge.
+  // The binding is intentionally optional at the type level so `wrangler
+  // dev` without `--env production` boots without an edge limiter.
+  if (c.env.AUTH_RATE_LIMITER) {
+    const { success } = await c.env.AUTH_RATE_LIMITER.limit({ key: ip })
+    if (!success) {
+      return c.json(
+        { success: false, error: 'Too many login attempts. Try again in 1 minute.' },
+        429
+      )
+    }
   }
 
   let body: { credential?: string }
@@ -133,8 +125,8 @@ authRoutes.post('/google', async c => {
     c.env.JWT_SECRET
   )
 
-  // F-05: write the JWT into an HttpOnly Secure SameSite=Lax cookie so the
-  // SPA never holds it in JS-accessible memory or storage.
+  // The JWT lives only in an HttpOnly Secure SameSite=Lax cookie — the SPA
+  // never holds it in JS-accessible memory or storage.
   setCookie(c, AUTH_COOKIE_NAME, token, {
     ...authCookieOptions(c),
     maxAge: TOKEN_LIFETIME_SEC,
@@ -151,10 +143,10 @@ authRoutes.post('/google', async c => {
   })
 })
 
-// F-05: session-restore endpoint. Returns the current user (derived from the
+// Session-restore endpoint. Returns the current user (derived from the
 // HttpOnly cookie via authMiddleware) plus a fresh CSRF token. Called by the
-// SPA on every app boot to rehydrate Pinia state without trusting any
-// JS-accessible storage. Uses the per-route authMiddleware mount because
+// SPA on every boot to rehydrate Pinia state without trusting any
+// JS-accessible storage. Uses a per-route authMiddleware mount because
 // authRoutes is registered BEFORE the global app.use('/api/*', authMiddleware)
 // in index.ts (so /google and /logout remain public).
 authRoutes.get('/me', authMiddleware, async c => {
@@ -165,8 +157,8 @@ authRoutes.get('/me', authMiddleware, async c => {
 })
 
 authRoutes.post('/logout', c => {
-  // F-05: clear the HttpOnly cookie unconditionally (no auth required —
-  // logging out an unauthenticated request is a no-op for the browser).
+  // Clear the HttpOnly cookie unconditionally — no auth required, since
+  // logging out an unauthenticated request is a no-op for the browser.
   deleteCookie(c, AUTH_COOKIE_NAME, authCookieOptions(c))
   return c.json({ success: true, data: null })
 })

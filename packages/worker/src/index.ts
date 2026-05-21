@@ -57,11 +57,11 @@ app.get('/api/assets/:entityType/:entityId/:fileName', async c => {
 // Auth routes — public, no JWT required
 app.route('/api/auth', authRoutes)
 
-// All other /api/* routes require authentication.
-// F-05: CSRF middleware runs immediately after auth so it can read the
-// `authMethod` / `user` / `jwtIat` context variables set by authMiddleware.
-// CSRF is a no-op for safe methods, dev mode, and legacy Bearer-authed
-// requests (see middleware/csrf.ts for the skip rules).
+// All other /api/* routes require authentication. CSRF runs immediately
+// after auth so it can read the `authMethod` / `user` / `jwtIat` context
+// populated by authMiddleware. CSRF is a no-op for safe methods
+// (GET/HEAD/OPTIONS); every other method must carry a valid X-CSRF-Token —
+// see middleware/csrf.ts.
 app.use('/api/*', authMiddleware)
 app.use('/api/*', csrfMiddleware)
 

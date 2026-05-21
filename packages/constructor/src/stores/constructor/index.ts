@@ -32,11 +32,9 @@ export {
  * `loadBrand()` (delegates to per-slice `load*` methods) and `reset()`
  * (delegates to per-slice `resetSlice` methods).
  *
- * The public surface of `useConstructorStore` is preserved byte-for-byte —
- * all existing consumers continue to `import { useConstructorStore } from
- * '@/stores/constructor'`. The legacy `step10ScrollTop` / `setStep10ScrollTop`
- * pair was dropped (unused since F-06 PR #1 removed the scroll-restore
- * mechanism; flagged in F-06 notes as "eligible for cleanup under F-08").
+ * The public surface of `useConstructorStore` is preserved across the
+ * facade — all existing consumers continue to
+ * `import { useConstructorStore } from '@/stores/constructor'`.
  */
 export const useConstructorStore = defineStore('brand-constructor', () => {
   // ─── Compose slices in dependency order ────────────────────────────────────

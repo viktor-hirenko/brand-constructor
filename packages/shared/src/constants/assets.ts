@@ -15,16 +15,21 @@ export const ASSET_ENTITY_TYPES = {
   COMPONENT_THUMBNAIL: 'component_thumbnail',
 } as const
 
+// SVG is intentionally absent from the upload allow-list. SVG can carry
+// inline <script>, <foreignObject> and `on*` attributes, which turns
+// user-uploaded assets into a stored XSS vector that bypasses size /
+// dimension / aspect-ratio validation. The product flow never requires
+// vector uploads (concept visuals, galleries and component thumbnails are
+// raster screenshots), so the safe default is a hard ban. Re-introduce
+// only behind a server-side sanitizer (DOMPurify-equivalent or stricter).
 export const ASSET_FILE_TYPES = {
   PNG: 'png',
-  SVG: 'svg',
   JPG: 'jpg',
   WEBP: 'webp',
 } as const
 
 export const MAX_FILE_SIZES = {
   png: 10 * 1024 * 1024, // 10MB
-  svg: 2 * 1024 * 1024, // 2MB
   jpg: 10 * 1024 * 1024, // 10MB
   webp: 10 * 1024 * 1024, // 10MB
 } as const
@@ -98,7 +103,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
   {
     entity_type: 'concept_visual',
     asset_slot: 'visual',
-    allowed_types: ['png', 'svg'],
+    allowed_types: ['png', 'jpg', 'webp'],
     aspect_ratio: 0,
     aspect_ratio_tolerance: 0,
     min_width: 300,
@@ -109,7 +114,7 @@ export const ASSET_VALIDATION_RULES: AssetValidationRule[] = [
   {
     entity_type: 'component_thumbnail',
     asset_slot: 'thumbnail',
-    allowed_types: ['png', 'svg'],
+    allowed_types: ['png', 'jpg', 'webp'],
     aspect_ratio: 0,
     aspect_ratio_tolerance: 0.15,
     min_width: 200,

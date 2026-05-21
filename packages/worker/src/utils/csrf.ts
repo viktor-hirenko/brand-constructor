@@ -1,4 +1,4 @@
-// F-05: stateless CSRF token derivation.
+// Stateless CSRF token derivation.
 //
 // The token is an HMAC-SHA256 of the constant string `csrf:<sub>:<iat>`,
 // signed with JWT_SECRET. Because both inputs (the user id and the JWT

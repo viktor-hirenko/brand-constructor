@@ -40,7 +40,7 @@ app.post('/upload', async c => {
 
   if (!fileType) {
     return c.json(
-      { success: false, error: 'Unsupported file type. Allowed: PNG, SVG, JPEG, WebP.' },
+      { success: false, error: 'Unsupported file type. Allowed: PNG, JPEG, WebP.' },
       400
     )
   }

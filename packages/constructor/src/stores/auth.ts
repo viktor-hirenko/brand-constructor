@@ -5,12 +5,12 @@ import type { User } from '@brand-constructor/shared/types';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
-  // F-05: CSRF token derived server-side from the auth JWT. Kept in Pinia
-  // only (never localStorage), refreshed on every /api/auth/me response, and
+  // CSRF token derived server-side from the auth JWT. Kept in Pinia only
+  // (never localStorage), refreshed on every /api/auth/me response, and
   // forwarded by useApi as `X-CSRF-Token` on mutating requests.
   const csrfToken = ref<string | null>(null);
   const loading = ref(false);
-  // F-05: set to true once `fetchCurrentUser` has resolved at least once,
+  // Set to `true` once `fetchCurrentUser` has resolved at least once,
   // regardless of whether the user turned out to be authenticated. Router
   // guards must wait for this before deciding to redirect to /login —
   // otherwise an authenticated user reloading the page would briefly see a
@@ -60,10 +60,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
-    // F-23: clear local auth state BEFORE the network call. There is no
-    // Sign-out UI in the constructor SPA today, but Option B from the
-    // tracker keeps both stores symmetric so the same router-guard race
-    // condition cannot re-appear if a Sign-out button is added later.
+    // Clear local auth state BEFORE the network call so that any synchronous
+    // router navigation triggered afterwards sees `isAuthenticated === false`.
+    // There is no Sign-out UI in the constructor SPA today, but the two
+    // auth stores are kept symmetric on purpose so a future Sign-out button
+    // here cannot re-introduce the router-guard race fixed in the admin SPA.
     user.value = null;
     csrfToken.value = null;
     try {

@@ -21,6 +21,12 @@ const JPEG_MAGIC = [0xff, 0xd8, 0xff]
 const RIFF_MAGIC = [0x52, 0x49, 0x46, 0x46] // "RIFF"
 const WEBP_MAGIC = [0x57, 0x45, 0x42, 0x50] // "WEBP"
 
+// SVG detection is intentionally absent. SVG can carry inline scripts and
+// would also bypass the dimension / aspect-ratio checks below, so anything
+// that looks like SVG / XML falls through to the `null` return and is
+// rejected by routes/assets.ts as "Unsupported file type. Allowed: PNG,
+// JPEG, WebP." See packages/shared/src/constants/assets.ts for the rationale
+// behind the allow-list.
 export function detectFileType(buffer: ArrayBuffer): AssetFileType | null {
   const bytes = new Uint8Array(buffer)
 
@@ -38,11 +44,6 @@ export function detectFileType(buffer: ArrayBuffer): AssetFileType | null {
     WEBP_MAGIC.every((b, i) => bytes[i + 8] === b)
   ) {
     return ASSET_FILE_TYPES.WEBP
-  }
-
-  const text = new TextDecoder().decode(bytes.slice(0, 256))
-  if (text.includes('<svg') || text.includes('<?xml')) {
-    return ASSET_FILE_TYPES.SVG
   }
 
   return null
@@ -164,10 +165,6 @@ export function validateAsset(
     const maxMb = (rule.max_file_size / (1024 * 1024)).toFixed(0)
     const actualMb = (fileSize / (1024 * 1024)).toFixed(2)
     errors.push(`File too large: ${actualMb}MB (max ${maxMb}MB)`)
-  }
-
-  if (fileType === 'svg') {
-    return { valid: errors.length === 0, errors }
   }
 
   if (!meta) {

@@ -4,21 +4,17 @@ import { createCsrfToken, timingSafeEqual } from '../utils/csrf'
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
-// F-05: CSRF middleware. Runs AFTER authMiddleware (so `user`, `authMethod`,
-// `jwtIat` are already populated on the context). Skip rules:
-//   1) Safe methods (GET/HEAD/OPTIONS) — no body, no side effects.
-//   2) Dev mode (authMethod === 'dev') — no real JWT, no cookies, header
-//      auth via X-Dev-User-Email; CSRF is meaningless here.
-//
-// Cookie-authed clients (authMethod === 'cookie') always enforce.
+// CSRF middleware. Runs AFTER authMiddleware so `user`, `authMethod` and
+// `jwtIat` are already populated on the context. Safe methods
+// (GET/HEAD/OPTIONS) are skipped — they have no body and no side effects.
+// Every other request must carry a valid X-CSRF-Token header derived from
+// the auth cookie (see utils/csrf.ts for the derivation rationale).
 export const csrfMiddleware = createMiddleware<{ Bindings: Env; Variables: Variables }>(
   async (c, next) => {
     const method = c.req.method.toUpperCase()
     if (SAFE_METHODS.has(method)) return next()
 
     const authMethod = c.get('authMethod')
-    if (authMethod === 'dev') return next()
-
     if (authMethod !== 'cookie') {
       return c.json({ success: false, error: 'CSRF: no auth context' }, 403)
     }

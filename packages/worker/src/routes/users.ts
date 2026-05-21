@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { Env, Variables } from '../types';
-import { requireAdmin } from '../middleware/auth';
+import { requireAdminOnly } from '../middleware/auth';
 import { USER_ROLES } from '@brand-constructor/shared';
 import { generateId } from '../utils/id';
 
@@ -35,7 +35,7 @@ app.get('/me', async (c) => {
   return c.json({ success: true, data: user });
 });
 
-app.get('/', requireAdmin, async (c) => {
+app.get('/', requireAdminOnly, async (c) => {
   const users = await c.env.DB.prepare(
     'SELECT id, email, name, role, created_at FROM users ORDER BY created_at ASC'
   ).all();
@@ -43,7 +43,7 @@ app.get('/', requireAdmin, async (c) => {
   return c.json({ success: true, data: users.results });
 });
 
-app.post('/', requireAdmin, async (c) => {
+app.post('/', requireAdminOnly, async (c) => {
   const body = await c.req.json();
   const parsed = createUserSchema.safeParse(body);
 
@@ -65,7 +65,7 @@ app.post('/', requireAdmin, async (c) => {
   return c.json({ success: true, data: user }, 201);
 });
 
-app.delete('/:id', requireAdmin, async (c) => {
+app.delete('/:id', requireAdminOnly, async (c) => {
   const id = c.req.param('id');
   const currentUser = c.get('user');
 
@@ -82,7 +82,7 @@ app.delete('/:id', requireAdmin, async (c) => {
   return c.json({ success: true, data: { deleted: true } });
 });
 
-app.put('/:id', requireAdmin, async (c) => {
+app.put('/:id', requireAdminOnly, async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
   const parsed = updateUserSchema.safeParse(body);

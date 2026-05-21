@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Slack notification renderer (declarative section-based, F-10).
+// Slack notification renderer (declarative, section-based).
 //
 // Each public `build*Message` function returns a `SlackMessage` whose body is
 // rendered from a flat list of `Section` records. Sections are atomic units

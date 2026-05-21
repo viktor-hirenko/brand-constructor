@@ -1,3 +1,10 @@
+// Pananames domain-availability integration. Used both by the live
+// admin-modal preview (single-domain check, request-time) and by the daily
+// scheduled batch that refreshes external naming rows. Network/HTTP errors
+// are logged and surfaced as `null` rather than thrown — callers treat a
+// missing result as "unknown / unavailable" so a transient registry outage
+// never breaks the calling endpoint or the cron job.
+
 import type { Env } from '../types'
 
 interface PananamesPrices {

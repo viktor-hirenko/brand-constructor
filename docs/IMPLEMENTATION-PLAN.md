@@ -63,7 +63,7 @@ brand-constructor/
 │       ├── v2-future-enhancements.md
 │       └── assets/              # Flow-діаграми з FigJam
 ├── packages/
-│   ├── frontend/                # Vue 3 + Vite адмін-панель
+│   ├── admin/                   # Vue 3 + Vite адмін-панель
 │   │   ├── src/
 │   │   │   ├── assets/
 │   │   │   ├── components/ui/

@@ -8,7 +8,7 @@ import type {
   PrPackage,
 } from '@brand-constructor/shared/types'
 import type { ComponentSelectionDetails } from '@/composables/useReviewComponentSelections'
-import SectionCommentBlock from '@/components/constructor/SectionCommentBlock.vue'
+import SectionCommentBlock from '@/components/constructor/fields/SectionCommentBlock.vue'
 import ReviewHeader from '@/components/constructor/review/ReviewHeader.vue'
 import ReviewSection from '@/components/constructor/review/ReviewSection.vue'
 import ReviewSectionRow from '@/components/constructor/review/ReviewSectionRow.vue'

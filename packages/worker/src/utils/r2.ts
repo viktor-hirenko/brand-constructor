@@ -9,9 +9,9 @@ export function buildR2Key(
 }
 
 export function getContentType(fileType: AssetFileType): string {
+  // SVG is intentionally absent — see packages/shared/src/constants/assets.ts.
   const map: Record<string, string> = {
     png: 'image/png',
-    svg: 'image/svg+xml',
     jpg: 'image/jpeg',
     webp: 'image/webp',
   }

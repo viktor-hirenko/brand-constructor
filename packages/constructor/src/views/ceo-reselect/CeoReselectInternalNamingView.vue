@@ -1,0 +1,135 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useConstructorStore } from '@/stores/constructor'
+import { useApiList } from '@/composables/useApi'
+import type { InternalNaming } from '@brand-constructor/shared/types'
+import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
+import CustomerInternalNamingPreview from '@/components/constructor/ceo-reselect/CustomerInternalNamingPreview.vue'
+import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
+import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+
+const store = useConstructorStore()
+const route = useRoute()
+const router = useRouter()
+
+const brandId = computed(() => route.params.id as string)
+
+const {
+  data: namings,
+  loading,
+  error,
+  fetchData,
+  perPage,
+} = useApiList<InternalNaming>('/api/namings/internal')
+
+const stagedId = computed(() => store.ceoReselectDraft.internalNamingId)
+
+const primaryDisabled = computed(() => !stagedId.value)
+
+const poInternalId = computed(() => store.stepData.internalNaming.selectedId)
+
+const poInternalName = computed<string | null>(() => {
+  const id = poInternalId.value
+  if (!id) return store.stepData.internalNaming.newNamingFeedback || null
+  const naming = namings.value.find(n => n.id === id)
+  return naming?.name ?? null
+})
+
+const availableNamings = computed(() =>
+  namings.value.filter(n => n.id !== poInternalId.value)
+)
+
+async function loadNamings() {
+  perPage.value = 100
+  const params: Record<string, string> = { status: 'active', per_page: '100' }
+  if (store.brandId) {
+    params.available_for_brand = store.brandId
+  }
+  await fetchData(params)
+}
+
+onMounted(async () => {
+  store.seedCeoReselectFromBrand('internalNaming')
+  await loadNamings()
+})
+
+function handleSelect(id: string) {
+  store.setCeoReselectInternalNaming(id)
+}
+
+function goCancel() {
+  router.push(`/constructor/brand/${brandId.value}`)
+}
+
+async function goSave() {
+  const id = stagedId.value
+  if (!id) return
+  const ok = await store.saveCeoSelections({ internalNaming: id })
+  if (ok) {
+    router.push(`/constructor/brand/${brandId.value}`)
+  }
+}
+
+const internalComment = computed({
+  get: () => store.brandCeoComments?.internalNaming?.value ?? '',
+  set: (value: string) => store.setCeoCommentValue('internalNaming', value),
+})
+</script>
+
+<template>
+  <EditFlowStepShell
+    class="ceo-reselect-internal-naming-step"
+    title="Internal Naming"
+    subtitle="Оберіть назву для внутрішньої комунікації команди."
+  >
+    <CustomerInternalNamingPreview :name="poInternalName" />
+
+    <div
+      class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+      aria-hidden="true"
+    />
+
+    <div v-if="loading" class="flex items-center justify-center py-16">
+      <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
+    </div>
+    <div v-else-if="error" class="text-center py-12 text-red-500">
+      <p class="mb-3">{{ error }}</p>
+      <button type="button" class="text-primary underline text-sm" @click="loadNamings">
+        Спробувати знову
+      </button>
+    </div>
+    <template v-else>
+      <div class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
+        <InternalNamingGrid
+          :namings="availableNamings"
+          :selected-id="stagedId"
+          @select="handleSelect"
+        />
+      </div>
+    </template>
+
+    <StepCommentField
+      v-model="internalComment"
+      label="Коментар СЕО"
+      placeholder="Додайте коментар СЕО..."
+    />
+
+    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+      {{ store.saveCeoSelectionsError }}
+    </p>
+
+    <template #footer>
+      <EditFlowFooter
+        cancel-label="Скасувати"
+        primary-label="Зберегти"
+        :primary-disabled="primaryDisabled"
+        @cancel="goCancel"
+        @primary="goSave"
+      />
+    </template>
+  </EditFlowStepShell>
+</template>

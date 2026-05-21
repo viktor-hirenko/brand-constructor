@@ -1,3 +1,8 @@
+// Minimal HS256 JWT issuer/verifier built on Web Crypto so the worker has no
+// dependency on Node-only libraries (`jsonwebtoken`, `jose`) that don't run
+// inside the Workers runtime. Only the shape required by this app is
+// supported — there is no claim-set extensibility on purpose.
+
 export interface JWTPayload {
   sub: string
   email: string

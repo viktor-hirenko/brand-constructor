@@ -4,10 +4,9 @@ import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-cons
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
-// F-05: HTTP methods that do not require a CSRF token (no side effects).
-// Note: this set intentionally excludes TRACE / CONNECT — they are never
-// emitted by the SPA and would be blocked at the CORS preflight stage
-// anyway.
+// HTTP methods that do not require a CSRF token (no side effects).
+// TRACE / CONNECT are intentionally excluded — they are never emitted by
+// the SPA and would be blocked at the CORS preflight stage anyway.
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 export function getAssetUrl(url: string | null | undefined): string {
@@ -22,8 +21,8 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     ...(options.headers as Record<string, string>),
   };
 
-  // F-05: attach the in-memory CSRF token for mutating requests. The token
-  // is server-derived (HMAC of the JWT cookie's sub+iat) and only the worker
+  // Attach the in-memory CSRF token for mutating requests. The token is
+  // server-derived (HMAC of the JWT cookie's sub+iat) and only the worker
   // can verify it — see packages/worker/src/middleware/csrf.ts.
   const method = (options.method || 'GET').toUpperCase();
   if (!SAFE_METHODS.has(method)) {
@@ -41,8 +40,8 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     headers['Content-Type'] = 'application/json';
   }
 
-  // F-05: `credentials: 'include'` is required for the HttpOnly auth cookie
-  // to flow on both same-origin (Pages → Pages Function proxy) and direct
+  // `credentials: 'include'` is required for the HttpOnly auth cookie to
+  // flow on both same-origin (Pages → Pages Function proxy) and direct
   // cross-origin (workers.dev) requests.
   const response = await fetch(fullUrl, { ...options, credentials: 'include', headers });
   const json = await response.json();

@@ -71,8 +71,8 @@ export interface UpdatableField {
 
 /**
  * Whitelist of fields the wizard `PUT /:id` handler may write. Anything not
- * listed here is silently ignored (F-18 hardening — clients can no longer push
- * arbitrary columns through the wizard endpoint).
+ * listed here is silently ignored, so clients cannot push arbitrary columns
+ * through the wizard endpoint.
  */
 export const UPDATABLE_FIELDS: UpdatableField[] = [
   { key: 'internalName',         column: 'internal_name',          transform: 'nullish'       },
@@ -168,8 +168,7 @@ export function parseCeoCommentsFromRow(raw: string | null): BrandCeoComments | 
 
 /**
  * Flattens `BrandCeoComments` to `Record<string, string>` for downstream
- * consumers (Slack notifications, audit log) that don't care about resolved
- * state.
+ * consumers (e.g. Slack notifications) that don't need the resolved state.
  */
 export function flattenCeoCommentsToValues(
   comments: BrandCeoComments | null

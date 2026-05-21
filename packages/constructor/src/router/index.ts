@@ -57,13 +57,13 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'brand-view-review',
-        component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
+        component: () => import('@/views/steps/ReviewSubmitView.vue'),
         meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
       },
       {
         path: 'ceo-reselect/concept',
         name: 'ceo-reselect-concept',
-        component: () => import('@/views/ceo-reselect/CeoReselectConceptStep.vue'),
+        component: () => import('@/views/ceo-reselect/CeoReselectConceptView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -76,7 +76,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'ceo-reselect/concept/external-naming',
         name: 'ceo-reselect-concept-external-naming',
-        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingStep.vue'),
+        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -89,7 +89,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'ceo-reselect/external-naming',
         name: 'ceo-reselect-external-naming',
-        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingStep.vue'),
+        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -102,7 +102,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'ceo-reselect/internal-naming',
         name: 'ceo-reselect-internal-naming',
-        component: () => import('@/views/ceo-reselect/CeoReselectInternalNamingStep.vue'),
+        component: () => import('@/views/ceo-reselect/CeoReselectInternalNamingView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -237,13 +237,13 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/1',
         name: 'step-1',
-        component: () => import('@/views/steps/Step1BrandBasics.vue'),
+        component: () => import('@/views/steps/BrandBasicsView.vue'),
         meta: { step: 1, title: 'Brand Basics', subtitle: 'GEO та опис' },
       },
       {
         path: 'step/2',
         name: 'step-2',
-        component: () => import('@/views/steps/Step3ConceptSelection.vue'),
+        component: () => import('@/views/steps/ConceptSelectionView.vue'),
         meta: {
           step: 2,
           title: 'Concept Selection',
@@ -253,7 +253,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/3',
         name: 'step-3',
-        component: () => import('@/views/steps/Step4ExternalNaming.vue'),
+        component: () => import('@/views/steps/ExternalNamingView.vue'),
         meta: {
           step: 3,
           title: 'External Naming',
@@ -263,7 +263,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/4',
         name: 'step-4',
-        component: () => import('@/views/steps/Step5InternalNaming.vue'),
+        component: () => import('@/views/steps/InternalNamingView.vue'),
         meta: {
           step: 4,
           title: 'Internal Naming',
@@ -273,25 +273,25 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/5',
         name: 'step-5',
-        component: () => import('@/views/steps/Step7MarketingPackage.vue'),
+        component: () => import('@/views/steps/MarketingPackageView.vue'),
         meta: { step: 5, title: 'Marketing Package', subtitle: 'PR пакет для запуску' },
       },
       {
         path: 'step/6',
         name: 'step-6',
-        component: () => import('@/views/steps/Step8Deliverables.vue'),
+        component: () => import('@/views/steps/DeliverablesView.vue'),
         meta: { step: 6, title: 'Deliverables', subtitle: 'Додаткові опції' },
       },
       {
         path: 'step/7',
         name: 'step-7',
-        component: () => import('@/views/steps/Step9VisualComponents.vue'),
+        component: () => import('@/views/steps/VisualComponentsView.vue'),
         meta: { step: 7, title: 'Visual Components ⭐', subtitle: 'Візуальні компоненти' },
       },
       {
         path: 'step/8',
         name: 'step-8',
-        component: () => import('@/views/steps/Step10ReviewSubmit.vue'),
+        component: () => import('@/views/steps/ReviewSubmitView.vue'),
         meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
       },
     ],
@@ -323,8 +323,8 @@ router.beforeEach(async to => {
 
   const authStore = useAuthStore()
 
-  // F-24: wait for the first /api/auth/me to settle before deciding whether
-  // to redirect. See packages/frontend/src/router/index.ts for the full
+  // Wait for the first /api/auth/me to settle before deciding whether to
+  // redirect. See packages/admin/src/router/index.ts for the full
   // rationale — same race between Vue Router's initial navigation and the
   // `await fetchCurrentUser()` in main.ts.
   if (!authStore.initialized) {

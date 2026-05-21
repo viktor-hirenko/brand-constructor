@@ -12,6 +12,11 @@ export interface Env {
   SLACK_CHANNEL_DESIGN: string
   SLACK_CHANNEL_APPROVALS: string
   PANANAMES_SIGNATURE: string
+  // Cloudflare Rate Limiting binding. Defined only under [env.production]
+  // in wrangler.toml, so it is optional at the type level — `wrangler dev`
+  // without `--env production` boots without it. Consumers must tolerate
+  // `undefined` (e.g. routes/auth.ts skips the gate locally).
+  AUTH_RATE_LIMITER?: RateLimit
 }
 
 export interface AuthUser {
@@ -23,12 +28,14 @@ export interface AuthUser {
 
 export type Variables = {
   user: AuthUser
-  // F-05: how the current request was authenticated. `cookie` is the
-  // production path; `dev` is the local X-Dev-User-Email shortcut.
-  authMethod: 'cookie' | 'dev'
-  // F-05: JWT `iat` of the auth cookie used for this request — re-used by
+  // How the current request was authenticated. Cookie is the only path on
+  // every environment (local development logs in through the same Google
+  // OAuth flow as production); kept as a discriminated value so middleware
+  // and CSRF can assert the auth context explicitly.
+  authMethod: 'cookie'
+  // JWT `iat` of the auth cookie used for this request — re-used by
   // csrfMiddleware to deterministically derive the expected X-CSRF-Token
-  // without any per-session state. Undefined for `dev` (no JWT) and for
-  // requests that did not yet pass authMiddleware.
+  // without any per-session state. Undefined for requests that have not yet
+  // passed authMiddleware.
   jwtIat?: number
 }

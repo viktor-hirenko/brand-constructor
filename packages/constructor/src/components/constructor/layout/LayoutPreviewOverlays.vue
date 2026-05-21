@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useLibrariesStore } from '@/stores/libraries'
-import ConceptPreviewPopup from '@/components/constructor/ConceptPreviewPopup.vue'
-import PrPackagePreviewPopup from '@/components/constructor/PrPackagePreviewPopup.vue'
+import ConceptPreviewPopup from '@/components/constructor/preview/ConceptPreviewPopup.vue'
+import PrPackagePreviewPopup from '@/components/constructor/preview/PrPackagePreviewPopup.vue'
 
 const store = useConstructorStore()
 const librariesStore = useLibrariesStore()

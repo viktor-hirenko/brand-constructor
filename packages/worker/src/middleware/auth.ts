@@ -4,41 +4,15 @@ import type { Env, Variables } from '../types'
 import { LIBRARY_WRITE_PERMISSIONS, ADMIN_ROLES } from '@brand-constructor/shared'
 import { verifyJWT } from '../utils/jwt'
 
-// F-05: cookie name shared between authRoutes (setCookie) and authMiddleware
+// Cookie name shared between authRoutes (setCookie) and authMiddleware
 // (getCookie). HttpOnly + Secure + SameSite=Lax — see routes/auth.ts.
 export const AUTH_COOKIE_NAME = 'auth_token'
 
+// Cookie-based auth is the only path in every environment, including local
+// `wrangler dev`. Local development logs in through the same Google OAuth
+// flow used in production (/api/auth/google).
 export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Variables }>(
   async (c, next) => {
-    const env = c.env.ENVIRONMENT
-
-    if (env === 'development') {
-      const devEmail = c.req.header('X-Dev-User-Email')
-
-      let user
-      if (devEmail) {
-        user = await c.env.DB.prepare('SELECT id, email, name, role FROM users WHERE email = ?')
-          .bind(devEmail)
-          .first()
-      } else {
-        user = await c.env.DB.prepare(
-          "SELECT id, email, name, role FROM users WHERE role = 'admin' ORDER BY created_at ASC LIMIT 1"
-        ).first()
-      }
-
-      if (!user) {
-        return c.json(
-          { success: false, error: 'No admin user found. Run seed or create one.' },
-          401
-        )
-      }
-
-      c.set('user', user as { id: string; email: string; name: string; role: string })
-      c.set('authMethod', 'dev')
-      return next()
-    }
-
-    // Production: HttpOnly cookie is the only credential source post-F-05.
     const cookieToken = getCookie(c, AUTH_COOKIE_NAME)
     if (!cookieToken) {
       return c.json({ success: false, error: 'Unauthorized: missing token' }, 401)
@@ -87,6 +61,20 @@ export const requireAdmin = createMiddleware<{ Bindings: Env; Variables: Variabl
     const user = c.get('user')
     if (!(ADMIN_ROLES as readonly string[]).includes(user.role)) {
       return c.json({ success: false, error: 'Forbidden: admin access required' }, 403)
+    }
+    return next()
+  }
+)
+
+// Strict admin-only guard for /users CRUD routes. User management (including
+// the ability to mutate other admins) is restricted to role === 'admin'.
+// `requireAdmin` above is intentionally broader (admin + head_dhc) and is
+// used for shared admin surfaces such as brand approval and library writes.
+export const requireAdminOnly = createMiddleware<{ Bindings: Env; Variables: Variables }>(
+  async (c, next) => {
+    const user = c.get('user')
+    if (user.role !== 'admin') {
+      return c.json({ success: false, error: 'Forbidden: only admin can manage users' }, 403)
     }
     return next()
   }
