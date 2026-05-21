@@ -1,6 +1,10 @@
 import { computed, ref, type ComputedRef } from 'vue'
 import type { Router } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
+import {
+  readSelectionAsString as ceoSelectionAsString,
+  readSelectionAsArray as ceoSelectionAsArray,
+} from '@/stores/constructor/selectionHelpers'
 import type {
   Concept,
   ExternalNaming,
@@ -76,17 +80,8 @@ export function useCeoApplyVariants(opts: UseCeoApplyVariantsOptions) {
 
   // ─── Pure helpers ─────────────────────────────────────────────────────────
 
-  function ceoSelectionAsString(value: string | string[] | undefined): string | null {
-    if (typeof value === 'string') return value || null
-    if (Array.isArray(value)) return value[0] ?? null
-    return null
-  }
-
-  function ceoSelectionAsArray(value: string | string[] | undefined): string[] {
-    if (Array.isArray(value)) return value
-    if (typeof value === 'string' && value) return [value]
-    return []
-  }
+  // ceoSelectionAsString / ceoSelectionAsArray are imported from selectionHelpers
+  // (aliased to keep the public return API of this composable unchanged).
 
   /**
    * PDF generator (`usePrintBrand`) expects `Record<string, string>` —
