@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore, CEO_RESELECT_EXTERNAL_NAMING_LIMIT } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
+import { usePoEditSnapshot } from '@/composables/usePoEditSnapshot'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
 import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
@@ -14,6 +15,8 @@ const route = useRoute()
 const router = useRouter()
 
 const brandId = computed(() => route.params.id as string)
+
+const snapshot = usePoEditSnapshot(brandId)
 
 /**
  * chained    = coming from concept edit (concept was just changed)
@@ -61,12 +64,8 @@ const poOriginalNamings = computed(() =>
   namings.value.filter(n => poOriginalPickIds.value.includes(n.id)),
 )
 
-function getPendingConceptKey() {
-  return `po_edit_pending_concept_${brandId.value}`
-}
-
 function restorePendingConceptFromSession() {
-  const pending = sessionStorage.getItem(getPendingConceptKey())
+  const pending = snapshot.loadPendingConcept()
   if (pending) {
     store.setConcept({ selectedId: pending, newConceptBrief: null })
   }
@@ -111,13 +110,11 @@ function handleToggle(id: string) {
 function goCancel() {
   if (isChained.value) {
     // Restore externalNaming from sessionStorage (saved before goDali cleared it).
-    const raw = sessionStorage.getItem(`po_edit_original_external_${brandId.value}`)
-    if (raw) {
-      try {
-        const ids: string[] = JSON.parse(raw)
-        store.setExternalNaming({ selectedIds: ids, newNamingBrief: null })
-      } catch { /* ignore */ }
-    }
+    // NB: snapshot keys are NOT cleared here — PoEditConceptView re-reads
+    // `originalConcept` on mount to keep «Назад» idempotent across hops.
+    snapshot.restoreOriginalExternal(ids => {
+      store.setExternalNaming({ selectedIds: ids, newNamingBrief: null })
+    })
     // cancelEditSection restores concept.selectedId back to PO's original.
     store.cancelEditSection()
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept`)
@@ -131,9 +128,8 @@ async function goSave() {
   const saved = await store.saveBrand()
   if (saved) {
     store.commitEditSection()
-    // Clear the original-concept session key — edit flow is complete.
-    sessionStorage.removeItem(`po_edit_original_concept_${brandId.value}`)
-    sessionStorage.removeItem(getPendingConceptKey())
+    // Edit flow is complete — drop every PO-edit snapshot key for this brand.
+    snapshot.clearAll()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }

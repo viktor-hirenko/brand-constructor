@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, apiGet, getAssetUrl } from '@/composables/useApi'
+import { usePoEditSnapshot } from '@/composables/usePoEditSnapshot'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
@@ -16,6 +17,8 @@ const route = useRoute()
 const router = useRouter()
 
 const brandId = computed(() => route.params.id as string)
+
+const snapshot = usePoEditSnapshot(brandId)
 
 /**
  * post-apply = PO already applied CEO variant and now wants to re-edit.
@@ -66,56 +69,11 @@ const selectedId = ref<string | null>(
 
 /**
  * The PO's original concept BEFORE the current edit session started.
- * Persisted in sessionStorage keyed by brandId so «Назад» from external-naming
- * can restore the correct value even after the store was mutated by goDali().
+ * Persisted in sessionStorage (via `usePoEditSnapshot`) keyed by brandId so
+ * «Назад» from external-naming can restore the correct value even after the
+ * store was mutated by goDali().
  */
 const originalPoConceptId = ref<string | null>(null)
-
-function getOriginalPoConceptKey() {
-  return `po_edit_original_concept_${brandId.value}`
-}
-
-function getOriginalExternalNamingKey() {
-  return `po_edit_original_external_${brandId.value}`
-}
-
-/** Concept chosen on «Далі» before save — restored after F5 on naming page. */
-function getPendingConceptKey() {
-  return `po_edit_pending_concept_${brandId.value}`
-}
-
-function savePendingConcept(id: string) {
-  sessionStorage.setItem(getPendingConceptKey(), id)
-}
-
-function saveOriginalPoConceptId(id: string | null) {
-  if (!id) return
-  sessionStorage.setItem(getOriginalPoConceptKey(), id)
-}
-
-function saveOriginalExternalNaming() {
-  const ids = store.stepData.externalNaming.selectedIds ?? []
-  sessionStorage.setItem(getOriginalExternalNamingKey(), JSON.stringify(ids))
-}
-
-function restoreOriginalExternalNaming() {
-  const raw = sessionStorage.getItem(getOriginalExternalNamingKey())
-  if (!raw) return
-  try {
-    const ids: string[] = JSON.parse(raw)
-    store.setExternalNaming({ selectedIds: ids, newNamingBrief: null })
-  } catch { /* ignore */ }
-}
-
-function loadOriginalPoConceptId(): string | null {
-  return sessionStorage.getItem(getOriginalPoConceptKey())
-}
-
-function clearOriginalPoConceptId() {
-  sessionStorage.removeItem(getOriginalPoConceptKey())
-  sessionStorage.removeItem(getOriginalExternalNamingKey())
-  sessionStorage.removeItem(getPendingConceptKey())
-}
 
 /**
  * choice mode:    exclude PO original (shown in dual header) AND CEO pick (shown in dual header).
@@ -161,13 +119,13 @@ onMounted(() => {
   // Restore or initialize originalPoConceptId from sessionStorage.
   // On first open: store.stepData.concept.selectedId is PO's real original concept.
   // On «Назад» return: sessionStorage still has the real original saved from first open.
-  const persisted = loadOriginalPoConceptId()
+  const persisted = snapshot.loadOriginalConcept()
   if (persisted) {
     originalPoConceptId.value = persisted
   } else {
     // First time opening this edit session — snapshot the real PO concept.
     originalPoConceptId.value = store.stepData.concept.selectedId ?? null
-    saveOriginalPoConceptId(originalPoConceptId.value)
+    snapshot.saveOriginalConcept(originalPoConceptId.value)
   }
 
   // Begin edit section only on first open (no editingSection yet).
@@ -205,8 +163,10 @@ function selectConcept(id: string) {
 
 function goCancel() {
   // Restore externalNaming to what it was before the edit session started.
-  restoreOriginalExternalNaming()
-  clearOriginalPoConceptId()
+  snapshot.restoreOriginalExternal(ids => {
+    store.setExternalNaming({ selectedIds: ids, newNamingBrief: null })
+  })
+  snapshot.clearAll()
   store.cancelEditSection()
   router.push(`/constructor/brand/${brandId.value}`)
 }
@@ -217,8 +177,8 @@ async function goDali() {
 
   if (conceptChanged) {
     // Save original externalNaming BEFORE clearing it, so «Скасувати» can restore it.
-    saveOriginalExternalNaming()
-    savePendingConcept(selectedId.value)
+    snapshot.saveOriginalExternal(store.stepData.externalNaming.selectedIds ?? [])
+    snapshot.savePendingConcept(selectedId.value)
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept/external-naming`)
@@ -229,7 +189,7 @@ async function goDali() {
     await store.saveBrand()
     isSaving.value = false
     store.commitEditSection()
-    clearOriginalPoConceptId()
+    snapshot.clearAll()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }
