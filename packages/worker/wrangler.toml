@@ -1,0 +1,50 @@
+name = "brand-constructor-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+# account_id is intentionally omitted — set CLOUDFLARE_ACCOUNT_ID env var
+# or wrangler will auto-detect from your authenticated profile.
+
+# Daily domain availability check at 6:00 AM UTC
+[triggers]
+crons = ["0 6 * * *"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The default (top-level) environment is intentionally empty — it has NO
+# production bindings. Production D1 / R2 / vars / secrets live ONLY under
+# [env.production] below, so an accidental `wrangler deploy` without
+# `--env production` cannot expose production data via the public
+# *.workers.dev URL with an under-configured ENVIRONMENT value.
+#
+# DEPLOY:    always use `wrangler deploy --env production`.
+# LOCAL DEV: `wrangler dev --env production` (with a populated `.dev.vars`).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Production environment
+# Note: JWT_SECRET, SLACK_BOT_TOKEN, SLACK_CHANNEL_*, PANANAMES_SIGNATURE
+# are stored as encrypted secrets in Cloudflare Dashboard.
+# Do NOT put secrets here. See `wrangler secret list --env production`.
+[env.production]
+vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev", CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev", GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "brand-constructor-db"
+database_id = "2aafe66b-27be-4058-9c09-e784efefa404"
+
+[[env.production.r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "brand-constructor-assets"
+
+# Cloudflare Rate Limiting binding for /api/auth/google. Counters live per
+# Cloudflare location, which is acceptable for auth brute-force protection
+# because an attacker is pinned to one edge per source IP.
+#
+# Requires wrangler >= 4 for the first-class [[ratelimits]] syntax. Older
+# wrangler 3.x silently ignored the equivalent [[unsafe.bindings]] block on
+# deploy, leaving the binding absent at runtime — do not downgrade.
+[[env.production.ratelimits]]
+name = "AUTH_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
