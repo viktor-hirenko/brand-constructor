@@ -9,6 +9,7 @@ import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerP
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import StepCommentField from '@/components/constructor/StepCommentField.vue'
+import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -26,6 +27,11 @@ const {
 
 /** Local mode toggle for CEO re-select; does not mutate PO `stepData.mode`. */
 const localMode = ref<'light' | 'dark'>(store.stepData.mode === 'dark' ? 'dark' : 'light')
+
+const themeOptions = [
+  { value: 'light', label: 'Світла тема' },
+  { value: 'dark', label: 'Темна тема' },
+]
 
 const poConceptId = computed(() => store.stepData.concept.selectedId)
 
@@ -85,10 +91,6 @@ function handleSelectConcept(conceptId: string) {
   store.setCeoReselectConceptPreview(conceptId)
 }
 
-function setMode(mode: 'light' | 'dark') {
-  localMode.value = mode
-}
-
 const conceptComment = computed({
   get: () => store.brandCeoComments?.concept?.value ?? '',
   set: (value: string) => store.setCeoCommentValue('concept', value),
@@ -122,36 +124,7 @@ function goNext() {
     />
 
     <!-- Theme toggle (light / dark) — filters available concepts -->
-    <div
-      class="inline-flex self-start rounded-full bg-[#ececf0] p-1 gap-1 border border-black/5"
-      role="group"
-      aria-label="Тема інтерфейсу"
-    >
-      <button
-        type="button"
-        class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
-        :class="
-          localMode === 'light'
-            ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
-            : 'text-[#6e6e6e] hover:text-foreground'
-        "
-        @click="setMode('light')"
-      >
-        Світла тема
-      </button>
-      <button
-        type="button"
-        class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
-        :class="
-          localMode === 'dark'
-            ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
-            : 'text-[#6e6e6e] hover:text-foreground'
-        "
-        @click="setMode('dark')"
-      >
-        Темна тема
-      </button>
-    </div>
+    <SegmentedControl v-model="localMode" :options="themeOptions" />
 
     <!-- Available concepts -->
     <div class="flex flex-col gap-3">
