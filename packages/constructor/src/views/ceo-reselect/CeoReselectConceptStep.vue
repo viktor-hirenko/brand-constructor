@@ -7,6 +7,7 @@ import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import StepCommentField from '@/components/constructor/StepCommentField.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
@@ -129,9 +130,7 @@ function goNext() {
 
     <!-- Available concepts -->
     <div class="flex flex-col gap-3">
-      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-        Доступні концепти
-      </p>
+      <EditFlowSectionLabel>Доступні концепти</EditFlowSectionLabel>
 
       <div v-if="loading" class="flex items-center justify-center py-16">
         <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />

@@ -109,7 +109,7 @@ const showProgress = computed(
 <template>
   <header class="review-header space-y-6">
     <div class="review-header__heading space-y-2">
-      <div class="flex items-center gap-3 flex-wrap">
+      <div class="review-header__title-row flex items-center gap-3 flex-wrap">
         <h1 class="review-header__title text-3xl font-medium tracking-[-0.6px] text-foreground">{{ title }}</h1>
         <span
           v-if="badge"
@@ -130,23 +130,31 @@ const showProgress = computed(
     </div>
 
     <div v-if="showProgress" class="review-header__progress space-y-2">
-      <div class="text-sm text-muted-foreground tracking-[-0.15px]">
+      <div class="review-header__progress-label text-sm text-muted-foreground tracking-[-0.15px]">
         Крок {{ currentStep }} з {{ totalSteps }}
       </div>
-      <div class="h-2 rounded-full bg-black/10 overflow-hidden">
+      <div class="review-header__progress-track h-2 rounded-full bg-black/10 overflow-hidden">
         <div
-          class="h-full rounded-full bg-foreground transition-all duration-300"
+          class="review-header__progress-bar h-full rounded-full bg-foreground transition-all duration-300"
           :style="{ width: `${progressPercent}%` }"
         />
       </div>
     </div>
 
-    <div v-if="displayInfo" class="review-header__info rounded-2xl bg-[#f3f3f5] px-6 py-6">
-      <div class="flex items-start gap-3 mb-2">
+    <div
+      v-if="displayInfo"
+      :class="[
+        'review-header__info rounded-2xl bg-[#f3f3f5] px-6 py-6',
+        displayInfo.iconVariant === 'warning'
+          ? 'review-header__info--warning'
+          : 'review-header__info--check',
+      ]"
+    >
+      <div class="review-header__info-header flex items-start gap-3 mb-2">
         <!-- Warning icon: PO returned-from-CEO attention banner -->
         <svg
           v-if="displayInfo.iconVariant === 'warning'"
-          class="size-6 shrink-0 text-[#C97D00]"
+          class="review-header__info-icon review-header__info-icon--warning size-6 shrink-0 text-[#C97D00]"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -162,7 +170,7 @@ const showProgress = computed(
         <!-- Default check icon: status-driven info blocks -->
         <svg
           v-else
-          class="size-6 shrink-0 text-foreground/80"
+          class="review-header__info-icon review-header__info-icon--check size-6 shrink-0 text-foreground/80"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -174,9 +182,13 @@ const showProgress = computed(
           <circle cx="12" cy="12" r="10" />
           <path d="m9 12 2 2 4-4" />
         </svg>
-        <h3 class="text-lg font-medium tracking-[-0.45px] text-foreground">{{ displayInfo.title }}</h3>
+        <h3 class="review-header__info-title text-lg font-medium tracking-[-0.45px] text-foreground">
+          {{ displayInfo.title }}
+        </h3>
       </div>
-      <p class="text-sm text-muted-foreground leading-5 pl-9">{{ displayInfo.description }}</p>
+      <p class="review-header__info-description text-sm text-muted-foreground leading-5 pl-9">
+        {{ displayInfo.description }}
+      </p>
     </div>
   </header>
 </template>

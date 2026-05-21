@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
+import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
 
 interface ReviewConceptBlockProps {
@@ -62,12 +63,26 @@ const modeLabel = computed(() => (props.mode === 'dark' ? 'Dark' : 'Light'))
 
 /** Show dual PO/CEO cards when CEO has an alternative and it's not yet applied. */
 const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
+
+const layout = computed<'applied' | 'dual' | 'single'>(() => {
+  if (showDual.value) return 'dual'
+  if (props.ceoApplied) return 'applied'
+  return 'single'
+})
+
+const layoutModifier = computed(() => {
+  if (showDual.value) return 'review-concept-block--dual-view'
+  if (props.ceoApplied) return 'review-concept-block--applied'
+  return 'review-concept-block--single'
+})
+
+const singlePoLabel = 'Вибір Замовника'
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div :class="['review-concept-block flex flex-col gap-4', layoutModifier]">
     <!-- Mode row -->
-    <div class="flex items-start gap-2">
+    <div class="review-concept-block__mode flex items-start gap-2">
       <div class="size-5 shrink-0 text-[#5B5B62]">
         <svg
           v-if="mode === 'dark'"
@@ -110,13 +125,17 @@ const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
       </div>
     </div>
 
-    <!-- Dual cards: PO + CEO -->
-    <div v-if="showDual" class="grid grid-cols-2 gap-3 max-w-[506px]">
-      <div class="flex flex-col gap-2 min-w-0">
-        <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Вибір замовника</p>
+    <ReviewChoiceGroup
+      :layout="layout"
+      applied-label="Обраний концепт"
+      :po-label="singlePoLabel"
+      dual-grid
+      column-inner-gap="gap-2"
+    >
+      <template #po>
         <div
           v-if="concept && previewUrl"
-          class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted"
+          class="review-concept-block__card relative w-full aspect-square rounded-2xl overflow-hidden bg-muted"
         >
           <img
             :src="previewUrl"
@@ -133,7 +152,7 @@ const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
           </div>
           <button
             type="button"
-            class="absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
             aria-label="Переглянути концепт"
             @click="concept && emit('preview', concept)"
           >
@@ -142,18 +161,19 @@ const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
         </div>
         <div
           v-else-if="conceptName"
-          class="rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62] w-full"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62] w-full"
         >
           {{ conceptName }}
         </div>
-        <div v-else class="text-[14px] text-[#5B5B62] italic">Концепт не обрано</div>
-      </div>
+        <div v-else class="review-concept-block__empty text-[14px] text-[#5B5B62] italic">
+          Концепт не обрано
+        </div>
+      </template>
 
-      <div class="flex flex-col gap-2 min-w-0">
-        <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Вибір CEO</p>
+      <template #ceo>
         <div
           v-if="ceoConcept && ceoPreviewUrl"
-          class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted"
+          class="review-concept-block__card relative w-full aspect-square rounded-2xl overflow-hidden bg-muted"
         >
           <img
             :src="ceoPreviewUrl"
@@ -170,73 +190,75 @@ const showDual = computed(() => props.ceoConcept != null && !props.ceoApplied)
           </div>
           <button
             type="button"
-            class="absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors z-[2] text-[#030213]"
+            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors z-[2] text-[#030213]"
             aria-label="Переглянути концепт CEO"
             @click="ceoConcept && emit('preview', ceoConcept)"
           >
             <EyeIcon />
           </button>
         </div>
-      </div>
-    </div>
-    <!-- Apply button inside dual block -->
-    <ApplyCeoVariantButton
-      v-if="showDual && showApplyCeo"
-      :loading="applyLoading"
-      @click="emit('applyCeo')"
-    />
+      </template>
 
-    <!-- Applied state: single card with "Обраний концепт" label (Figma 1981:1694) -->
-    <div v-if="!showDual && ceoApplied" class="flex flex-col gap-2">
-      <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Обраний концепт</p>
-      <div
-        v-if="concept && previewUrl"
-        class="relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
-      >
-        <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
-        <div class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent">
-          <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
-        </div>
-        <button
-          v-if="concept"
-          type="button"
-          class="absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
-          aria-label="Переглянути концепт"
-          @click="emit('preview', concept)"
+      <template #applied>
+        <div
+          v-if="concept && previewUrl"
+          class="review-concept-block__card relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
         >
-          <EyeIcon />
-        </button>
-      </div>
-      <div v-else-if="conceptName" class="rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62]">
-        {{ conceptName }}
-      </div>
-    </div>
+          <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
+          <div class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent">
+            <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
+          </div>
+          <button
+            v-if="concept"
+            type="button"
+            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+            aria-label="Переглянути концепт"
+            @click="emit('preview', concept)"
+          >
+            <EyeIcon />
+          </button>
+        </div>
+        <div
+          v-else-if="conceptName"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62]"
+        >
+          {{ conceptName }}
+        </div>
+      </template>
 
-    <!-- Single-card layout (PO draft / CEO with no alternative / PO returned no alt) -->
-    <div v-if="!showDual && !ceoApplied" class="flex flex-col gap-2">
-      <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Вибір Замовника</p>
-      <div
-        v-if="concept && previewUrl"
-        class="relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
-      >
-        <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
-        <div class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent">
-          <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
-        </div>
-        <button
-          v-if="concept"
-          type="button"
-          class="absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
-          aria-label="Переглянути концепт"
-          @click="emit('preview', concept)"
+      <template #single>
+        <div
+          v-if="concept && previewUrl"
+          class="review-concept-block__card relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
         >
-          <EyeIcon />
-        </button>
-      </div>
-      <div v-else-if="conceptName" class="rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62]">
-        {{ conceptName }}
-      </div>
-      <div v-else class="text-[14px] text-[#5B5B62] italic">Концепт не обрано</div>
-    </div>
+          <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
+          <div class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent">
+            <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
+          </div>
+          <button
+            v-if="concept"
+            type="button"
+            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+            aria-label="Переглянути концепт"
+            @click="emit('preview', concept)"
+          >
+            <EyeIcon />
+          </button>
+        </div>
+        <div
+          v-else-if="conceptName"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62]"
+        >
+          {{ conceptName }}
+        </div>
+        <div v-else class="review-concept-block__empty text-[14px] text-[#5B5B62] italic">
+          Концепт не обрано
+        </div>
+      </template>
+
+      <template v-if="showDual && showApplyCeo" #actions>
+        <ApplyCeoVariantButton :loading="applyLoading" @click="emit('applyCeo')" />
+      </template>
+    </ReviewChoiceGroup>
   </div>
 </template>

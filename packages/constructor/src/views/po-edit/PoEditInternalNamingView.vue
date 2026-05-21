@@ -7,6 +7,7 @@ import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
 import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 
 const store = useConstructorStore()
@@ -104,7 +105,7 @@ async function goSave() {
   >
     <!-- post-apply: applied name as interactive grid -->
     <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Обрана назва</p>
+        <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
         <InternalNamingGrid
           :namings="[poOriginalNaming]"
           :selected-id="store.stepData.internalNaming.selectedId"
@@ -116,7 +117,7 @@ async function goSave() {
       <template v-else>
         <!-- PO previous pick -->
         <div v-if="poOriginalNaming" class="flex flex-col gap-3">
-          <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Ваш попередній вибір</p>
+          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
           <InternalNamingGrid
             :namings="[poOriginalNaming]"
             :selected-id="store.stepData.internalNaming.selectedId"
@@ -124,13 +125,13 @@ async function goSave() {
           />
         </div>
         <div v-else class="flex flex-col gap-2">
-          <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Ваш попередній вибір</p>
+          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
           <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
         </div>
 
         <!-- CEO pick -->
         <div v-if="ceoNaming" class="flex flex-col gap-3">
-          <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Вибір CEO</p>
+          <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
           <InternalNamingGrid
             :namings="[ceoNaming]"
             :selected-id="store.stepData.internalNaming.selectedId"
@@ -143,9 +144,7 @@ async function goSave() {
 
       <!-- Other internal namings (excludes PO original + CEO) -->
       <div class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-          Інші внутрішні назви
-        </p>
+        <EditFlowSectionLabel>Інші внутрішні назви</EditFlowSectionLabel>
         <InternalNamingGrid
           :namings="otherNamings"
           :selected-id="store.stepData.internalNaming.selectedId"

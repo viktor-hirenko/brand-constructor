@@ -9,6 +9,7 @@ import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
 import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 
@@ -299,9 +300,9 @@ async function goDali() {
     <!-- Other / available concepts grid -->
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between max-w-[506px]">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+        <EditFlowSectionLabel>
           {{ isPostApply ? 'Доступні концепти' : 'Інші концепти' }}
-        </p>
+        </EditFlowSectionLabel>
         <SegmentedControl
           v-model="localMode"
           :options="themeOptions"

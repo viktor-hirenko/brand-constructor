@@ -314,6 +314,40 @@ function emitInlineCommentUpdate(key: string, value: string) {
 function emitEditSection(step: number, sectionKey: string) {
   emit('edit-section', { step, sectionKey })
 }
+
+type SectionCommentKey =
+  | 'basics'
+  | 'concept'
+  | 'externalNaming'
+  | 'internalNaming'
+  | 'marketingPackage'
+  | 'deliverables'
+  | 'visualComponents'
+
+const CEO_HIGHLIGHT_SECTIONS = new Set<SectionCommentKey>([
+  'concept',
+  'externalNaming',
+  'internalNaming',
+])
+
+function sectionCommentBindings(sectionKey: SectionCommentKey) {
+  return {
+    sectionKey,
+    poComment: getPoCommentForSection(sectionKey),
+    ceoComment: props.isPoReturnedView
+      ? getSectionCeoCommentValue(sectionKey)
+      : (props.ceoComments[sectionKey] ?? ''),
+    ceoEditable: props.reviewMode === 'ceo' && !props.ceoFrozenView,
+    highlighted:
+      CEO_HIGHLIGHT_SECTIONS.has(sectionKey) &&
+      props.reviewMode === 'ceo' &&
+      isSectionHighlighted(sectionKey),
+    showResolveUi: props.isPoReturnedView && !!getSectionCeoCommentValue(sectionKey),
+    ceoResolved: isSectionCeoCommentResolved(sectionKey),
+    canResolve: props.isPoOwner,
+    ceoResolveLoading: isCeoCommentResolveLoading(sectionKey),
+  }
+}
 </script>
 
 <template>
@@ -419,14 +453,7 @@ function emitEditSection(step: number, sectionKey: string) {
             </ReviewSectionRow>
             <template #comment>
               <SectionCommentBlock
-                section-key="basics"
-                :po-comment="getPoCommentForSection('basics')"
-                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('basics') : (ceoComments.basics ?? '')"
-                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
-                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('basics')"
-                :ceo-resolved="isSectionCeoCommentResolved('basics')"
-                :can-resolve="isPoOwner"
-                :ceo-resolve-loading="isCeoCommentResolveLoading('basics')"
+                v-bind="sectionCommentBindings('basics')"
                 @update:ceo-comment="value => emitInlineCommentUpdate('basics', value)"
                 @resolve="emit('resolve-ceo-comment', 'basics')"
                 @unresolve="emit('unresolve-ceo-comment', 'basics')"
@@ -456,15 +483,7 @@ function emitEditSection(step: number, sectionKey: string) {
             />
             <template #comment>
               <SectionCommentBlock
-                section-key="concept"
-                :po-comment="getPoCommentForSection('concept')"
-                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('concept') : (ceoComments.concept ?? '')"
-                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
-                :highlighted="reviewMode === 'ceo' && isSectionHighlighted('concept')"
-                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('concept')"
-                :ceo-resolved="isSectionCeoCommentResolved('concept')"
-                :can-resolve="isPoOwner"
-                :ceo-resolve-loading="isCeoCommentResolveLoading('concept')"
+                v-bind="sectionCommentBindings('concept')"
                 @update:ceo-comment="value => emitInlineCommentUpdate('concept', value)"
                 @resolve="emit('resolve-ceo-comment', 'concept')"
                 @unresolve="emit('unresolve-ceo-comment', 'concept')"
@@ -491,15 +510,7 @@ function emitEditSection(step: number, sectionKey: string) {
             />
             <template #comment>
               <SectionCommentBlock
-                section-key="externalNaming"
-                :po-comment="getPoCommentForSection('externalNaming')"
-                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('externalNaming') : (ceoComments.externalNaming ?? '')"
-                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
-                :highlighted="reviewMode === 'ceo' && isSectionHighlighted('externalNaming')"
-                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('externalNaming')"
-                :ceo-resolved="isSectionCeoCommentResolved('externalNaming')"
-                :can-resolve="isPoOwner"
-                :ceo-resolve-loading="isCeoCommentResolveLoading('externalNaming')"
+                v-bind="sectionCommentBindings('externalNaming')"
                 @update:ceo-comment="value => emitInlineCommentUpdate('externalNaming', value)"
                 @resolve="emit('resolve-ceo-comment', 'externalNaming')"
                 @unresolve="emit('unresolve-ceo-comment', 'externalNaming')"
@@ -526,15 +537,7 @@ function emitEditSection(step: number, sectionKey: string) {
             />
             <template #comment>
               <SectionCommentBlock
-                section-key="internalNaming"
-                :po-comment="getPoCommentForSection('internalNaming')"
-                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('internalNaming') : (ceoComments.internalNaming ?? '')"
-                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
-                :highlighted="reviewMode === 'ceo' && isSectionHighlighted('internalNaming')"
-                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('internalNaming')"
-                :ceo-resolved="isSectionCeoCommentResolved('internalNaming')"
-                :can-resolve="isPoOwner"
-                :ceo-resolve-loading="isCeoCommentResolveLoading('internalNaming')"
+                v-bind="sectionCommentBindings('internalNaming')"
                 @update:ceo-comment="value => emitInlineCommentUpdate('internalNaming', value)"
                 @resolve="emit('resolve-ceo-comment', 'internalNaming')"
                 @unresolve="emit('unresolve-ceo-comment', 'internalNaming')"
@@ -554,14 +557,7 @@ function emitEditSection(step: number, sectionKey: string) {
             />
             <template #comment>
               <SectionCommentBlock
-                section-key="marketingPackage"
-                :po-comment="getPoCommentForSection('marketingPackage')"
-                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('marketingPackage') : (ceoComments.marketingPackage ?? '')"
-                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
-                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('marketingPackage')"
-                :ceo-resolved="isSectionCeoCommentResolved('marketingPackage')"
-                :can-resolve="isPoOwner"
-                :ceo-resolve-loading="isCeoCommentResolveLoading('marketingPackage')"
+                v-bind="sectionCommentBindings('marketingPackage')"
                 @update:ceo-comment="value => emitInlineCommentUpdate('marketingPackage', value)"
                 @resolve="emit('resolve-ceo-comment', 'marketingPackage')"
                 @unresolve="emit('unresolve-ceo-comment', 'marketingPackage')"
@@ -581,14 +577,7 @@ function emitEditSection(step: number, sectionKey: string) {
             />
             <template #comment>
               <SectionCommentBlock
-                section-key="deliverables"
-                :po-comment="getPoCommentForSection('deliverables')"
-                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('deliverables') : (ceoComments.deliverables ?? '')"
-                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
-                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('deliverables')"
-                :ceo-resolved="isSectionCeoCommentResolved('deliverables')"
-                :can-resolve="isPoOwner"
-                :ceo-resolve-loading="isCeoCommentResolveLoading('deliverables')"
+                v-bind="sectionCommentBindings('deliverables')"
                 @update:ceo-comment="value => emitInlineCommentUpdate('deliverables', value)"
                 @resolve="emit('resolve-ceo-comment', 'deliverables')"
                 @unresolve="emit('unresolve-ceo-comment', 'deliverables')"
@@ -605,14 +594,7 @@ function emitEditSection(step: number, sectionKey: string) {
             <ReviewVisualComponentsBlock :summary="visualComponentsSummary" />
             <template #comment>
               <SectionCommentBlock
-                section-key="visualComponents"
-                :po-comment="getPoCommentForSection('visualComponents')"
-                :ceo-comment="isPoReturnedView ? getSectionCeoCommentValue('visualComponents') : (ceoComments.visualComponents ?? '')"
-                :ceo-editable="reviewMode === 'ceo' && !ceoFrozenView"
-                :show-resolve-ui="isPoReturnedView && !!getSectionCeoCommentValue('visualComponents')"
-                :ceo-resolved="isSectionCeoCommentResolved('visualComponents')"
-                :can-resolve="isPoOwner"
-                :ceo-resolve-loading="isCeoCommentResolveLoading('visualComponents')"
+                v-bind="sectionCommentBindings('visualComponents')"
                 @update:ceo-comment="value => emitInlineCommentUpdate('visualComponents', value)"
                 @resolve="emit('resolve-ceo-comment', 'visualComponents')"
                 @unresolve="emit('unresolve-ceo-comment', 'visualComponents')"
@@ -685,7 +667,7 @@ function emitEditSection(step: number, sectionKey: string) {
               ? 'На погодження CEO'
               : hasNewBrief
                 ? 'Відправити в роботу'
-                : 'Відправити на розгляд'
+                : 'На погодження CEO'
           "
           :submit-disabled="submitBlocked"
           :show-submit="reviewMode !== 'approved'"

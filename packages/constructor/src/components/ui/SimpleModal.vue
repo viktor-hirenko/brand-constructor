@@ -30,7 +30,7 @@ const emit = defineEmits<{
       <div class="simple-modal__dialog relative bg-white rounded-2xl shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] w-full max-w-sm mx-4 px-6 pt-6 pb-5 flex flex-col gap-4">
         <button
           type="button"
-          class="absolute top-4 right-4 size-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
+          class="simple-modal__close absolute top-4 right-4 size-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
           aria-label="Закрити"
           @click="emit('cancel')"
         >
@@ -44,7 +44,7 @@ const emit = defineEmits<{
           <h3 class="simple-modal__title text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]">
             {{ title }}
           </h3>
-          <p class="text-[14px] leading-5 tracking-[-0.1504px] text-[#5B5B62]">
+          <p class="simple-modal__text text-[14px] leading-5 tracking-[-0.1504px] text-[#5B5B62]">
             {{ body }}
           </p>
         </div>

@@ -59,41 +59,41 @@ function formatPrice(price: number | null | undefined): string {
 <template>
   <div
     v-if="visibleNamings.length > 0"
-    class="grid grid-cols-3 gap-2 max-w-[506px]"
+    class="external-naming-grid grid grid-cols-3 gap-2 max-w-[506px]"
   >
     <div
       v-for="naming in visibleNamings"
       :key="naming.id"
-      class="relative box-border rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 border-2 border-solid transition-[border-color,opacity] duration-150"
+      class="external-naming-grid__card relative box-border rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 border-2 border-solid transition-[border-color,opacity] duration-150"
       :class="[
         isSold(naming)
-          ? 'border-black/10 cursor-not-allowed'
+          ? 'external-naming-grid__card--sold border-black/10 cursor-not-allowed'
           : isSelected(naming)
-            ? 'border-[#030213] cursor-pointer'
+            ? 'external-naming-grid__card--selected border-[#030213] cursor-pointer'
             : isDisabledForSelection(naming)
-              ? 'border-black/10 opacity-40 cursor-not-allowed'
+              ? 'external-naming-grid__card--disabled border-black/10 opacity-40 cursor-not-allowed'
               : 'border-black/10 hover:border-[#030213]/40 cursor-pointer',
       ]"
       @click="handleClick(naming)"
     >
       <div
-        class="flex flex-col items-center gap-2 w-full text-center tracking-[-0.1504px]"
+        class="external-naming-grid__card-body flex flex-col items-center gap-2 w-full text-center tracking-[-0.1504px]"
         :class="isSold(naming) ? 'opacity-50' : ''"
       >
-        <div class="flex flex-col gap-1 w-full">
-          <p class="text-[20px] font-medium leading-6 text-[#1a1a1a] w-full break-words">
+        <div class="external-naming-grid__card-heading flex flex-col gap-1 w-full">
+          <p class="external-naming-grid__card-name text-[20px] font-medium leading-6 text-[#1a1a1a] w-full break-words">
             {{ naming.name }}
           </p>
           <p
             v-if="naming.domain"
-            class="text-[12px] font-normal leading-4 text-[#4b4b58] w-full truncate"
+            class="external-naming-grid__card-domain text-[12px] font-normal leading-4 text-[#4b4b58] w-full truncate"
           >
             ({{ naming.domain }})
           </p>
         </div>
         <p
           v-if="naming.price !== null && naming.price !== undefined"
-          class="text-[16px] font-medium leading-6 text-[#1a1a1a] w-full"
+          class="external-naming-grid__card-price text-[16px] font-medium leading-6 text-[#1a1a1a] w-full"
         >
           {{ formatPrice(naming.price) }}
         </p>
@@ -101,7 +101,7 @@ function formatPrice(price: number | null | undefined): string {
 
       <div
         v-if="naming.availability_status === 'available'"
-        class="backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[8px] bg-[#d4fde5]"
+        class="external-naming-grid__badge external-naming-grid__badge--available backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[8px] bg-[#d4fde5]"
       >
         <span
           class="text-[12px] font-medium leading-4 tracking-[-0.3125px] text-[#006929] whitespace-nowrap"
@@ -111,7 +111,7 @@ function formatPrice(price: number | null | undefined): string {
       </div>
       <div
         v-else-if="naming.availability_status === 'sold'"
-        class="backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[100px] bg-[#fdd4d4] opacity-50"
+        class="external-naming-grid__badge external-naming-grid__badge--sold backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[100px] bg-[#fdd4d4] opacity-50"
       >
         <span
           class="text-[12px] font-medium leading-4 tracking-[-0.3125px] text-[#9e0101] whitespace-nowrap"
@@ -122,7 +122,7 @@ function formatPrice(price: number | null | undefined): string {
 
       <div
         v-if="isSelected(naming)"
-        class="absolute top-[6px] left-[6px] size-8 rounded-[100px] bg-[#030213] flex items-center justify-center"
+        class="external-naming-grid__card-check absolute top-[6px] left-[6px] size-8 rounded-[100px] bg-[#030213] flex items-center justify-center"
       >
         <svg
           class="size-4 text-white"
@@ -138,5 +138,7 @@ function formatPrice(price: number | null | undefined): string {
       </div>
     </div>
   </div>
-  <div v-else class="text-center py-8 text-muted-foreground text-sm">Неймінги не знайдено</div>
+  <div v-else class="external-naming-grid__empty text-center py-8 text-muted-foreground text-sm">
+    Неймінги не знайдено
+  </div>
 </template>

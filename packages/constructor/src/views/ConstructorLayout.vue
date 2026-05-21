@@ -421,21 +421,21 @@ watch(currentStep, step => {
 </script>
 
 <template>
-  <div class="h-[100dvh] bg-background flex items-center justify-center overflow-hidden">
+  <div class="constructor-layout h-[100dvh] bg-background flex items-center justify-center overflow-hidden">
     <div
-      class="relative shrink-0 w-[1311px] h-[810px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
+      class="constructor-layout__shell relative shrink-0 w-[1311px] h-[810px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
       :style="{ transform: `scale(${shellScale})`, transformOrigin: 'center center' }"
     >
       <!-- Main Panel (full-width on step 3, 42% otherwise) -->
       <div
         :class="[
+          'constructor-layout__main-panel flex flex-col min-h-0',
           isFullWidth && !isCeoReselect && !isPoEdit ? 'w-full' : 'w-[42%]',
           isReviewShell ? 'bg-[#f9f9fb]' : 'bg-muted/30',
         ]"
-        class="flex flex-col min-h-0"
       >
         <div
-          class="min-h-0 flex-1"
+          class="constructor-layout__main-content min-h-0 flex-1"
           :class="[
             isReviewShell ? 'flex flex-col overflow-hidden' : 'px-12 pt-5 pb-6',
             isCeoReselect || isPoEdit ? 'px-8 pt-8 pb-0' : '',
@@ -443,23 +443,23 @@ watch(currentStep, step => {
             !isReviewShell && currentStep !== 8 ? 'overflow-y-auto' : '',
           ]"
         >
-          <div v-if="!isReviewShell" :class="currentStep === 8 ? 'shrink-0' : ''">
-            <h1 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
+          <div v-if="!isReviewShell" :class="currentStep === 8 ? 'shrink-0' : ''" class="constructor-layout__wizard-header">
+            <h1 class="constructor-layout__wizard-title text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
               {{ stepTitle }}
             </h1>
-            <p class="text-base text-muted-foreground tracking-[-0.31px] mb-6">
+            <p class="constructor-layout__wizard-subtitle text-base text-muted-foreground tracking-[-0.31px] mb-6">
               {{ stepSubtitle }}
             </p>
 
-            <div class="mb-8">
-              <div class="mb-2">
+            <div class="constructor-layout__wizard-progress mb-8">
+              <div class="constructor-layout__wizard-progress-label mb-2">
                 <span class="text-sm text-muted-foreground tracking-[-0.15px]">
                   Крок {{ currentStep }} з {{ totalSteps }}
                 </span>
               </div>
-              <div class="h-2 bg-muted rounded-full overflow-hidden">
+              <div class="constructor-layout__wizard-progress-track h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  class="h-full bg-primary rounded-full transition-all duration-300"
+                  class="constructor-layout__wizard-progress-bar h-full bg-primary rounded-full transition-all duration-300"
                   :style="{ width: `${progressPercent}%` }"
                 />
               </div>
@@ -467,6 +467,7 @@ watch(currentStep, step => {
           </div>
 
           <div
+            class="constructor-layout__router-view"
             :class="
               isReviewShell || currentStep === 8
                 ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
@@ -479,27 +480,27 @@ watch(currentStep, step => {
 
         <div
           v-if="!isViewMode && !isReviewShell"
-          class="shrink-0 px-12 py-6 border-t border-border"
+          class="constructor-layout__wizard-footer shrink-0 px-12 py-6 border-t border-border"
         >
-          <div v-if="store.editingSection" class="flex items-center gap-3">
+          <div v-if="store.editingSection" class="constructor-layout__footer-actions flex items-center gap-3">
             <button
-              class="h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
+              class="constructor-layout__footer-button constructor-layout__footer-button--secondary h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
               @click="handleCancelSectionEdit"
             >
               Скасувати
             </button>
             <button
               :disabled="!store.isCurrentStepValid"
-              class="h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
+              class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
               @click="handleSaveSectionEdit"
             >
               Зберегти
             </button>
           </div>
 
-          <div v-else-if="store.returnToStep" class="flex items-center gap-3">
+          <div v-else-if="store.returnToStep" class="constructor-layout__footer-actions flex items-center gap-3">
             <button
-              class="h-[50px] px-6 bg-[#030213] text-white rounded-[10px] hover:opacity-90 transition-all text-base font-medium flex items-center gap-2"
+              class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-[#030213] text-white rounded-[10px] hover:opacity-90 transition-all text-base font-medium flex items-center gap-2"
               @click="handleReturnToPreview"
             >
               <svg
@@ -519,10 +520,10 @@ watch(currentStep, step => {
             </button>
           </div>
 
-          <div v-else class="flex items-center gap-3">
+          <div v-else class="constructor-layout__footer-actions flex items-center gap-3">
             <button
               v-if="!isFirstStep"
-              class="h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
+              class="constructor-layout__footer-button constructor-layout__footer-button--secondary h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
               @click="goBack"
             >
               Назад
@@ -530,7 +531,7 @@ watch(currentStep, step => {
             <button
               v-if="!isLastStep"
               :disabled="!store.isCurrentStepValid"
-              class="h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
+              class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
               @click="goNext"
             >
               Далі
@@ -542,7 +543,7 @@ watch(currentStep, step => {
       <!-- Right Panel: CEO finalize / PO draft / PO returned / approved read-only preview -->
       <div
         v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isApprovedReview"
-        class="w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
+        class="constructor-layout__right-panel constructor-layout__right-panel--preview w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
       >
         <BrandPreviewPanel />
       </div>
@@ -551,7 +552,7 @@ watch(currentStep, step => {
            external/internal naming sub-routes use ConceptMobilePreview (same as CEO reselect) -->
       <div
         v-else-if="isPoEdit"
-        class="relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
+        class="constructor-layout__right-panel constructor-layout__right-panel--po-edit relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
       >
         <ConceptPreviewSlider
           v-if="route.name === 'po-edit-concept' && route.query.mode !== 'post-apply'"
@@ -566,7 +567,7 @@ watch(currentStep, step => {
       <!-- Right Panel: CEO re-select preview -->
       <div
         v-else-if="isCeoReselect"
-        class="relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
+        class="constructor-layout__right-panel constructor-layout__right-panel--ceo-reselect relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
       >
         <template v-if="route.name === 'ceo-reselect-concept'">
           <ConceptPreviewSlider

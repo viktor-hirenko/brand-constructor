@@ -7,6 +7,7 @@ import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
 import CustomerNamingsRow from '@/components/constructor/ceo-reselect/CustomerNamingsRow.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
@@ -159,9 +160,7 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
     />
 
     <div class="flex flex-col gap-3">
-      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-        Варіанти назв для обраного концепту
-      </p>
+      <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
       <ExternalNamingGrid
         :namings="namings"
         :selected-ids="stagedExternalIds"

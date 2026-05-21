@@ -7,6 +7,7 @@ import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
 import CustomerInternalNamingPreview from '@/components/constructor/ceo-reselect/CustomerInternalNamingPreview.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import StepCommentField from '@/components/constructor/StepCommentField.vue'
 
@@ -102,9 +103,7 @@ const internalComment = computed({
     </div>
     <template v-else>
       <div class="flex flex-col gap-3">
-        <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-          Доступні внутрішні назви
-        </p>
+        <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
         <InternalNamingGrid
           :namings="availableNamings"
           :selected-id="stagedId"

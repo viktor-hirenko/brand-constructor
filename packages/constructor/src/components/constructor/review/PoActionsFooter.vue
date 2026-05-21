@@ -28,7 +28,7 @@ interface PoActionsFooterProps {
 
 withDefaults(defineProps<PoActionsFooterProps>(), {
   loading: false,
-  submitLabel: 'Відправити на розгляд',
+  submitLabel: 'На погодження CEO',
   submitDisabled: false,
   showSubmit: true,
   showBack: true,

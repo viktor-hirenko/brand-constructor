@@ -8,6 +8,7 @@ import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
 import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 
 const store = useConstructorStore()
@@ -148,7 +149,7 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
   >
     <!-- post-apply: show applied names as interactive grid (same cards as below) -->
     <div v-if="isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
-      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Обрані назви</p>
+      <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
       <ExternalNamingGrid
         :namings="poOriginalNamings"
         :selected-ids="store.stepData.externalNaming.selectedIds"
@@ -159,7 +160,7 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
 
     <!-- standalone: PO's previous picks as interactive grid (top, above CEO) -->
     <div v-else-if="!isChained && !isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
-      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Ваш попередній вибір</p>
+      <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
       <ExternalNamingGrid
         :namings="poOriginalNamings"
         :selected-ids="store.stepData.externalNaming.selectedIds"
@@ -170,7 +171,7 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
 
     <!-- CEO pick -->
     <div v-if="!isPostApply && ceoNamings.length > 0" class="flex flex-col gap-3">
-      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">Вибір CEO</p>
+      <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
       <ExternalNamingGrid
         :namings="ceoNamings"
         :selected-ids="store.stepData.externalNaming.selectedIds"
@@ -183,9 +184,7 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
 
     <!-- Other namings for chosen concept (excluding PO original + CEO) -->
     <div class="flex flex-col gap-3">
-      <p class="text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
-        Інші назви для обраного концепту
-      </p>
+      <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>
       <ExternalNamingGrid
         :namings="namings"
         :selected-ids="store.stepData.externalNaming.selectedIds"
