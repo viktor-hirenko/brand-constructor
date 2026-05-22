@@ -39,12 +39,10 @@ function isSelected(id: string): boolean {
     <div
       v-for="concept in concepts"
       :key="concept.id"
-      class="concept-grid__card relative group rounded-[16px] overflow-hidden transition-all w-full aspect-square"
+      class="concept-grid__card relative group rounded-[16px] overflow-hidden transition-[border-color,opacity] duration-200 w-full aspect-square border-2"
       :class="[
         disabled ? 'cursor-not-allowed' : 'cursor-pointer',
-        isActive(concept.id)
-          ? 'concept-grid__card--active border-2 border-[#030213] shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]'
-          : 'border border-[rgba(3,2,19,0.1)]',
+        isActive(concept.id) ? 'border-[#030213]' : 'border-[rgba(3,2,19,0.1)]',
         isSelected(concept.id) ? 'concept-grid__card--selected' : '',
       ]"
       @click="handleClick(concept)"
