@@ -191,12 +191,13 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
       </div>
     </template>
 
-    <!-- Step 2 Preview: concept slider -->
+    <!-- Step 2 Preview: concept slider — selection happens immediately on card click -->
     <template v-else-if="currentStep === 2">
       <ConceptPreviewSlider
         :concept="conceptPreviewForSlider"
         :is-final-selected="isConceptSliderFinalSelected"
-        @confirm-selection="emit('confirm-concept')"
+        :top-label="isConceptSliderFinalSelected ? 'Обраний концепт' : null"
+        hide-primary-action
       />
     </template>
 

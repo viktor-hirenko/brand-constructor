@@ -244,7 +244,7 @@ onUnmounted(() => {
           </h3>
           <span
             v-if="topLabel"
-            class="shrink-0 inline-flex items-center justify-center p-2 rounded-[100px] bg-[#E7E7E9] backdrop-blur-[15px] text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#030213]"
+            class="shrink-0 inline-flex items-center justify-center px-3 py-2 rounded-[100px] bg-[#E7E7E9] backdrop-blur-[15px] text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#030213]"
           >
             {{ topLabel }}
           </span>

@@ -7,26 +7,32 @@ interface Option {
 interface SegmentedControlProps {
   options: Option[]
   modelValue: string
+  /** Accessible name for the control group */
+  ariaLabel?: string
 }
 
-defineProps<SegmentedControlProps>()
+withDefaults(defineProps<SegmentedControlProps>(), {
+  ariaLabel: undefined,
+})
+
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 </script>
 
 <template>
   <div
-    class="inline-flex self-start rounded-full bg-[#ececf0] p-1 gap-1 border border-black/5"
+    class="segmented-control inline-flex self-start items-center rounded-[8px] bg-[#ececf0] p-0.5"
     role="group"
+    :aria-label="ariaLabel"
   >
     <button
       v-for="option in options"
       :key="option.value"
       type="button"
-      class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
+      class="segmented-control__segment rounded-[6px] py-1.5 px-2 text-[14px] font-normal leading-4 tracking-[-0.3125px] transition-[background-color,color,box-shadow] duration-200"
       :class="
         modelValue === option.value
-          ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
-          : 'text-[#6e6e6e] hover:text-foreground'
+          ? 'bg-white text-[#030213] shadow-lg'
+          : 'text-[#6b6b6b] hover:text-[#030213]'
       "
       @click="emit('update:modelValue', option.value)"
     >

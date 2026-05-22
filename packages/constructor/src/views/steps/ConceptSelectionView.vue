@@ -7,6 +7,7 @@ import type { NewConceptBrief } from '@brand-constructor/shared/types'
 import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
+import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 
 const store = useConstructorStore()
 const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
@@ -25,6 +26,20 @@ const comment = computed({
 })
 
 const selectedMode = computed(() => store.stepData.mode)
+
+const themeOptions = [
+  { value: 'light', label: 'Світла тема' },
+  { value: 'dark', label: 'Темна тема' },
+] as const
+
+const themeMode = computed({
+  get: () => store.stepData.mode ?? 'light',
+  set: (value: string) => {
+    if (value === 'light' || value === 'dark') {
+      store.setMode(value)
+    }
+  },
+})
 
 onMounted(() => {
   perPage.value = 50
@@ -59,7 +74,7 @@ watch(
 
 function selectConcept(concept: Concept) {
   if (isCreatingNew.value) return
-  store.setConcept({ previewId: concept.id })
+  store.setConcept({ selectedId: concept.id, previewId: concept.id })
 }
 
 function handleCreateNew() {
@@ -117,37 +132,11 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Light / Dark theme -->
-    <div
-      class="inline-flex self-start rounded-full bg-[#ececf0] p-1 gap-1 border border-black/5"
-      role="group"
+    <SegmentedControl
+      v-model="themeMode"
+      :options="[...themeOptions]"
       aria-label="Тема інтерфейсу"
-    >
-      <button
-        type="button"
-        class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
-        :class="
-          store.stepData.mode === 'light'
-            ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
-            : 'text-[#6e6e6e] hover:text-foreground'
-        "
-        @click="store.setMode('light')"
-      >
-        Світла тема
-      </button>
-      <button
-        type="button"
-        class="h-10 px-4 rounded-full text-base font-medium tracking-[-0.31px] transition-all"
-        :class="
-          store.stepData.mode === 'dark'
-            ? 'bg-white text-foreground shadow-[0px_8px_10px_0px_rgba(0,0,0,0.1)]'
-            : 'text-[#6e6e6e] hover:text-foreground'
-        "
-        @click="store.setMode('dark')"
-      >
-        Темна тема
-      </button>
-    </div>
+    />
 
     <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center py-16">
@@ -171,16 +160,14 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
         <div
           v-for="concept in concepts"
           :key="concept.id"
-          class="relative group rounded-[16px] overflow-hidden transition-all w-full aspect-square"
+          class="relative group rounded-[16px] overflow-hidden transition-[border-color,opacity] duration-200 w-full aspect-square border-2"
           :class="[
             isCreatingNew ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-            selectedId === concept.id || previewId === concept.id
-              ? 'border-2 border-[#030213] shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]'
-              : 'border border-[rgba(3,2,19,0.1)]',
+            selectedId === concept.id ? 'border-[#030213]' : 'border-[rgba(3,2,19,0.1)]',
           ]"
           @click="selectConcept(concept)"
         >
-          <div class="w-full h-full absolute inset-0 bg-muted">
+          <div class="w-full h-full absolute inset-0 bg-muted overflow-hidden">
             <img
               v-if="concept.visual_url"
               :src="getAssetUrl(concept.visual_url)"
@@ -208,11 +195,11 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
               </svg>
             </div>
 
-            <!-- Default dimming; hidden when preview/selected; hover clears dim on idle cards -->
+            <!-- Default dimming; hidden when selected; hover clears dim on idle cards -->
             <div
               class="absolute inset-0 bg-black/45 transition-opacity z-[1] pointer-events-none"
               :class="
-                selectedId === concept.id || previewId === concept.id
+                selectedId === concept.id
                   ? 'opacity-0'
                   : isCreatingNew
                     ? 'opacity-100'
@@ -226,7 +213,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
 
             <div class="absolute bottom-0 left-0 right-0 p-4 z-[3]">
               <h3
-                class="text-white font-medium text-[18px] leading-6 tracking-[-0.4492px] truncate"
+                class="text-white font-medium text-[16px] leading-6 tracking-[-0.4492px] truncate"
               >
                 {{ concept.name }}
               </h3>
@@ -235,7 +222,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
             <!-- Final selection badge (white circle, dark check — Figma) -->
             <div
               v-if="selectedId === concept.id"
-              class="absolute top-[6px] left-[6px] size-8 rounded-full bg-white border border-black/10 flex items-center justify-center shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] z-[4]"
+              class="absolute top-[8px] left-[8px] size-7 rounded-full bg-white border border-black/10 flex items-center justify-center shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] z-[4]"
             >
               <svg
                 class="size-4 text-[#030213]"
@@ -250,6 +237,21 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
               </svg>
             </div>
           </div>
+
+          <Transition
+            enter-active-class="transition-opacity duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition-opacity duration-200"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+          >
+            <div
+              v-if="selectedId === concept.id"
+              class="pointer-events-none absolute inset-0 z-[5] rounded-[14px] border-4 border-white"
+              aria-hidden="true"
+            />
+          </Transition>
         </div>
       </div>
 
