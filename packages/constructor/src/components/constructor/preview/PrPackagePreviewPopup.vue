@@ -2,6 +2,9 @@
 import { computed, onBeforeUnmount, watch } from 'vue'
 import type { PrPackage } from '@brand-constructor/shared/types'
 import { useConstructorStore } from '@/stores/constructor'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import ClockIcon from '@/components/icons/ClockIcon.vue'
+import CloseIcon from '@/components/icons/CloseIcon.vue'
 
 interface PrPackagePreviewPopupProps {
   pkg: PrPackage | null
@@ -93,40 +96,14 @@ onBeforeUnmount(() => {
         aria-label="Закрити"
         @click="handleClose"
       >
-        <svg
-          class="size-6"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M18 6L6.00081 17.9992M17.9992 18L6 6.00085"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <CloseIcon class="size-6" :stroke-width="1.5" />
       </button>
     </header>
 
     <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pr-1">
       <div v-if="pkg.timeline" class="p-4 bg-[#f3f3f5] rounded-[10px]">
         <div class="flex items-center gap-2 mb-1">
-          <svg
-            class="size-4 text-muted-foreground shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
+          <ClockIcon class="size-4 text-muted-foreground shrink-0" />
           <p class="text-xs text-muted-foreground">Строки впровадження</p>
         </div>
         <p class="text-sm font-medium text-foreground tracking-[-0.15px]">
@@ -166,33 +143,14 @@ onBeforeUnmount(() => {
             :key="idx"
             class="flex items-center gap-2 text-sm"
           >
-            <svg
+            <CheckIcon
               v-if="feature.included"
               class="size-3 text-primary shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            <svg
+            />
+            <CloseIcon
               v-else
               class="size-3 text-muted-foreground shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            />
             <span :class="feature.included ? 'text-foreground' : 'text-muted-foreground'">
               {{ feature.name }}
             </span>

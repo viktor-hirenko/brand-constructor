@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 
 interface ConceptGridProps {
   concepts: Concept[]
@@ -60,20 +62,7 @@ function isSelected(id: string): boolean {
           v-else
           class="concept-grid__card-placeholder w-full h-full flex items-center justify-center text-muted-foreground"
         >
-          <svg
-            class="size-12 opacity-30"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-            <circle cx="9" cy="9" r="2" />
-            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-          </svg>
+          <ImagePlaceholderIcon class="size-12 opacity-30" />
         </div>
 
         <div
@@ -103,17 +92,7 @@ function isSelected(id: string): boolean {
           v-if="isSelected(concept.id)"
           class="concept-grid__card-check absolute top-[6px] left-[6px] size-8 rounded-full bg-white border border-black/10 flex items-center justify-center shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] z-[4]"
         >
-          <svg
-            class="size-4 text-[#030213]"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <CheckIcon class="size-4 text-[#030213]" />
         </div>
       </div>
     </div>

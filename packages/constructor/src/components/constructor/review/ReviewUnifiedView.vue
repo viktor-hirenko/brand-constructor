@@ -21,6 +21,9 @@ import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewV
 import CeoActionsFooter from '@/components/constructor/review/CeoActionsFooter.vue'
 import PoActionsFooter from '@/components/constructor/review/PoActionsFooter.vue'
 import ChatBubbleIcon from '@/components/icons/ChatBubbleIcon.vue'
+import CalendarIcon from '@/components/icons/CalendarIcon.vue'
+import GlobeIcon from '@/components/icons/GlobeIcon.vue'
+import LinkIcon from '@/components/icons/LinkIcon.vue'
 
 /**
  * Unified Brand Brief review screen.
@@ -387,21 +390,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
               :value="basics.geo.join(', ')"
             >
               <template #icon>
-                <svg
-                  class="size-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                  <path
-                    d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  />
-                  <path d="M2 12h20" stroke="currentColor" stroke-width="2" />
-                </svg>
+                <GlobeIcon class="size-5" />
               </template>
             </ReviewSectionRow>
             <ReviewSectionRow
@@ -410,27 +399,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
               :value="formatDate(basics.launchDate)"
             >
               <template #icon>
-                <svg
-                  class="size-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                >
-                  <path
-                    d="M6.04163 5.00033V1.66699C6.04163 1.32181 6.32145 1.04199 6.66663 1.04199C7.0118 1.04199 7.29163 1.32181 7.29163 1.66699V5.00033C7.29163 5.3455 7.0118 5.62533 6.66663 5.62533C6.32145 5.62533 6.04163 5.3455 6.04163 5.00033ZM12.7083 5.00033V1.66699C12.7083 1.32181 12.9881 1.04199 13.3333 1.04199C13.6785 1.04199 13.9583 1.32181 13.9583 1.66699V5.00033C13.9583 5.3455 13.6785 5.62533 13.3333 5.62533C12.9881 5.62533 12.7083 5.3455 12.7083 5.00033Z"
-                    fill="#5B5B62"
-                  />
-                  <path
-                    d="M16.875 9.99967C16.875 8.41071 16.8738 7.28183 16.7586 6.42546C16.6459 5.58706 16.4342 5.10414 16.0815 4.75147C15.7289 4.39881 15.246 4.1871 14.4076 4.07438C13.5512 3.95926 12.4223 3.95801 10.8333 3.95801H9.16667C7.5777 3.95801 6.44882 3.95926 5.59245 4.07438C4.75404 4.1871 4.27114 4.39879 3.91846 4.75147C3.56578 5.10414 3.35409 5.58705 3.24137 6.42546C3.12625 7.28183 3.125 8.41071 3.125 9.99967V11.6663C3.125 13.2553 3.12625 14.3842 3.24137 15.2406C3.3541 16.079 3.5658 16.5619 3.91846 16.9146C4.27114 17.2672 4.75405 17.4789 5.59245 17.5916C6.44882 17.7068 7.5777 17.708 9.16667 17.708H10.8333C12.4223 17.708 13.5512 17.7068 14.4076 17.5916C15.246 17.4789 15.7289 17.2672 16.0815 16.9146C16.4342 16.5619 16.6459 16.079 16.7586 15.2406C16.8738 14.3842 16.875 13.2553 16.875 11.6663V9.99967ZM18.125 11.6663C18.125 13.22 18.1262 14.4483 17.9972 15.4074C17.8659 16.3843 17.5889 17.1748 16.9653 17.7983C16.3418 18.4219 15.5513 18.6989 14.5744 18.8302C13.6153 18.9592 12.387 18.958 10.8333 18.958H9.16667C7.61299 18.958 6.38466 18.9592 5.42562 18.8302C4.4487 18.6989 3.65826 18.4219 3.03467 17.7983C2.41106 17.1748 2.13413 16.3843 2.00277 15.4074C1.87383 14.4483 1.875 13.22 1.875 11.6663V9.99967C1.875 8.44599 1.87383 7.21766 2.00277 6.25863C2.13414 5.28171 2.41108 4.49127 3.03467 3.86768C3.65826 3.24409 4.4487 2.96714 5.42562 2.83578C6.38466 2.70684 7.61299 2.70801 9.16667 2.70801H10.8333C12.387 2.70801 13.6153 2.70684 14.5744 2.83578C15.5513 2.96714 16.3418 3.24407 16.9653 3.86768C17.5889 4.49127 17.8659 5.28171 17.9972 6.25863C18.1262 7.21767 18.125 8.44599 18.125 9.99967V11.6663Z"
-                    fill="#5B5B62"
-                  />
-                  <path
-                    d="M17.5 7.70801C17.8452 7.70801 18.125 7.98783 18.125 8.33301C18.125 8.67819 17.8452 8.95801 17.5 8.95801H2.5C2.15482 8.95801 1.875 8.67819 1.875 8.33301C1.875 7.98783 2.15482 7.70801 2.5 7.70801H17.5Z"
-                    fill="#5B5B62"
-                  />
-                </svg>
+                <CalendarIcon class="size-5 text-[#5B5B62]" />
               </template>
             </ReviewSectionRow>
             <ReviewSectionRow
@@ -439,20 +408,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
               :value="basics.linkedProduct"
             >
               <template #icon>
-                <svg
-                  class="size-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M9 17H7a5 5 0 0 1 0-10h2" />
-                  <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
-                  <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
+                <LinkIcon class="size-5" />
               </template>
             </ReviewSectionRow>
             <template #comment>

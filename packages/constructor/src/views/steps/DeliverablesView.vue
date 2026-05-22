@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import DatePicker from '@/components/constructor/fields/DatePicker.vue'
+import CalendarIcon from '@/components/icons/CalendarIcon.vue'
+import HandshakeIcon from '@/components/icons/HandshakeIcon.vue'
+import DeliverablesScopeIcon from '@/components/icons/DeliverablesScopeIcon.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 
 const store = useConstructorStore()
@@ -46,22 +49,7 @@ const hasAnythingEnabled = computed(() => legalLanding.value || partnerLanding.v
             <div
               class="size-12 rounded-[10px] bg-[rgba(3,2,19,0.1)] flex items-center justify-center shrink-0"
             >
-              <svg
-                class="size-6 text-foreground"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                <path d="M7 21h10" />
-                <path d="M12 3v18" />
-                <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
-              </svg>
+              <DeliverablesScopeIcon class="size-6 text-foreground" />
             </div>
             <div>
               <h3 class="text-lg font-medium text-foreground tracking-[-0.44px] mb-1">
@@ -89,24 +77,7 @@ const hasAnythingEnabled = computed(() => legalLanding.value || partnerLanding.v
             <div
               class="size-12 rounded-[10px] bg-[rgba(3,2,19,0.1)] flex items-center justify-center shrink-0"
             >
-              <svg
-                class="size-6 text-foreground"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="m11 17 2 2a1 1 0 1 0 3-3" />
-                <path
-                  d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"
-                />
-                <path d="m21 3 1 11h-2" />
-                <path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" />
-                <path d="M3 4h8" />
-              </svg>
+              <HandshakeIcon class="size-6 text-foreground" />
             </div>
             <div>
               <h3 class="text-lg font-medium text-foreground tracking-[-0.44px] mb-1">
@@ -130,21 +101,7 @@ const hasAnythingEnabled = computed(() => legalLanding.value || partnerLanding.v
     <!-- Development Deadline -->
     <div v-if="hasAnythingEnabled" class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
-        <svg
-          class="size-4 text-foreground"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M8 2v4" />
-          <path d="M16 2v4" />
-          <rect width="18" height="18" x="3" y="4" rx="2" />
-          <path d="M3 10h18" />
-        </svg>
+        <CalendarIcon class="size-4 text-foreground" />
         <span class="text-base font-medium text-foreground tracking-[-0.31px]">
           Дедлайн розробки
           <span class="text-red-500">*</span>

@@ -3,6 +3,9 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import RevisionReturnIcon from '@/components/icons/RevisionReturnIcon.vue'
+import SendIcon from '@/components/icons/SendIcon.vue'
 
 const router = useRouter()
 const store = useConstructorStore()
@@ -114,55 +117,21 @@ function handleGoHome() {
           class="size-16 rounded-full flex items-center justify-center mx-auto mb-6"
           :class="successConfig.iconBg"
         >
-          <!-- Send icon for submitted -->
-          <svg
+          <SendIcon
             v-if="store.successType === 'submitted'"
             class="size-8"
             :class="successConfig.iconColor"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m22 2-7 20-4-9-9-4Z" />
-            <path d="M22 2 11 13" />
-          </svg>
-          <!-- Return icon for needs_revision -->
-          <svg
+          />
+          <RevisionReturnIcon
             v-else-if="store.successType === 'needs_revision'"
             class="size-8"
             :class="successConfig.iconColor"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-            <path d="M21 3v5h-5" />
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-            <path d="M8 16H3v5" />
-          </svg>
-          <!-- Checkmark icon for approved and saved -->
-          <svg
+          />
+          <CheckIcon
             v-else
             class="size-8"
             :class="successConfig.iconColor"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
+          />
         </div>
 
         <h1 class="text-2xl font-medium text-foreground mb-2">{{ successConfig.title }}</h1>

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
+import CloseIcon from '@/components/icons/CloseIcon.vue'
 
 interface Props {
   concept: Concept
@@ -78,18 +79,7 @@ const headerTagText = computed(() => {
               class="size-10 rounded-full bg-[#ececf0] flex items-center justify-center hover:bg-[#dddde2] transition-colors"
               @click="emit('close')"
             >
-              <svg
-                class="size-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
+              <CloseIcon class="size-5" />
             </button>
           </div>
         </div>

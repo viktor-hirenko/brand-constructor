@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { GEO_COUNTRIES, type GeoOption } from '@/data/geo-countries';
+import CloseIcon from '@/components/icons/CloseIcon.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue';
 
 const model = defineModel<string[]>({ required: true });
 
@@ -68,9 +70,7 @@ function openDropdown() {
           class="text-muted-foreground hover:text-foreground transition-colors ml-0.5"
           @click.stop="removeGeo(code)"
         >
-          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-          </svg>
+          <CloseIcon class="size-3.5" :stroke-width="2.5" />
         </button>
       </span>
       <input
@@ -120,18 +120,10 @@ function openDropdown() {
                 <span class="font-medium">{{ geo.code }}</span>
                 <span class="text-muted-foreground ml-1.5">{{ geo.name }}</span>
               </span>
-              <svg
+              <CheckIcon
                 v-if="isSelected(geo.code)"
                 class="size-4 text-primary shrink-0"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              />
             </button>
           </div>
 
@@ -154,18 +146,10 @@ function openDropdown() {
                 <span class="font-medium">{{ geo.code }}</span>
                 <span class="text-muted-foreground ml-1.5">{{ geo.name }}</span>
               </span>
-              <svg
+              <CheckIcon
                 v-if="isSelected(geo.code)"
                 class="size-4 text-primary shrink-0"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              />
             </button>
           </div>
         </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 interface CeoCommentCardProps {
   /** Raw text of the CEO comment. */
@@ -51,18 +52,7 @@ const resolvedButtonHovered = ref(false)
         :disabled="loading"
         @click="emit('resolve')"
       >
-        <svg
-          class="size-3.5 shrink-0"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M20 6 9 17l-5-5" />
-        </svg>
+        <CheckIcon class="size-3.5 shrink-0" />
         <span>Позначити як вирішений</span>
       </button>
 
@@ -76,19 +66,10 @@ const resolvedButtonHovered = ref(false)
         @mouseenter="resolvedButtonHovered = true"
         @mouseleave="resolvedButtonHovered = false"
       >
-        <svg
+        <CheckIcon
           v-if="!resolvedButtonHovered"
           class="size-3.5 shrink-0"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M20 6 9 17l-5-5" />
-        </svg>
+        />
         <span>{{ resolvedButtonHovered ? 'Повернути' : 'Вирішено' }}</span>
       </button>
     </template>

@@ -2,6 +2,7 @@
 import { reactive, computed, ref } from 'vue'
 import type { NewConceptBrief } from '@brand-constructor/shared/types'
 import DatePicker from '@/components/constructor/fields/DatePicker.vue'
+import CloseIcon from '@/components/icons/CloseIcon.vue'
 
 const props = defineProps<{
   initialData?: NewConceptBrief | null
@@ -121,18 +122,7 @@ function handleSave() {
             class="size-10 rounded-full bg-[#ececf0] flex items-center justify-center hover:bg-[#dddde2] transition-colors"
             @click="emit('cancel')"
           >
-            <svg
-              class="size-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            <CloseIcon class="size-5" />
           </button>
         </div>
 

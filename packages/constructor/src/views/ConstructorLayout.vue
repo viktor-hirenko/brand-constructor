@@ -14,6 +14,7 @@ import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobile
 import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPanel.vue'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
+import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import type { Concept, ExternalNaming } from '@brand-constructor/shared/types'
 
 const route = useRoute()
@@ -503,19 +504,7 @@ watch(currentStep, step => {
               class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-[#030213] text-white rounded-[10px] hover:opacity-90 transition-all text-base font-medium flex items-center gap-2"
               @click="handleReturnToPreview"
             >
-              <svg
-                class="size-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M9 14 4 9l5-5" />
-                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" />
-              </svg>
+              <CornerUpLeftIcon class="size-4" />
               Повернутись
             </button>
           </div>

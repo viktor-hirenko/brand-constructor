@@ -6,6 +6,10 @@ import type { InternalNaming } from '@brand-constructor/shared/types'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
+import FileIcon from '@/components/icons/FileIcon.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import PlusIcon from '@/components/icons/PlusIcon.vue'
 
 const store = useConstructorStore()
 
@@ -133,36 +137,14 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
             v-if="selectedId === naming.id"
             class="absolute top-[6px] left-[6px] size-8 rounded-full bg-[#030213] flex items-center justify-center"
           >
-            <svg
-              class="size-4 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
+            <CheckIcon class="size-4 text-white" />
           </div>
         </div>
       </div>
 
       <!-- Empty state -->
       <div v-else class="text-center py-16 text-muted-foreground">
-        <svg
-          class="size-16 mx-auto mb-4 opacity-30"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-        </svg>
+        <FileIcon class="size-16 mx-auto mb-4 opacity-30" variant="compact" />
         <p>Внутрішні неймінги не знайдено</p>
       </div>
     </template>
@@ -175,19 +157,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
         class="inline-flex items-center gap-2 h-[40px] px-3 rounded-[8px] transition-colors text-base font-medium tracking-[-0.31px] bg-[#e0e0e4] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]"
         @click="handleCreateNew"
       >
-        <svg
-          class="size-4"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M5 12h14" />
-          <path d="M12 5v14" />
-        </svg>
+        <PlusIcon class="size-4" />
         Замовити нову назву
       </button>
 
@@ -197,32 +167,12 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
         class="inline-flex items-center gap-2 h-[40px] px-3 rounded-[8px] transition-colors text-base font-medium tracking-[-0.31px] bg-[#030213] text-white hover:opacity-90"
         @click="handleCreateNew"
       >
-        <svg
-          class="size-4"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M20 6 9 17l-5-5" />
-        </svg>
+        <CheckIcon class="size-4" />
         Бриф назви створено
-        <svg
+        <ChevronDownIcon
           class="size-3 ml-1 transition-transform"
           :class="showBriefActions ? 'rotate-180' : ''"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        />
       </button>
 
       <div

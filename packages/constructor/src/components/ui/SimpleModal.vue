@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import CloseIcon from '@/components/icons/CloseIcon.vue'
+
 interface SimpleModalProps {
   title: string
   body: string
@@ -34,10 +36,7 @@ const emit = defineEmits<{
           aria-label="Закрити"
           @click="emit('cancel')"
         >
-          <svg class="size-4 text-[#5B5B62]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
+          <CloseIcon class="size-4 text-[#5B5B62]" />
         </button>
 
         <div class="simple-modal__body flex flex-col gap-2 pr-6">

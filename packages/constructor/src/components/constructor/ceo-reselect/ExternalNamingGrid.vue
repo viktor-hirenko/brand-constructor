@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 interface ExternalNamingGridProps {
   namings: ExternalNaming[]
@@ -129,17 +130,7 @@ function formatPrice(price: number | null | undefined): string {
         v-if="isSelected(naming)"
         class="external-naming-grid__card-check absolute top-[6px] left-[6px] size-8 rounded-[100px] bg-[#030213] flex items-center justify-center"
       >
-        <svg
-          class="size-4 text-white"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M20 6 9 17l-5-5" />
-        </svg>
+        <CheckIcon class="size-4 text-white" />
       </div>
     </div>
   </div>

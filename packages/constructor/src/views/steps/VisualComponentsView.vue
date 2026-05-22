@@ -4,6 +4,11 @@ import { useConstructorStore } from '@/stores/constructor'
 import { getAssetUrl, apiGet } from '@/composables/useApi'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared/types'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
+import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
+import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 
 const store = useConstructorStore()
 
@@ -297,24 +302,7 @@ onMounted(loadComponentTypes)
         class="w-full px-4 py-3 bg-[#f3f3f5] flex items-center gap-2 hover:bg-[#ececf0] transition-colors"
         @click="handleDelegateToggle"
       >
-        <svg
-          class="size-6 text-primary shrink-0"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
-          />
-          <path d="M20 3v4" />
-          <path d="M22 5h-4" />
-          <path d="M4 17v2" />
-          <path d="M5 18H3" />
-        </svg>
+        <SparklesIcon class="size-6 text-primary shrink-0" />
         <span class="flex-1 text-left text-base font-medium text-foreground tracking-[-0.31px]">
           Довірити вибір дизайнерам
         </span>
@@ -363,39 +351,19 @@ onMounted(loadComponentTypes)
               • {{ getSelectedVariantName(type.id) }}
             </span>
             <!-- Conflict indicator on the type header -->
-            <svg
+            <AlertTriangleIcon
               v-if="
                 selections[type.id] &&
                 hasConflicts &&
                 conflicts.some(c => c.typeAName === type.name || c.typeBName === type.name)
               "
               class="size-5 text-[#d97706]"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-              <path d="M12 9v4" />
-              <path d="M12 17h.01" />
-            </svg>
+            />
           </div>
-          <svg
+          <ChevronDownIcon
             class="size-5 text-foreground transition-transform duration-200"
             :class="{ 'rotate-180': openAccordionId === type.id }"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+          />
         </button>
 
         <!-- Accordion Body (animated) -->
@@ -432,20 +400,7 @@ onMounted(loadComponentTypes)
                       v-else
                       class="w-full h-full flex items-center justify-center text-muted-foreground"
                     >
-                      <svg
-                        class="size-6 opacity-30"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                        <circle cx="9" cy="9" r="2" />
-                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                      </svg>
+                      <ImagePlaceholderIcon class="size-6 opacity-30" />
                     </div>
                   </div>
                   <div class="flex-1">
@@ -453,19 +408,10 @@ onMounted(loadComponentTypes)
                       <span class="text-sm font-medium text-foreground tracking-[-0.15px]">{{
                         variant.name
                       }}</span>
-                      <svg
+                      <CheckIcon
                         v-if="selections[type.id] === variant.id"
                         class="size-5 text-foreground"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M20 6 9 17l-5-5" />
-                      </svg>
+                      />
                     </div>
                   </div>
                 </div>
@@ -501,20 +447,7 @@ onMounted(loadComponentTypes)
     >
       <div class="bg-[#fff8dc] px-4 py-3">
         <div class="flex items-center gap-3 mb-1">
-          <svg
-            class="size-6 text-[#d97706] shrink-0"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-            <path d="M12 9v4" />
-            <path d="M12 17h.01" />
-          </svg>
+          <AlertTriangleIcon class="size-6 text-[#d97706] shrink-0" />
           <span class="text-base font-medium text-foreground tracking-[-0.31px]"
             >Несумісні компоненти</span
           >
@@ -541,24 +474,7 @@ onMounted(loadComponentTypes)
         <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="cancelDelegate" />
         <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
           <div class="flex justify-center mb-4">
-            <svg
-              class="size-10 text-primary"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
-              />
-              <path d="M20 3v4" />
-              <path d="M22 5h-4" />
-              <path d="M4 17v2" />
-              <path d="M5 18H3" />
-            </svg>
+            <SparklesIcon class="size-10 text-primary" />
           </div>
           <h3 class="text-xl font-medium text-foreground tracking-[-0.45px] mb-2">
             Довірити вибір дизайнерам?

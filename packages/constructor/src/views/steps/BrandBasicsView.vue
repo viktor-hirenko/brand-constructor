@@ -3,6 +3,9 @@ import { computed, ref } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import GeoMultiSelect from '@/components/constructor/fields/GeoMultiSelect.vue'
 import DatePicker from '@/components/constructor/fields/DatePicker.vue'
+import GlobeIcon from '@/components/icons/GlobeIcon.vue'
+import CalendarIcon from '@/components/icons/CalendarIcon.vue'
+import FileIcon from '@/components/icons/FileIcon.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 
 const store = useConstructorStore()
@@ -37,20 +40,7 @@ const comment = computed({
     <!-- GEO -->
     <div>
       <label class="flex items-center gap-2 mb-2">
-        <svg
-          class="size-4 text-muted-foreground"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-          <path d="M2 12h20" />
-        </svg>
+        <GlobeIcon class="size-4 text-muted-foreground" />
         <span class="font-medium text-base">GEO (Географія)</span>
         <span class="text-error text-sm">*</span>
       </label>
@@ -63,21 +53,7 @@ const comment = computed({
     <!-- Launch Date -->
     <div>
       <label class="flex items-center gap-2 mb-2">
-        <svg
-          class="size-4 text-muted-foreground"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M8 2v4" />
-          <path d="M16 2v4" />
-          <rect width="18" height="18" x="3" y="4" rx="2" />
-          <path d="M3 10h18" />
-        </svg>
+        <CalendarIcon class="size-4 text-muted-foreground" />
         <span class="font-medium text-base">Плануєма дата запуску</span>
         <span class="text-error text-sm">*</span>
       </label>
@@ -94,22 +70,7 @@ const comment = computed({
     <!-- Linked Product -->
     <div>
       <label class="flex items-center gap-2 mb-2">
-        <svg
-          class="size-4 text-muted-foreground"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-          <path d="M10 9H8" />
-          <path d="M16 13H8" />
-          <path d="M16 17H8" />
-        </svg>
+        <FileIcon class="size-4 text-muted-foreground" />
         <span class="font-medium text-base">Звʼязок з іншим продуктом (якщо є)</span>
       </label>
       <input

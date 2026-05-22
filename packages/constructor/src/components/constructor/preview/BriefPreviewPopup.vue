@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import CloseIcon from '@/components/icons/CloseIcon.vue'
 
 export interface BriefField {
   label: string
@@ -81,21 +82,7 @@ onBeforeUnmount(() => {
         aria-label="Закрити"
         @click="handleClose"
       >
-        <svg
-          class="size-6"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M18 6L6.00081 17.9992M17.9992 18L6 6.00085"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <CloseIcon class="size-6" :stroke-width="1.5" />
       </button>
     </header>
 

@@ -12,6 +12,7 @@ import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vu
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -216,9 +217,7 @@ async function goDali() {
         </div>
         <!-- Checkmark badge -->
         <div class="absolute top-[7px] left-[7px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_5px_rgba(0,0,0,0.2)] flex items-center justify-center">
-          <svg class="size-4 text-[#030213]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <CheckIcon class="size-4 text-[#030213]" />
         </div>
       </div>
       <div v-else class="w-[248px] h-[248px] rounded-2xl border border-black/10 bg-[#f3f3f5] flex items-center justify-center">
@@ -251,9 +250,7 @@ async function goDali() {
             v-if="selectedId === poConcept.id"
             class="absolute top-1.5 left-1.5 size-7 rounded-full bg-white flex items-center justify-center"
           >
-            <svg class="size-4 text-[#030213]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <CheckIcon class="size-4 text-[#030213]" />
           </div>
         </div>
         <div v-else class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center">
@@ -284,9 +281,7 @@ async function goDali() {
             v-if="selectedId === ceoConcept.id"
             class="absolute top-1.5 left-1.5 size-7 rounded-full bg-white flex items-center justify-center"
           >
-            <svg class="size-4 text-[#030213]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <CheckIcon class="size-4 text-[#030213]" />
           </div>
         </div>
         <div v-else class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center">

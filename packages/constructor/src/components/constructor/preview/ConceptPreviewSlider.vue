@@ -3,6 +3,12 @@ import { computed, watch, ref, onMounted, onUnmounted } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 import { useConstructorStore } from '@/stores/constructor'
+import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon.vue'
+import ArrowRightIcon from '@/components/icons/ArrowRightIcon.vue'
+import CloseIcon from '@/components/icons/CloseIcon.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
+import MaximizeIcon from '@/components/icons/MaximizeIcon.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -216,18 +222,7 @@ onUnmounted(() => {
       v-if="!concept"
       class="flex-1 flex flex-col items-center justify-center p-12 text-center text-muted-foreground rounded-[24px] border border-dashed border-black/10 bg-muted/20"
     >
-      <svg
-        class="size-16 mx-auto mb-4 opacity-30"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-        <circle cx="9" cy="9" r="2" />
-        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-      </svg>
+      <ImagePlaceholderIcon class="size-16 mx-auto mb-4 opacity-30" />
       <p class="text-base tracking-[-0.31px] max-w-sm">
         Оберіть концепт зліва, щоб переглянути детальне превʼю тут.
       </p>
@@ -263,18 +258,7 @@ onUnmounted(() => {
           "
           @click="handlePrimaryClick"
         >
-          <svg
-            v-if="!cancelMode && isFinalSelected"
-            class="size-5 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <CheckIcon v-if="!cancelMode && isFinalSelected" class="size-5 shrink-0" />
           {{ computedConfirmLabel }}
         </button>
       </div>
@@ -312,20 +296,7 @@ onUnmounted(() => {
           aria-label="Розгорнути превʼю"
           @click="showExpanded = true"
         >
-          <svg
-            class="size-6 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M15 3h6v6" />
-            <path d="M9 21H3v-6" />
-            <path d="M21 3l-7 7" />
-            <path d="M3 21l7-7" />
-          </svg>
+          <MaximizeIcon class="size-6 shrink-0" />
         </button>
 
         <!-- Top-center dots (Figma 1450:19308 — пілюля blur + rgba фон навколо крапок) -->
@@ -356,20 +327,7 @@ onUnmounted(() => {
           aria-label="Попередній слайд"
           @click="goPrev"
         >
-          <svg
-            class="size-6 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M19 12H5M12 19l-7-7 7-7"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <ArrowLeftIcon class="size-6 shrink-0" />
         </button>
 
         <button
@@ -379,20 +337,7 @@ onUnmounted(() => {
           aria-label="Наступний слайд"
           @click="goNext"
         >
-          <svg
-            class="size-6 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M5 12H19M12 5l7 7-7 7"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <ArrowRightIcon class="size-6 shrink-0" />
         </button>
       </div>
     </template>
@@ -418,18 +363,7 @@ onUnmounted(() => {
             aria-label="Закрити"
             @click="closeExpanded"
           >
-            <svg
-              class="size-6 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            <CloseIcon class="size-6 shrink-0" />
           </button>
           <img
             :src="asset(currentSlideUrl)"

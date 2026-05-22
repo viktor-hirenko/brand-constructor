@@ -21,7 +21,9 @@
     "db:migrate": "pnpm --filter @brand-constructor/worker db:migrate",
     "db:seed": "pnpm --filter @brand-constructor/worker db:seed",
     "slack:cleanup": "node scripts/cleanup-slack-bot-messages.mjs",
-    "slack:cleanup:dry": "DRY_RUN=true node scripts/cleanup-slack-bot-messages.mjs"
+    "slack:cleanup:dry": "DRY_RUN=true node scripts/cleanup-slack-bot-messages.mjs",
+    "icons:audit": "node scripts/audit-icons.mjs",
+    "icons:check": "node scripts/check-inline-icons.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.0"

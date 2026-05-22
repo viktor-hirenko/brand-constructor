@@ -8,6 +8,10 @@ import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
+import PlusIcon from '@/components/icons/PlusIcon.vue'
 
 const store = useConstructorStore()
 const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
@@ -179,20 +183,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
               v-else
               class="w-full h-full flex items-center justify-center text-muted-foreground"
             >
-              <svg
-                class="size-12 opacity-30"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                <circle cx="9" cy="9" r="2" />
-                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-              </svg>
+              <ImagePlaceholderIcon class="size-12 opacity-30" />
             </div>
 
             <!-- Default dimming; hidden when selected; hover clears dim on idle cards -->
@@ -224,17 +215,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
               v-if="selectedId === concept.id"
               class="absolute top-[8px] left-[8px] size-7 rounded-full bg-white border border-black/10 flex items-center justify-center shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] z-[4]"
             >
-              <svg
-                class="size-4 text-[#030213]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <CheckIcon class="size-4 text-[#030213]" />
             </div>
           </div>
 
@@ -263,19 +244,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
           class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[8px] transition-colors text-base font-medium leading-6 tracking-[-0.31px] bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]"
           @click="handleCreateNew"
         >
-          <svg
-            class="size-4"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-          </svg>
+          <PlusIcon class="size-4" />
           Замовити новий концепт
         </button>
 
@@ -285,32 +254,12 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
           class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[8px] transition-colors text-base font-medium leading-6 tracking-[-0.31px] bg-[#030213] text-white hover:opacity-90"
           @click="handleCreateNew"
         >
-          <svg
-            class="size-4"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
+          <CheckIcon class="size-4" />
           Бриф концепту створено
-          <svg
+          <ChevronDownIcon
             class="size-3 ml-1 transition-transform"
             :class="showBriefActions ? 'rotate-180' : ''"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+          />
         </button>
 
         <!-- Dropdown actions -->

@@ -5,6 +5,9 @@ import { getAssetUrl } from '@/composables/useApi'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
+import FileIcon from '@/components/icons/FileIcon.vue'
+import MoonIcon from '@/components/icons/MoonIcon.vue'
+import SunIcon from '@/components/icons/SunIcon.vue'
 
 interface ReviewConceptBlockProps {
   concept: Concept | null
@@ -85,38 +88,8 @@ const singlePoLabel = 'Вибір Замовника'
     <!-- Mode row -->
     <div class="review-concept-block__mode flex items-start gap-2">
       <div class="size-5 shrink-0 text-[#5B5B62]">
-        <svg
-          v-if="mode === 'dark'"
-          class="size-5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-        </svg>
-        <svg
-          v-else
-          class="size-5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2" />
-          <path d="M12 20v2" />
-          <path d="m4.93 4.93 1.41 1.41" />
-          <path d="m17.66 17.66 1.41 1.41" />
-          <path d="M2 12h2" />
-          <path d="M20 12h2" />
-          <path d="m6.34 17.66-1.41 1.41" />
-          <path d="m19.07 4.93-1.41 1.41" />
-        </svg>
+        <MoonIcon v-if="mode === 'dark'" class="size-5" />
+        <SunIcon v-else class="size-5" />
       </div>
       <div class="flex-1 min-w-0 flex flex-col gap-1">
         <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Mode</p>
@@ -164,22 +137,7 @@ const singlePoLabel = 'Вибір Замовника'
           v-else-if="isNewConcept"
           class="review-concept-block__card review-concept-block__card--brief relative w-full aspect-square rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
         >
-          <svg
-            class="size-10 opacity-60"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-            <path d="M10 9H8" />
-            <path d="M16 13H8" />
-            <path d="M16 17H8" />
-          </svg>
+          <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
           <p class="text-[14px] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
             Бриф нового концепту
           </p>
@@ -282,22 +240,7 @@ const singlePoLabel = 'Вибір Замовника'
           v-else-if="isNewConcept"
           class="review-concept-block__card review-concept-block__card--brief relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
         >
-          <svg
-            class="size-10 opacity-60"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-            <path d="M10 9H8" />
-            <path d="M16 13H8" />
-            <path d="M16 17H8" />
-          </svg>
+          <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
           <p class="text-[14px] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
             Бриф нового концепту
           </p>

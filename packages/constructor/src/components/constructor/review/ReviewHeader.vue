@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
+import CheckBadgeIcon from '@/components/icons/CheckBadgeIcon.vue'
 
 interface InfoOverride {
   title: string
@@ -152,36 +154,15 @@ const showProgress = computed(
     >
       <div class="review-header__info-header flex items-start gap-3 mb-2">
         <!-- Warning icon: PO returned-from-CEO attention banner -->
-        <svg
+        <AlertTriangleIcon
           v-if="displayInfo.iconVariant === 'warning'"
           class="review-header__info-icon review-header__info-icon--warning size-6 shrink-0 text-[#C97D00]"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </svg>
+        />
         <!-- Default check icon: status-driven info blocks -->
-        <svg
+        <CheckBadgeIcon
           v-else
           class="review-header__info-icon review-header__info-icon--check size-6 shrink-0 text-foreground/80"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
+        />
         <h3 class="review-header__info-title text-lg font-medium tracking-[-0.45px] text-foreground">
           {{ displayInfo.title }}
         </h3>

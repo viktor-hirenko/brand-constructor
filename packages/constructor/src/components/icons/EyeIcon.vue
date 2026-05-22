@@ -1,9 +1,7 @@
 <script setup lang="ts">
-interface EyeIconProps {
-  class?: string
-}
+import type { IconProps } from './types'
 
-const props = defineProps<EyeIconProps>()
+const props = defineProps<IconProps>()
 </script>
 
 <template>
@@ -14,7 +12,9 @@ const props = defineProps<EyeIconProps>()
     height="16"
     viewBox="0 0 16 16"
     fill="none"
-    aria-hidden="true"
+    :role="props.title ? 'img' : undefined"
+    :aria-label="props.title"
+    :aria-hidden="props.title ? undefined : true"
   >
     <path
       d="M7.99985 2.5C11.3127 2.5 14.1224 4.64745 15.1157 7.625L15.1424 7.7168C15.196 7.9317 15.1863 8.15743 15.1157 8.36849L15.1164 8.36914C14.1264 11.3495 11.3148 13.5 7.99985 13.5C4.68636 13.5 1.87539 11.3517 0.882665 8.37305V8.3724C0.802628 8.13173 0.802613 7.87152 0.882665 7.63086L0.980973 7.35417C2.04956 4.51844 4.7884 2.50004 7.99985 2.5ZM7.99985 3.5C5.12826 3.50004 2.69063 5.36295 1.83188 7.94661C1.81999 7.98237 1.82001 8.02088 1.83188 8.05664L1.91717 8.29688C2.8454 10.7538 5.21933 12.5 7.99985 12.5C10.8714 12.5 13.309 10.6374 14.1672 8.05404L14.1678 8.05208C14.1798 8.01664 14.1799 7.97917 14.1685 7.94531L14.1678 7.94336C13.3071 5.36071 10.8702 3.5 7.99985 3.5Z"

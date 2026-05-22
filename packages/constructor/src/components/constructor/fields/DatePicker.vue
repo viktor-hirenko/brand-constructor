@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import CalendarIcon from '@/components/icons/CalendarIcon.vue'
+import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue'
+import ChevronRightIcon from '@/components/icons/ChevronRightIcon.vue'
 
 const props = defineProps<{
   minDate?: string
@@ -189,21 +192,7 @@ async function toggle() {
       <span :class="model ? 'font-medium text-foreground' : 'text-foreground/50'">
         {{ model ? formatDisplay(model) : 'Виберіть дату' }}
       </span>
-      <svg
-        class="size-4 text-muted-foreground shrink-0"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M8 2v4" />
-        <path d="M16 2v4" />
-        <rect width="18" height="18" x="3" y="4" rx="2" />
-        <path d="M3 10h18" />
-      </svg>
+      <CalendarIcon class="size-4 text-muted-foreground shrink-0" />
     </button>
 
     <!-- Teleported to body to escape overflow clipping -->
@@ -236,18 +225,7 @@ async function toggle() {
               aria-label="Попередній місяць"
               @click="prevMonth"
             >
-              <svg
-                class="h-4 w-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
+              <ChevronLeftIcon class="h-4 w-4" />
             </button>
             <button
               type="button"
@@ -255,18 +233,7 @@ async function toggle() {
               aria-label="Наступний місяць"
               @click="nextMonth"
             >
-              <svg
-                class="h-4 w-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRightIcon class="h-4 w-4" />
             </button>
           </div>
 

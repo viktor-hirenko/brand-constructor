@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import CloseIcon from '@/components/icons/CloseIcon.vue'
 
 const props = defineProps<{
   initialFeedback?: string | null
@@ -41,18 +42,7 @@ function handleSave() {
             class="size-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
             @click="emit('cancel')"
           >
-            <svg
-              class="size-5 text-[#717182]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            <CloseIcon class="size-5 text-[#717182]" />
           </button>
         </div>
 
