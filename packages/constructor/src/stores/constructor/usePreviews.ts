@@ -1,5 +1,7 @@
-import { ref, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import type { PrPackage } from '@brand-constructor/shared/types'
+
+export type BriefPreviewKind = 'concept' | 'externalNaming' | 'internalNaming'
 
 interface UsePreviewsOptions {
   /**
@@ -33,6 +35,10 @@ export function usePreviews(opts: UsePreviewsOptions) {
   const prPackagePreviewOpen = ref(false)
   const prPackagePreviewPackage = ref<PrPackage | null>(null)
 
+  /** Right-side drawer brief preview (Steps 2/4/5 dropdown + Step 6 review). */
+  const briefPreviewKind = ref<BriefPreviewKind | null>(null)
+  const briefPreviewOpen = computed(() => briefPreviewKind.value !== null)
+
   /** Opens concept carousel overlay; starts at the first slide (`gallery_url_1`). */
   function openConceptPreview(conceptId: string) {
     conceptPreviewConceptId.value = conceptId
@@ -55,11 +61,20 @@ export function usePreviews(opts: UsePreviewsOptions) {
     prPackagePreviewPackage.value = null
   }
 
+  function openBriefPreview(kind: BriefPreviewKind) {
+    briefPreviewKind.value = kind
+  }
+
+  function closeBriefPreview() {
+    briefPreviewKind.value = null
+  }
+
   function resetSlice() {
     conceptPreviewOpen.value = false
     conceptPreviewConceptId.value = null
     prPackagePreviewOpen.value = false
     prPackagePreviewPackage.value = null
+    briefPreviewKind.value = null
   }
 
   return {
@@ -67,10 +82,14 @@ export function usePreviews(opts: UsePreviewsOptions) {
     conceptPreviewConceptId,
     prPackagePreviewOpen,
     prPackagePreviewPackage,
+    briefPreviewKind,
+    briefPreviewOpen,
     openConceptPreview,
     closeConceptPreview,
     openPrPackagePreview,
     closePrPackagePreview,
+    openBriefPreview,
+    closeBriefPreview,
     // Facade-internal
     resetSlice,
   }

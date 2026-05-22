@@ -1,11 +1,9 @@
 // ---------------------------------------------------------------------------
 // Slack notification renderer (declarative, section-based).
 //
-// Each public `build*Message` function returns a `SlackMessage` whose body is
-// rendered from a flat list of `Section` records. Sections are atomic units
-// (header / field / bullet / subhead / spacer / …); reusable groups live in
-// the `*Fragment` composers; conditional inclusion is encapsulated inside the
-// fragment (returns `[]` when the underlying data is missing).
+// PO comments and CEO comments are rendered inline within each section (same
+// order as the constructor review UI). Only the general CEO comment appears
+// as a trailing block. Section order is fixed — never Object.entries on CEO keys.
 // ---------------------------------------------------------------------------
 
 interface SlackBlockButton {
@@ -96,7 +94,21 @@ export interface BrandNotificationData {
   prPackageRequirements: string | null
 }
 
-export const CEO_COMMENT_LABELS: Record<string, string> = {
+/** Stable section order (matches constructor Step 10 review). */
+export const CEO_SECTION_KEYS = [
+  'basics',
+  'concept',
+  'externalNaming',
+  'internalNaming',
+  'marketingPackage',
+  'deliverables',
+  'visualComponents',
+  'general',
+] as const
+
+export type CeoSectionKey = (typeof CEO_SECTION_KEYS)[number]
+
+export const CEO_COMMENT_LABELS: Record<CeoSectionKey, string> = {
   basics: 'Основна інформація',
   concept: 'Концепт',
   externalNaming: 'Зовнішня назва',
@@ -131,6 +143,15 @@ type Section =
   | { kind: 'bullet'; indent: string; label: string; value: string }
 
 type SectionOrSkip = Section | null | undefined
+
+interface FragmentOpts {
+  /** Inline CEO comment after PO comment in the same section (approved team messages). */
+  includeCeoComments?: boolean
+}
+
+interface BasicsOpts extends FragmentOpts {
+  withMode?: boolean
+}
 
 function header(emoji: string, title: string, subject: string, separator = ': '): Section {
   return { kind: 'header', emoji, title, separator, subject }
@@ -171,6 +192,29 @@ function bullet(label: string, value: string, indent = '  '): Section {
 function optBoolField(label: string, value: unknown): Section | null {
   if (value == null) return null
   return field(label, value ? 'Так' : 'Ні')
+}
+
+function hasText(value: string | null | undefined): boolean {
+  return Boolean(value?.trim())
+}
+
+function getCeoComment(
+  comments: Record<string, string> | null | undefined,
+  key: CeoSectionKey
+): string | null {
+  const text = comments?.[key]?.trim()
+  return text || null
+}
+
+function poCommentField(comment: string | null | undefined): SectionOrSkip {
+  return field('Коментар замовника', comment)
+}
+
+function ceoCommentField(
+  comments: Record<string, string> | null | undefined,
+  key: Exclude<CeoSectionKey, 'general'>
+): SectionOrSkip {
+  return field('Коментар CEO', getCeoComment(comments, key))
 }
 
 // ---------------------------------------------------------------------------
@@ -253,47 +297,80 @@ function parseJson<T>(raw: string | null): T | null {
 // Fragment composers
 // ---------------------------------------------------------------------------
 
-interface BasicsOpts {
-  withMode?: boolean
-}
-
 function basicsFragment(data: BrandNotificationData, opts: BasicsOpts = {}): SectionOrSkip[] {
-  return [
+  const sections: SectionOrSkip[] = [
     field('GEO', data.geo),
     field('Дата запуску', data.launchDate),
-    field('Коментар замовника', data.brandBasicsComment),
-    opts.withMode ? field('Режим', data.mode) : null,
+    poCommentField(data.brandBasicsComment),
   ]
+  if (opts.includeCeoComments) {
+    sections.push(ceoCommentField(data.ceoComments, 'basics'))
+  }
+  if (opts.withMode) {
+    sections.push(field('Режим', data.mode))
+  }
+  return sections
 }
 
-function conceptFragment(data: BrandNotificationData): SectionOrSkip[] {
-  return [
-    spacer(),
-    field('Концепт', data.conceptName),
-    field('Коментар до концепту', data.conceptComment),
-  ]
+function conceptFragment(data: BrandNotificationData, opts: FragmentOpts = {}): SectionOrSkip[] {
+  const hasContent =
+    data.conceptName ||
+    hasText(data.conceptComment) ||
+    (opts.includeCeoComments && getCeoComment(data.ceoComments, 'concept'))
+  if (!hasContent) return []
+
+  const sections: SectionOrSkip[] = [spacer(), field('Концепт', data.conceptName)]
+  sections.push(poCommentField(data.conceptComment))
+  if (opts.includeCeoComments) {
+    sections.push(ceoCommentField(data.ceoComments, 'concept'))
+  }
+  return sections
 }
 
-function externalNamingFragment(data: BrandNotificationData): SectionOrSkip[] {
-  if (data.externalNamingNames.length === 0) return []
-  return [
-    spacer(),
-    field('Зовнішній неймінг', data.externalNamingNames.join(', ')),
-    field('Коментар до зовнішнього неймінгу', data.externalNamingComment),
-  ]
+function externalNamingFragment(data: BrandNotificationData, opts: FragmentOpts = {}): SectionOrSkip[] {
+  const names = data.externalNamingNames.join(', ')
+  const hasContent =
+    names ||
+    hasText(data.externalNamingComment) ||
+    (opts.includeCeoComments && getCeoComment(data.ceoComments, 'externalNaming'))
+  if (!hasContent) return []
+
+  const sections: SectionOrSkip[] = [spacer()]
+  if (names) sections.push(field('Зовнішній неймінг', names))
+  sections.push(poCommentField(data.externalNamingComment))
+  if (opts.includeCeoComments) {
+    sections.push(ceoCommentField(data.ceoComments, 'externalNaming'))
+  }
+  return sections
 }
 
-function internalNamingFragment(data: BrandNotificationData): SectionOrSkip[] {
-  if (!data.internalNamingName) return []
-  return [
-    spacer(),
-    field('Внутрішній неймінг', data.internalNamingName),
-    field('Коментар до внутрішнього неймінгу', data.internalNamingComment),
-  ]
+function internalNamingFragment(data: BrandNotificationData, opts: FragmentOpts = {}): SectionOrSkip[] {
+  const hasContent =
+    data.internalNamingName ||
+    hasText(data.internalNamingComment) ||
+    (opts.includeCeoComments && getCeoComment(data.ceoComments, 'internalNaming'))
+  if (!hasContent) return []
+
+  const sections: SectionOrSkip[] = [spacer(), field('Внутрішній неймінг', data.internalNamingName)]
+  sections.push(poCommentField(data.internalNamingComment))
+  if (opts.includeCeoComments) {
+    sections.push(ceoCommentField(data.ceoComments, 'internalNaming'))
+  }
+  return sections
 }
 
-function prPackageFragment(data: BrandNotificationData): SectionOrSkip[] {
-  return [
+function prPackageFragment(data: BrandNotificationData, opts: FragmentOpts = {}): SectionOrSkip[] {
+  const hasContent =
+    data.prPackageName ||
+    data.prPackageTimeline ||
+    data.prPackageTeamsInvolved ||
+    data.prPackageComponentsList ||
+    data.prPackageRequirements ||
+    hasText(data.prPackageComment) ||
+    (opts.includeCeoComments && getCeoComment(data.ceoComments, 'marketingPackage'))
+  if (!hasContent) return []
+
+  const sections: SectionOrSkip[] = [
     spacer(),
     field('PR-пакет', data.prPackageName),
     field('Строки впровадження', data.prPackageTimeline),
@@ -302,21 +379,29 @@ function prPackageFragment(data: BrandNotificationData): SectionOrSkip[] {
       ? [subhead('Складові пакету'), rawLine(data.prPackageComponentsList)]
       : []),
     field('Що необхідно', data.prPackageRequirements),
-    field('Коментар до PR пакету', data.prPackageComment),
+    poCommentField(data.prPackageComment),
   ]
+  if (opts.includeCeoComments) {
+    sections.push(ceoCommentField(data.ceoComments, 'marketingPackage'))
+  }
+  return sections
 }
 
-function deliverablesFragment(data: BrandNotificationData): SectionOrSkip[] {
-  return [
+function deliverablesFragment(data: BrandNotificationData, opts: FragmentOpts = {}): SectionOrSkip[] {
+  const sections: SectionOrSkip[] = [
     spacer(),
     boolField('Legal Landing', data.legalLanding),
     boolField('Partner Landing', data.partnerLanding),
     field('Дедлайн розробки', data.developmentDeadline),
-    field('Коментар до Deliverables', data.deliverablesComment),
+    poCommentField(data.deliverablesComment),
   ]
+  if (opts.includeCeoComments) {
+    sections.push(ceoCommentField(data.ceoComments, 'deliverables'))
+  }
+  return sections
 }
 
-function visualComponentsFragment(data: BrandNotificationData): SectionOrSkip[] {
+function visualComponentsFragment(data: BrandNotificationData, opts: FragmentOpts = {}): SectionOrSkip[] {
   const sections: SectionOrSkip[] = [spacer(), boolField('Делегувати дизайнерам', data.delegateToDesigners)]
   if (!data.delegateToDesigners && data.resolvedComponents.length > 0) {
     sections.push(subhead('Візуальні компоненти'))
@@ -324,36 +409,55 @@ function visualComponentsFragment(data: BrandNotificationData): SectionOrSkip[] 
       sections.push(bullet(comp.typeName, comp.variantName))
     }
   }
-  sections.push(field('Коментар до Visual Components', data.componentsComment))
+  sections.push(poCommentField(data.componentsComment))
+  if (opts.includeCeoComments) {
+    sections.push(ceoCommentField(data.ceoComments, 'visualComponents'))
+  }
   return sections
 }
 
-function ceoCommentsFragment(data: BrandNotificationData): SectionOrSkip[] {
-  if (!data.ceoComments) return []
-  const bullets: Section[] = []
-  for (const [key, comment] of Object.entries(data.ceoComments)) {
-    if (comment.trim()) {
-      bullets.push(bullet(CEO_COMMENT_LABELS[key] ?? key, comment))
-    }
-  }
-  if (bullets.length === 0) return []
-  return [spacer(), subhead('Коментарі CEO'), ...bullets]
+/** Trailing block for CEO general comment only (never mixed into section lists). */
+function generalCeoCommentFragment(data: BrandNotificationData): SectionOrSkip[] {
+  const general = getCeoComment(data.ceoComments, 'general')
+  if (!general) return []
+  return [spacer(), subhead('Загальний коментар CEO'), rawLine(general)]
 }
 
-function commentMapFragment(
-  title: string,
-  entries: Record<string, string> | undefined,
-  indent: string
-): SectionOrSkip[] {
-  if (!entries) return []
-  const bullets: Section[] = []
-  for (const [key, comment] of Object.entries(entries)) {
-    if (comment.trim()) {
-      bullets.push(bullet(CEO_COMMENT_LABELS[key] ?? key, comment, indent))
-    }
+function formatDeliverablesSummary(data: BrandNotificationData): string {
+  const parts = [
+    `Legal Landing: ${data.legalLanding ? 'Так' : 'Ні'}`,
+    `Partner Landing: ${data.partnerLanding ? 'Так' : 'Ні'}`,
+  ]
+  if (data.developmentDeadline) {
+    parts.push(`Дедлайн: ${data.developmentDeadline}`)
   }
-  if (bullets.length === 0) return []
-  return [subhead(title), ...bullets]
+  return parts.join('; ')
+}
+
+function formatVisualComponentsSummary(data: BrandNotificationData): string | null {
+  if (data.delegateToDesigners) return 'Делеговано дизайнерам'
+  if (data.resolvedComponents.length === 0) return null
+  return data.resolvedComponents.map(c => `${c.typeName}: ${c.variantName}`).join('; ')
+}
+
+interface RevisionSectionInput {
+  title: string
+  selectedValue?: string | null
+  ceoComment?: string | null
+  ceoAlternative?: string | null
+}
+
+function needsRevisionSectionFragment(input: RevisionSectionInput): SectionOrSkip[] {
+  const comment = input.ceoComment?.trim()
+  const alternative = input.ceoAlternative?.trim()
+  const selected = input.selectedValue?.trim()
+  if (!comment && !alternative) return []
+
+  const sections: SectionOrSkip[] = [spacer(), briefDivider(input.title)]
+  if (selected) sections.push(field('Обрано', selected))
+  if (comment) sections.push(field('Коментар CEO', comment))
+  if (alternative) sections.push(field('Альтернатива CEO', alternative))
+  return sections
 }
 
 function conceptBriefFragment(brief: Record<string, unknown> | null): SectionOrSkip[] {
@@ -417,18 +521,20 @@ function internalNamingBriefFragment(stepData: Record<string, unknown> | null): 
   ]
 }
 
-function submissionSummaryFragment(data: BrandNotificationData): SectionOrSkip[] {
+/** Full brief overview for CEO review (submitted / resubmitted) — PO comments inline per section. */
+function submissionReviewFragment(data: BrandNotificationData): SectionOrSkip[] {
   return [
-    field('GEO', data.geo),
-    field('Дата запуску', data.launchDate),
-    field('Режим', data.mode),
-    field('Концепт', data.conceptName),
-    data.externalNamingNames.length > 0
-      ? field('Зовнішній неймінг', data.externalNamingNames.join(', '))
-      : null,
-    field('Внутрішній неймінг', data.internalNamingName),
+    ...basicsFragment(data, { withMode: true }),
+    ...conceptFragment(data),
+    ...externalNamingFragment(data),
+    ...internalNamingFragment(data),
+    ...prPackageFragment(data),
+    ...deliverablesFragment(data),
+    ...visualComponentsFragment(data),
   ]
 }
+
+const CEO_INLINE_OPTS: FragmentOpts = { includeCeoComments: true }
 
 // ---------------------------------------------------------------------------
 // Approved: per-team messages
@@ -441,11 +547,11 @@ export function buildStrategyMessage(channel: string, data: BrandNotificationDat
     [
       header('white_check_mark', 'Бренд затверджено', data.internalName),
       spacer(),
-      ...basicsFragment(data, { withMode: true }),
-      ...conceptFragment(data),
-      ...externalNamingFragment(data),
-      ...internalNamingFragment(data),
-      ...ceoCommentsFragment(data),
+      ...basicsFragment(data, { withMode: true, ...CEO_INLINE_OPTS }),
+      ...conceptFragment(data, CEO_INLINE_OPTS),
+      ...externalNamingFragment(data, CEO_INLINE_OPTS),
+      ...internalNamingFragment(data, CEO_INLINE_OPTS),
+      ...generalCeoCommentFragment(data),
     ],
     data.brandId,
     data.constructorUrl
@@ -462,9 +568,9 @@ export function buildPrMarketingMessage(
     [
       header('white_check_mark', 'Бренд затверджено', data.internalName),
       spacer(),
-      ...basicsFragment(data),
-      ...prPackageFragment(data),
-      ...ceoCommentsFragment(data),
+      ...basicsFragment(data, CEO_INLINE_OPTS),
+      ...prPackageFragment(data, CEO_INLINE_OPTS),
+      ...generalCeoCommentFragment(data),
     ],
     data.brandId,
     data.constructorUrl
@@ -481,10 +587,10 @@ export function buildProductDesignMessage(
     [
       header('white_check_mark', 'Бренд затверджено', data.internalName),
       spacer(),
-      ...basicsFragment(data, { withMode: true }),
-      ...deliverablesFragment(data),
-      ...visualComponentsFragment(data),
-      ...ceoCommentsFragment(data),
+      ...basicsFragment(data, { withMode: true, ...CEO_INLINE_OPTS }),
+      ...deliverablesFragment(data, CEO_INLINE_OPTS),
+      ...visualComponentsFragment(data, CEO_INLINE_OPTS),
+      ...generalCeoCommentFragment(data),
     ],
     data.brandId,
     data.constructorUrl
@@ -502,7 +608,7 @@ export function buildSubmittedMessage(channel: string, data: BrandNotificationDa
     [
       header('new', 'Новий бриф відправлено на розгляд', data.internalName),
       spacer(),
-      ...submissionSummaryFragment(data),
+      ...submissionReviewFragment(data),
     ],
     data.brandId,
     data.constructorUrl
@@ -521,7 +627,7 @@ export function buildResubmittedMessage(
       spacer(),
       italic('Бриф було доопрацьовано та повторно надіслано.'),
       spacer(),
-      ...submissionSummaryFragment(data),
+      ...submissionReviewFragment(data),
     ],
     data.brandId,
     data.constructorUrl
@@ -534,8 +640,9 @@ export function buildNeedsRevisionMessage(
   ceoComments: Record<string, string>,
   resolvedCeoSelections?: Record<string, string>
 ): SlackMessage {
-  const commentSections = commentMapFragment('Коментарі CEO', ceoComments, '')
-  const selectionSections = commentMapFragment('Альтернативи CEO', resolvedCeoSelections, '')
+  const extNames =
+    data.externalNamingNames.length > 0 ? data.externalNamingNames.join(', ') : null
+  const visualSummary = formatVisualComponentsSummary(data)
 
   return buildMessage(
     channel,
@@ -545,9 +652,47 @@ export function buildNeedsRevisionMessage(
       spacer(),
       field('GEO', data.geo),
       field('Дата запуску', data.launchDate),
-      spacer(),
-      ...commentSections,
-      ...(selectionSections.length > 0 ? [spacer(), ...selectionSections] : []),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.basics,
+        ceoComment: ceoComments.basics,
+      }),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.concept,
+        selectedValue: data.conceptName,
+        ceoComment: ceoComments.concept,
+        ceoAlternative: resolvedCeoSelections?.concept,
+      }),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.externalNaming,
+        selectedValue: extNames,
+        ceoComment: ceoComments.externalNaming,
+        ceoAlternative: resolvedCeoSelections?.externalNaming,
+      }),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.internalNaming,
+        selectedValue: data.internalNamingName,
+        ceoComment: ceoComments.internalNaming,
+        ceoAlternative: resolvedCeoSelections?.internalNaming,
+      }),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.marketingPackage,
+        selectedValue: data.prPackageName,
+        ceoComment: ceoComments.marketingPackage,
+      }),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.deliverables,
+        selectedValue: formatDeliverablesSummary(data),
+        ceoComment: ceoComments.deliverables,
+      }),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.visualComponents,
+        selectedValue: visualSummary,
+        ceoComment: ceoComments.visualComponents,
+      }),
+      ...needsRevisionSectionFragment({
+        title: CEO_COMMENT_LABELS.general,
+        ceoComment: ceoComments.general,
+      }),
     ],
     data.brandId,
     data.constructorUrl
@@ -603,7 +748,7 @@ export function buildNewBriefsStrategyMessage(
       header('memo', 'Нове замовлення для', data.internalName, ' '),
       spacer(),
       ...basicsFragment(data, { withMode: true }),
-      ...(data.conceptName ? conceptFragment(data) : []),
+      ...conceptFragment(data),
       ...conceptBriefFragment(conceptBrief),
       ...externalNamingFragment(data),
       ...namingBriefFragment(namingBrief),

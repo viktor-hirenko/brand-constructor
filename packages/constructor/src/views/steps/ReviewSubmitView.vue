@@ -130,6 +130,9 @@ const selectedInternalNaming = computed(() => {
 })
 
 const internalFeedback = computed(() => store.stepData.internalNaming.newNamingFeedback)
+const isNewInternalNaming = computed(
+  () => !selectedInternalNaming.value && !!internalFeedback.value?.trim()
+)
 
 const selectedPackage = computed(() => {
   const id = store.stepData.marketingPackage.selectedId
@@ -447,6 +450,7 @@ async function handlePrintBrand() {
     :is-new-naming="isNewNaming"
     :selected-internal-naming="selectedInternalNaming"
     :internal-feedback="internalFeedback"
+    :is-new-internal-naming="isNewInternalNaming"
     :selected-package="selectedPackage"
     @status-change="handleStatusChange"
     @back="backToStep"
@@ -457,6 +461,9 @@ async function handlePrintBrand() {
     @apply-ceo-variant="apply.handleApplyCeoVariant"
     @open-concept-preview="openConceptPreview"
     @open-pr-package-preview="handlePrPackagePreview"
+    @open-concept-brief="store.openBriefPreview('concept')"
+    @open-external-naming-brief="store.openBriefPreview('externalNaming')"
+    @open-internal-naming-brief="store.openBriefPreview('internalNaming')"
     @update:ceo-comment="({ key, value }) => comments.handleCeoCommentBySection(key, value)"
     @general-ceo-comment-update="comments.handleGeneralCeoCommentUpdate"
     @resolve-ceo-comment="comments.handleCeoCommentResolve"

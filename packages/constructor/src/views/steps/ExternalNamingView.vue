@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import type { NewNamingBrief } from '@brand-constructor/shared/types'
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import SimpleModal from '@/components/ui/SimpleModal.vue'
 
 const store = useConstructorStore()
 
@@ -27,6 +28,8 @@ const isCreatingNew = computed(() => store.stepData.externalNaming.newNamingBrie
 const isCommentRequired = computed(() => selectedCount.value > 1)
 
 const showNewModal = ref(false)
+const showBriefActions = ref(false)
+const showDeleteConfirm = ref(false)
 
 const selectedConceptId = computed(() => store.stepData.concept.selectedId)
 
@@ -45,16 +48,42 @@ function isSelected(id: string): boolean {
 
 function handleCreateNew() {
   if (isCreatingNew.value) {
-    store.setNewNamingBrief(null)
+    showBriefActions.value = !showBriefActions.value
   } else {
     showNewModal.value = true
   }
+}
+
+function handleViewBrief() {
+  showBriefActions.value = false
+  store.openBriefPreview('externalNaming')
+}
+
+function handleEditBrief() {
+  showBriefActions.value = false
+  showNewModal.value = true
+}
+
+function handleDeleteBrief() {
+  showBriefActions.value = false
+  showDeleteConfirm.value = true
+}
+
+function confirmDeleteBrief() {
+  store.setNewNamingBrief(null)
+  showDeleteConfirm.value = false
 }
 
 function handleBriefSave(brief: NewNamingBrief) {
   store.setNewNamingBrief(brief)
   store.setExternalNaming({ selectedIds: [] })
   showNewModal.value = false
+}
+
+function closeBriefActions(e: MouseEvent) {
+  if (showBriefActions.value && !(e.target as Element)?.closest('.relative.self-start')) {
+    showBriefActions.value = false
+  }
 }
 
 async function loadNamings() {
@@ -103,7 +132,11 @@ function getStatusBadgeClass(status: string | null): string {
   }
 }
 
-onMounted(loadNamings)
+onMounted(() => {
+  loadNamings()
+  document.addEventListener('click', closeBriefActions)
+})
+onUnmounted(() => document.removeEventListener('click', closeBriefActions))
 </script>
 
 <template>
@@ -215,32 +248,90 @@ onMounted(loadNamings)
       </div>
     </template>
 
-    <!-- Create New Naming button -->
-    <button
-      type="button"
-      class="inline-flex items-center gap-2 h-[40px] px-3 rounded-[8px] transition-colors text-base font-medium tracking-[-0.31px] self-start"
-      :class="
-        isCreatingNew
-          ? 'bg-[#030213] text-white hover:opacity-90'
-          : 'bg-[#e0e0e4] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]'
-      "
-      @click="handleCreateNew"
-    >
-      <svg
-        class="size-4"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+    <div class="relative self-start">
+      <button
+        v-if="!isCreatingNew"
+        type="button"
+        class="inline-flex items-center gap-2 h-[40px] px-3 rounded-[8px] transition-colors text-base font-medium tracking-[-0.31px] bg-[#e0e0e4] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]"
+        @click="handleCreateNew"
       >
-        <path d="M5 12h14" />
-        <path d="M12 5v14" />
-      </svg>
-      Замовити нову назву
-    </button>
+        <svg
+          class="size-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M5 12h14" />
+          <path d="M12 5v14" />
+        </svg>
+        Замовити нову назву
+      </button>
+
+      <button
+        v-else
+        type="button"
+        class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[8px] transition-colors text-base font-medium leading-6 tracking-[-0.31px] bg-[#030213] text-white hover:opacity-90"
+        @click="handleCreateNew"
+      >
+        <svg
+          class="size-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+        Бриф неймінгу створено
+        <svg
+          class="size-3 ml-1 transition-transform"
+          :class="showBriefActions ? 'rotate-180' : ''"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      <div
+        v-if="showBriefActions"
+        class="absolute top-full left-0 mt-1 w-56 bg-white rounded-[10px] shadow-[0px_10px_38px_-10px_rgba(22,23,24,0.35),0px_10px_20px_-15px_rgba(22,23,24,0.2)] border border-black/10 py-1 z-50"
+      >
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
+          @click="handleViewBrief"
+        >
+          Переглянути бриф
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
+          @click="handleEditBrief"
+        >
+          Редагувати бриф
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+          @click="handleDeleteBrief"
+        >
+          Видалити бриф
+        </button>
+      </div>
+    </div>
 
     <!-- Коментар -->
     <StepCommentField
@@ -249,7 +340,21 @@ onMounted(loadNamings)
       required-hint="Коментар є обовʼязковим при виборі більше 1 неймінгу"
     />
 
-    <!-- New Naming Modal -->
-    <NewNamingModal v-if="showNewModal" @save="handleBriefSave" @cancel="showNewModal = false" />
+    <NewNamingModal
+      v-if="showNewModal"
+      :initial-data="store.stepData.externalNaming.newNamingBrief"
+      @save="handleBriefSave"
+      @cancel="showNewModal = false"
+    />
+
+    <SimpleModal
+      v-if="showDeleteConfirm"
+      title="Видалити бриф?"
+      body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Видалити"
+      @cancel="showDeleteConfirm = false"
+      @primary="confirmDeleteBrief"
+    />
   </div>
 </template>
