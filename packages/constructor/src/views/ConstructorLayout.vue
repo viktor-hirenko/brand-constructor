@@ -50,12 +50,17 @@ const isCeoFinalize = computed(() => {
   return status === 'submitted' || status === 'needs_revision'
 })
 
-/** PO on final step in draft OR submitted — same shell as CEO finalize (Figma Product view). */
+/**
+ * Final step in draft OR submitted — same shell as CEO finalize (Figma Product view).
+ * Applies to ANY brief creator (PO/Admin/HeadDHC/CPO_CEO per PRD §4): the wizard's
+ * own author always sees the unified review layout on step 8, never the legacy
+ * wizard-shell. CEO/Admin reviewing someone else's submitted/needs_revision brief
+ * is handled by `isCeoFinalize` (split by status, not by role).
+ */
 const isPoDraftReview = computed(() => {
   if (route.meta.ceoReselect) return false
   if (route.meta.poEdit) return false
   if ((route.meta.step as number | undefined) !== 8) return false
-  if (authStore.isCeo) return false
   return store.brandStatus === 'draft' || store.brandStatus === 'submitted'
 })
 
