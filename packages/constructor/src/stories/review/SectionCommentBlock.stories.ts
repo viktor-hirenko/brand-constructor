@@ -161,5 +161,5 @@ export const InteractiveResolve: Story = {
       />
     `,
   }),
-  args: {},
+  args: { ceoEditable: false },
 };

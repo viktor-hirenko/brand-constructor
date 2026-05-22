@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { useEscapeClose } from '@/composables/useEscapeClose'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 
 export interface BriefField {
@@ -15,7 +15,7 @@ interface BriefPreviewPopupProps {
   showEdit?: boolean
 }
 
-const props = withDefaults(defineProps<BriefPreviewPopupProps>(), {
+withDefaults(defineProps<BriefPreviewPopupProps>(), {
   subtitle: null,
   showEdit: false,
 })
@@ -35,24 +35,7 @@ function handleEdit() {
   emit('edit')
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') handleClose()
-}
-
-watch(
-  () => props.title,
-  () => {
-    if (typeof document === 'undefined') return
-    document.addEventListener('keydown', onKeydown)
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => {
-  if (typeof document !== 'undefined') {
-    document.removeEventListener('keydown', onKeydown)
-  }
-})
+useEscapeClose(handleClose)
 </script>
 
 <template>

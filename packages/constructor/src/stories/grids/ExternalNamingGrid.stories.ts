@@ -50,7 +50,7 @@ export const Interactive: Story = {
         } else if (selectedIds.value.length < max) {
           selectedIds.value = [...selectedIds.value, id];
         }
-        args.onToggle(id);
+        args.onToggle?.(id);
       }
       return { namings: args.namings, selectedIds, maxSelectable: max, onToggle };
     },
@@ -65,6 +65,7 @@ export const Interactive: Story = {
   }),
   args: {
     namings: externalNamingGridItems,
+    selectedIds: [],
     maxSelectable: 3,
   },
 };

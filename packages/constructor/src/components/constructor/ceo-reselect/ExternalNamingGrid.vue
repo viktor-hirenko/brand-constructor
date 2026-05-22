@@ -29,7 +29,9 @@ const isAtLimit = computed(() => props.selectedIds.length >= props.maxSelectable
 const visibleNamings = computed(() => {
   const excluded = new Set(props.excludeIds)
   const filtered =
-    props.excludeIds.length === 0 ? [...props.namings] : props.namings.filter(n => !excluded.has(n.id))
+    props.excludeIds.length === 0
+      ? [...props.namings]
+      : props.namings.filter(n => !excluded.has(n.id))
   // Available cards always come first; sold/unknown stay below.
   return filtered.sort((a, b) => {
     const rank = (n: ExternalNaming) => (n.availability_status === 'available' ? 0 : 1)
@@ -87,7 +89,9 @@ function formatPrice(price: number | null | undefined): string {
         :class="isSold(naming) ? 'opacity-50' : ''"
       >
         <div class="external-naming-grid__card-heading flex flex-col gap-1 w-full">
-          <p class="external-naming-grid__card-name text-[20px] font-medium leading-6 text-[#1a1a1a] w-full break-words">
+          <p
+            class="external-naming-grid__card-name text-[20px] font-medium leading-6 text-[#1a1a1a] w-full break-words truncate"
+          >
             {{ naming.name }}
           </p>
           <p

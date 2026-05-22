@@ -26,6 +26,7 @@ export const Interactive: Story = {
     },
     template: '<div class="p-4"><DatePicker v-model="date" /></div>',
   }),
+  args: { modelValue: '' },
 };
 
 /** Pre-filled with a date value */
@@ -38,6 +39,7 @@ export const WithDate: Story = {
     },
     template: '<div class="p-4"><DatePicker v-model="date" /></div>',
   }),
+  args: { modelValue: '2026-06-15' },
 };
 
 /** minDate blocks past dates — today and earlier are disabled */
@@ -54,4 +56,5 @@ export const WithMinDate: Story = {
     },
     template: '<div class="p-4"><DatePicker v-model="date" :min-date="minDate" /></div>',
   }),
+  args: { modelValue: '' },
 };

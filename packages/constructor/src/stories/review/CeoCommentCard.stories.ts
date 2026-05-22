@@ -68,7 +68,7 @@ export const Interactive: Story = {
         await new Promise((r) => setTimeout(r, 600));
         resolved.value = true;
         loading.value = false;
-        args.onResolve();
+        args.onResolve?.();
       }
 
       async function onUnresolve() {
@@ -76,7 +76,7 @@ export const Interactive: Story = {
         await new Promise((r) => setTimeout(r, 600));
         resolved.value = false;
         loading.value = false;
-        args.onUnresolve();
+        args.onUnresolve?.();
       }
 
       return { value: args.value, resolved, loading, onResolve, onUnresolve };
@@ -92,5 +92,5 @@ export const Interactive: Story = {
       />
     `,
   }),
-  args: { value: CEO_COMMENT },
+  args: { value: CEO_COMMENT, resolved: false },
 };

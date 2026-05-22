@@ -49,7 +49,7 @@ export const Interactive: Story = {
       function onSelect(id: string) {
         selectedId.value = id;
         previewId.value = id;
-        args.onSelect(id);
+        args.onSelect?.(id);
       }
       return { concepts: args.concepts, selectedId, previewId, onSelect };
     },

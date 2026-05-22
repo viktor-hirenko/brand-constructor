@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed } from 'vue'
 import type { PrPackage } from '@brand-constructor/shared/types'
 import { useConstructorStore } from '@/stores/constructor'
+import { useEscapeClose } from '@/composables/useEscapeClose'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ClockIcon from '@/components/icons/ClockIcon.vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
@@ -37,35 +38,14 @@ function parseFeatures(componentsList: string | null | undefined): PackageFeatur
 }
 
 const features = computed<PackageFeature[]>(() =>
-  parseFeatures(props.pkg?.components_list ?? null)
+  parseFeatures(props.pkg?.components_list ?? null),
 )
 
 function handleClose() {
   store.closePrPackagePreview()
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') handleClose()
-}
-
-watch(
-  () => !!props.pkg,
-  open => {
-    if (typeof document === 'undefined') return
-    if (open) {
-      document.addEventListener('keydown', onKeydown)
-    } else {
-      document.removeEventListener('keydown', onKeydown)
-    }
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => {
-  if (typeof document !== 'undefined') {
-    document.removeEventListener('keydown', onKeydown)
-  }
-})
+useEscapeClose(handleClose)
 </script>
 
 <template>
@@ -143,14 +123,8 @@ onBeforeUnmount(() => {
             :key="idx"
             class="flex items-center gap-2 text-sm"
           >
-            <CheckIcon
-              v-if="feature.included"
-              class="size-3 text-primary shrink-0"
-            />
-            <CloseIcon
-              v-else
-              class="size-3 text-muted-foreground shrink-0"
-            />
+            <CheckIcon v-if="feature.included" class="size-3 text-primary shrink-0" />
+            <CloseIcon v-else class="size-3 text-muted-foreground shrink-0" />
             <span :class="feature.included ? 'text-foreground' : 'text-muted-foreground'">
               {{ feature.name }}
             </span>

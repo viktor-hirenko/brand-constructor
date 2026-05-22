@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from 'vue'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { useEscapeClose } from '@/composables/useEscapeClose'
 import type { Concept } from '@brand-constructor/shared/types'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 
@@ -9,7 +9,7 @@ interface ConceptPreviewPopupProps {
   concept: Concept | null
 }
 
-const props = defineProps<ConceptPreviewPopupProps>()
+defineProps<ConceptPreviewPopupProps>()
 
 const store = useConstructorStore()
 
@@ -17,28 +17,7 @@ function handleClose() {
   store.closeConceptPreview()
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') handleClose()
-}
-
-watch(
-  () => !!props.concept,
-  open => {
-    if (typeof document === 'undefined') return
-    if (open) {
-      document.addEventListener('keydown', onKeydown)
-    } else {
-      document.removeEventListener('keydown', onKeydown)
-    }
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => {
-  if (typeof document !== 'undefined') {
-    document.removeEventListener('keydown', onKeydown)
-  }
-})
+useEscapeClose(handleClose)
 </script>
 
 <template>
@@ -49,7 +28,6 @@ onBeforeUnmount(() => {
     aria-modal="true"
     :aria-label="`Перегляд концепту ${concept.name}`"
   >
-    <!-- Header: name + close button -->
     <header class="flex items-center justify-between gap-4 shrink-0">
       <h2
         class="text-[24px] font-medium leading-8 tracking-[-0.4492px] text-[#0a0a0a] truncate"
@@ -66,7 +44,6 @@ onBeforeUnmount(() => {
       </button>
     </header>
 
-    <!-- Slider fills remaining height -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <ConceptPreviewSlider :concept="concept" :is-final-selected="false" hide-header />
     </div>

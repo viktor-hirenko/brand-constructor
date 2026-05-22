@@ -43,7 +43,7 @@ export const Interactive: Story = {
       const selectedId = ref<string | null>(null);
       function onSelect(id: string) {
         selectedId.value = id;
-        args.onSelect(id);
+        args.onSelect?.(id);
       }
       return { namings: args.namings, selectedId, onSelect };
     },
@@ -57,5 +57,6 @@ export const Interactive: Story = {
   }),
   args: {
     namings: internalNamingGridItems,
+    selectedId: null,
   },
 };

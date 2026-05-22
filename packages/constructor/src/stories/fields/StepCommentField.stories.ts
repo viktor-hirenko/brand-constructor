@@ -24,6 +24,7 @@ export const Default: Story = {
     template: '<StepCommentField v-bind="args" v-model="modelValue" />',
   }),
   args: {
+    modelValue: '',
     label: 'Коментар',
     placeholder: 'Додайте ваші коментарі або побажання...',
   },
@@ -32,6 +33,7 @@ export const Default: Story = {
 export const CeoLabel: Story = {
   render: Default.render,
   args: {
+    modelValue: '',
     label: 'Коментар СЕО',
     placeholder: 'Додайте коментар СЕО...',
   },
@@ -40,6 +42,7 @@ export const CeoLabel: Story = {
 export const Optional: Story = {
   render: Default.render,
   args: {
+    modelValue: '',
     optional: true,
   },
 };
@@ -47,6 +50,7 @@ export const Optional: Story = {
 export const RequiredEmpty: Story = {
   render: Default.render,
   args: {
+    modelValue: '',
     required: true,
     requiredHint: 'Коментар обовʼязковий для нового брифу',
   },
@@ -62,6 +66,7 @@ export const Filled: Story = {
     template: '<StepCommentField v-bind="args" v-model="modelValue" />',
   }),
   args: {
+    modelValue: CEO_COMMENT,
     label: 'Коментар СЕО',
   },
 };

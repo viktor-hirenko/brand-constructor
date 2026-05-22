@@ -26,6 +26,7 @@ export const Interactive: Story = {
     },
     template: '<div class="p-4 pb-64"><GeoMultiSelect v-model="selected" /></div>',
   }),
+  args: { modelValue: [] },
 };
 
 /** Pre-selected countries */
@@ -38,4 +39,5 @@ export const WithPreselected: Story = {
     },
     template: '<div class="p-4 pb-64"><GeoMultiSelect v-model="selected" /></div>',
   }),
+  args: { modelValue: ['GB', 'UA', 'DE'] },
 };

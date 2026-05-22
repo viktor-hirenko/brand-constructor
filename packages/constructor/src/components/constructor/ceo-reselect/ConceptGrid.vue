@@ -11,11 +11,14 @@ interface ConceptGridProps {
   /** Confirmed CEO concept (in addition to border, shows checkmark). */
   selectedId: string | null
   disabled?: boolean
+  /** Show animated white inner border ring when a card is selected. */
+  selectionRing?: boolean
 }
 
 const props = withDefaults(defineProps<ConceptGridProps>(), {
   disabled: false,
   previewId: null,
+  selectionRing: false,
 })
 
 const emit = defineEmits<{
@@ -82,7 +85,7 @@ function isSelected(id: string): boolean {
 
         <div class="concept-grid__card-footer absolute bottom-0 left-0 right-0 p-4 z-[3]">
           <h3
-            class="concept-grid__card-title text-white font-medium text-[18px] leading-6 tracking-[-0.4492px] line-clamp-2"
+            class="concept-grid__card-title text-white font-medium text-[18px] leading-6 tracking-[-0.4492px] line-clamp-2 truncate"
           >
             {{ concept.name }}
           </h3>
@@ -95,6 +98,22 @@ function isSelected(id: string): boolean {
           <CheckIcon class="size-4 text-[#030213]" />
         </div>
       </div>
+
+      <Transition
+        v-if="selectionRing"
+        enter-active-class="transition-opacity duration-200"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition-opacity duration-200"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="isSelected(concept.id)"
+          class="pointer-events-none absolute inset-0 z-[5] rounded-[14px] border-4 border-white"
+          aria-hidden="true"
+        />
+      </Transition>
     </div>
   </div>
 </template>
