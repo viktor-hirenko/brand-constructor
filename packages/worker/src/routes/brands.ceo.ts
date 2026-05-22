@@ -29,7 +29,7 @@ ceo.patch('/:id/ceo-selections', async c => {
 
   if (!(BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)) {
     return c.json(
-      { success: false, error: 'Forbidden: only CEO/admin roles can update CEO selections' },
+      { success: false, error: 'Forbidden: only CPO/CEO can update CEO selections' },
       403
     )
   }

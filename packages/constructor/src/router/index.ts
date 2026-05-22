@@ -14,7 +14,7 @@ function ceoReselectGuard(to: RouteLocationNormalized) {
   const auth = useAuthStore()
   const store = useConstructorStore()
   const id = to.params.id as string
-  if (!auth.isCeoOrAdmin) {
+  if (!auth.isCeo) {
     return { path: `/constructor/brand/${id}` }
   }
   const st = store.brandStatus
@@ -28,7 +28,7 @@ function poEditGuard(to: RouteLocationNormalized) {
   const auth = useAuthStore()
   const store = useConstructorStore()
   const id = to.params.id as string
-  if (auth.isCeoOrAdmin) {
+  if (auth.isCeo) {
     return { path: `/constructor/brand/${id}` }
   }
   if (store.brandStatus !== 'needs_revision') {

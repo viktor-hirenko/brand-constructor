@@ -77,7 +77,7 @@ status.patch('/:id/status', async c => {
       return c.json(
         {
           success: false,
-          error: 'Forbidden: only CPO/CEO, Admin, or Head DHC can approve or send back for revision',
+          error: 'Forbidden: only CPO/CEO can approve or send back for revision',
         },
         403
       )

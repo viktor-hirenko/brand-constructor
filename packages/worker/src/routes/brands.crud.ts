@@ -114,7 +114,7 @@ crud.post('/', async c => {
   const user = c.get('user')
   if (!isBrandBriefCreatorRole(user.role)) {
     return c.json(
-      { success: false, error: 'Only Product Owner or Admin can create a new brand brief' },
+      { success: false, error: 'Only Product Owner can create a new brand brief' },
       403
     )
   }

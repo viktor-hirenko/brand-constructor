@@ -21,10 +21,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   const userRole = computed(() => user.value?.role ?? null);
 
-  const isCeoOrAdmin = computed(() => {
-    const role = userRole.value;
-    return role === 'cpo_ceo' || role === 'admin' || role === 'head_dhc';
-  });
+  /**
+   * True when the current user is the CPO/CEO — the only role allowed to
+   * approve or send a brief back for revision per PRD v2 §2 (Етап 2:
+   * CEO Approval). Admin and Head of DHC are library administrators and
+   * are intentionally excluded from brief-review actions.
+   */
+  const isCeo = computed(() => userRole.value === 'cpo_ceo');
 
   const isAdmin = computed(() => {
     const role = userRole.value;
@@ -116,7 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     userRole,
-    isCeoOrAdmin,
+    isCeo,
     isAdmin,
     isProductOwner,
     canStartNewBrandBrief,

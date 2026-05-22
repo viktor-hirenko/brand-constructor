@@ -45,7 +45,7 @@ const isPoEdit = computed(() => route.meta.poEdit === true)
 const isCeoFinalize = computed(() => {
   if (route.meta.ceoReselect) return false
   if ((route.meta.step as number | undefined) !== 8) return false
-  if (!authStore.isCeoOrAdmin) return false
+  if (!authStore.isCeo) return false
   const status = store.brandStatus
   return status === 'submitted' || status === 'needs_revision'
 })
@@ -55,7 +55,7 @@ const isPoDraftReview = computed(() => {
   if (route.meta.ceoReselect) return false
   if (route.meta.poEdit) return false
   if ((route.meta.step as number | undefined) !== 8) return false
-  if (authStore.isCeoOrAdmin) return false
+  if (authStore.isCeo) return false
   return store.brandStatus === 'draft' || store.brandStatus === 'submitted'
 })
 
@@ -84,7 +84,7 @@ const isPoReturnedReview = computed(() => {
   if (route.meta.ceoReselect) return false
   if (route.meta.poEdit) return false
   if ((route.meta.step as number | undefined) !== 8) return false
-  if (authStore.isCeoOrAdmin) return false
+  if (authStore.isCeo) return false
   return store.brandStatus === 'needs_revision'
 })
 

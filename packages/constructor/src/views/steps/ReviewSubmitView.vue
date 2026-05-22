@@ -35,7 +35,7 @@ const prPackages = computed(() => librariesStore.prPackages)
 
 // ─── Role + mode flags ────────────────────────────────────────────────────
 
-const isCeoView = computed(() => authStore.isCeoOrAdmin)
+const isCeoView = computed(() => authStore.isCeo)
 const brandStatus = computed(() => store.brandStatus ?? 'draft')
 
 /** True when PO is viewing a brief that was returned from CEO (needs_revision). */

@@ -31,19 +31,18 @@ export const LIBRARY_WRITE_PERMISSIONS: Record<string, string[]> = {
 
 export const ADMIN_ROLES = [USER_ROLES.ADMIN, USER_ROLES.HEAD_DHC] as const;
 
-export const BRAND_APPROVAL_ROLES = [
-  USER_ROLES.ADMIN,
-  USER_ROLES.HEAD_DHC,
-  USER_ROLES.CPO_CEO,
-] as const;
+/**
+ * Roles that can approve / send back a submitted brief.
+ * Per PRD v2 §2 (Етап 2: CEO Approval) — ONLY CPO/CEO. Admin and Head of DHC
+ * are library administrators and do not act on briefs.
+ */
+export const BRAND_APPROVAL_ROLES = [USER_ROLES.CPO_CEO] as const;
 
-/** Roles allowed to start the multi-step brief wizard and create a new brand (POST /brands). */
-export const BRAND_BRIEF_CREATOR_ROLES = [
-  USER_ROLES.PRODUCT_OWNER,
-  USER_ROLES.ADMIN,
-  USER_ROLES.HEAD_DHC,
-  USER_ROLES.CPO_CEO,
-] as const;
+/**
+ * Roles allowed to start the multi-step brief wizard and create a new brand
+ * (POST /brands). Per PRD v2 §1.3 the customer is the Product Owner.
+ */
+export const BRAND_BRIEF_CREATOR_ROLES = [USER_ROLES.PRODUCT_OWNER] as const;
 
 export function isBrandBriefCreatorRole(role: string): boolean {
   return (BRAND_BRIEF_CREATOR_ROLES as readonly string[]).includes(role);
