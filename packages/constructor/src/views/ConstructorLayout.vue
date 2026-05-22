@@ -7,15 +7,13 @@ import { apiGet } from '@/composables/useApi'
 import { useLibrariesStore } from '@/stores/libraries'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import { useViewportScale } from '@/composables/useViewportScale'
-import { logSilent } from '@/utils/log'
-import ConceptDetailOverlay from '@/components/constructor/preview/ConceptDetailOverlay.vue'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPanel.vue'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
-import type { Concept, ExternalNaming } from '@brand-constructor/shared/types'
+import type { Concept } from '@brand-constructor/shared/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -132,15 +130,7 @@ const isLastStep = computed(() => currentStep.value === totalSteps)
 const isFullWidth = computed(() => [5, 6].includes(currentStep.value))
 const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'))
 
-interface ExternalNamingPreview extends ExternalNaming {
-  price_usd?: number | null
-}
-
-const detailConcept = ref<Concept | null>(null)
-
 const concepts = computed(() => librariesStore.concepts)
-const externalNamings = computed(() => librariesStore.externalNamings as ExternalNamingPreview[])
-const internalNamings = computed(() => librariesStore.internalNamings)
 
 const brandBasics = computed(() => store.stepData?.brandBasics)
 
@@ -273,19 +263,6 @@ function confirmConceptFromSlider() {
   store.setConcept({ selectedId: id, newConceptBrief: null })
 }
 
-const selectedExternalNamings = computed(() => {
-  const ids = store.stepData?.externalNaming?.selectedIds ?? []
-  return ids
-    .map(id => externalNamings.value.find(item => item.id === id))
-    .filter((item): item is ExternalNamingPreview => item != null)
-})
-
-const selectedInternalNaming = computed(() => {
-  const id = store.stepData?.internalNaming?.selectedId
-  if (!id) return null
-  return internalNamings.value.find(item => item.id === id) ?? null
-})
-
 function goBack() {
   if (!isFirstStep.value) {
     let prev = currentStep.value - 1
@@ -333,20 +310,6 @@ function handleCancelSectionEdit() {
   router.push(`/constructor/step/${target}`)
 }
 
-async function openConceptDetails() {
-  const sc = selectedConcept.value
-  if (!sc) return
-  detailConcept.value = sc
-  try {
-    const full = await apiGet<Concept & { namings?: unknown[]; assets?: unknown[] }>(
-      `/api/concepts/${sc.id}`
-    )
-    detailConcept.value = full
-  } catch (err) {
-    logSilent('ConstructorLayout/loadConceptDetail', err)
-  }
-}
-
 function loadPreviewData() {
   const shouldLoad =
     isCeoReselect.value || isPoEdit.value || [2, 3, 4, 8].includes(currentStep.value)
@@ -385,7 +348,6 @@ const {
 const step9SidebarVisible = ref(true)
 
 const step9SelectedLayers = computed(() => buildLayers(!step9SidebarVisible.value))
-const step10SelectedLayers = computed(() => buildLayers(true))
 
 function toggleSidebarPreview() {
   step9SidebarVisible.value = !step9SidebarVisible.value
@@ -534,7 +496,12 @@ watch(currentStep, step => {
         </div>
       </div>
 
-      <!-- Right Panel: CEO finalize / PO draft / PO returned / approved read-only preview -->
+      <!--
+        Right Panel: CEO finalize / PO draft / PO returned / approved read-only preview.
+        Step 8 preview lives here only (BrandPreviewPanel + ReviewSubmitView).
+        Legacy 1-phone + summary-card layout was removed from StepPreviewRightPanel —
+        do not re-add a step-8 branch there.
+      -->
       <div
         v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isApprovedReview"
         class="constructor-layout__right-panel constructor-layout__right-panel--preview w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
@@ -577,7 +544,7 @@ watch(currentStep, step => {
         <ConceptMobilePreview v-else :concept="ceoReselectMobilePreviewConcept" />
       </div>
 
-      <!-- Right Panel: Step 1/2/3/4/7/8 previews (hidden on full-width steps) -->
+      <!-- Right Panel: Step 1/2/3/4/7 previews (hidden on full-width steps and on step 8) -->
       <StepPreviewRightPanel
         v-else-if="!isFullWidth"
         :current-step="currentStep"
@@ -585,27 +552,13 @@ watch(currentStep, step => {
         :concept-preview-for-slider="conceptPreviewForSlider"
         :is-concept-slider-final-selected="isConceptSliderFinalSelected"
         :selected-concept="selectedConcept"
-        :selected-external-namings="selectedExternalNamings"
-        :selected-internal-naming="selectedInternalNaming"
         :step9-selected-layers="step9SelectedLayers"
-        :step10-selected-layers="step10SelectedLayers"
         :has-step9-selections="hasStep9Selections"
         :has-sidebar-selected="hasSidebarSelected"
         :step9-sidebar-visible="step9SidebarVisible"
         :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
-        :has-external-naming-brief="store.stepData.externalNaming.newNamingBrief !== null"
-        :internal-naming-feedback="store.stepData.internalNaming.newNamingFeedback"
         @confirm-concept="confirmConceptFromSlider"
         @toggle-sidebar="toggleSidebarPreview"
-        @open-concept-details="openConceptDetails"
-      />
-
-      <ConceptDetailOverlay
-        v-if="detailConcept"
-        :concept="detailConcept"
-        :show-select-button="false"
-        @close="detailConcept = null"
-        @select="router.push('/constructor/step/2')"
       />
 
       <LayoutPreviewOverlays />

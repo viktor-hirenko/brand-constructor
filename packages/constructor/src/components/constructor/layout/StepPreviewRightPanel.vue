@@ -1,28 +1,28 @@
 <script setup lang="ts">
 /**
- * Right-column preview panel for wizard steps 1, 2, 3/4, 7 and 8.
+ * Right-column preview panel for wizard steps 1, 2, 3/4 and 7.
  *
  * Owns the per-step visual previews so `ConstructorLayout` can focus on
  * mode-routing (CEO finalize / PO returned / approved / draft / etc.).
  * The outer 58%-width wrapper (background, scroll, padding) is encapsulated
  * inside this component, so parents render a single `<StepPreviewRightPanel>`
  * in the non-full-width branch of the layout.
+ *
+ * NOTE: Step 8 preview is NOT handled here — it lives in `ConstructorLayout`
+ * via `BrandPreviewPanel` + `ReviewSubmitView` (Figma "Product view" shell).
+ * Do not re-add a step-8 branch to this component.
  */
 
-import { getAssetUrl } from '@/composables/useApi'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
-import BriefcaseIcon from '@/components/icons/BriefcaseIcon.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import ColumnsLayoutIcon from '@/components/icons/ColumnsLayoutIcon.vue'
 import FileIcon from '@/components/icons/FileIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
-import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import SmartphoneIcon from '@/components/icons/SmartphoneIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
-import TagIcon from '@/components/icons/TagIcon.vue'
-import type { Concept, ExternalNaming, InternalNaming } from '@brand-constructor/shared/types'
+import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewLayer } from '@/composables/useBrandPreviewLayers'
 
 interface BrandBasics {
@@ -31,26 +31,17 @@ interface BrandBasics {
   linkedProduct: string
 }
 
-interface ExternalNamingPreview extends ExternalNaming {
-  price_usd?: number | null
-}
-
 interface Props {
   currentStep: number
   brandBasics?: BrandBasics | null
   conceptPreviewForSlider: Concept | null
   isConceptSliderFinalSelected: boolean
   selectedConcept: Concept | null
-  selectedExternalNamings: ExternalNamingPreview[]
-  selectedInternalNaming: InternalNaming | null
   step9SelectedLayers: PreviewLayer[]
-  step10SelectedLayers: PreviewLayer[]
   hasStep9Selections: boolean
   hasSidebarSelected: boolean
   step9SidebarVisible: boolean
   delegateToDesigners: boolean
-  hasExternalNamingBrief: boolean
-  internalNamingFeedback: string | null
 }
 
 const props = defineProps<Props>()
@@ -58,7 +49,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'confirm-concept': []
   'toggle-sidebar': []
-  'open-concept-details': []
 }>()
 
 function formatDate(dateStr: string): string {
@@ -232,118 +222,6 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
                 />
                 <ColumnsLayoutIcon v-else class="size-4 text-white" />
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- Step 8 Preview: Brand summary card + iPhone -->
-    <template v-else-if="currentStep === 8">
-      <div class="space-y-8">
-        <div class="p-6 bg-card border border-black/10 rounded-xl shadow-lg flex gap-6">
-          <div class="relative w-32 h-32 rounded-lg overflow-hidden bg-muted shrink-0">
-            <img
-              v-if="selectedConcept?.visual_url"
-              :src="getAssetUrl(selectedConcept.visual_url)"
-              :alt="selectedConcept.name"
-              class="w-full h-full object-cover"
-              loading="lazy"
-            />
-            <div
-              v-else
-              class="w-full h-full flex items-center justify-center text-muted-foreground"
-            >
-              <ImagePlaceholderIcon class="size-10 opacity-30" />
-            </div>
-          </div>
-          <div class="flex-1 flex flex-col justify-center space-y-4">
-            <button
-              v-if="selectedConcept"
-              type="button"
-              class="h-7 px-3 rounded-[10px] border border-black/10 text-xs font-medium hover:bg-black/[0.02] transition-all self-start"
-              @click="emit('open-concept-details')"
-            >
-              Переглянути деталі
-            </button>
-            <div class="flex flex-col gap-3">
-              <div v-if="selectedExternalNamings.length > 0 || hasExternalNamingBrief">
-                <div class="flex items-center gap-2 mb-2">
-                  <TagIcon class="size-4 text-primary" />
-                  <span class="text-xs text-muted-foreground">Зовнішня назва</span>
-                </div>
-                <p class="font-medium text-lg">
-                  {{
-                    selectedExternalNamings.length > 0
-                      ? selectedExternalNamings.map(n => n.name).join(', ')
-                      : 'Новий неймінг (бриф)'
-                  }}
-                </p>
-              </div>
-              <div v-if="selectedInternalNaming || internalNamingFeedback">
-                <div class="flex items-center gap-2 mb-2">
-                  <BriefcaseIcon class="size-4 text-primary" />
-                  <span class="text-xs text-muted-foreground">Внутрішня назва</span>
-                </div>
-                <p class="font-medium">
-                  {{ selectedInternalNaming?.name || internalNamingFeedback }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col items-center">
-          <div class="relative" style="width: 207.5px; height: 421.5px">
-            <img
-              src="/assets/iphone-16-plus-light.png"
-              alt="iPhone frame"
-              class="absolute inset-0 object-cover"
-              style="width: 207.5px; height: 421.5px; z-index: 0"
-            />
-            <div
-              class="absolute overflow-hidden"
-              style="left: 6px; top: 6px; width: 192.5px; height: 409.5px; z-index: 10"
-            >
-              <div
-                v-if="!hasStep9Selections"
-                class="h-full flex items-center justify-center p-4 text-center bg-white/90 backdrop-blur-sm rounded-[27px]"
-              >
-                <p class="text-xs text-muted-foreground">Оберіть компоненти на кроці 7</p>
-              </div>
-              <div
-                v-else
-                class="relative w-full h-full overflow-hidden rounded-[40px]"
-                style="
-                  transform: scale(0.667);
-                  transform-origin: top left;
-                  width: 288.75px;
-                  height: 614.25px;
-                "
-              >
-                <div
-                  v-for="layer in step10SelectedLayers"
-                  :key="layer.typeId"
-                  class="absolute"
-                  :style="{
-                    left: layer.slot.left,
-                    top: layer.slot.top,
-                    width: layer.slot.width,
-                    height: layer.slot.height,
-                    zIndex: layer.slot.zIndex,
-                  }"
-                >
-                  <img
-                    :src="layer.url"
-                    :alt="layer.typeId"
-                    :class="
-                      layer.slot.contain
-                        ? 'w-full h-full object-contain'
-                        : 'w-full h-full object-cover'
-                    "
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </div>
