@@ -24,6 +24,13 @@ const comment = computed({
 
 const selectedIds = computed(() => store.stepData.externalNaming.selectedIds)
 const selectedCount = computed(() => selectedIds.value.length)
+
+const sortedNamings = computed(() => {
+  return [...(namings.value ?? [])].sort((a, b) => {
+    const rank = (n: ExternalNaming) => (n.availability_status === 'available' ? 0 : 1)
+    return rank(a) - rank(b)
+  })
+})
 const isCreatingNew = computed(() => store.stepData.externalNaming.newNamingBrief !== null)
 const isCommentRequired = computed(() => selectedCount.value > 1)
 
@@ -161,7 +168,7 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
     <template v-else>
       <div v-if="namings.length > 0" class="grid grid-cols-3 gap-2 max-w-[506px]">
         <div
-          v-for="naming in namings"
+          v-for="naming in sortedNamings"
           :key="naming.id"
           class="relative w-full rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 transition-all"
           :class="[
