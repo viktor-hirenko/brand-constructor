@@ -3,6 +3,10 @@ import { reactive, computed, ref } from 'vue'
 import type { NewNamingBrief } from '@brand-constructor/shared/types'
 import DatePicker from '@/components/constructor/fields/DatePicker.vue'
 
+const props = defineProps<{
+  initialData?: NewNamingBrief | null
+}>()
+
 const emit = defineEmits<{
   save: [brief: NewNamingBrief]
   cancel: []
@@ -44,22 +48,25 @@ const DOMAIN_ZONES = [
   '.online',
 ]
 
+const init = props.initialData
+
 const form = reactive<NewNamingBrief>({
-  isNewGeo: null,
-  namingFeedback: '',
-  trafficTeamInfo: '',
-  needsGeoResearch: null,
-  namingLanguage: '',
-  desiredWordsInName: '',
-  domainZones: [],
-  wordsToAvoid: '',
-  domainBudget: null,
-  namingDeadline: '',
-  additionalGeoInfo: '',
+  isNewGeo: init?.isNewGeo ?? null,
+  namingFeedback: init?.namingFeedback ?? '',
+  trafficTeamInfo: init?.trafficTeamInfo ?? '',
+  needsGeoResearch: init?.needsGeoResearch ?? null,
+  namingLanguage: init?.namingLanguage ?? '',
+  desiredWordsInName: init?.desiredWordsInName ?? '',
+  domainZones: init?.domainZones ? [...init.domainZones] : [],
+  wordsToAvoid: init?.wordsToAvoid ?? '',
+  domainBudget: init?.domainBudget ?? null,
+  namingDeadline: init?.namingDeadline ?? '',
+  additionalGeoInfo: init?.additionalGeoInfo ?? '',
 })
 
+const isEditMode = !!init
 const todayISO = new Date().toISOString().split('T')[0]
-const budgetStr = ref('')
+const budgetStr = ref(init?.domainBudget != null ? String(init.domainBudget) : '')
 
 const isValid = computed(() => {
   return (
@@ -104,7 +111,7 @@ function handleSave() {
           class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0"
         >
           <h2 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
-            Замовити новий External Naming
+            {{ isEditMode ? 'Редагування брифу External Naming' : 'Замовити новий External Naming' }}
           </h2>
           <button
             type="button"

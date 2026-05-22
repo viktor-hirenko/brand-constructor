@@ -101,6 +101,7 @@ interface ReviewUnifiedViewProps {
   isNewNaming: boolean
   selectedInternalNaming: InternalNaming | null
   internalFeedback: string | null
+  isNewInternalNaming: boolean
   selectedPackage: PrPackage | null
 }
 
@@ -116,6 +117,9 @@ const emit = defineEmits<{
   'apply-ceo-variant': [section: 'concept' | 'externalNaming' | 'internalNaming']
   'open-concept-preview': [concept: Concept | null]
   'open-pr-package-preview': []
+  'open-concept-brief': []
+  'open-external-naming-brief': []
+  'open-internal-naming-brief': []
   'update:ceo-comment': [payload: { key: string; value: string }]
   'general-ceo-comment-update': [value: string]
   'resolve-ceo-comment': [sectionKey: string]
@@ -480,6 +484,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
               :ceo-applied="isCeoConceptApplied"
               @preview="emit('open-concept-preview', $event)"
               @apply-ceo="emit('apply-ceo-variant', 'concept')"
+              @preview-brief="emit('open-concept-brief')"
             />
             <template #comment>
               <SectionCommentBlock
@@ -506,7 +511,9 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
               :show-apply-ceo="sectionApplyFlags.externalNamingNeedsChoice"
               :apply-loading="applyCeoLoading"
               :ceo-applied="isCeoExternalApplied"
+              :is-new-brief="isNewNaming"
               @apply-ceo="emit('apply-ceo-variant', 'externalNaming')"
+              @preview-brief="emit('open-external-naming-brief')"
             />
             <template #comment>
               <SectionCommentBlock
@@ -528,12 +535,14 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             @change="emit('start-ceo-reselect', 'internalNaming')"
           >
             <ReviewInternalNamingBlock
-              :po-value="selectedInternalNaming?.name || internalFeedback || 'Не обрано'"
+              :po-value="selectedInternalNaming?.name || 'Не обрано'"
               :ceo-name="ceoInternalNameForReview"
               :show-apply-ceo="sectionApplyFlags.internalNamingNeedsChoice"
               :apply-loading="applyCeoLoading"
               :ceo-applied="isCeoInternalApplied"
+              :is-new-brief="isNewInternalNaming"
               @apply-ceo="emit('apply-ceo-variant', 'internalNaming')"
+              @preview-brief="emit('open-internal-naming-brief')"
             />
             <template #comment>
               <SectionCommentBlock

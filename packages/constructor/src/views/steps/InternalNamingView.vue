@@ -5,6 +5,7 @@ import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import SimpleModal from '@/components/ui/SimpleModal.vue'
 
 const store = useConstructorStore()
 
@@ -25,6 +26,7 @@ const isCreatingNew = computed(() => store.stepData.internalNaming.newNamingFeed
 
 const showNewModal = ref(false)
 const showBriefActions = ref(false)
+const showDeleteConfirm = ref(false)
 
 function selectNaming(id: string) {
   if (isCreatingNew.value) return
@@ -39,6 +41,11 @@ function handleCreateNew() {
   }
 }
 
+function handleViewBrief() {
+  showBriefActions.value = false
+  store.openBriefPreview('internalNaming')
+}
+
 function handleEditBrief() {
   showBriefActions.value = false
   showNewModal.value = true
@@ -46,9 +53,12 @@ function handleEditBrief() {
 
 function handleDeleteBrief() {
   showBriefActions.value = false
-  if (confirm('Видалити бриф нової внутрішньої назви? Дані буде втрачено.')) {
-    store.setInternalNamingFeedback(null)
-  }
+  showDeleteConfirm.value = true
+}
+
+function confirmDeleteBrief() {
+  store.setInternalNamingFeedback(null)
+  showDeleteConfirm.value = false
 }
 
 function handleFeedbackSave(feedback: string) {
@@ -215,11 +225,17 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
         </svg>
       </button>
 
-      <!-- Dropdown actions -->
       <div
         v-if="showBriefActions"
         class="absolute top-full left-0 mt-1 w-56 bg-white rounded-[10px] shadow-[0px_10px_38px_-10px_rgba(22,23,24,0.35),0px_10px_20px_-15px_rgba(22,23,24,0.2)] border border-black/10 py-1 z-50"
       >
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
+          @click="handleViewBrief"
+        >
+          Переглянути бриф
+        </button>
         <button
           type="button"
           class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
@@ -237,15 +253,23 @@ onUnmounted(() => document.removeEventListener('click', closeBriefActions))
       </div>
     </div>
 
-    <!-- Коментар -->
     <StepCommentField v-model="comment" />
 
-    <!-- New Internal Naming Modal -->
     <NewInternalNamingModal
       v-if="showNewModal"
       :initial-feedback="store.stepData.internalNaming.newNamingFeedback"
       @save="handleFeedbackSave"
       @cancel="showNewModal = false"
+    />
+
+    <SimpleModal
+      v-if="showDeleteConfirm"
+      title="Видалити бриф?"
+      body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Видалити"
+      @cancel="showDeleteConfirm = false"
+      @primary="confirmDeleteBrief"
     />
   </div>
 </template>

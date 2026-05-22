@@ -39,6 +39,7 @@ const props = withDefaults(defineProps<ReviewConceptBlockProps>(), {
 const emit = defineEmits<{
   preview: [concept: Concept]
   applyCeo: []
+  previewBrief: []
 }>()
 
 const previewUrl = computed(() => {
@@ -160,6 +161,38 @@ const singlePoLabel = 'Вибір Замовника'
           </button>
         </div>
         <div
+          v-else-if="isNewConcept"
+          class="review-concept-block__card review-concept-block__card--brief relative w-full aspect-square rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
+        >
+          <svg
+            class="size-10 opacity-60"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+            <path d="M10 9H8" />
+            <path d="M16 13H8" />
+            <path d="M16 17H8" />
+          </svg>
+          <p class="text-[14px] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
+            Бриф нового концепту
+          </p>
+          <button
+            type="button"
+            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+            aria-label="Переглянути бриф нового концепту"
+            @click="emit('previewBrief')"
+          >
+            <EyeIcon />
+          </button>
+        </div>
+        <div
           v-else-if="conceptName"
           class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62] w-full"
         >
@@ -241,6 +274,38 @@ const singlePoLabel = 'Вибір Замовника'
             class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
             aria-label="Переглянути концепт"
             @click="emit('preview', concept)"
+          >
+            <EyeIcon />
+          </button>
+        </div>
+        <div
+          v-else-if="isNewConcept"
+          class="review-concept-block__card review-concept-block__card--brief relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
+        >
+          <svg
+            class="size-10 opacity-60"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+            <path d="M10 9H8" />
+            <path d="M16 13H8" />
+            <path d="M16 17H8" />
+          </svg>
+          <p class="text-[14px] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
+            Бриф нового концепту
+          </p>
+          <button
+            type="button"
+            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+            aria-label="Переглянути бриф нового концепту"
+            @click="emit('previewBrief')"
           >
             <EyeIcon />
           </button>
