@@ -26,9 +26,14 @@ const emit = defineEmits<{
 const selectedSet = computed(() => new Set(props.selectedIds))
 const isAtLimit = computed(() => props.selectedIds.length >= props.maxSelectable)
 const visibleNamings = computed(() => {
-  if (props.excludeIds.length === 0) return props.namings
   const excluded = new Set(props.excludeIds)
-  return props.namings.filter(n => !excluded.has(n.id))
+  const filtered =
+    props.excludeIds.length === 0 ? [...props.namings] : props.namings.filter(n => !excluded.has(n.id))
+  // Available cards always come first; sold/unknown stay below.
+  return filtered.sort((a, b) => {
+    const rank = (n: ExternalNaming) => (n.availability_status === 'available' ? 0 : 1)
+    return rank(a) - rank(b)
+  })
 })
 
 function isSold(naming: ExternalNaming): boolean {
