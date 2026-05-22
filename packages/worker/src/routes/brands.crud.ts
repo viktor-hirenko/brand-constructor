@@ -13,6 +13,13 @@ import {
 
 const crud = new Hono<{ Bindings: Env; Variables: Variables }>()
 
+// FIXME(rbac, 2026-05-23): admin temporarily inherits CEO's read-all access so
+// they can manage briefs in the admin panel without gaining approve/send-back
+// powers. Revert this single line when brand RBAC is finalised — see PRD v2 §2.
+function canListAllBrands(role: string): boolean {
+  return (BRAND_APPROVAL_ROLES as readonly string[]).includes(role) || role === 'admin'
+}
+
 crud.get('/', async c => {
   const user = c.get('user')
   const page = parseInt(c.req.query('page') || '1')
@@ -20,7 +27,7 @@ crud.get('/', async c => {
   const status = c.req.query('status')
   const offset = (page - 1) * perPage
 
-  const canSeeAll = (BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)
+  const canSeeAll = canListAllBrands(user.role)
   const isCreator = isBrandBriefCreatorRole(user.role)
 
   let query: string
@@ -82,13 +89,13 @@ crud.get('/', async c => {
 crud.get('/:id', async c => {
   const id = c.req.param('id')
   const user = c.get('user')
-  const canSeeAll = (BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)
+  const canSeeAll = canListAllBrands(user.role)
   const isCreator = isBrandBriefCreatorRole(user.role)
 
   let row: BrandRow | null
 
   if (canSeeAll) {
-    // admin / head_dhc / cpo_ceo see any brand in any status
+    // cpo_ceo (per PRD v2) + admin (temporary, see canListAllBrands FIXME)
     row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
   } else if (isCreator) {
     // product_owner sees only their own brands (any status)
