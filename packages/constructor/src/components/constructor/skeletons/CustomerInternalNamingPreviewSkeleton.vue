@@ -18,7 +18,10 @@
       <div
         class="h-[128px] rounded-[16px] bg-[#f1f1f3] border border-black/10 flex flex-col items-center justify-center px-6 py-10"
       >
-        <div class="h-6 w-2/3 rounded bg-muted animate-pulse" />
+        <div class="flex flex-col gap-1 w-full items-center px-2">
+          <div class="h-6 w-4/5 max-w-[200px] rounded bg-muted animate-pulse" />
+          <div class="h-6 w-[55%] max-w-[140px] rounded bg-muted animate-pulse" />
+        </div>
       </div>
     </div>
   </div>
