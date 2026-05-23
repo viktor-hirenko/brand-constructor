@@ -118,7 +118,11 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
     if (section === 'concept') {
       const ceoConcept = readSelectionAsString(sel?.concept)
       ceoReselectDraft.value.conceptId = ceoConcept
-      ceoReselectDraft.value.conceptPreviewId = ceoConcept ?? sd.concept.selectedId
+      // Right-panel preview is shown only for a real CEO override (variant A):
+      //  - saved CEO concept → restore it
+      //  - no saved CEO concept yet → null (empty right panel until first click)
+      // Do NOT fall back to the PO pick — that would mislabel PO's concept as "Вибір СЕО".
+      ceoReselectDraft.value.conceptPreviewId = ceoConcept
     } else if (section === 'externalNaming') {
       ceoReselectDraft.value.conceptId =
         readSelectionAsString(sel?.concept) ?? sd.concept.selectedId

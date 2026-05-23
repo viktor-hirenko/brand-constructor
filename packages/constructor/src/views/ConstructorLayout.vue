@@ -15,6 +15,8 @@ import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPane
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
+import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
+import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
 import type { Concept } from '@brand-constructor/shared/types'
 
 const route = useRoute()
@@ -156,9 +158,19 @@ const isConceptSliderFinalSelected = computed(() => {
 
 const poConceptId = computed(() => store.stepData.concept.selectedId)
 
-/** Concept currently displayed in the right-column slider (independent of confirmation). */
+/** True when CEO has a persisted concept override — drives which skeleton to show. */
+const hasCeoSavedConceptOverride = computed(() => {
+  const sel = store.brandCeoSelections?.concept
+  if (!sel) return false
+  if (typeof sel === 'string') return sel.length > 0
+  if (Array.isArray(sel)) return sel.length > 0
+  return false
+})
+
+/** Concept currently displayed in the right-column slider.
+ *  Returns null until CEO clicks a card — right panel stays empty on entry. */
 const ceoReselectPreviewConcept = computed(() => {
-  const id = store.ceoReselectDraft.conceptPreviewId ?? poConceptId.value
+  const id = store.ceoReselectDraft.conceptPreviewId
   if (!id) return null
   return concepts.value.find(c => c.id === id) ?? null
 })
@@ -171,24 +183,22 @@ const ceoReselectConfirmedConcept = computed(() => {
 })
 
 /**
- * Slider header badge — mirrors PO concept-selection step:
- *  - "Обраний концепт" when CEO has confirmed an alternative
- *  - "Вибір замовника" when still showing the PO pick (no CEO override)
+ * Slider header badge on the CEO reselect concept route:
+ * always "Вибір СЕО" — the slider is only shown after CEO has clicked a card,
+ * so by definition the choice belongs to CEO. Naming sub-routes use
+ * ConceptMobilePreview whose heading is already "Обраний концепт".
  */
 const ceoReselectSliderTopLabel = computed<string | null>(() =>
-  ceoReselectConfirmedConcept.value ? 'Обраний концепт' : 'Вибір замовника'
+  store.ceoReselectDraft.conceptPreviewId ? 'Вибір СЕО' : null
 )
 
 /**
- * Right-column loading flag for the CEO reselect concept route. Mirrors the
- * `isReady` logic in `CeoReselectConceptView`: while the concepts library is
- * still loading or the preview concept hasn't resolved yet, show a
- * pixel-matched skeleton instead of `ConceptPreviewSlider`'s empty state to
- * avoid the "no concept selected" flash + CLS during navigation.
+ * Right-column loading flag for the CEO reselect concept route.
+ * Only true while the concepts library is still loading — when no CEO concept
+ * is selected yet, we deliberately show nothing (empty right panel) rather
+ * than a skeleton or the PO pick.
  */
-const ceoReselectRightPanelLoading = computed(
-  () => librariesStore.isLoading || !ceoReselectPreviewConcept.value
-)
+const ceoReselectRightPanelLoading = computed(() => librariesStore.isLoading)
 
 /**
  * Right-column loading flag for the CEO reselect *naming* sub-routes
@@ -546,14 +556,33 @@ watch(currentStep, step => {
         class="constructor-layout__right-panel constructor-layout__right-panel--ceo-reselect relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
       >
         <template v-if="route.name === 'ceo-reselect-concept'">
-          <ConceptPreviewSliderSkeleton v-if="ceoReselectRightPanelLoading" />
+          <!-- Skeleton: shape matches what will appear after loading to prevent CLS.
+               CEO with a saved override → slider skeleton; without → empty-state skeleton. -->
+          <ConceptPreviewSliderSkeleton v-if="ceoReselectRightPanelLoading && hasCeoSavedConceptOverride" />
+          <ConceptPreviewEmptySkeleton v-else-if="ceoReselectRightPanelLoading" />
+
+          <!-- Slider: CEO has clicked a card or has a saved override. -->
           <ConceptPreviewSlider
-            v-else
+            v-else-if="ceoReselectPreviewConcept"
             :concept="ceoReselectPreviewConcept"
             :is-final-selected="false"
             :top-label="ceoReselectSliderTopLabel"
             hide-primary-action
           />
+
+          <!-- Empty-state: Figma 2201:12563. Header-area spacer keeps the card
+               visually aligned with the slider canvas position. -->
+          <div v-else class="constructor-layout__ceo-reselect-empty flex flex-col h-full">
+            <div class="shrink-0 h-[56px]" aria-hidden="true" />
+            <div
+              class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px] flex flex-col items-center justify-center gap-6"
+            >
+              <ImagePlaceholderFilledIcon class="size-10 text-[#c8c8c8]" />
+              <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] text-center w-[200px]">
+                Оберіть концепт зліва, щоб переглянути прев'ю.
+              </p>
+            </div>
+          </div>
         </template>
         <template v-else>
           <ConceptMobilePreviewSkeleton v-if="ceoReselectNamingRightPanelLoading" />

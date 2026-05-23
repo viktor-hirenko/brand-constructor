@@ -107,9 +107,8 @@ async function loadConcepts() {
 
 onMounted(() => {
   store.seedCeoReselectFromBrand('concept')
-  if (!store.ceoReselectDraft.conceptPreviewId) {
-    store.setCeoReselectConceptPreview(poConceptId.value)
-  }
+  // Do NOT pre-fill previewId with PO's concept — right panel starts empty
+  // until CEO clicks a card.
   loadPoConcept()
   loadConcepts()
 })
@@ -119,7 +118,8 @@ watch(poConceptId, loadPoConcept)
 
 function handleSelectConcept(conceptId: string) {
   if (stagedConfirmedId.value === conceptId) {
-    store.selectCeoReselectConcept(null, poConceptId.value)
+    // Toggle off — clear both ids; right panel returns to empty state.
+    store.selectCeoReselectConcept(null, null)
   } else {
     store.selectCeoReselectConcept(conceptId, conceptId)
   }
