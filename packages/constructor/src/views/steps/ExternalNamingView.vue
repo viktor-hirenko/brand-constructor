@@ -22,7 +22,29 @@ const comment = computed({
 
 const selectedIds = computed(() => store.stepData.externalNaming.selectedIds)
 const isCreatingNew = computed(() => store.stepData.externalNaming.newNamingBrief !== null)
-const isCommentRequired = computed(() => selectedIds.value.length > 1)
+
+const namingsById = computed(() => {
+  const map = new Map<string, ExternalNaming>()
+  namings.value.forEach(n => map.set(n.id, n))
+  return map
+})
+
+const hasAnySoldSelected = computed(() =>
+  selectedIds.value.some(id => namingsById.value.get(id)?.availability_status === 'sold'),
+)
+
+const isCommentRequired = computed(
+  () => selectedIds.value.length > 1 || hasAnySoldSelected.value,
+)
+
+const commentHint = computed(() => {
+  const many = selectedIds.value.length > 1
+  const sold = hasAnySoldSelected.value
+  if (many && sold) return "Коментар обов'язковий при виборі кількох назв або викупленої назви"
+  if (many) return "Коментар обов'язковий при виборі кількох назв"
+  if (sold) return "Коментар обов'язковий при виборі викупленої назви"
+  return ''
+})
 
 const selectedConceptId = computed(() => store.stepData.concept.selectedId)
 
@@ -86,7 +108,7 @@ function confirmDeleteBrief() {
     <StepCommentField
       v-model="comment"
       :required="isCommentRequired"
-      required-hint="Коментар є обовʼязковим при виборі більше 1 неймінгу"
+      :required-hint="commentHint"
     />
 
     <NewNamingModal

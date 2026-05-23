@@ -48,7 +48,8 @@ function isSelected(naming: ExternalNaming): boolean {
 }
 
 function isDisabledForSelection(naming: ExternalNaming): boolean {
-  if (props.disabled || isSold(naming)) return true
+  if (props.disabled) return true
+  // Sold namings are selectable; only block unselected cards when at the limit.
   if (!isSelected(naming) && isAtLimit.value) return true
   return false
 }
@@ -74,19 +75,17 @@ function formatPrice(price: number | null | undefined): string {
       :key="naming.id"
       class="external-naming-grid__card relative box-border rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 border-2 border-solid transition-[border-color,opacity] duration-150"
       :class="[
-        isSold(naming)
-          ? 'external-naming-grid__card--sold border-black/10 cursor-not-allowed'
-          : isSelected(naming)
-            ? 'external-naming-grid__card--selected border-[#030213] cursor-pointer'
-            : isDisabledForSelection(naming)
-              ? 'external-naming-grid__card--disabled border-black/10 opacity-40 cursor-not-allowed'
-              : 'border-black/10 hover:border-[#030213]/40 cursor-pointer',
+        isSelected(naming)
+          ? 'external-naming-grid__card--selected border-[#030213] cursor-pointer'
+          : isDisabledForSelection(naming)
+            ? 'external-naming-grid__card--disabled border-black/10 opacity-40 cursor-not-allowed'
+            : 'border-black/10 hover:border-[#030213]/40 cursor-pointer',
+        isSold(naming) ? 'external-naming-grid__card--sold' : '',
       ]"
       @click="handleClick(naming)"
     >
       <div
         class="external-naming-grid__card-body flex flex-col items-center gap-2 w-full text-center tracking-[-0.1504px]"
-        :class="isSold(naming) ? 'opacity-50' : ''"
       >
         <div class="external-naming-grid__card-heading flex flex-col gap-1 w-full">
           <p
@@ -121,7 +120,7 @@ function formatPrice(price: number | null | undefined): string {
       </div>
       <div
         v-else-if="naming.availability_status === 'sold'"
-        class="external-naming-grid__badge external-naming-grid__badge--sold backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[100px] bg-[#fdd4d4] opacity-50"
+        class="external-naming-grid__badge external-naming-grid__badge--sold backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[100px] bg-[#fdd4d4]"
       >
         <span
           class="text-[12px] font-medium leading-4 tracking-[-0.3125px] text-[#9e0101] whitespace-nowrap"

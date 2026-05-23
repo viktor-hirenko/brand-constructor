@@ -68,7 +68,7 @@ function onInput(event: Event) {
 
     <p
       v-if="showRequiredHint"
-      class="step-comment-field__hint text-xs text-muted-foreground tracking-[-0.1504px]"
+      class="step-comment-field__hint text-sm text-muted-foreground tracking-[-0.1504px]"
     >
       {{ requiredHint }}
     </p>
