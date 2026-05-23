@@ -146,6 +146,31 @@ const externalComment = computed({
   set: (value: string) => store.setCeoCommentValue('externalNaming', value),
 })
 
+const namingsById = computed(() => {
+  const map = new Map<string, ExternalNaming>()
+  namings.value.forEach(n => map.set(n.id, n))
+  return map
+})
+
+const hasAnySoldSelected = computed(() =>
+  stagedExternalIds.value.some(
+    id => namingsById.value.get(id)?.availability_status === 'sold',
+  ),
+)
+
+const isCommentRequired = computed(
+  () => stagedExternalIds.value.length > 1 || hasAnySoldSelected.value,
+)
+
+const commentHint = computed(() => {
+  const many = stagedExternalIds.value.length > 1
+  const sold = hasAnySoldSelected.value
+  if (many && sold) return "Коментар обов'язковий при виборі кількох назв або викупленої назви"
+  if (many) return "Коментар обов'язковий при виборі кількох назв"
+  if (sold) return "Коментар обов'язковий при виборі викупленої назви"
+  return ''
+})
+
 const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
 
 const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
@@ -216,6 +241,8 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
       v-model="externalComment"
       label="Коментар СЕО"
       placeholder="Додайте коментар СЕО..."
+      :required="isCommentRequired"
+      :required-hint="commentHint"
     />
 
     <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
