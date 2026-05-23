@@ -205,17 +205,22 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           @toggle="handleToggle"
         />
       </div>
-
-      <StepCommentField
-        v-model="externalComment"
-        label="Коментар СЕО"
-        placeholder="Додайте коментар СЕО..."
-      />
-
-      <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
-        {{ store.saveCeoSelectionsError }}
-      </p>
     </template>
+
+    <!-- Comment field + save error — intentionally OUTSIDE the
+         skeleton/ready/error branches above. They don't depend on the
+         namings API, so the CEO can start writing a comment immediately
+         instead of waiting for the grid to load (progressive enhancement;
+         matches the layout used by every other view in this flow). -->
+    <StepCommentField
+      v-model="externalComment"
+      label="Коментар СЕО"
+      placeholder="Додайте коментар СЕО..."
+    />
+
+    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+      {{ store.saveCeoSelectionsError }}
+    </p>
 
     <template #footer>
       <EditFlowFooter
