@@ -10,6 +10,7 @@ import { useViewportScale } from '@/composables/useViewportScale'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
+import ConceptMobilePreviewSkeleton from '@/components/constructor/skeletons/ConceptMobilePreviewSkeleton.vue'
 import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPanel.vue'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
@@ -189,6 +190,17 @@ const ceoReselectRightPanelLoading = computed(
   () => librariesStore.isLoading || !ceoReselectPreviewConcept.value
 )
 
+/**
+ * Right-column loading flag for the CEO reselect *naming* sub-routes
+ * (external / internal). Mirrors the concept-route logic: while libraries
+ * are loading or the resolved mobile-preview concept hasn't materialized
+ * yet, show a pixel-matched skeleton instead of `ConceptMobilePreview`'s
+ * "Спочатку оберіть концепт" empty state to avoid a brief flash + CLS.
+ */
+const ceoReselectNamingRightPanelLoading = computed(
+  () => librariesStore.isLoading || !ceoReselectMobilePreviewConcept.value
+)
+
 /** Concept shown in the right-panel slider while PO edits concept (choice mode). */
 const poEditPreviewConcept = computed(() => {
   const id = store.stepData.concept.previewId ?? store.stepData.concept.selectedId
@@ -245,6 +257,16 @@ async function loadPoEditMobilePreviewConcept() {
 
 const poEditMobilePreviewConcept = computed(
   () => poEditMobilePreviewConceptFull.value ?? selectedConcept.value,
+)
+
+/**
+ * Right-column loading flag for PO edit *naming* sub-routes. Same rationale
+ * as `ceoReselectNamingRightPanelLoading` — prevents the iPhone-preview
+ * empty-state flash before libraries (and the optional gallery_url_1
+ * concept fetch) resolve.
+ */
+const poEditNamingRightPanelLoading = computed(
+  () => librariesStore.isLoading || !poEditMobilePreviewConcept.value,
 )
 
 function confirmConceptFromSlider() {
@@ -512,7 +534,10 @@ watch(currentStep, step => {
           :top-label="poEditSliderTopLabel"
           hide-primary-action
         />
-        <ConceptMobilePreview v-else :concept="poEditMobilePreviewConcept" />
+        <template v-else>
+          <ConceptMobilePreviewSkeleton v-if="poEditNamingRightPanelLoading" />
+          <ConceptMobilePreview v-else :concept="poEditMobilePreviewConcept" />
+        </template>
       </div>
 
       <!-- Right Panel: CEO re-select preview -->
@@ -530,7 +555,10 @@ watch(currentStep, step => {
             hide-primary-action
           />
         </template>
-        <ConceptMobilePreview v-else :concept="ceoReselectMobilePreviewConcept" />
+        <template v-else>
+          <ConceptMobilePreviewSkeleton v-if="ceoReselectNamingRightPanelLoading" />
+          <ConceptMobilePreview v-else :concept="ceoReselectMobilePreviewConcept" />
+        </template>
       </div>
 
       <!-- Right Panel: Step 1/2/3/4/7 previews (hidden on full-width steps and on step 8) -->
