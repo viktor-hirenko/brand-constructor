@@ -239,8 +239,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
          matches the layout used by every other view in this flow). -->
     <StepCommentField
       v-model="externalComment"
-      label="Коментар СЕО"
-      placeholder="Додайте коментар СЕО..."
+      label="Коментар"
       :required="isCommentRequired"
       :required-hint="commentHint"
     />

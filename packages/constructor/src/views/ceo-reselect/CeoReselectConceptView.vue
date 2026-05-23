@@ -183,11 +183,7 @@ function goNext() {
       />
     </div>
 
-    <StepCommentField
-      v-model="conceptComment"
-      label="Коментар СЕО"
-      placeholder="Додайте коментар СЕО..."
-    />
+    <StepCommentField v-model="conceptComment" label="Коментар" />
 
     <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
       {{ store.saveCeoSelectionsError }}

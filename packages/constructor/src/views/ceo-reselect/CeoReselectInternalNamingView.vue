@@ -138,11 +138,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
       </div>
     </template>
 
-    <StepCommentField
-      v-model="internalComment"
-      label="Коментар СЕО"
-      placeholder="Додайте коментар СЕО..."
-    />
+    <StepCommentField v-model="internalComment" label="Коментар" />
 
     <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
       {{ store.saveCeoSelectionsError }}
