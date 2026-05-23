@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { PrPackage } from '@brand-constructor/shared/types'
+import MarketingPackageGridSkeleton from '@/components/constructor/skeletons/MarketingPackageGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ClockIcon from '@/components/icons/ClockIcon.vue'
@@ -76,9 +77,13 @@ function selectFromDetail() {
   closeDetail()
 }
 
-function loadPackages() {
+const hasFetched = ref(false)
+const showSkeleton = computed(() => !hasFetched.value || loading.value)
+
+async function loadPackages() {
   perPage.value = 50
-  fetchData({ status: 'active' })
+  await fetchData({ status: 'active' })
+  hasFetched.value = true
 }
 
 onMounted(loadPackages)
@@ -90,10 +95,8 @@ onMounted(loadPackages)
       Оберіть пакет для запуску вашого бренду
     </p>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-    </div>
+    <!-- Loading: pixel-matched skeleton (no spinner — avoids CLS). -->
+    <MarketingPackageGridSkeleton v-if="showSkeleton" :count="3" />
 
     <!-- Error -->
     <div v-else-if="error" class="text-center py-16 text-red-500">

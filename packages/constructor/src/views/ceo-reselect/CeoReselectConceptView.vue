@@ -5,9 +5,9 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, apiGet } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
-import ConceptGridSkeleton from '@/components/constructor/ceo-reselect/ConceptGridSkeleton.vue'
+import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
-import CustomerPickPreviewSkeleton from '@/components/constructor/ceo-reselect/CustomerPickPreviewSkeleton.vue'
+import CustomerPickPreviewSkeleton from '@/components/constructor/skeletons/CustomerPickPreviewSkeleton.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -44,12 +44,18 @@ const poConceptId = computed(() => store.stepData.concept.selectedId)
  */
 const poConcept = ref<Concept | null>(null)
 const poConceptLoading = ref(false)
+/** Guards against the initial-render flash: useApiList starts with loading=false
+ *  but onMounted only fires after the first paint. Until both fetches have at
+ *  least started+resolved once, we keep the skeleton on. */
+const hasFetchedConcepts = ref(false)
+const hasFetchedPoConcept = ref(false)
 
 async function loadPoConcept() {
   const id = poConceptId.value
   if (!id) {
     poConcept.value = null
     poConceptLoading.value = false
+    hasFetchedPoConcept.value = true
     return
   }
   poConceptLoading.value = true
@@ -59,6 +65,7 @@ async function loadPoConcept() {
     poConcept.value = null
   } finally {
     poConceptLoading.value = false
+    hasFetchedPoConcept.value = true
   }
 }
 
@@ -68,7 +75,13 @@ async function loadPoConcept() {
  * concepts list is still loading. Both fetches are kicked off in `onMounted`
  * in parallel, and the skeleton tree is rendered until they both resolve.
  */
-const isReady = computed(() => !poConceptLoading.value && !loading.value)
+const isReady = computed(
+  () =>
+    hasFetchedConcepts.value &&
+    hasFetchedPoConcept.value &&
+    !poConceptLoading.value &&
+    !loading.value
+)
 
 const stagedConfirmedId = computed(() => store.ceoReselectDraft.conceptId)
 const stagedPreviewId = computed(() => store.ceoReselectDraft.conceptPreviewId)
@@ -82,13 +95,14 @@ const primaryDisabled = computed(
   () => !stagedConfirmedId.value || stagedConfirmedId.value === poConceptId.value
 )
 
-function loadConcepts() {
+async function loadConcepts() {
   perPage.value = 100
   const params: Record<string, string> = { status: 'active', mode: localMode.value }
   if (store.brandId) {
     params.available_for_brand = store.brandId
   }
-  fetchData(params)
+  await fetchData(params)
+  hasFetchedConcepts.value = true
 }
 
 onMounted(() => {

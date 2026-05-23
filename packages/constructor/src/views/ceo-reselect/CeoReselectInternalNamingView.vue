@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
+import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
 import CustomerInternalNamingPreview from '@/components/constructor/ceo-reselect/CustomerInternalNamingPreview.vue'
+import CustomerInternalNamingPreviewSkeleton from '@/components/constructor/skeletons/CustomerInternalNamingPreviewSkeleton.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -42,6 +44,9 @@ const availableNamings = computed(() =>
   namings.value.filter(n => n.id !== poInternalId.value)
 )
 
+/** Guards against initial-render flash (see CeoReselectExternalNamingView). */
+const hasFetched = ref(false)
+
 async function loadNamings() {
   perPage.value = 100
   const params: Record<string, string> = { status: 'active', per_page: '100' }
@@ -49,6 +54,7 @@ async function loadNamings() {
     params.available_for_brand = store.brandId
   }
   await fetchData(params)
+  hasFetched.value = true
 }
 
 onMounted(async () => {
@@ -77,6 +83,9 @@ const internalComment = computed({
   get: () => store.brandCeoComments?.internalNaming?.value ?? '',
   set: (value: string) => store.setCeoCommentValue('internalNaming', value),
 })
+
+const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
+const showSkeleton = computed(() => !hasFetched.value || loading.value)
 </script>
 
 <template>
@@ -85,23 +94,40 @@ const internalComment = computed({
     title="Internal Naming"
     subtitle="Оберіть назву для внутрішньої комунікації команди."
   >
-    <CustomerInternalNamingPreview :name="poInternalName" />
+    <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
+         NB: CustomerInternalNamingPreview can't render real name until
+         `namings` resolves (it looks up by id), so we replace it too. -->
+    <template v-if="showSkeleton">
+      <CustomerInternalNamingPreviewSkeleton />
 
-    <div
-      class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-      aria-hidden="true"
-    />
+      <div
+        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+        aria-hidden="true"
+      />
 
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-    </div>
-    <div v-else-if="error" class="text-center py-12 text-red-500">
-      <p class="mb-3">{{ error }}</p>
+      <div class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
+        <InternalNamingGridSkeleton :count="6" />
+      </div>
+    </template>
+
+    <!-- Error state -->
+    <div v-else-if="error" class="text-center py-12">
+      <p class="text-red-500 mb-3">{{ error }}</p>
       <button type="button" class="text-primary underline text-sm" @click="loadNamings">
         Спробувати знову
       </button>
     </div>
-    <template v-else>
+
+    <!-- Ready state -->
+    <template v-else-if="isReady">
+      <CustomerInternalNamingPreview :name="poInternalName" />
+
+      <div
+        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+        aria-hidden="true"
+      />
+
       <div class="flex flex-col gap-3">
         <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
         <InternalNamingGrid

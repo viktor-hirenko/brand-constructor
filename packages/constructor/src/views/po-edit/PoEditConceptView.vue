@@ -6,6 +6,7 @@ import { useApiList, apiGet, getAssetUrl } from '@/composables/useApi'
 import { usePoEditSnapshot } from '@/composables/usePoEditSnapshot'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
+import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
 import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
@@ -49,10 +50,18 @@ const ceoConcept = computed(() => {
 
 const poConcept = ref<Concept | null>(null)
 async function loadPoConceptById(id: string | null) {
-  if (!id) { poConcept.value = null; return }
+  if (!id) {
+    poConcept.value = null
+    hasFetchedPoConcept.value = true
+    return
+  }
   try {
     poConcept.value = await apiGet<Concept>(`/api/concepts/${id}`)
-  } catch { poConcept.value = null }
+  } catch {
+    poConcept.value = null
+  } finally {
+    hasFetchedPoConcept.value = true
+  }
 }
 
 /**
@@ -110,11 +119,19 @@ const subtitleText = computed(() =>
     : 'Ви можете залишити варіант CEO або обрати інший.',
 )
 
-function loadConcepts() {
+/** Guards against initial-render flash (see CeoReselectExternalNamingView). */
+const hasFetchedConcepts = ref(false)
+const hasFetchedPoConcept = ref(false)
+
+const showHeaderSkeleton = computed(() => !hasFetchedPoConcept.value)
+const showGridSkeleton = computed(() => !hasFetchedConcepts.value || loading.value)
+
+async function loadConcepts() {
   perPage.value = 100
   const params: Record<string, string> = { status: 'active', mode: localMode.value }
   if (store.brandId) params.available_for_brand = store.brandId
-  fetchData(params)
+  await fetchData(params)
+  hasFetchedConcepts.value = true
 }
 
 onMounted(() => {
@@ -199,8 +216,23 @@ async function goDali() {
 
 <template>
   <EditFlowStepShell class="po-edit-concept-view" title="Concept Selection" :subtitle="subtitleText">
+    <!-- Header skeleton: kept in sync with the real layout below (single
+         248×248 card in post-apply, 2 cards side-by-side in choice mode). -->
+    <template v-if="showHeaderSkeleton">
+      <div v-if="isPostApply" class="flex flex-col gap-3" aria-hidden="true">
+        <div class="h-6 w-[140px] rounded bg-muted animate-pulse" />
+        <div class="w-[248px] h-[248px] rounded-2xl bg-muted animate-pulse" />
+      </div>
+      <div v-else class="grid grid-cols-2 gap-4 max-w-[506px]" aria-hidden="true">
+        <div v-for="i in 2" :key="i" class="flex flex-col gap-2">
+          <div class="h-4 w-[140px] rounded bg-muted animate-pulse" />
+          <div class="w-full aspect-square rounded-2xl bg-muted animate-pulse" />
+        </div>
+      </div>
+    </template>
+
     <!-- post-apply: single applied concept card -->
-    <div v-if="isPostApply" class="flex flex-col gap-3">
+    <div v-else-if="isPostApply" class="flex flex-col gap-3">
       <p class="text-[16px] font-medium leading-6 text-[#414141] tracking-[-0.3125px]">
         Обраний концепт
       </p>
@@ -304,9 +336,7 @@ async function goDali() {
         />
       </div>
 
-      <div v-if="loading" class="flex items-center justify-center py-16">
-        <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
+      <ConceptGridSkeleton v-if="showGridSkeleton" />
       <div v-else-if="error" class="text-center py-8 text-red-500">
         <p class="mb-2">{{ error }}</p>
         <button type="button" class="text-primary underline text-sm" @click="loadConcepts">Спробувати знову</button>

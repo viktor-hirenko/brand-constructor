@@ -8,8 +8,8 @@ import StepCommentField from '@/components/constructor/fields/StepCommentField.v
 import SimpleModal from '@/components/ui/SimpleModal.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
+import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
-import AsyncStateBoundary from '@/components/ui/AsyncStateBoundary.vue'
 
 const store = useConstructorStore()
 const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
@@ -40,11 +40,15 @@ const themeMode = computed({
   },
 })
 
-function loadConcepts() {
+const hasFetched = ref(false)
+const showSkeleton = computed(() => !hasFetched.value || loading.value)
+
+async function loadConcepts() {
   const params: Record<string, string> = { status: 'active' }
   if (selectedMode.value) params.mode = selectedMode.value
   if (store.brandId) params.available_for_brand = store.brandId
-  fetchData(params)
+  await fetchData(params)
+  hasFetched.value = true
 }
 
 onMounted(() => {
@@ -91,20 +95,25 @@ function confirmDeleteBrief() {
       aria-label="Тема інтерфейсу"
     />
 
-    <AsyncStateBoundary :loading="loading" :error="error" @retry="loadConcepts">
-      <ConceptGrid
-        v-if="concepts.length > 0"
-        :concepts="concepts"
-        :selected-id="selectedId"
-        :preview-id="previewId"
-        :disabled="isCreatingNew"
-        :selection-ring="true"
-        @select="handleSelect"
-      />
-      <div v-else class="text-center py-8 text-muted-foreground">
-        <p>Концептів поки немає. Створіть новий.</p>
-      </div>
-    </AsyncStateBoundary>
+    <ConceptGridSkeleton v-if="showSkeleton" />
+    <div v-else-if="error" class="text-center py-12">
+      <p class="text-red-500 mb-3">{{ error }}</p>
+      <button class="text-primary underline text-sm" @click="loadConcepts">
+        Спробувати знову
+      </button>
+    </div>
+    <ConceptGrid
+      v-else-if="concepts.length > 0"
+      :concepts="concepts"
+      :selected-id="selectedId"
+      :preview-id="previewId"
+      :disabled="isCreatingNew"
+      :selection-ring="true"
+      @select="handleSelect"
+    />
+    <div v-else class="text-center py-8 text-muted-foreground">
+      <p>Концептів поки немає. Створіть новий.</p>
+    </div>
 
     <BriefOrderButton
       create-label="Замовити новий концепт"

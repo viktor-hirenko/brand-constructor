@@ -7,8 +7,8 @@ import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
+import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
-import AsyncStateBoundary from '@/components/ui/AsyncStateBoundary.vue'
 
 const store = useConstructorStore()
 const { data: namings, loading, error, fetchData } = useApiList<ExternalNaming>(
@@ -58,14 +58,20 @@ function confirmDeleteBrief() {
 
 <template>
   <div class="flex flex-col gap-6">
-    <AsyncStateBoundary :loading="loading" :error="error" @retry="loadNamings">
-      <ExternalNamingGrid
-        :namings="namings"
-        :selected-ids="selectedIds"
-        :disabled="isCreatingNew"
-        @toggle="store.toggleExternalNaming"
-      />
-    </AsyncStateBoundary>
+    <ExternalNamingGridSkeleton v-if="loading" />
+    <div v-else-if="error" class="text-center py-12">
+      <p class="text-red-500 mb-3">{{ error }}</p>
+      <button class="text-primary underline text-sm" @click="loadNamings">
+        Спробувати знову
+      </button>
+    </div>
+    <ExternalNamingGrid
+      v-else
+      :namings="namings"
+      :selected-ids="selectedIds"
+      :disabled="isCreatingNew"
+      @toggle="store.toggleExternalNaming"
+    />
 
     <BriefOrderButton
       create-label="Замовити нову назву"

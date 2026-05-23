@@ -5,6 +5,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
+import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
 import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
@@ -58,11 +59,15 @@ const ceoCeoComment = computed(() => store.brandCeoComments?.internalNaming?.val
 const primaryDisabled = computed(() => !store.stepData.internalNaming.selectedId)
 const isSaving = computed(() => store.isSaving)
 
+/** Guards against initial-render flash (see CeoReselectExternalNamingView). */
+const hasFetched = ref(false)
+
 async function loadNamings() {
   perPage.value = 100
   const params: Record<string, string> = { status: 'active', per_page: '100' }
   if (store.brandId) params.available_for_brand = store.brandId
   await fetchData(params)
+  hasFetched.value = true
 }
 
 onMounted(async () => {
@@ -92,6 +97,9 @@ async function goSave() {
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }
+
+const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
+const showSkeleton = computed(() => !hasFetched.value || loading.value)
 </script>
 
 <template>
@@ -99,12 +107,54 @@ async function goSave() {
     class="po-edit-internal-naming-view"
     title="Internal Naming"
     subtitle="Оберіть назву для внутрішньої комунікації команди."
-    :loading="loading"
-    :error="error"
-    @retry="loadNamings"
   >
-    <!-- post-apply: applied name as interactive grid -->
-    <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
+    <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
+         Skeleton sections key off raw ids (not resolved namings), because
+         the resolved values only populate after the API call. -->
+    <template v-if="showSkeleton">
+      <!-- post-apply: applied name skeleton -->
+      <div v-if="isPostApply && poOriginalId" class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
+        <InternalNamingGridSkeleton :count="1" />
+      </div>
+
+      <!-- choice mode skeletons -->
+      <template v-else>
+        <div v-if="poOriginalId" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+          <InternalNamingGridSkeleton :count="1" />
+        </div>
+        <div v-else class="flex flex-col gap-2">
+          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+          <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
+        </div>
+
+        <div v-if="ceoInternalId" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
+          <InternalNamingGridSkeleton :count="1" />
+        </div>
+      </template>
+
+      <hr class="border-t border-black/10 max-w-[506px]" />
+
+      <div class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Інші внутрішні назви</EditFlowSectionLabel>
+        <InternalNamingGridSkeleton :count="6" />
+      </div>
+    </template>
+
+    <!-- Error state -->
+    <div v-else-if="error" class="text-center py-12">
+      <p class="text-red-500 mb-3">{{ error }}</p>
+      <button type="button" class="text-primary underline text-sm" @click="loadNamings">
+        Спробувати знову
+      </button>
+    </div>
+
+    <!-- Ready state -->
+    <template v-else-if="isReady">
+      <!-- post-apply: applied name as interactive grid -->
+      <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
         <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
         <InternalNamingGrid
           :namings="[poOriginalNaming]"
@@ -153,6 +203,7 @@ async function goSave() {
       </div>
 
       <CeoCommentReadonly :value="ceoCeoComment" />
+    </template>
 
     <template #footer>
       <EditFlowFooter

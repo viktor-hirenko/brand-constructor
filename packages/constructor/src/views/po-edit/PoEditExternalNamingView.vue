@@ -6,6 +6,7 @@ import { useApiList } from '@/composables/useApi'
 import { usePoEditSnapshot } from '@/composables/usePoEditSnapshot'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
+import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
@@ -82,12 +83,16 @@ const excludeFromGrid = computed(() => {
   return [...new Set([...poOriginalPickIds.value, ...ceoExternalIds.value])]
 })
 
+/** Guards against initial-render flash (see CeoReselectExternalNamingView). */
+const hasFetched = ref(false)
+
 async function loadNamings() {
   perPage.value = 100
   const params: Record<string, string> = { status: 'active' }
   if (conceptIdForNamings.value) params.concept_id = conceptIdForNamings.value
   if (store.brandId) params.available_for_brand = store.brandId
   await fetchData(params)
+  hasFetched.value = true
 }
 
 onMounted(async () => {
@@ -136,6 +141,9 @@ async function goSave() {
 }
 
 const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
+
+const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
+const showSkeleton = computed(() => !hasFetched.value || loading.value)
 </script>
 
 <template>
@@ -143,58 +151,102 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
     class="po-edit-external-naming-view"
     title="External Naming"
     :subtitle="subtitleText"
-    :loading="loading"
-    :error="error"
-    @retry="loadNamings"
   >
-    <!-- post-apply: show applied names as interactive grid (same cards as below) -->
-    <div v-if="isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
-      <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
-      <ExternalNamingGrid
-        :namings="poOriginalNamings"
-        :selected-ids="store.stepData.externalNaming.selectedIds"
-        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-        @toggle="handleToggle"
-      />
+    <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
+         Skeleton sections key off raw *Ids (not *Namings), because the
+         resolved namings only populate after the API call. -->
+    <template v-if="showSkeleton">
+      <!-- post-apply: applied names skeleton -->
+      <div v-if="isPostApply && poOriginalPickIds.length > 0" class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
+        <ExternalNamingGridSkeleton :count="Math.min(poOriginalPickIds.length, 3)" />
+      </div>
+
+      <!-- standalone: PO previous picks skeleton -->
+      <div
+        v-else-if="!isChained && !isPostApply && poOriginalPickIds.length > 0"
+        class="flex flex-col gap-3"
+      >
+        <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+        <ExternalNamingGridSkeleton :count="Math.min(poOriginalPickIds.length, 3)" />
+      </div>
+
+      <!-- CEO pick skeleton -->
+      <div v-if="!isPostApply && ceoExternalIds.length > 0" class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
+        <ExternalNamingGridSkeleton :count="Math.min(ceoExternalIds.length, 3)" />
+      </div>
+
+      <hr class="border-t border-black/10 max-w-[506px]" />
+
+      <div class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>
+        <ExternalNamingGridSkeleton :count="6" />
+      </div>
+    </template>
+
+    <!-- Error state -->
+    <div v-else-if="error" class="text-center py-12">
+      <p class="text-red-500 mb-3">{{ error }}</p>
+      <button type="button" class="text-primary underline text-sm" @click="loadNamings">
+        Спробувати знову
+      </button>
     </div>
 
-    <!-- standalone: PO's previous picks as interactive grid (top, above CEO) -->
-    <div v-else-if="!isChained && !isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
-      <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-      <ExternalNamingGrid
-        :namings="poOriginalNamings"
-        :selected-ids="store.stepData.externalNaming.selectedIds"
-        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-        @toggle="handleToggle"
-      />
-    </div>
+    <!-- Ready state -->
+    <template v-else-if="isReady">
+      <!-- post-apply: show applied names as interactive grid (same cards as below) -->
+      <div v-if="isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
+        <ExternalNamingGrid
+          :namings="poOriginalNamings"
+          :selected-ids="store.stepData.externalNaming.selectedIds"
+          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+          @toggle="handleToggle"
+        />
+      </div>
 
-    <!-- CEO pick -->
-    <div v-if="!isPostApply && ceoNamings.length > 0" class="flex flex-col gap-3">
-      <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
-      <ExternalNamingGrid
-        :namings="ceoNamings"
-        :selected-ids="store.stepData.externalNaming.selectedIds"
-        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-        @toggle="handleToggle"
-      />
-    </div>
+      <!-- standalone: PO's previous picks as interactive grid (top, above CEO) -->
+      <div
+        v-else-if="!isChained && !isPostApply && poOriginalNamings.length > 0"
+        class="flex flex-col gap-3"
+      >
+        <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+        <ExternalNamingGrid
+          :namings="poOriginalNamings"
+          :selected-ids="store.stepData.externalNaming.selectedIds"
+          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+          @toggle="handleToggle"
+        />
+      </div>
 
-    <hr class="border-t border-black/10 max-w-[506px]" />
+      <!-- CEO pick -->
+      <div v-if="!isPostApply && ceoNamings.length > 0" class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
+        <ExternalNamingGrid
+          :namings="ceoNamings"
+          :selected-ids="store.stepData.externalNaming.selectedIds"
+          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+          @toggle="handleToggle"
+        />
+      </div>
 
-    <!-- Other namings for chosen concept (excluding PO original + CEO) -->
-    <div class="flex flex-col gap-3">
-      <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>
-      <ExternalNamingGrid
-        :namings="namings"
-        :selected-ids="store.stepData.externalNaming.selectedIds"
-        :exclude-ids="excludeFromGrid"
-        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-        @toggle="handleToggle"
-      />
-    </div>
+      <hr class="border-t border-black/10 max-w-[506px]" />
 
-    <CeoCommentReadonly :value="ceoCeoComment" />
+      <!-- Other namings for chosen concept (excluding PO original + CEO) -->
+      <div class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>
+        <ExternalNamingGrid
+          :namings="namings"
+          :selected-ids="store.stepData.externalNaming.selectedIds"
+          :exclude-ids="excludeFromGrid"
+          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+          @toggle="handleToggle"
+        />
+      </div>
+
+      <CeoCommentReadonly :value="ceoCeoComment" />
+    </template>
 
     <template #footer>
       <EditFlowFooter

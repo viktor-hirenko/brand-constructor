@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { getAssetUrl, apiGet } from '@/composables/useApi'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared/types'
+import VisualComponentsAccordionSkeleton from '@/components/constructor/skeletons/VisualComponentsAccordionSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
@@ -318,10 +319,9 @@ onMounted(loadComponentTypes)
       </button>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="isLoadingTypes" class="flex items-center justify-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-    </div>
+    <!-- Loading State: pixel-matched skeleton (no spinner — avoids CLS).
+         Default count=5 mirrors the filtered (non-Theme) list rendered below. -->
+    <VisualComponentsAccordionSkeleton v-if="isLoadingTypes" />
 
     <!-- Component Accordions -->
     <div

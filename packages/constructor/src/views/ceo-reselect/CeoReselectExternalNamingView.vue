@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore, CEO_RESELECT_EXTERNAL_NAMING_LIMIT } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
+import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import CustomerNamingsRow from '@/components/constructor/ceo-reselect/CustomerNamingsRow.vue'
+import CustomerNamingsRowSkeleton from '@/components/constructor/skeletons/CustomerNamingsRowSkeleton.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -72,6 +74,11 @@ const excludedFromGrid = computed(() =>
 
 const primaryDisabled = computed(() => stagedExternalIds.value.length === 0)
 
+/** Guards against the initial-render flash: useApiList starts with loading=false
+ *  but onMounted only fires after the first paint, so the first frame would render
+ *  the real grid with empty data before the spinner kicks in. */
+const hasFetched = ref(false)
+
 async function loadNamings() {
   perPage.value = 100
   const params: Record<string, string> = { status: 'active' }
@@ -83,6 +90,7 @@ async function loadNamings() {
     params.available_for_brand = store.brandId
   }
   await fetchData(params)
+  hasFetched.value = true
 }
 
 onMounted(async () => {
@@ -139,6 +147,9 @@ const externalComment = computed({
 })
 
 const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
+
+const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
+const showSkeleton = computed(() => !hasFetched.value || loading.value)
 </script>
 
 <template>
@@ -146,39 +157,65 @@ const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-
     class="ceo-reselect-external-naming-step"
     title="External Naming"
     :subtitle="subtitleText"
-    :loading="loading"
-    :error="error"
-    @retry="loadNamings"
   >
-    <template v-if="!isChainedFromConcept">
-      <CustomerNamingsRow :namings="poExternalMini" />
+    <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
+         `showSkeleton` covers both `loading=true` and the initial pre-mount
+         frame when `hasFetched=false`. -->
+    <template v-if="showSkeleton">
+      <CustomerNamingsRowSkeleton v-if="!isChainedFromConcept" />
+
+      <div
+        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+        aria-hidden="true"
+      />
+
+      <div class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
+        <!-- CEO can select up to CEO_RESELECT_EXTERNAL_NAMING_LIMIT (3) — show 1 row. -->
+        <ExternalNamingGridSkeleton :count="3" />
+      </div>
     </template>
 
-    <div
-      class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-      aria-hidden="true"
-    />
-
-    <div class="flex flex-col gap-3">
-      <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
-      <ExternalNamingGrid
-        :namings="namings"
-        :selected-ids="stagedExternalIds"
-        :exclude-ids="excludedFromGrid"
-        :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-        @toggle="handleToggle"
-      />
+    <!-- Error state -->
+    <div v-else-if="error" class="text-center py-12">
+      <p class="text-red-500 mb-3">{{ error }}</p>
+      <button class="text-primary underline text-sm" @click="loadNamings">
+        Спробувати знову
+      </button>
     </div>
 
-    <StepCommentField
-      v-model="externalComment"
-      label="Коментар СЕО"
-      placeholder="Додайте коментар СЕО..."
-    />
+    <!-- Ready state -->
+    <template v-else-if="isReady">
+      <template v-if="!isChainedFromConcept">
+        <CustomerNamingsRow :namings="poExternalMini" />
+      </template>
 
-    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
-      {{ store.saveCeoSelectionsError }}
-    </p>
+      <div
+        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
+        aria-hidden="true"
+      />
+
+      <div class="flex flex-col gap-3">
+        <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
+        <ExternalNamingGrid
+          :namings="namings"
+          :selected-ids="stagedExternalIds"
+          :exclude-ids="excludedFromGrid"
+          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+          @toggle="handleToggle"
+        />
+      </div>
+
+      <StepCommentField
+        v-model="externalComment"
+        label="Коментар СЕО"
+        placeholder="Додайте коментар СЕО..."
+      />
+
+      <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+        {{ store.saveCeoSelectionsError }}
+      </p>
+    </template>
 
     <template #footer>
       <EditFlowFooter
