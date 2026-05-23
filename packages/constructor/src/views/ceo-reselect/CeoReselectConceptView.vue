@@ -5,7 +5,9 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, apiGet } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
+import ConceptGridSkeleton from '@/components/constructor/ceo-reselect/ConceptGridSkeleton.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
+import CustomerPickPreviewSkeleton from '@/components/constructor/ceo-reselect/CustomerPickPreviewSkeleton.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -41,19 +43,32 @@ const poConceptId = computed(() => store.stepData.concept.selectedId)
  * regardless of which theme the CEO is currently browsing.
  */
 const poConcept = ref<Concept | null>(null)
+const poConceptLoading = ref(false)
 
 async function loadPoConcept() {
   const id = poConceptId.value
   if (!id) {
     poConcept.value = null
+    poConceptLoading.value = false
     return
   }
+  poConceptLoading.value = true
   try {
     poConcept.value = await apiGet<Concept>(`/api/concepts/${id}`)
   } catch {
     poConcept.value = null
+  } finally {
+    poConceptLoading.value = false
   }
 }
+
+/**
+ * Single readiness flag for the whole page — avoids per-section flashes of
+ * empty/"not selected" states while either the PO pick or the available
+ * concepts list is still loading. Both fetches are kicked off in `onMounted`
+ * in parallel, and the skeleton tree is rendered until they both resolve.
+ */
+const isReady = computed(() => !poConceptLoading.value && !loading.value)
 
 const stagedConfirmedId = computed(() => store.ceoReselectDraft.conceptId)
 const stagedPreviewId = computed(() => store.ceoReselectDraft.conceptPreviewId)
@@ -89,7 +104,11 @@ watch(localMode, loadConcepts)
 watch(poConceptId, loadPoConcept)
 
 function handleSelectConcept(conceptId: string) {
-  store.setCeoReselectConceptPreview(conceptId)
+  if (stagedConfirmedId.value === conceptId) {
+    store.selectCeoReselectConcept(null, poConceptId.value)
+  } else {
+    store.selectCeoReselectConcept(conceptId, conceptId)
+  }
 }
 
 const conceptComment = computed({
@@ -117,7 +136,8 @@ function goNext() {
     subtitle="Оберіть концепт та перегляньте прев’ю праворуч."
   >
     <!-- Customer's pick (independent of theme filter) -->
-    <CustomerPickPreview :concept="poConcept" />
+    <CustomerPickPreviewSkeleton v-if="!isReady" />
+    <CustomerPickPreview v-else :concept="poConcept" />
 
     <!-- Divider after customer pick -->
     <div
@@ -132,9 +152,7 @@ function goNext() {
     <div class="flex flex-col gap-3">
       <EditFlowSectionLabel>Доступні концепти</EditFlowSectionLabel>
 
-      <div v-if="loading" class="flex items-center justify-center py-16">
-        <div class="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
+      <ConceptGridSkeleton v-if="!isReady" />
       <div v-else-if="error" class="text-center py-12 text-red-500">
         <p class="mb-3">{{ error }}</p>
         <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
@@ -146,6 +164,7 @@ function goNext() {
         :concepts="availableConcepts"
         :preview-id="stagedPreviewId"
         :selected-id="stagedConfirmedId"
+        :selection-ring="true"
         @select="handleSelectConcept"
       />
     </div>

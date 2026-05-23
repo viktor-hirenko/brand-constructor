@@ -8,6 +8,7 @@ import { useLibrariesStore } from '@/stores/libraries'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import { useViewportScale } from '@/composables/useViewportScale'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
+import ConceptPreviewSliderSkeleton from '@/components/constructor/ceo-reselect/ConceptPreviewSliderSkeleton.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPanel.vue'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
@@ -168,36 +169,25 @@ const ceoReselectConfirmedConcept = computed(() => {
   return concepts.value.find(c => c.id === id) ?? null
 })
 
-const ceoReselectIsShowingPo = computed(() => {
-  const previewId = store.ceoReselectDraft.conceptPreviewId
-  return !previewId || previewId === poConceptId.value
-})
+/**
+ * Slider header badge — mirrors PO concept-selection step:
+ *  - "Обраний концепт" when CEO has confirmed an alternative
+ *  - "Вибір замовника" when still showing the PO pick (no CEO override)
+ */
+const ceoReselectSliderTopLabel = computed<string | null>(() =>
+  ceoReselectConfirmedConcept.value ? 'Обраний концепт' : 'Вибір замовника'
+)
 
-const ceoReselectIsShowingConfirmed = computed(() => {
-  const previewId = store.ceoReselectDraft.conceptPreviewId
-  const confirmedId = store.ceoReselectDraft.conceptId
-  return Boolean(confirmedId && previewId === confirmedId)
-})
-
-const ceoReselectSliderTopLabel = computed<string | null>(() => {
-  if (ceoReselectIsShowingPo.value) return 'Вибір замовника'
-  if (ceoReselectIsShowingConfirmed.value) return 'Вибір CEO'
-  return null
-})
-
-const ceoReselectSliderConfirmDisabled = computed(() => ceoReselectIsShowingPo.value)
-const ceoReselectSliderCancelMode = computed(() => ceoReselectIsShowingConfirmed.value)
-
-function handleCeoReselectSliderConfirm() {
-  const previewId = store.ceoReselectDraft.conceptPreviewId
-  if (!previewId || previewId === poConceptId.value) return
-  store.setCeoReselectConcept(previewId)
-}
-
-function handleCeoReselectSliderCancel() {
-  store.setCeoReselectConcept(null)
-  store.setCeoReselectConceptPreview(poConceptId.value)
-}
+/**
+ * Right-column loading flag for the CEO reselect concept route. Mirrors the
+ * `isReady` logic in `CeoReselectConceptView`: while the concepts library is
+ * still loading or the preview concept hasn't resolved yet, show a
+ * pixel-matched skeleton instead of `ConceptPreviewSlider`'s empty state to
+ * avoid the "no concept selected" flash + CLS during navigation.
+ */
+const ceoReselectRightPanelLoading = computed(
+  () => librariesStore.isLoading || !ceoReselectPreviewConcept.value
+)
 
 /** Concept shown in the right-panel slider while PO edits concept (choice mode). */
 const poEditPreviewConcept = computed(() => {
@@ -531,14 +521,13 @@ watch(currentStep, step => {
         class="constructor-layout__right-panel constructor-layout__right-panel--ceo-reselect relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
       >
         <template v-if="route.name === 'ceo-reselect-concept'">
+          <ConceptPreviewSliderSkeleton v-if="ceoReselectRightPanelLoading" />
           <ConceptPreviewSlider
+            v-else
             :concept="ceoReselectPreviewConcept"
             :is-final-selected="false"
             :top-label="ceoReselectSliderTopLabel"
-            :confirm-disabled="ceoReselectSliderConfirmDisabled"
-            :cancel-mode="ceoReselectSliderCancelMode"
-            @confirm-selection="handleCeoReselectSliderConfirm"
-            @cancel-selection="handleCeoReselectSliderCancel"
+            hide-primary-action
           />
         </template>
         <ConceptMobilePreview v-else :concept="ceoReselectMobilePreviewConcept" />

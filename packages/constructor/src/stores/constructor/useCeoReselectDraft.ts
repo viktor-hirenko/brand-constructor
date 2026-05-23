@@ -67,6 +67,21 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
     ceoReselectDraft.value = { ...ceoReselectDraft.value, conceptPreviewId: id }
   }
 
+  /**
+   * Atomic single-click selection: confirms a CEO override and syncs the
+   * slider preview to it in one update. Pass `id = null` to clear the
+   * override and revert the preview to `fallbackPreviewId` (usually the PO
+   * concept id). Used by `CeoReselectConceptView` for the unified PO-style
+   * click-to-select UX (no separate "Обрати концепт" button).
+   */
+  function selectCeoReselectConcept(id: string | null, fallbackPreviewId: string | null) {
+    ceoReselectDraft.value = {
+      ...ceoReselectDraft.value,
+      conceptId: id,
+      conceptPreviewId: id ?? fallbackPreviewId,
+    }
+  }
+
   /** Toggles an external naming id in/out of the staged set, with limit 3. */
   function toggleCeoReselectExternalNaming(id: string): boolean {
     const current = [...ceoReselectDraft.value.externalNamingIds]
@@ -143,6 +158,7 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
     resetCeoReselectDraft,
     setCeoReselectConcept,
     setCeoReselectConceptPreview,
+    selectCeoReselectConcept,
     toggleCeoReselectExternalNaming,
     setCeoReselectExternalNamingIds,
     setCeoReselectInternalNaming,
