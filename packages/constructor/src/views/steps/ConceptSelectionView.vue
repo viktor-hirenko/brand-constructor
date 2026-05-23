@@ -61,7 +61,11 @@ watch(selectedMode, loadConcepts)
 watch(hasBrief, val => { isCreatingNew.value = val }, { immediate: true })
 
 function handleSelect(conceptId: string) {
-  store.setConcept({ selectedId: conceptId, previewId: conceptId })
+  if (conceptId === selectedId.value) {
+    store.setConcept({ selectedId: null, previewId: null })
+  } else {
+    store.setConcept({ selectedId: conceptId, previewId: conceptId })
+  }
 }
 
 function handleCreateBrief() {
