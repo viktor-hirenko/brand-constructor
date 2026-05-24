@@ -3,7 +3,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore, CEO_RESELECT_EXTERNAL_NAMING_LIMIT } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
-import { usePoEditSnapshot } from '@/composables/usePoEditSnapshot'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
@@ -17,8 +16,6 @@ const route = useRoute()
 const router = useRouter()
 
 const brandId = computed(() => route.params.id as string)
-
-const snapshot = usePoEditSnapshot(brandId)
 
 /**
  * chained    = coming from concept edit (concept was just changed)
@@ -95,14 +92,14 @@ onMounted(async () => {
   if (isChained.value) {
     // Restore in-progress selections if user went Back from here and returned again.
     // If there are none (first visit), start with empty selection.
-    const pendingExternal = snapshot.loadPendingExternal()
+    const pendingExternal = store.poEditDraft.pendingExternalIds
     if (pendingExternal && pendingExternal.length > 0) {
       store.setExternalNaming({ selectedIds: pendingExternal, newNamingBrief: null })
     } else {
       store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
     }
   } else {
-    // standalone + post-apply: save PO's current picks before snapshot so we can show them as reference
+    // standalone + post-apply: save PO's current picks so we can show them as reference
     poOriginalPickIds.value = [...(store.stepData.externalNaming.selectedIds ?? [])]
     store.beginEditSection('externalNaming', 8)
   }
@@ -115,14 +112,15 @@ function handleToggle(id: string) {
 
 function goCancel() {
   if (isChained.value) {
-    // Save current in-progress selections so that if user returns (Назад → Далі again),
-    // they see their external naming choices intact.
-    snapshot.savePendingExternal(store.stepData.externalNaming.selectedIds ?? [])
-    // Restore externalNaming from sessionStorage (saved before goDali cleared it).
-    // NB: snapshot keys are NOT cleared here — PoEditConceptView re-reads
-    // `originalConcept` on mount to keep «Назад» idempotent across hops.
-    snapshot.restoreOriginalExternal(ids => {
-      store.setExternalNaming({ selectedIds: ids, newNamingBrief: null })
+    // «Назад» — stash the in-progress external picks so they survive a forward
+    // navigation back to this view, then revert stepData to the captured
+    // baseline so PoEditConceptView opens with a clean external slice.
+    // NB: draft is NOT reset — the baseline + pending concept must persist
+    // across the hop to keep «Назад» idempotent.
+    store.setPoEditPendingExternal(store.stepData.externalNaming.selectedIds ?? [])
+    store.setExternalNaming({
+      selectedIds: [...store.poEditDraft.baselineExternalIds],
+      newNamingBrief: null,
     })
     // cancelEditSection restores concept.selectedId back to PO's original.
     store.cancelEditSection()
@@ -137,8 +135,7 @@ async function goSave() {
   const saved = await store.saveBrand()
   if (saved) {
     store.commitEditSection()
-    // Edit flow is complete — drop every PO-edit snapshot key for this brand.
-    snapshot.clearAll()
+    store.resetPoEditDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }

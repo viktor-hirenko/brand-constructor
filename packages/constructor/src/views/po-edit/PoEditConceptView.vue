@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, apiGet } from '@/composables/useApi'
-import { usePoEditSnapshot } from '@/composables/usePoEditSnapshot'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import ConceptCard from '@/components/constructor/ceo-reselect/ConceptCard.vue'
@@ -19,8 +18,6 @@ const route = useRoute()
 const router = useRouter()
 
 const brandId = computed(() => route.params.id as string)
-
-const snapshot = usePoEditSnapshot(brandId)
 
 /**
  * post-apply = PO already applied CEO variant and now wants to re-edit.
@@ -93,11 +90,11 @@ const selectedId = ref<string | null>(
 
 /**
  * The PO's original concept BEFORE the current edit session started.
- * Persisted in sessionStorage (via `usePoEditSnapshot`) keyed by brandId so
- * «Назад» from external-naming can restore the correct value even after the
- * store was mutated by goDali().
+ * Captured in `usePoEditDraft` (Pinia) on first mount so «Назад» from
+ * external-naming can restore the correct value even after `goDali()`
+ * mutated `stepData.concept.selectedId`.
  */
-const originalPoConceptId = ref<string | null>(null)
+const originalPoConceptId = computed(() => store.poEditDraft.baselineConceptId)
 
 /**
  * choice mode:    exclude PO original (shown in dual header) AND CEO pick (shown in dual header).
@@ -162,27 +159,15 @@ async function loadConcepts() {
 }
 
 onMounted(() => {
-  // Restore or initialize originalPoConceptId from sessionStorage.
-  // On first open: store.stepData.concept.selectedId is PO's real original concept.
-  // On «Назад» return: sessionStorage still has the real original saved from first open.
-  const persisted = snapshot.loadOriginalConcept()
-  if (persisted) {
-    originalPoConceptId.value = persisted
-  } else {
-    // First time opening this edit session — snapshot the real PO concept.
-    originalPoConceptId.value = store.stepData.concept.selectedId ?? null
-    snapshot.saveOriginalConcept(originalPoConceptId.value)
-  }
+  // Capture the PO concept BEFORE this edit session may have mutated it.
+  // No-op if a baseline was already captured on a previous mount this session
+  // (e.g. user is returning from external-naming via «Назад»).
+  store.capturePoEditBaselineConcept(store.stepData.concept.selectedId ?? null)
 
-  // Begin edit section only on first open (no editingSection yet).
-  if (!store.editingSection) {
-    store.beginEditSection('concept', 8)
-  } else {
-    // Returning from external-naming: cancelEditSection was called there,
-    // which restored store.stepData.concept — now re-open the section to keep
-    // cancel working from concept screen too.
-    store.beginEditSection('concept', 8)
-  }
+  // Begin (or re-begin) the edit section. cancelEditSection in the chained
+  // external-naming view restored store.stepData.concept on «Назад», so we
+  // re-open the section here to keep Скасувати working from this screen too.
+  store.beginEditSection('concept', 8)
 
   // Pre-select CEO pick (choice mode) — always show CEO as highlighted.
   if (!isPostApply.value) {
@@ -191,17 +176,16 @@ onMounted(() => {
     if (ceoId) selectedId.value = ceoId
   }
 
-  // When returning from external-naming ("Назад"), restore the concept PO had
-  // chosen so the checkmark stays on their selection, not on the CEO pick.
-  const pendingConceptId = snapshot.loadPendingConcept()
-  if (pendingConceptId) {
-    selectedId.value = pendingConceptId
+  // When returning from external-naming («Назад»), restore the concept PO had
+  // picked so the checkmark stays on their selection, not on the CEO pick.
+  if (store.poEditDraft.pendingConceptId) {
+    selectedId.value = store.poEditDraft.pendingConceptId
   }
 
   // Seed previewId so the right-panel slider shows immediately on open.
   if (selectedId.value) store.setConcept({ previewId: selectedId.value })
 
-  // Always load PO concept by originalPoConceptId (not the possibly mutated store value).
+  // Always load PO concept by the baseline (not the possibly mutated store value).
   loadPoConceptById(originalPoConceptId.value)
   // CEO concept fetched independently so theme changes don't make it disappear.
   loadCeoConcept()
@@ -217,11 +201,12 @@ function selectConcept(id: string) {
 }
 
 function goCancel() {
-  // Restore externalNaming to what it was before the edit session started.
-  snapshot.restoreOriginalExternal(ids => {
-    store.setExternalNaming({ selectedIds: ids, newNamingBrief: null })
+  // Restore externalNaming to the baseline (what it was before the edit session).
+  store.setExternalNaming({
+    selectedIds: [...store.poEditDraft.baselineExternalIds],
+    newNamingBrief: null,
   })
-  snapshot.clearAll()
+  store.resetPoEditDraft()
   store.cancelEditSection()
   router.push(`/constructor/brand/${brandId.value}`)
 }
@@ -234,15 +219,15 @@ async function goDali() {
     // Hide the grid immediately so that mutating `poConceptId` below doesn't cause
     // availableConcepts to briefly include the old PO concept before navigation completes.
     hasFetchedConcepts.value = false
-    // Save original externalNaming BEFORE clearing it, so «Скасувати» can restore it.
-    snapshot.saveOriginalExternal(store.stepData.externalNaming.selectedIds ?? [])
+    // Capture baseline external BEFORE clearing it, so «Скасувати» can restore it.
+    store.capturePoEditBaselineExternal(store.stepData.externalNaming.selectedIds ?? [])
     // If user switched to a DIFFERENT concept than the one they previously navigated forward with,
     // drop the in-progress external selections — they belong to the old concept.
-    const previouslyPending = snapshot.loadPendingConcept()
+    const previouslyPending = store.poEditDraft.pendingConceptId
     if (previouslyPending && previouslyPending !== selectedId.value) {
-      snapshot.clearPendingExternal()
+      store.clearPoEditPendingExternal()
     }
-    snapshot.savePendingConcept(selectedId.value)
+    store.setPoEditPendingConcept(selectedId.value)
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept/external-naming`)
   } else {
@@ -252,7 +237,7 @@ async function goDali() {
     await store.saveBrand()
     isSaving.value = false
     store.commitEditSection()
-    snapshot.clearAll()
+    store.resetPoEditDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }

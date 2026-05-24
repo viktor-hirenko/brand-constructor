@@ -6,6 +6,7 @@ import type {
 import { useBrandData } from './useBrandData'
 import { useCeoReview } from './useCeoReview'
 import { useCeoReselectDraft } from './useCeoReselectDraft'
+import { usePoEditDraft } from './usePoEditDraft'
 import { usePreviews } from './usePreviews'
 import { useEditSection } from './useEditSection'
 
@@ -23,6 +24,7 @@ export {
  *    validation, navigation, draft localStorage and `saveBrand()`
  *  - `useCeoReview` — CEO comments + selections, apply-variant flow
  *  - `useCeoReselectDraft` — transient draft for `/ceo-reselect/*` routes
+ *  - `usePoEditDraft` — transient draft for `/po-edit/*` chained flow
  *  - `usePreviews` — concept overlay + PR package drawer
  *  - `useEditSection` — PO inline section-edit triggered from Step 10
  *
@@ -61,6 +63,11 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     stepData: brandDataPublic.stepData,
     brandCeoSelections: ceoReviewPublic.brandCeoSelections,
   })
+
+  const {
+    resetSlice: resetPoEditDraftSlice,
+    ...poEditDraftPublic
+  } = usePoEditDraft()
 
   const {
     resetSlice: resetPreviewsSlice,
@@ -103,6 +110,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     resetBrandDataSlice()
     resetCeoReviewSlice()
     resetCeoReselectSlice()
+    resetPoEditDraftSlice()
     resetPreviewsSlice()
     resetEditSectionSlice()
   }
@@ -111,6 +119,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ...brandDataPublic,
     ...ceoReviewPublic,
     ...ceoReselectPublic,
+    ...poEditDraftPublic,
     ...previewsPublic,
     ...editSectionPublic,
     loadBrand,
