@@ -1,7 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { apiPost, apiPut } from '@/composables/useApi'
 import { logSilent } from '@/utils/log'
-import { migrateIncomingCurrentStep } from '@/utils/stepMigration'
 import type {
   BrandStepData,
   BrandBasicsData,
@@ -110,6 +109,11 @@ export function useBrandData() {
   const step3PreviewSlideIndex = ref(0)
 
   const totalSteps = 8
+
+  function clampWizardStep(rawStep: number): number {
+    if (!Number.isFinite(rawStep) || rawStep < 1) return 1
+    return Math.min(totalSteps, Math.max(1, rawStep))
+  }
 
   // ─── Component conflicts (Step 7 visual-components dependency check) ───────
   const _componentConflicts = ref<
@@ -345,8 +349,7 @@ export function useBrandData() {
       const parsed = JSON.parse(raw)
       if (parsed.stepData && typeof parsed.currentStep === 'number') {
         const sd = parsed.stepData as BrandStepData
-        const layoutV = sd.stepLayoutVersion
-        currentStep.value = migrateIncomingCurrentStep(parsed.currentStep, layoutV)
+        currentStep.value = clampWizardStep(parsed.currentStep)
         stepData.value = {
           ...sd,
           stepLayoutVersion: 2,
@@ -440,13 +443,11 @@ export function useBrandData() {
     brandId.value = id
     brandInternalName.value = internalName ?? null
     brandStatus.value = status ?? 'draft'
-    const layoutVersion = data.stepLayoutVersion
-    const migratedStep = migrateIncomingCurrentStep(step, layoutVersion)
     stepData.value = {
       ...data,
       stepLayoutVersion: 2,
     }
-    currentStep.value = migratedStep
+    currentStep.value = clampWizardStep(step)
     isDraft.value = false
   }
 
