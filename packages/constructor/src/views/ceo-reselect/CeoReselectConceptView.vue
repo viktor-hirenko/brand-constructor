@@ -11,6 +11,10 @@ import CustomerPickPreviewSkeleton from '@/components/constructor/skeletons/Cust
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import {
+  EDIT_FLOW_DIVIDER_CLASS,
+  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+} from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 
@@ -158,17 +162,13 @@ function goNext() {
     <CustomerPickPreviewSkeleton v-if="!isReady" />
     <CustomerPickPreview v-else :concept="poConcept" />
 
-    <!-- Divider after customer pick -->
-    <div
-      class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-      aria-hidden="true"
-    />
+    <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
 
     <!-- Theme toggle (light / dark) — filters available concepts -->
     <SegmentedControl v-model="localMode" :options="themeOptions" />
 
     <!-- Available concepts -->
-    <div class="flex flex-col gap-3">
+    <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
       <EditFlowSectionLabel>Доступні концепти</EditFlowSectionLabel>
 
       <ConceptGridSkeleton v-if="!isReady" />

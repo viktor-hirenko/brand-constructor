@@ -61,7 +61,7 @@ const emit = defineEmits<{
       class="ceo-actions-footer__warning flex items-center justify-center gap-2 text-[16px] font-normal leading-6 tracking-[-0.312px] text-[rgba(10,10,10,0.80)]"
       role="alert"
     >
-      <InfoCircleFilledIcon class="size-5 shrink-0 text-[#C97D00]" />
+      <InfoCircleFilledIcon class="size-5 shrink-0 text-[#DCA100]" />
       <span>{{ warning }}</span>
     </p>
   </div>

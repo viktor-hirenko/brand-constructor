@@ -1,29 +1,34 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  DESIGN_SHELL_VIEWPORT_GUTTER,
+} from '@/constants/layoutShell'
 
+/**
+ * Fits a fixed-size shell into the viewport via CSS scale (no upscale by default).
+ * Below `minViewportWidth`, subtracts `padding` so the shell keeps side gutters.
+ */
 interface UseViewportScaleOptions {
-  /** Design width of the fixed shell (px). */
   baseWidth: number
-  /** Design height of the fixed shell (px). */
   baseHeight: number
-  /** Total outer space subtracted from the viewport on each axis (px). */
   padding?: number
-  /** Allow scale factor > 1 on oversized monitors. Defaults to false (no upscale). */
+  minViewportWidth?: number
   allowUpscale?: boolean
 }
 
-/**
- * Tracks viewport size and returns a scale factor that fits a fixed-size
- * design shell into the current viewport while preserving its aspect ratio.
- * Use it together with `transform: scale(var)` on the shell so all internal
- * pixel values stay 1:1 with the original design (Figma 1311×810).
- */
 export function useViewportScale(options: UseViewportScaleOptions) {
-  const { baseWidth, baseHeight, padding = 48, allowUpscale = false } = options
+  const {
+    baseWidth,
+    baseHeight,
+    padding = DESIGN_SHELL_VIEWPORT_GUTTER,
+    minViewportWidth = baseWidth,
+    allowUpscale = false,
+  } = options
   const scale = ref(1)
 
   function compute() {
-    const availableWidth = Math.max(0, window.innerWidth - padding)
-    const availableHeight = Math.max(0, window.innerHeight - padding)
+    const useGutter = window.innerWidth < minViewportWidth ? padding : 0
+    const availableWidth = Math.max(0, window.innerWidth - useGutter)
+    const availableHeight = Math.max(0, window.innerHeight - useGutter)
     const next = Math.min(availableWidth / baseWidth, availableHeight / baseHeight)
     scale.value = allowUpscale ? next : Math.min(next, 1)
   }

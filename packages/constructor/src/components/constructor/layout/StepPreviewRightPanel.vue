@@ -8,7 +8,7 @@
  * `dualPaneLayoutClasses.ts`; this component renders preview content only.
  *
  * NOTE: Step 8 preview is NOT handled here — it lives in `ConstructorLayout`
- * via `BrandPreviewPanel` + `ReviewSubmitView` (Figma "Product view" shell).
+ * via `BrandPreviewPanel` + `ReviewSubmitView` (review shell).
  * Do not re-add a step-8 branch to this component.
  */
 
@@ -25,6 +25,7 @@ import SmartphoneIcon from '@/components/icons/SmartphoneIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewLayer } from '@/composables/useBrandPreviewLayers'
+import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
 
 interface BrandBasics {
   geo: string[]
@@ -74,10 +75,11 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
 </script>
 
 <template>
-  <div class="relative w-full min-h-0 h-full">
+  <div class="relative flex flex-col flex-1 min-h-0 w-full h-full">
     <!-- Step 1 Preview -->
     <template v-if="currentStep === 1">
-      <div v-if="brandBasics && hasAnyBasics()" class="flex flex-col gap-6">
+      <div class="flex flex-col flex-1 min-h-0 w-full">
+      <div v-if="brandBasics && hasAnyBasics()" class="flex flex-col gap-8">
         <div
           v-if="hasGeo()"
           class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
@@ -130,11 +132,12 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
         </div>
       </div>
 
-      <div v-else class="flex items-center justify-center h-96">
-        <div class="text-center text-muted-foreground">
-          <GlobeIcon class="size-16 mx-auto mb-4 opacity-30" />
+      <div v-else class="flex flex-1 min-h-0 w-full items-center justify-center">
+        <div class="flex flex-col items-center text-center text-muted-foreground">
+          <GlobeIcon class="size-16 mb-4 opacity-30" />
           <p>Почніть заповнювати інформацію про бренд</p>
         </div>
+      </div>
       </div>
     </template>
 
@@ -154,14 +157,18 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
       />
     </template>
 
-    <!-- Step 3 / 4: mobile preview of selected concept -->
+    <!-- Step 3 / 4: same canvas skeleton as step 2 slider, single header line (no pill). -->
     <template v-else-if="currentStep === 3 || currentStep === 4">
-      <ConceptMobilePreview :concept="selectedConcept" />
+      <ConceptPreviewSliderSkeleton
+        v-if="librariesLoading && hasStoredConceptSelection"
+        single-header-line
+      />
+      <ConceptMobilePreview v-else :concept="selectedConcept" />
     </template>
 
     <!-- Step 7 Preview: iPhone with layered Visual Components -->
     <template v-else-if="currentStep === 7">
-      <div class="flex flex-col h-full gap-[48px]">
+      <div :class="['flex flex-col h-full', MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS]">
         <div class="flex items-center gap-2 shrink-0">
           <SparklesIcon class="size-6" />
           <span class="text-[20px] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>

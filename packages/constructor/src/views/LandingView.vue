@@ -33,7 +33,7 @@ function startConstructor() {
 <template>
   <div class="min-h-screen bg-background flex items-center justify-center p-6">
     <div
-      class="w-full max-w-[1311px] h-[90vh] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
+      class="w-full max-w-[1440px] h-[90vh] min-h-[740px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
     >
       <!-- Left: Content -->
       <div class="w-1/2 pl-12 flex flex-col justify-center">

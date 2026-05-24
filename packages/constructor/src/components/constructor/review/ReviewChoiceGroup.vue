@@ -86,7 +86,7 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
           <slot name="ceo" />
         </div>
       </div>
-      <div v-if="$slots.actions" class="review-choice-group__actions">
+      <div v-if="$slots.actions" class="review-choice-group__actions mt-4">
         <slot name="actions" />
       </div>
     </template>

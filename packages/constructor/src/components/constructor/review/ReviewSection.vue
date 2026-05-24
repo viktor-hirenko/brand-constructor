@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import UnresolvedDot from '@/components/ui/UnresolvedDot.vue'
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue'
 import RefreshIcon from '@/components/icons/RefreshIcon.vue'
@@ -45,6 +46,15 @@ function onEditClick() {
     emit('edit', props.editStep)
   }
 }
+
+const titleTruncates = computed(() => {
+  const normalized = props.title.toLowerCase()
+  return (
+    normalized.includes('обрати') ||
+    normalized.includes('бути') ||
+    normalized.includes('быть')
+  )
+})
 </script>
 
 <template>
@@ -63,9 +73,17 @@ function onEditClick() {
     ]"
   >
     <header class="review-section__header flex items-center justify-between h-14 pl-4 pr-2">
-      <div class="review-section__indicators flex items-center gap-2 flex-wrap">
+      <div
+        :class="[
+          'review-section__indicators flex min-w-0 flex-1 items-center gap-2',
+          needsChoice || titleTruncates ? 'flex-nowrap' : 'flex-wrap',
+        ]"
+      >
         <h3
-          class="review-section__title text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]"
+          :class="[
+            'review-section__title text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]',
+            needsChoice || titleTruncates ? 'min-w-0 truncate' : '',
+          ]"
         >
           {{ title }}
         </h3>
@@ -75,7 +93,7 @@ function onEditClick() {
       <button
         v-if="editStep != null"
         type="button"
-        class="review-section__edit-button inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
+        class="review-section__edit-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
         @click="onEditClick"
       >
         <PencilIcon class="size-4 shrink-0 text-[#373737]" />
@@ -84,7 +102,7 @@ function onEditClick() {
       <button
         v-else-if="changeChoice"
         type="button"
-        class="review-section__change-button inline-flex items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
+        class="review-section__change-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
         @click="emit('change')"
       >
         <RefreshIcon class="size-4 shrink-0 text-[#373737]" />

@@ -217,7 +217,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col gap-6 h-full">
-    <!-- Empty state — header area reserved (Figma / ConceptPreviewEmptySkeleton) -->
+    <!-- Empty state — header area reserved (matches ConceptPreviewEmptySkeleton). -->
     <template v-if="!concept">
       <div class="shrink-0 h-[56px]" aria-hidden="true" />
       <div

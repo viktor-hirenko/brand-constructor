@@ -12,6 +12,11 @@ import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vu
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import {
+  EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_DIVIDER_CLASS,
+  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+} from '@/constants/editFlowLayout'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -249,6 +254,7 @@ async function goDali() {
     title="Concept Selection"
     :subtitle="subtitleText"
   >
+    <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
     <!-- Header skeleton: kept in sync with the real layout below (single
          248×248 card in post-apply, 2 cards side-by-side in choice mode). -->
     <template v-if="showHeaderSkeleton">
@@ -274,6 +280,7 @@ async function goDali() {
           :concept="poConcept"
           :is-selected="true"
           :show-checkmark="true"
+          :show-selection-ring="true"
           :clickable="false"
         />
       </div>
@@ -285,7 +292,7 @@ async function goDali() {
            CEO already rejected PO's pick; if PO wants to keep it they use "Скасувати". -->
       <div class="flex flex-col gap-2">
         <p class="text-[14px] font-medium leading-4 text-[#717182]">Ваш попередній вибір</p>
-        <ConceptCard :concept="poConcept" :clickable="false" />
+        <ConceptCard :concept="poConcept" :show-overlay="true" :clickable="false" />
       </div>
 
       <!-- CEO pick (pre-selected) -->
@@ -294,6 +301,8 @@ async function goDali() {
         <ConceptCard
           :concept="ceoConcept"
           :is-selected="ceoConcept ? selectedId === ceoConcept.id : false"
+          :is-active="ceoConcept ? selectedId === ceoConcept.id : false"
+          :show-overlay="true"
           :show-selection-ring="ceoConcept ? selectedId === ceoConcept.id : false"
           :show-checkmark="ceoConcept ? selectedId === ceoConcept.id : false"
           @click="ceoConcept && selectConcept(ceoConcept.id)"
@@ -301,10 +310,10 @@ async function goDali() {
       </div>
     </div>
 
-    <hr class="border-t border-black/10 max-w-[506px]" />
+    <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
     <!-- Other / available concepts grid -->
-    <div class="flex flex-col gap-3">
+    <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
       <div class="flex items-center justify-between max-w-[506px]">
         <EditFlowSectionLabel>
           {{ isPostApply ? 'Доступні концепти' : 'Інші концепти' }}
@@ -329,7 +338,9 @@ async function goDali() {
       />
     </div>
 
-    <StepCommentField v-model="poConceptComment" label="Коментар" />
+    <StepCommentField v-model="poConceptComment" label="Коментар" class="mt-6" />
+
+    </div>
 
     <template #footer>
       <EditFlowFooter

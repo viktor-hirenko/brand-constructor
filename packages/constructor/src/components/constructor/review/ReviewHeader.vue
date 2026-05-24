@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
+import BrandBriefStatusBadge from '@/components/constructor/review/BrandBriefStatusBadge.vue'
 import CheckBadgeIcon from '@/components/icons/CheckBadgeIcon.vue'
+import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 
 interface InfoOverride {
   title: string
@@ -9,7 +10,7 @@ interface InfoOverride {
   /**
    * Override the info-block icon. Default `'check'` (circled check used for
    * status-based info blocks like "Бриф готовий!" / "Бриф на розгляді").
-   * Use `'warning'` for the PO returned-from-CEO attention banner.
+   * Use `'warning'` for return / revision attention banners (filled circle icon).
    */
   iconVariant?: 'check' | 'warning'
 }
@@ -39,23 +40,12 @@ const props = withDefaults(defineProps<ReviewHeaderProps>(), {
   infoOverride: undefined,
 })
 
-interface BadgeMeta {
-  text: string
-  classes: string
-}
-
-const badge = computed<BadgeMeta | null>(() => {
-  switch (props.status) {
-    case 'submitted':
-      return { text: 'На розгляді', classes: 'bg-[#D7ECFF] text-blue-700' }
-    case 'needs_revision':
-      return { text: 'Потрібно доопрацювати', classes: 'bg-amber-50 text-amber-700' }
-    case 'approved':
-      return { text: 'Затверджено', classes: 'bg-green-50 text-green-700' }
-    default:
-      return null
-  }
-})
+const showStatusBadge = computed(
+  () =>
+    props.status === 'submitted' ||
+    props.status === 'needs_revision' ||
+    props.status === 'approved'
+)
 
 interface InfoMeta {
   title: string
@@ -76,6 +66,7 @@ const info = computed<InfoMeta | null>(() => {
         title: 'Бриф потребує доопрацювання',
         description:
           'Залиште коментарі у відповідних секціях, після чого замовник зможе внести зміни.',
+        iconVariant: 'warning' as const,
       }
     case 'approved':
       return {
@@ -113,15 +104,11 @@ const showProgress = computed(
     <div class="review-header__heading space-y-2">
       <div class="review-header__title-row flex items-center gap-3 flex-wrap">
         <h1 class="review-header__title text-3xl font-medium tracking-[-0.6px] text-foreground">{{ title }}</h1>
-        <span
-          v-if="badge"
-          :class="[
-            'review-header__badge inline-flex items-center h-6 px-2 py-1 rounded-full text-xs font-medium tracking-[-0.15px]',
-            badge.classes,
-          ]"
-        >
-          {{ badge.text }}
-        </span>
+        <BrandBriefStatusBadge
+          v-if="showStatusBadge"
+          class="review-header__badge shrink-0"
+          :status="status"
+        />
       </div>
       <p
         v-if="subtitle"
@@ -145,20 +132,13 @@ const showProgress = computed(
 
     <div
       v-if="displayInfo"
-      :class="[
-        'review-header__info rounded-2xl bg-[#f3f3f5] px-6 py-6',
-        displayInfo.iconVariant === 'warning'
-          ? 'review-header__info--warning'
-          : 'review-header__info--check',
-      ]"
+      class="review-header__info rounded-[16px] border border-[#EDEDED] bg-white px-6 py-6"
     >
       <div class="review-header__info-header flex items-start gap-3 mb-2">
-        <!-- Warning icon: PO returned-from-CEO attention banner -->
-        <AlertTriangleIcon
+        <InfoCircleFilledIcon
           v-if="displayInfo.iconVariant === 'warning'"
-          class="review-header__info-icon review-header__info-icon--warning size-6 shrink-0 text-[#C97D00]"
+          class="review-header__info-icon review-header__info-icon--warning size-6 shrink-0 text-[#DCA100]"
         />
-        <!-- Default check icon: status-driven info blocks -->
         <CheckBadgeIcon
           v-else
           class="review-header__info-icon review-header__info-icon--check size-6 shrink-0 text-foreground/80"

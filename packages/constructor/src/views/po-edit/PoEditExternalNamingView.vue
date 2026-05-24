@@ -11,6 +11,12 @@ import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vu
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
+  EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_DIVIDER_CLASS,
+  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+  EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS,
+} from '@/constants/editFlowLayout'
+import {
   getExternalNamingCommentHint,
   isExternalNamingCommentRequired,
   isExternalNamingStepValid,
@@ -179,35 +185,34 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
          Skeleton sections key off raw *Ids (not *Namings), because the
          resolved namings only populate after the API call. -->
-    <template v-if="showSkeleton">
-      <!-- post-apply: applied names skeleton -->
-      <div v-if="isPostApply && poOriginalPickIds.length > 0" class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
-        <ExternalNamingGridSkeleton :count="Math.min(poOriginalPickIds.length, 3)" />
+    <div v-if="showSkeleton" :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <div :class="EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS">
+        <div v-if="isPostApply && poOriginalPickIds.length > 0" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
+          <ExternalNamingGridSkeleton :count="Math.min(poOriginalPickIds.length, 3)" />
+        </div>
+
+        <div
+          v-else-if="!isChained && !isPostApply && poOriginalPickIds.length > 0"
+          class="flex flex-col gap-3"
+        >
+          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+          <ExternalNamingGridSkeleton :count="Math.min(poOriginalPickIds.length, 3)" />
+        </div>
+
+        <div v-if="!isPostApply && ceoExternalIds.length > 0" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
+          <ExternalNamingGridSkeleton :count="Math.min(ceoExternalIds.length, 3)" />
+        </div>
       </div>
 
-      <!-- standalone: PO previous picks skeleton -->
-      <div
-        v-else-if="!isChained && !isPostApply && poOriginalPickIds.length > 0"
-        class="flex flex-col gap-3"
-      >
-        <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-        <ExternalNamingGridSkeleton :count="Math.min(poOriginalPickIds.length, 3)" />
-      </div>
+      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-      <!-- CEO pick skeleton -->
-      <div v-if="!isPostApply && ceoExternalIds.length > 0" class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
-        <ExternalNamingGridSkeleton :count="Math.min(ceoExternalIds.length, 3)" />
-      </div>
-
-      <hr class="border-t border-black/10 max-w-[506px]" />
-
-      <div class="flex flex-col gap-3">
+      <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
         <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>
         <ExternalNamingGridSkeleton :count="6" />
       </div>
-    </template>
+    </div>
 
     <!-- Error state -->
     <div v-else-if="error" class="text-center py-12">
@@ -218,47 +223,45 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     </div>
 
     <!-- Ready state -->
-    <template v-else-if="isReady">
-      <!-- post-apply: show applied names as interactive grid (same cards as below) -->
-      <div v-if="isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
-        <ExternalNamingGrid
-          :namings="poOriginalNamings"
-          :selected-ids="store.stepData.externalNaming.selectedIds"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
+    <div v-else-if="isReady" :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <div :class="EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS">
+        <div v-if="isPostApply && poOriginalNamings.length > 0" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Обрані назви</EditFlowSectionLabel>
+          <ExternalNamingGrid
+            :namings="poOriginalNamings"
+            :selected-ids="store.stepData.externalNaming.selectedIds"
+            :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+            @toggle="handleToggle"
+          />
+        </div>
+
+        <div
+          v-else-if="!isChained && !isPostApply && poOriginalNamings.length > 0"
+          class="flex flex-col gap-3"
+        >
+          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+          <ExternalNamingGrid
+            :namings="poOriginalNamings"
+            :selected-ids="store.stepData.externalNaming.selectedIds"
+            :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+            @toggle="handleToggle"
+          />
+        </div>
+
+        <div v-if="!isPostApply && ceoNamings.length > 0" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
+          <ExternalNamingGrid
+            :namings="ceoNamings"
+            :selected-ids="store.stepData.externalNaming.selectedIds"
+            :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
+            @toggle="handleToggle"
+          />
+        </div>
       </div>
 
-      <!-- standalone: PO's previous picks as interactive grid (top, above CEO) -->
-      <div
-        v-else-if="!isChained && !isPostApply && poOriginalNamings.length > 0"
-        class="flex flex-col gap-3"
-      >
-        <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-        <ExternalNamingGrid
-          :namings="poOriginalNamings"
-          :selected-ids="store.stepData.externalNaming.selectedIds"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
-      </div>
+      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-      <!-- CEO pick -->
-      <div v-if="!isPostApply && ceoNamings.length > 0" class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
-        <ExternalNamingGrid
-          :namings="ceoNamings"
-          :selected-ids="store.stepData.externalNaming.selectedIds"
-          :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
-      </div>
-
-      <hr class="border-t border-black/10 max-w-[506px]" />
-
-      <!-- Other namings for chosen concept (excluding PO original + CEO) -->
-      <div class="flex flex-col gap-3">
+      <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
         <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>
         <ExternalNamingGrid
           :namings="namings"
@@ -268,12 +271,12 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           @toggle="handleToggle"
         />
       </div>
-
-    </template>
+    </div>
 
     <StepCommentField
       v-model="poExternalComment"
       label="Коментар"
+      class="mt-6"
       :required="isCommentRequired"
       :required-hint="commentHint"
     />

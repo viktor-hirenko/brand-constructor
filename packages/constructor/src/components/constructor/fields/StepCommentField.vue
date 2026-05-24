@@ -13,7 +13,7 @@ interface StepCommentFieldProps {
   rows?: number
   /** Marks the field as required — shows a red asterisk next to the label. */
   required?: boolean
-  /** Optional hint shown below when the field is required and empty. */
+  /** Hint below the field while `required` is true (e.g. multi/sold external naming). */
   requiredHint?: string
   /** Optional "(необов'язково)" suffix shown next to the label. */
   optional?: boolean
@@ -32,8 +32,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const hasValue = computed(() => (props.modelValue ?? '').trim().length > 0)
-const showRequiredHint = computed(() => props.required && !!props.requiredHint && !hasValue.value)
+const showRequiredHint = computed(() => props.required && !!props.requiredHint)
 
 function onInput(event: Event) {
   const target = event.target as HTMLTextAreaElement

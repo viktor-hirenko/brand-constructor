@@ -10,6 +10,12 @@ import StepCommentField from '@/components/constructor/fields/StepCommentField.v
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import {
+  EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_DIVIDER_CLASS,
+  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+  EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS,
+} from '@/constants/editFlowLayout'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -114,37 +120,37 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
          Skeleton sections key off raw ids (not resolved namings), because
          the resolved values only populate after the API call. -->
-    <template v-if="showSkeleton">
-      <!-- post-apply: applied name skeleton -->
-      <div v-if="isPostApply && poOriginalId" class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
-        <InternalNamingGridSkeleton :count="1" />
+    <div v-if="showSkeleton" :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <div :class="EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS">
+        <div v-if="isPostApply && poOriginalId" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
+          <InternalNamingGridSkeleton :count="1" />
+        </div>
+
+        <template v-else>
+          <div v-if="poOriginalId" class="flex flex-col gap-3">
+            <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+            <InternalNamingGridSkeleton :count="1" />
+          </div>
+          <div v-else class="flex flex-col gap-2">
+            <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+            <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
+          </div>
+
+          <div v-if="ceoInternalId" class="flex flex-col gap-3">
+            <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
+            <InternalNamingGridSkeleton :count="1" />
+          </div>
+        </template>
       </div>
 
-      <!-- choice mode skeletons -->
-      <template v-else>
-        <div v-if="poOriginalId" class="flex flex-col gap-3">
-          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-          <InternalNamingGridSkeleton :count="1" />
-        </div>
-        <div v-else class="flex flex-col gap-2">
-          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-          <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
-        </div>
+      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-        <div v-if="ceoInternalId" class="flex flex-col gap-3">
-          <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
-          <InternalNamingGridSkeleton :count="1" />
-        </div>
-      </template>
-
-      <hr class="border-t border-black/10 max-w-[506px]" />
-
-      <div class="flex flex-col gap-3">
+      <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
         <EditFlowSectionLabel>Інші внутрішні назви</EditFlowSectionLabel>
         <InternalNamingGridSkeleton :count="6" />
       </div>
-    </template>
+    </div>
 
     <!-- Error state -->
     <div v-else-if="error" class="text-center py-12">
@@ -155,48 +161,45 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     </div>
 
     <!-- Ready state -->
-    <template v-else-if="isReady">
-      <!-- post-apply: applied name as interactive grid -->
-      <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
-        <InternalNamingGrid
-          :namings="[poOriginalNaming]"
-          :selected-id="store.stepData.internalNaming.selectedId"
-          @select="handleSelect"
-        />
-      </div>
-
-      <!-- choice mode: PO previous (interactive) + CEO pick (interactive) -->
-      <template v-else>
-        <!-- PO previous pick -->
-        <div v-if="poOriginalNaming" class="flex flex-col gap-3">
-          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+    <div v-else-if="isReady" :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <div :class="EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS">
+        <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
+          <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
           <InternalNamingGrid
             :namings="[poOriginalNaming]"
             :selected-id="store.stepData.internalNaming.selectedId"
             @select="handleSelect"
           />
         </div>
-        <div v-else class="flex flex-col gap-2">
-          <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-          <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
-        </div>
 
-        <!-- CEO pick -->
-        <div v-if="ceoNaming" class="flex flex-col gap-3">
-          <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
-          <InternalNamingGrid
-            :namings="[ceoNaming]"
-            :selected-id="store.stepData.internalNaming.selectedId"
-            @select="handleSelect"
-          />
-        </div>
-      </template>
+        <template v-else>
+          <div v-if="poOriginalNaming" class="flex flex-col gap-3">
+            <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+            <InternalNamingGrid
+              :namings="[poOriginalNaming]"
+              :selected-id="store.stepData.internalNaming.selectedId"
+              @select="handleSelect"
+            />
+          </div>
+          <div v-else class="flex flex-col gap-2">
+            <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+            <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
+          </div>
 
-      <hr class="border-t border-black/10 max-w-[506px]" />
+          <div v-if="ceoNaming" class="flex flex-col gap-3">
+            <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
+            <InternalNamingGrid
+              :namings="[ceoNaming]"
+              :selected-id="store.stepData.internalNaming.selectedId"
+              @select="handleSelect"
+            />
+          </div>
+        </template>
+      </div>
 
-      <!-- Other internal namings (excludes PO original + CEO) -->
-      <div class="flex flex-col gap-3">
+      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+
+      <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
         <EditFlowSectionLabel>Інші внутрішні назви</EditFlowSectionLabel>
         <InternalNamingGrid
           :namings="otherNamings"
@@ -205,8 +208,8 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         />
       </div>
 
-      <StepCommentField v-model="poInternalComment" label="Коментар" />
-    </template>
+      <StepCommentField v-model="poInternalComment" label="Коментар" class="mt-6" />
+    </div>
 
     <template #footer>
       <EditFlowFooter

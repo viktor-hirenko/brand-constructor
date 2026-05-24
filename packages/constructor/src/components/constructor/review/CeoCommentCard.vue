@@ -1,19 +1,25 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
+import {
+  CEO_COMMENT_CARD_BG,
+  CEO_COMMENT_LABEL_COLOR,
+  CEO_COMMENT_RESOLVE_BUTTON_BASE_CLASS,
+  CEO_COMMENT_RESOLVE_BUTTON_HOVER_CLASS,
+  CEO_COMMENT_RESOLVE_BUTTON_LABEL_CLASS,
+  CEO_COMMENT_RESOLVE_BUTTON_WHITE_CLASS,
+  CEO_COMMENT_UNRESOLVED_ACCENT,
+  CEO_COMMENT_VALUE_COLOR,
+} from '@/constants/ceoCommentCardVisual'
 
 interface CeoCommentCardProps {
-  /** Raw text of the CEO comment. */
   value: string
-  /** Whether PO has marked this comment as resolved. */
   resolved: boolean
-  /** Disables buttons while the resolve/unresolve API call is in-flight. */
   loading?: boolean
-  /** Whether the current user is allowed to resolve/unresolve (brand owner only). */
   canResolve?: boolean
 }
 
-withDefaults(defineProps<CeoCommentCardProps>(), {
+const props = withDefaults(defineProps<CeoCommentCardProps>(), {
   loading: false,
   canResolve: false,
 })
@@ -23,54 +29,84 @@ const emit = defineEmits<{
   unresolve: []
 }>()
 
-/** Controls hover state to swap "Вирішено" → "Повернути". */
 const resolvedButtonHovered = ref(false)
+
+const resolveButtonSurfaceClass = computed(() =>
+  props.resolved && resolvedButtonHovered.value
+    ? CEO_COMMENT_RESOLVE_BUTTON_HOVER_CLASS
+    : CEO_COMMENT_RESOLVE_BUTTON_WHITE_CLASS,
+)
+
+const showResolveIcon = computed(
+  () => !props.resolved || !resolvedButtonHovered.value,
+)
 </script>
 
 <template>
   <div
+    class="ceo-comment-card flex flex-col gap-3 overflow-hidden rounded-[8px] p-4 transition-all"
     :class="[
-      'ceo-comment-card rounded-lg bg-[rgba(197,197,200,0.2)] p-4 flex flex-col gap-3 transition-all',
-      !resolved ? 'border-l-[3px] border-blue-500 pl-[13px] ceo-comment-card--unresolved' : 'ceo-comment-card--resolved',
+      !resolved
+        ? 'ceo-comment-card--unresolved border-l-2 pl-4'
+        : 'ceo-comment-card--resolved',
     ]"
+    :style="{
+      backgroundColor: CEO_COMMENT_CARD_BG,
+      borderLeftColor: !resolved ? CEO_COMMENT_UNRESOLVED_ACCENT : undefined,
+    }"
   >
     <div class="ceo-comment-card__body flex flex-col gap-1">
-      <p class="ceo-comment-card__label text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
+      <p
+        class="ceo-comment-card__label text-[14px] font-medium leading-4 tracking-[-0.1504px]"
+        :style="{ color: CEO_COMMENT_LABEL_COLOR }"
+      >
         Коментар CEO
       </p>
-      <p class="ceo-comment-card__value text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
+      <p
+        class="ceo-comment-card__value whitespace-pre-line text-[16px] font-normal leading-6 tracking-[-0.1504px]"
+        :style="{ color: CEO_COMMENT_VALUE_COLOR }"
+      >
         {{ value }}
       </p>
     </div>
 
     <template v-if="canResolve">
-      <!-- Unresolved: show "Позначити як вирішений" -->
       <button
         v-if="!resolved"
         type="button"
-        class="ceo-comment-card__resolve-button inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-full border border-black/15 bg-white text-[13px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        :class="[
+          'ceo-comment-card__resolve-button',
+          CEO_COMMENT_RESOLVE_BUTTON_BASE_CLASS,
+          CEO_COMMENT_RESOLVE_BUTTON_WHITE_CLASS,
+        ]"
         :disabled="loading"
         @click="emit('resolve')"
       >
-        <CheckIcon class="size-3.5 shrink-0" />
-        <span>Позначити як вирішений</span>
+        <CheckIcon class="size-4 shrink-0 text-[#373737]" aria-hidden="true" />
+        <span :class="CEO_COMMENT_RESOLVE_BUTTON_LABEL_CLASS">Позначити як вирішений</span>
       </button>
 
-      <!-- Resolved: show "Вирішено" → hover → "Повернути" -->
       <button
         v-else
         type="button"
-        class="ceo-comment-card__resolve-button inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-full border border-black/15 bg-white text-[13px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        :class="[
+          'ceo-comment-card__resolve-button',
+          CEO_COMMENT_RESOLVE_BUTTON_BASE_CLASS,
+          resolveButtonSurfaceClass,
+        ]"
         :disabled="loading"
         @click="emit('unresolve')"
         @mouseenter="resolvedButtonHovered = true"
         @mouseleave="resolvedButtonHovered = false"
       >
         <CheckIcon
-          v-if="!resolvedButtonHovered"
-          class="size-3.5 shrink-0"
+          v-if="showResolveIcon"
+          class="size-4 shrink-0 text-[#373737]"
+          aria-hidden="true"
         />
-        <span>{{ resolvedButtonHovered ? 'Повернути' : 'Вирішено' }}</span>
+        <span :class="CEO_COMMENT_RESOLVE_BUTTON_LABEL_CLASS">
+          {{ resolvedButtonHovered ? 'Повернути' : 'Вирішено' }}
+        </span>
       </button>
     </template>
   </div>

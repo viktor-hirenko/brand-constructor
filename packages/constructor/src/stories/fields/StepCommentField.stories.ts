@@ -71,6 +71,15 @@ export const Filled: Story = {
   },
 };
 
+export const RequiredWithHintFilled: Story = {
+  render: Filled.render,
+  args: {
+    modelValue: '111',
+    required: true,
+    requiredHint: "Коментар обов'язковий при виборі кількох назв або викупленої назви",
+  },
+};
+
 export const CeoCommentReadonlyBlock: StoryObj = {
   name: 'CeoCommentReadonly (PO edit flow)',
   render: () => ({

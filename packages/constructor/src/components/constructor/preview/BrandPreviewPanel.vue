@@ -2,6 +2,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import { useConstructorStore } from '@/stores/constructor'
+import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 
 const store = useConstructorStore()
@@ -16,7 +17,9 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
 </script>
 
 <template>
-  <aside class="relative w-full h-full flex flex-col gap-6 overflow-y-auto bg-white">
+  <aside
+    :class="['relative w-full h-full flex flex-col overflow-y-auto bg-white', MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS]"
+  >
     <header class="space-y-1">
       <h2
         class="text-lg font-medium tracking-[-0.45px] text-foreground inline-flex items-center gap-2"
@@ -26,7 +29,7 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
       </h2>
     </header>
 
-    <div class="flex items-start justify-center gap-6 flex-1 min-h-0">
+    <div class="flex items-start justify-center gap-[40px] flex-1 min-h-0">
       <!-- Main view: no sidebar -->
       <div class="flex flex-col items-center">
         <div class="relative" style="width: 311.25px; height: 632.25px">

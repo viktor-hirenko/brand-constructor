@@ -6,6 +6,11 @@ import { useAuthStore } from '@/stores/auth'
 import { apiGet } from '@/composables/useApi'
 import { useLibrariesStore } from '@/stores/libraries'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
+import {
+  DESIGN_SHELL_HEIGHT,
+  DESIGN_SHELL_MIN_VIEWPORT_WIDTH,
+  DESIGN_SHELL_WIDTH,
+} from '@/constants/layoutShell'
 import { useViewportScale } from '@/composables/useViewportScale'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
@@ -27,15 +32,10 @@ const store = useConstructorStore()
 const authStore = useAuthStore()
 const librariesStore = useLibrariesStore()
 
-/**
- * Fits the fixed 1311×810 shell into the current viewport via CSS scale so
- * every internal pixel value stays 1:1 with the Figma source. Padding 48 ≈
- * outer wrapper p-6 (24px on each side).
- */
 const { scale: shellScale } = useViewportScale({
-  baseWidth: 1311,
-  baseHeight: 810,
-  padding: 48,
+  baseWidth: DESIGN_SHELL_WIDTH,
+  baseHeight: DESIGN_SHELL_HEIGHT,
+  minViewportWidth: DESIGN_SHELL_MIN_VIEWPORT_WIDTH,
 })
 
 /**

@@ -2,6 +2,7 @@
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 import { computed } from 'vue'
+import { CONCEPT_CARD_TITLE_GRADIENT } from '@/constants/conceptCardVisual'
 
 interface CustomerPickPreviewProps {
   concept: Concept | null
@@ -32,7 +33,8 @@ const previewUrl = computed(() => {
         decoding="async"
       />
       <div
-        class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent"
+        class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3"
+        :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
       >
         <p class="text-[18px] font-medium leading-5 text-white truncate">
           {{ concept.name }}

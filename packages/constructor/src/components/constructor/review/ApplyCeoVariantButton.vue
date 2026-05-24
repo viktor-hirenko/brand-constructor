@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import {
+  CEO_COMMENT_RESOLVE_BUTTON_LABEL_CLASS,
+  REVIEW_SECONDARY_ACTION_BUTTON_CLASS,
+} from '@/constants/ceoCommentCardVisual'
+
 interface Props {
   loading: boolean
 }
@@ -14,12 +19,15 @@ const emit = defineEmits<{
   <button
     type="button"
     :class="[
-      'review-apply-ceo-button w-full h-12 rounded-xl border border-black/10 text-[14px] font-medium text-[#373737] hover:bg-black/[0.03] transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+      'review-apply-ceo-button',
+      REVIEW_SECONDARY_ACTION_BUTTON_CLASS,
       loading ? 'review-apply-ceo-button--loading' : '',
     ]"
     :disabled="loading"
     @click="emit('click')"
   >
-    {{ loading ? 'Застосовується…' : 'Застосувати варіант CEO' }}
+    <span :class="CEO_COMMENT_RESOLVE_BUTTON_LABEL_CLASS">
+      {{ loading ? 'Застосовується…' : 'Застосувати варіант CEO' }}
+    </span>
   </button>
 </template>

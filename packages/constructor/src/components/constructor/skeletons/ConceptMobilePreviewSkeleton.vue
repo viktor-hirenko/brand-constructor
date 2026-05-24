@@ -1,13 +1,7 @@
 <script setup lang="ts">
 /**
- * Pixel-matched skeleton for `ConceptMobilePreview` (right-column iPhone-preview
- * shown on CEO reselect naming sub-routes and PO edit naming sub-routes).
- *
- * Mirrors the real component's geometry:
- *  - Outer column: `flex flex-col gap-6 h-full`
- *  - Static header "Обраний концепт" (kept as-is — non-data, prevents text flash)
- *  - Inner placeholder: `w-full aspect-square rounded-[24px]`, taking remaining
- *    column height via `flex-1` (matches the real preview slot).
+ * Pixel-matched skeleton for `ConceptMobilePreview` (right-column preview on
+ * naming steps). Mirrors header + flex-1 canvas geometry to avoid CLS.
  */
 </script>
 

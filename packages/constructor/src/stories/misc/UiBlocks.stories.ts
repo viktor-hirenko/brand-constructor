@@ -9,6 +9,8 @@ import SimpleModal from '@/components/ui/SimpleModal.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue';
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue';
+import StatusPillBadge from '@/components/ui/StatusPillBadge.vue';
+import BrandBriefStatusBadge from '@/components/constructor/review/BrandBriefStatusBadge.vue';
 import UnresolvedDot from '@/components/ui/UnresolvedDot.vue';
 
 /**
@@ -215,6 +217,22 @@ export const SectionStatusBadgeAttention: StoryObj = {
   render: () => ({
     components: { SectionStatusBadge },
     template: '<SectionStatusBadge variant="attention" />',
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const StatusPillBadgeVariants: StoryObj = {
+  name: 'StatusPillBadge / All tones',
+  render: () => ({
+    components: { StatusPillBadge, BrandBriefStatusBadge },
+    template: `
+      <div class="flex flex-col items-start gap-3">
+        <BrandBriefStatusBadge status="submitted" />
+        <BrandBriefStatusBadge status="needs_revision" />
+        <BrandBriefStatusBadge status="approved" />
+        <StatusPillBadge label="Потрібно обрати варіант" tone="section-attention" />
+      </div>
+    `,
   }),
   parameters: { cardWidth: 520 },
 };

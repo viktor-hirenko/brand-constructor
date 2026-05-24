@@ -11,6 +11,7 @@ import CustomerInternalNamingPreviewSkeleton from '@/components/constructor/skel
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import { EDIT_FLOW_DIVIDER_CLASS } from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 
 const store = useConstructorStore()
@@ -106,10 +107,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     <template v-if="showSkeleton">
       <CustomerInternalNamingPreviewSkeleton />
 
-      <div
-        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-        aria-hidden="true"
-      />
+      <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
 
       <div class="flex flex-col gap-3">
         <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
@@ -129,10 +127,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     <template v-else-if="isReady">
       <CustomerInternalNamingPreview :name="poInternalName" />
 
-      <div
-        class="h-px w-full max-w-[506px] shrink-0 bg-[rgba(0,0,0,0.1)]"
-        aria-hidden="true"
-      />
+      <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
 
       <div class="flex flex-col gap-3">
         <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
