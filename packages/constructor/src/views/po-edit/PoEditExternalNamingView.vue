@@ -10,6 +10,11 @@ import StepCommentField from '@/components/constructor/fields/StepCommentField.v
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import {
+  getExternalNamingCommentHint,
+  isExternalNamingCommentRequired,
+  isExternalNamingStepValid,
+} from '@/utils/externalNamingValidation'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -47,7 +52,26 @@ const ceoNamings = computed(() =>
 )
 
 const isSaving = computed(() => store.isSaving)
-const primaryDisabled = computed(() => store.stepData.externalNaming.selectedIds.length === 0)
+
+const selectedIds = computed(() => store.stepData.externalNaming.selectedIds ?? [])
+
+const isCommentRequired = computed(() =>
+  isExternalNamingCommentRequired(selectedIds.value, namings.value),
+)
+
+const commentHint = computed(() =>
+  getExternalNamingCommentHint(selectedIds.value, namings.value),
+)
+
+const primaryDisabled = computed(
+  () =>
+    !isExternalNamingStepValid(
+      selectedIds.value,
+      store.stepData.externalNaming.comment ?? '',
+      false,
+      namings.value,
+    ),
+)
 
 const poExternalComment = computed({
   get: () => store.stepData.externalNaming.comment ?? '',
@@ -245,8 +269,18 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         />
       </div>
 
-      <StepCommentField v-model="poExternalComment" label="Коментар" />
     </template>
+
+    <StepCommentField
+      v-model="poExternalComment"
+      label="Коментар"
+      :required="isCommentRequired"
+      :required-hint="commentHint"
+    />
+
+    <p v-if="store.saveError" class="text-sm text-red-600">
+      {{ store.saveError }}
+    </p>
 
     <template #footer>
       <EditFlowFooter

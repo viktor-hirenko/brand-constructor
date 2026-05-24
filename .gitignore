@@ -38,3 +38,6 @@ Thumbs.db
 # Local maintenance backups (created by ad-hoc safety scripts)
 /.git.bak-*
 
+# Internal audit reports (may contain candid security/RBAC notes)
+/docs/audits/
+

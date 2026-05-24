@@ -1,5 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { apiPost, apiPut } from '@/composables/useApi'
+import { useLibrariesStore } from '@/stores/libraries'
+import { isExternalNamingStepValid } from '@/utils/externalNamingValidation'
 import { logSilent } from '@/utils/log'
 import type {
   BrandStepData,
@@ -91,6 +93,8 @@ interface SaveBrandResult {
  * cross-slice `loadBrand` / `reset` actions.
  */
 export function useBrandData() {
+  const librariesStore = useLibrariesStore()
+
   // ─── Brand metadata ────────────────────────────────────────────────────────
   const brandId = ref<string | null>(null)
   const brandInternalName = ref<string | null>(null)
@@ -150,10 +154,12 @@ export function useBrandData() {
         )
       case 3: {
         const en = stepData.value.externalNaming
-        if (en.newNamingBrief !== null) return true
-        if (en.selectedIds.length === 0) return false
-        if (en.selectedIds.length > 1 && en.comment.trim() === '') return false
-        return true
+        return isExternalNamingStepValid(
+          en.selectedIds,
+          en.comment,
+          en.newNamingBrief !== null,
+          librariesStore.externalNamings
+        )
       }
       case 4: {
         const inn = stepData.value.internalNaming

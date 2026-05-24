@@ -330,18 +330,37 @@ function handleReturnToPreview() {
   }
 }
 
-/** PO edit-mode — save current state and come back to Final review. */
-function handleSaveSectionEdit() {
-  const target = store.returnToStep ?? 9
-  store.commitEditSection()
-  router.push(`/constructor/step/${target}`)
+/** Brand id when inline edit was opened from `/constructor/brand/:id` (`?editBrand=`). */
+function resolveEditReturnBrandId(): string | undefined {
+  const editBrand = route.query.editBrand
+  if (typeof editBrand === 'string' && editBrand) return editBrand
+  return store.brandId ?? undefined
 }
 
-/** PO edit-mode — revert changes and come back to Final review. */
+/** Same return target as po-edit / ceo-reselect save handlers. */
+function navigateAfterSectionEdit(fallbackStep: number) {
+  const brandId = resolveEditReturnBrandId()
+  if (brandId) {
+    router.push({ name: 'brand-view-review', params: { id: brandId } })
+    return
+  }
+  router.push(`/constructor/step/${fallbackStep}`)
+}
+
+/** PO inline section edit — persist then return to brand review (or wizard step 8). */
+async function handleSaveSectionEdit() {
+  const fallbackStep = store.returnToStep ?? 8
+  const saved = await store.saveBrand()
+  if (!saved) return
+  store.commitEditSection()
+  navigateAfterSectionEdit(fallbackStep)
+}
+
+/** PO inline section edit — revert snapshot and return to brand review. */
 function handleCancelSectionEdit() {
-  const target = store.returnToStep ?? 9
+  const fallbackStep = store.returnToStep ?? 8
   store.cancelEditSection()
-  router.push(`/constructor/step/${target}`)
+  navigateAfterSectionEdit(fallbackStep)
 }
 
 function loadPreviewData() {
@@ -484,20 +503,26 @@ watch(currentStep, step => {
           v-if="!isViewMode && !isReviewShell"
           class="constructor-layout__wizard-footer shrink-0 px-12 py-6 border-t border-border"
         >
-          <div v-if="store.editingSection" class="constructor-layout__footer-actions flex items-center gap-3">
-            <button
-              class="constructor-layout__footer-button constructor-layout__footer-button--secondary h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
-              @click="handleCancelSectionEdit"
-            >
-              Скасувати
-            </button>
-            <button
-              :disabled="!store.isCurrentStepValid"
-              class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
-              @click="handleSaveSectionEdit"
-            >
-              Зберегти
-            </button>
+          <div v-if="store.editingSection" class="constructor-layout__footer-actions flex flex-col gap-2">
+            <div class="flex items-center gap-3">
+              <button
+                class="constructor-layout__footer-button constructor-layout__footer-button--secondary h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="store.isSaving"
+                @click="handleCancelSectionEdit"
+              >
+                Скасувати
+              </button>
+              <button
+                :disabled="!store.isCurrentStepValid || store.isSaving"
+                class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
+                @click="handleSaveSectionEdit"
+              >
+                {{ store.isSaving ? 'Збереження…' : 'Зберегти' }}
+              </button>
+            </div>
+            <p v-if="store.saveError" class="text-sm text-red-600">
+              {{ store.saveError }}
+            </p>
           </div>
 
           <div v-else-if="store.returnToStep" class="constructor-layout__footer-actions flex items-center gap-3">

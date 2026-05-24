@@ -12,6 +12,11 @@ import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vu
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import {
+  getExternalNamingCommentHint,
+  isExternalNamingCommentRequired,
+  isExternalNamingStepValid,
+} from '@/utils/externalNamingValidation'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -85,7 +90,14 @@ const gridNamings = computed(() => {
   return namings.value.filter(n => n.concept_id === cid)
 })
 
-const primaryDisabled = computed(() => stagedExternalIds.value.length === 0)
+const primaryDisabled = computed(() =>
+  !isExternalNamingStepValid(
+    stagedExternalIds.value,
+    store.brandCeoComments?.externalNaming?.value ?? '',
+    false,
+    namings.value,
+  ),
+)
 
 /** Guards against the initial-render flash: useApiList starts with loading=false
  *  but onMounted only fires after the first paint, so the first frame would render
@@ -166,30 +178,13 @@ const externalComment = computed({
   set: (value: string) => store.setCeoCommentValue('externalNaming', value),
 })
 
-const namingsById = computed(() => {
-  const map = new Map<string, ExternalNaming>()
-  namings.value.forEach(n => map.set(n.id, n))
-  return map
-})
-
-const hasAnySoldSelected = computed(() =>
-  stagedExternalIds.value.some(
-    id => namingsById.value.get(id)?.availability_status === 'sold',
-  ),
+const isCommentRequired = computed(() =>
+  isExternalNamingCommentRequired(stagedExternalIds.value, namings.value),
 )
 
-const isCommentRequired = computed(
-  () => stagedExternalIds.value.length > 1 || hasAnySoldSelected.value,
+const commentHint = computed(() =>
+  getExternalNamingCommentHint(stagedExternalIds.value, namings.value),
 )
-
-const commentHint = computed(() => {
-  const many = stagedExternalIds.value.length > 1
-  const sold = hasAnySoldSelected.value
-  if (many && sold) return "Коментар обов'язковий при виборі кількох назв або викупленої назви"
-  if (many) return "Коментар обов'язковий при виборі кількох назв"
-  if (sold) return "Коментар обов'язковий при виборі викупленої назви"
-  return ''
-})
 
 const subtitleText = `Оберіть до ${CEO_RESELECT_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
 
