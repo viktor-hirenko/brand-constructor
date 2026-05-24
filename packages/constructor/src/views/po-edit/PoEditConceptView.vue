@@ -2,18 +2,17 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
-import { useApiList, apiGet, getAssetUrl } from '@/composables/useApi'
+import { useApiList, apiGet } from '@/composables/useApi'
 import { usePoEditSnapshot } from '@/composables/usePoEditSnapshot'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
+import ConceptCard from '@/components/constructor/ceo-reselect/ConceptCard.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
-import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
-import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -285,34 +284,13 @@ async function goDali() {
       <p class="text-[16px] font-medium leading-6 text-[#414141] tracking-[-0.3125px]">
         Обраний концепт
       </p>
-      <div
-        v-if="poConcept"
-        class="relative w-[248px] h-[248px] rounded-2xl overflow-hidden border-2 border-[#030213]"
-      >
-        <img
-          v-if="poConcept.visual_url"
-          :src="getAssetUrl(poConcept.visual_url)"
-          :alt="poConcept.name"
-          class="w-full h-full object-cover"
-          loading="lazy"
+      <div class="w-[248px]">
+        <ConceptCard
+          :concept="poConcept"
+          :is-selected="true"
+          :show-checkmark="true"
+          :clickable="false"
         />
-        <div
-          class="absolute inset-x-0 bottom-0 px-4 pt-8 pb-4 bg-gradient-to-t from-black/70 to-transparent"
-        >
-          <p class="text-[16px] font-medium text-white truncate">{{ poConcept.name }}</p>
-        </div>
-        <!-- Checkmark badge -->
-        <div
-          class="absolute top-[7px] left-[7px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_5px_rgba(0,0,0,0.2)] flex items-center justify-center"
-        >
-          <CheckIcon class="size-4 text-[#030213]" />
-        </div>
-      </div>
-      <div
-        v-else
-        class="w-[248px] h-[248px] rounded-2xl border border-black/10 bg-[#f3f3f5] flex items-center justify-center"
-      >
-        <span class="text-sm text-[#717182]">—</span>
       </div>
     </div>
 
@@ -322,70 +300,19 @@ async function goDali() {
            CEO already rejected PO's pick; if PO wants to keep it they use "Скасувати". -->
       <div class="flex flex-col gap-2">
         <p class="text-[14px] font-medium leading-4 text-[#717182]">Ваш попередній вибір</p>
-        <div
-          v-if="poConcept"
-          class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted cursor-default border-2 border-black/10"
-        >
-          <img
-            v-if="poConcept.visual_url"
-            :src="getAssetUrl(poConcept.visual_url)"
-            :alt="poConcept.name"
-            class="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div
-            class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent"
-          >
-            <p class="text-[16px] font-medium text-white truncate">{{ poConcept.name }}</p>
-          </div>
-        </div>
-        <div
-          v-else
-          class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center"
-        >
-          <span class="text-sm text-[#717182]">—</span>
-        </div>
+        <ConceptCard :concept="poConcept" :clickable="false" />
       </div>
 
       <!-- CEO pick (pre-selected) -->
       <div class="flex flex-col gap-2">
         <p class="text-[14px] font-medium leading-4 text-[#717182]">Вибір CEO</p>
-        <div
-          v-if="ceoConcept"
-          class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted cursor-pointer border-2"
-          :class="selectedId === ceoConcept.id ? 'border-[#030213]' : 'border-black/10'"
-          @click="selectConcept(ceoConcept.id)"
-        >
-          <img
-            v-if="ceoConcept.visual_url"
-            :src="getAssetUrl(ceoConcept.visual_url)"
-            :alt="ceoConcept.name"
-            class="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div
-            class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent"
-          >
-            <p class="text-[16px] font-medium text-white truncate">{{ ceoConcept.name }}</p>
-          </div>
-          <div
-            v-if="selectedId === ceoConcept.id"
-            class="pointer-events-none absolute inset-0 z-[5] rounded-[14px] border-4 border-white"
-            aria-hidden="true"
-          />
-          <div
-            v-if="selectedId === ceoConcept.id"
-            class="absolute top-[6px] left-[6px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] flex items-center justify-center z-[6]"
-          >
-            <CheckIcon class="size-4 text-[#030213]" />
-          </div>
-        </div>
-        <div
-          v-else
-          class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center"
-        >
-          <span class="text-sm text-[#717182]">—</span>
-        </div>
+        <ConceptCard
+          :concept="ceoConcept"
+          :is-selected="ceoConcept ? selectedId === ceoConcept.id : false"
+          :show-selection-ring="ceoConcept ? selectedId === ceoConcept.id : false"
+          :show-checkmark="ceoConcept ? selectedId === ceoConcept.id : false"
+          @click="ceoConcept && selectConcept(ceoConcept.id)"
+        />
       </div>
     </div>
 
