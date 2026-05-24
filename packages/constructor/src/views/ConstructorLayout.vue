@@ -610,6 +610,7 @@ watch(currentStep, step => {
         :has-sidebar-selected="hasSidebarSelected"
         :step9-sidebar-visible="step9SidebarVisible"
         :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
+        :libraries-loading="librariesStore.isLoading"
         @confirm-concept="confirmConceptFromSlider"
         @toggle-sidebar="toggleSidebarPreview"
       />

@@ -14,6 +14,7 @@
  */
 
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
+import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
@@ -42,6 +43,8 @@ interface Props {
   hasSidebarSelected: boolean
   step9SidebarVisible: boolean
   delegateToDesigners: boolean
+  /** True while concept library is loading — prevents empty-state flash on step 2. */
+  librariesLoading?: boolean
 }
 
 const props = defineProps<Props>()
@@ -136,9 +139,13 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
       </div>
     </template>
 
-    <!-- Step 2 Preview: concept slider — selection happens immediately on card click -->
+    <!-- Step 2 Preview: concept slider — selection happens immediately on card click.
+         Show skeleton while libraries are still loading to prevent the empty-state
+         flash (the slider's own null-concept state has no reserved header area). -->
     <template v-else-if="currentStep === 2">
+      <ConceptPreviewSliderSkeleton v-if="librariesLoading" />
       <ConceptPreviewSlider
+        v-else
         :concept="conceptPreviewForSlider"
         :is-final-selected="isConceptSliderFinalSelected"
         :top-label="isConceptSliderFinalSelected ? 'Обраний концепт' : null"
@@ -153,75 +160,74 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
 
     <!-- Step 7 Preview: iPhone with layered Visual Components -->
     <template v-else-if="currentStep === 7">
-      <div class="flex flex-col items-center justify-center h-full">
-        <div class="flex items-center gap-2 mb-6 text-muted-foreground">
-          <SmartphoneIcon class="size-5" />
-          <span class="text-sm">iPhone 16 Plus Preview</span>
+      <div class="flex flex-col h-full">
+        <div class="flex items-center gap-2 shrink-0">
+          <SparklesIcon class="size-6" />
+          <span class="text-[20px] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>
         </div>
-        <div class="relative" style="width: 311.25px; height: 632.25px">
-          <div class="absolute inset-0" style="z-index: 0">
-            <img
-              src="/assets/iphone-16-plus-light.png"
-              alt="iPhone frame"
-              class="object-cover"
-              style="width: 311.25px; height: 632.25px"
-            />
-          </div>
-          <div
-            class="absolute overflow-hidden"
-            style="left: 9px; top: 9px; width: 288.75px; height: 614.25px; z-index: 10"
-          >
-            <div
-              v-if="!hasStep9Selections"
-              class="h-full flex items-center justify-center p-6 text-center bg-white/90 backdrop-blur-sm rounded-[40px]"
-            >
-              <div>
-                <SmartphoneIcon class="size-12 text-muted-foreground mx-auto mb-3" />
-                <p class="text-sm text-muted-foreground">
-                  {{
-                    delegateToDesigners
-                      ? 'Вибір компонентів делеговано дизайнерам'
-                      : 'Оберіть компоненти щоб побачити превʼю'
-                  }}
-                </p>
-              </div>
+        <div class="flex flex-col items-center justify-center flex-1">
+          <div class="relative" style="width: 311.25px; height: 632.25px">
+            <div class="absolute inset-0" style="z-index: 0">
+              <img
+                src="/assets/iphone-16-plus-light.png"
+                alt="iPhone frame"
+                class="object-cover"
+                style="width: 311.25px; height: 632.25px"
+              />
             </div>
-            <div v-else class="relative w-full h-full overflow-hidden rounded-[40px]">
+            <div
+              class="absolute overflow-hidden"
+              style="left: 9px; top: 9px; width: 288.75px; height: 614.25px; z-index: 10"
+            >
               <div
-                v-for="layer in step9SelectedLayers"
-                :key="layer.typeId"
-                class="absolute transition-opacity duration-300"
-                :style="{
-                  left: layer.slot.left,
-                  top: layer.slot.top,
-                  width: layer.slot.width,
-                  height: layer.slot.height,
-                  zIndex: layer.slot.zIndex,
-                }"
+                v-if="!hasStep9Selections"
+                class="h-full flex items-center justify-center p-6 text-center bg-white/90 backdrop-blur-sm rounded-[40px]"
               >
-                <img
-                  :src="layer.url"
-                  :alt="layer.typeId"
-                  :class="
-                    layer.slot.contain
-                      ? 'w-full h-full object-contain'
-                      : 'w-full h-full object-cover'
-                  "
-                />
+                <div>
+                  <SmartphoneIcon class="size-12 text-muted-foreground mx-auto mb-3" />
+                  <p class="text-sm text-muted-foreground">
+                    {{
+                      delegateToDesigners
+                        ? 'Вибір компонентів делеговано дизайнерам'
+                        : 'Оберіть компоненти щоб побачити превʼю'
+                    }}
+                  </p>
+                </div>
               </div>
-              <button
-                v-if="hasSidebarSelected"
-                class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors"
-                :style="{ right: '8px', top: '42px', zIndex: 35 }"
-                :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
-                @click="emit('toggle-sidebar')"
-              >
-                <CloseIcon
-                  v-if="step9SidebarVisible"
-                  class="size-4 text-white"
-                />
-                <ColumnsLayoutIcon v-else class="size-4 text-white" />
-              </button>
+              <div v-else class="relative w-full h-full overflow-hidden rounded-[40px]">
+                <div
+                  v-for="layer in step9SelectedLayers"
+                  :key="layer.typeId"
+                  class="absolute transition-opacity duration-300"
+                  :style="{
+                    left: layer.slot.left,
+                    top: layer.slot.top,
+                    width: layer.slot.width,
+                    height: layer.slot.height,
+                    zIndex: layer.slot.zIndex,
+                  }"
+                >
+                  <img
+                    :src="layer.url"
+                    :alt="layer.typeId"
+                    :class="
+                      layer.slot.contain
+                        ? 'w-full h-full object-contain'
+                        : 'w-full h-full object-cover'
+                    "
+                  />
+                </div>
+                <button
+                  v-if="hasSidebarSelected"
+                  class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors"
+                  :style="{ right: '8px', top: '42px', zIndex: 35 }"
+                  :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
+                  @click="emit('toggle-sidebar')"
+                >
+                  <CloseIcon v-if="step9SidebarVisible" class="size-4 text-white" />
+                  <ColumnsLayoutIcon v-else class="size-4 text-white" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
