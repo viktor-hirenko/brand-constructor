@@ -233,7 +233,12 @@ const poEditSliderTopLabel = computed<string | null>(() => {
 
 /** Mobile-preview concept for naming sub-pages: confirmed CEO if any, else PO. */
 const ceoReselectMobilePreviewConcept = computed(() => {
-  if (route.name === 'ceo-reselect-concept-external-naming') {
+  if (
+    route.name === 'ceo-reselect-concept-external-naming' ||
+    route.name === 'ceo-reselect-external-naming'
+  ) {
+    // If CEO already saved a concept override — show it in the preview.
+    // Otherwise fall back to PO's concept (direct entry, no override yet).
     return ceoReselectConfirmedConcept.value ?? selectedConcept.value
   }
   return selectedConcept.value
