@@ -66,11 +66,6 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
     ceoReselectDraftInProgress.value = false
   }
 
-  /** Mark the draft as "user has un-saved changes". */
-  function markCeoReselectDraftInProgress() {
-    ceoReselectDraftInProgress.value = true
-  }
-
   /** Confirmed CEO concept override. Pass `null` to clear (= keep PO concept). */
   function setCeoReselectConcept(id: string | null) {
     ceoReselectDraft.value = { ...ceoReselectDraft.value, conceptId: id }
@@ -205,9 +200,7 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
 
   return {
     ceoReselectDraft,
-    ceoReselectDraftInProgress,
     resetCeoReselectDraft,
-    markCeoReselectDraftInProgress,
     setCeoReselectConcept,
     setCeoReselectConceptPreview,
     selectCeoReselectConcept,

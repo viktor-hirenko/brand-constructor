@@ -69,13 +69,6 @@ const poOriginalNamings = computed(() =>
   namings.value.filter(n => poOriginalPickIds.value.includes(n.id)),
 )
 
-function restorePendingConceptFromSession() {
-  const pending = snapshot.loadPendingConcept()
-  if (pending) {
-    store.setConcept({ selectedId: pending, newConceptBrief: null })
-  }
-}
-
 /**
  * Exclude from the bottom "Інші назви" grid:
  * - chained: CEO picks (shown in "Вибір CEO" block above)
@@ -100,8 +93,6 @@ async function loadNamings() {
 
 onMounted(async () => {
   if (isChained.value) {
-    // After F5, router reloads brand from API (old saved concept) — restore in-progress pick.
-    restorePendingConceptFromSession()
     // Restore in-progress selections if user went Back from here and returned again.
     // If there are none (first visit), start with empty selection.
     const pendingExternal = snapshot.loadPendingExternal()
