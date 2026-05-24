@@ -195,6 +195,13 @@ onMounted(() => {
     if (ceoId) selectedId.value = ceoId
   }
 
+  // When returning from external-naming ("Назад"), restore the concept PO had
+  // chosen so the checkmark stays on their selection, not on the CEO pick.
+  const pendingConceptId = snapshot.loadPendingConcept()
+  if (pendingConceptId) {
+    selectedId.value = pendingConceptId
+  }
+
   // Seed previewId so the right-panel slider shows immediately on open.
   if (selectedId.value) store.setConcept({ previewId: selectedId.value })
 
@@ -228,11 +235,19 @@ async function goDali() {
   const conceptChanged = selectedId.value !== originalPoConceptId.value
 
   if (conceptChanged) {
+    // Hide the grid immediately so that mutating `poConceptId` below doesn't cause
+    // availableConcepts to briefly include the old PO concept before navigation completes.
+    hasFetchedConcepts.value = false
     // Save original externalNaming BEFORE clearing it, so «Скасувати» can restore it.
     snapshot.saveOriginalExternal(store.stepData.externalNaming.selectedIds ?? [])
+    // If user switched to a DIFFERENT concept than the one they previously navigated forward with,
+    // drop the in-progress external selections — they belong to the old concept.
+    const previouslyPending = snapshot.loadPendingConcept()
+    if (previouslyPending && previouslyPending !== selectedId.value) {
+      snapshot.clearPendingExternal()
+    }
     snapshot.savePendingConcept(selectedId.value)
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
-    store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept/external-naming`)
   } else {
     // Same concept as PO's original → save + return
@@ -292,14 +307,13 @@ async function goDali() {
 
     <!-- choice: PO previous + CEO pick side by side, same size -->
     <div v-else class="grid grid-cols-2 gap-4 max-w-[506px]">
-      <!-- PO previous -->
+      <!-- PO previous — reference only, not selectable.
+           CEO already rejected PO's pick; if PO wants to keep it they use "Скасувати". -->
       <div class="flex flex-col gap-2">
         <p class="text-[14px] font-medium leading-4 text-[#717182]">Ваш попередній вибір</p>
         <div
           v-if="poConcept"
-          class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted cursor-pointer border-2"
-          :class="selectedId === poConcept.id ? 'border-[#030213]' : 'border-black/10'"
-          @click="selectConcept(poConcept.id)"
+          class="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted cursor-default border-2 border-black/10"
         >
           <img
             v-if="poConcept.visual_url"
@@ -310,17 +324,6 @@ async function goDali() {
           />
           <div class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent">
             <p class="text-[16px] font-medium text-white truncate">{{ poConcept.name }}</p>
-          </div>
-          <div
-            v-if="selectedId === poConcept.id"
-            class="pointer-events-none absolute inset-0 z-[5] rounded-[14px] border-4 border-white"
-            aria-hidden="true"
-          />
-          <div
-            v-if="selectedId === poConcept.id"
-            class="absolute top-[6px] left-[6px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] flex items-center justify-center z-[6]"
-          >
-            <CheckIcon class="size-4 text-[#030213]" />
           </div>
         </div>
         <div v-else class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center">
@@ -389,6 +392,7 @@ async function goDali() {
         :concepts="availableConcepts"
         :selected-id="selectedId"
         :preview-id="selectedId"
+        :selection-ring="true"
         @select="selectConcept"
       />
     </div>

@@ -252,6 +252,13 @@ async function loadPoEditMobilePreviewConcept() {
     return
   }
 
+  // Drop stale value if it points to a different concept than the current selectedId.
+  // Without this, `poEditMobilePreviewConcept ?? selectedConcept` keeps the previous
+  // concept (it's not null) and causes a brief flash of the wrong preview on Next.
+  if (poEditMobilePreviewConceptFull.value && poEditMobilePreviewConceptFull.value.id !== id) {
+    poEditMobilePreviewConceptFull.value = null
+  }
+
   const fromList = concepts.value.find(c => c.id === id)
   if (fromList?.gallery_url_1?.trim()) {
     poEditMobilePreviewConceptFull.value = fromList

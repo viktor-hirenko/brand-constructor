@@ -30,19 +30,23 @@ export interface PoEditSnapshot {
   restoreOriginalExternal: (setter: (ids: string[]) => void) => void
   savePendingConcept: (id: string) => void
   loadPendingConcept: () => string | null
+  savePendingExternal: (ids: string[]) => void
+  loadPendingExternal: () => string[] | null
+  clearPendingExternal: () => void
   clearAll: () => void
 }
 
 export function usePoEditSnapshot(
   brandId: MaybeRef<string | number | null | undefined>,
 ): PoEditSnapshot {
-  const keys = computed(() => {
+  const     keys = computed(() => {
     const raw = unref(brandId)
     const suffix = raw == null ? '' : String(raw)
     return {
       originalConcept: `po_edit_original_concept_${suffix}`,
       originalExternal: `po_edit_original_external_${suffix}`,
       pendingConcept: `po_edit_pending_concept_${suffix}`,
+      pendingExternal: `po_edit_pending_external_${suffix}`,
     }
   })
 
@@ -81,10 +85,31 @@ export function usePoEditSnapshot(
     return sessionStorage.getItem(keys.value.pendingConcept)
   }
 
+  function savePendingExternal(ids: string[]): void {
+    sessionStorage.setItem(keys.value.pendingExternal, JSON.stringify(ids))
+  }
+
+  function loadPendingExternal(): string[] | null {
+    const raw = sessionStorage.getItem(keys.value.pendingExternal)
+    if (!raw) return null
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return null
+      return parsed.filter((v): v is string => typeof v === 'string')
+    } catch {
+      return null
+    }
+  }
+
+  function clearPendingExternal(): void {
+    sessionStorage.removeItem(keys.value.pendingExternal)
+  }
+
   function clearAll(): void {
     sessionStorage.removeItem(keys.value.originalConcept)
     sessionStorage.removeItem(keys.value.originalExternal)
     sessionStorage.removeItem(keys.value.pendingConcept)
+    sessionStorage.removeItem(keys.value.pendingExternal)
   }
 
   return {
@@ -94,6 +119,9 @@ export function usePoEditSnapshot(
     restoreOriginalExternal,
     savePendingConcept,
     loadPendingConcept,
+    savePendingExternal,
+    loadPendingExternal,
+    clearPendingExternal,
     clearAll,
   }
 }

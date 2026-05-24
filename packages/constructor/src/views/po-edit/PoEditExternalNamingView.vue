@@ -102,8 +102,14 @@ onMounted(async () => {
   if (isChained.value) {
     // After F5, router reloads brand from API (old saved concept) — restore in-progress pick.
     restorePendingConceptFromSession()
-    // Came from concept edit — start with empty selection
-    store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
+    // Restore in-progress selections if user went Back from here and returned again.
+    // If there are none (first visit), start with empty selection.
+    const pendingExternal = snapshot.loadPendingExternal()
+    if (pendingExternal && pendingExternal.length > 0) {
+      store.setExternalNaming({ selectedIds: pendingExternal, newNamingBrief: null })
+    } else {
+      store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
+    }
   } else {
     // standalone + post-apply: save PO's current picks before snapshot so we can show them as reference
     poOriginalPickIds.value = [...(store.stepData.externalNaming.selectedIds ?? [])]
@@ -118,6 +124,9 @@ function handleToggle(id: string) {
 
 function goCancel() {
   if (isChained.value) {
+    // Save current in-progress selections so that if user returns (Назад → Далі again),
+    // they see their external naming choices intact.
+    snapshot.savePendingExternal(store.stepData.externalNaming.selectedIds ?? [])
     // Restore externalNaming from sessionStorage (saved before goDali cleared it).
     // NB: snapshot keys are NOT cleared here — PoEditConceptView re-reads
     // `originalConcept` on mount to keep «Назад» idempotent across hops.
