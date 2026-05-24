@@ -2,15 +2,21 @@
 import ChatBubbleIcon from '@/components/icons/ChatBubbleIcon.vue'
 
 /**
- * Read-only CEO comment block — matches `StepCommentField` visual style but
- * non-editable. Used on PO edit screens (PoEditConcept/External/InternalView)
- * to surface the CEO's comment that triggered the revision.
+ * Read-only comment block — matches `StepCommentField` visual style but
+ * non-editable.
+ *  - PO edit screens: surface the CEO's comment that triggered the revision
+ *    (default label "Коментар СЕО").
+ *  - CEO reselect screens: surface the PO's original comment (pass
+ *    `label="Коментар"`).
  */
 interface CeoCommentReadonlyProps {
   value: string
+  label?: string
 }
 
-defineProps<CeoCommentReadonlyProps>()
+withDefaults(defineProps<CeoCommentReadonlyProps>(), {
+  label: 'Коментар СЕО',
+})
 </script>
 
 <template>
@@ -20,7 +26,7 @@ defineProps<CeoCommentReadonlyProps>()
       <span
         class="ceo-comment-readonly__label text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5b5b62]"
       >
-        Коментар СЕО
+        {{ label }}
       </span>
     </div>
     <div
