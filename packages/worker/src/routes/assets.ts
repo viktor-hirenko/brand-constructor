@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
-import { LIBRARY_WRITE_PERMISSIONS } from '@brand-constructor/shared'
-import type { Env, Variables } from '../types'
 import { generateId } from '../utils/id'
+import { libraryKeyForAssetUpload, canUserUploadAsset } from '../utils/asset-upload-auth'
 import {
   detectFileType,
   extractPngDimensions,
@@ -11,15 +10,9 @@ import {
 } from '../utils/asset-validation'
 import { buildR2Key, getContentType } from '../utils/r2'
 import type { AssetEntityType } from '@brand-constructor/shared'
+import type { Env, Variables } from '../types'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
-
-function libraryKeyForAssetUpload(entityType: AssetEntityType): string | null {
-  if (entityType === 'concept_visual') return 'concepts'
-  if (entityType === 'component_thumbnail') return 'component_variants'
-  if (/^concept_gallery_\d{1,2}$/.test(entityType)) return 'concepts'
-  return null
-}
 
 app.post('/upload', async c => {
   const formData = await c.req.formData()
@@ -49,8 +42,7 @@ app.post('/upload', async c => {
   }
 
   const user = c.get('user')
-  const allowedRoles = LIBRARY_WRITE_PERMISSIONS[libraryKey]
-  if (!allowedRoles?.includes(user.role)) {
+  if (!canUserUploadAsset(entityType, user.role)) {
     return c.json(
       { success: false, error: 'Forbidden: insufficient permissions for this library' },
       403

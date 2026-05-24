@@ -8,6 +8,8 @@
     "build": "wrangler deploy --env production --dry-run --outdir=dist",
     "deploy:production": "wrangler deploy --env production",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:migrate": "wrangler d1 execute brand-constructor-db --local --file=./src/db/schema.sql",
     "db:migrate:remote": "wrangler d1 execute brand-constructor-db --remote --file=./src/db/schema.sql",
     "db:seed": "wrangler d1 execute brand-constructor-db --local --file=./src/db/seed.sql",
@@ -21,6 +23,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250109.0",
     "typescript": "^5.7.0",
+    "vitest": "^3.2.4",
     "wrangler": "^4.0.0"
   }
 }

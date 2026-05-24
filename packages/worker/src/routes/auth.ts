@@ -35,6 +35,48 @@ function authCookieOptions(c: Context<{ Bindings: Env; Variables: Variables }>) 
   }
 }
 
+interface AuthUserRow {
+  id: string
+  email: string
+  name: string
+  role: string
+}
+
+async function issueAuthSession(
+  c: Context<{ Bindings: Env; Variables: Variables }>,
+  user: AuthUserRow,
+  displayName?: string
+) {
+  const name = displayName ?? user.name
+  const now = Math.floor(Date.now() / 1000)
+  const token = await createJWT(
+    {
+      sub: user.id,
+      email: user.email,
+      name,
+      role: user.role,
+      iat: now,
+      exp: now + TOKEN_LIFETIME_SEC,
+    },
+    c.env.JWT_SECRET
+  )
+
+  setCookie(c, AUTH_COOKIE_NAME, token, {
+    ...authCookieOptions(c),
+    maxAge: TOKEN_LIFETIME_SEC,
+  })
+
+  const csrfToken = await createCsrfToken({ sub: user.id, iat: now }, c.env.JWT_SECRET)
+
+  return c.json({
+    success: true,
+    data: {
+      user: { id: user.id, email: user.email, name, role: user.role },
+      csrfToken,
+    },
+  })
+}
+
 authRoutes.post('/google', async c => {
   const ip = c.req.header('CF-Connecting-IP') || 'unknown'
 
@@ -112,35 +154,7 @@ authRoutes.post('/google', async c => {
       .run()
   }
 
-  const now = Math.floor(Date.now() / 1000)
-  const token = await createJWT(
-    {
-      sub: user.id,
-      email: user.email,
-      name: displayName,
-      role: user.role,
-      iat: now,
-      exp: now + TOKEN_LIFETIME_SEC,
-    },
-    c.env.JWT_SECRET
-  )
-
-  // The JWT lives only in an HttpOnly Secure SameSite=Lax cookie — the SPA
-  // never holds it in JS-accessible memory or storage.
-  setCookie(c, AUTH_COOKIE_NAME, token, {
-    ...authCookieOptions(c),
-    maxAge: TOKEN_LIFETIME_SEC,
-  })
-
-  const csrfToken = await createCsrfToken({ sub: user.id, iat: now }, c.env.JWT_SECRET)
-
-  return c.json({
-    success: true,
-    data: {
-      user: { id: user.id, email: user.email, name: displayName, role: user.role },
-      csrfToken,
-    },
-  })
+  return issueAuthSession(c, user, displayName)
 })
 
 // Session-restore endpoint. Returns the current user (derived from the

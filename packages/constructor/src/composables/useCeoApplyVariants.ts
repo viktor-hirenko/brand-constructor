@@ -5,6 +5,12 @@ import {
   readSelectionAsString as ceoSelectionAsString,
   readSelectionAsArray as ceoSelectionAsArray,
 } from '@/stores/constructor/selectionHelpers'
+import {
+  countSectionsNeedingAttention,
+  isCeoChoiceAnAlternative as isCeoChoiceAnAlternativePure,
+  isSubmitBlockedForReturnedView,
+  type CeoLibraryTab,
+} from '@/utils/ceoRevisionGate'
 import type {
   Concept,
   ExternalNaming,
@@ -17,29 +23,8 @@ import type {
  * the CEO can re-pick — everything else (Brand Basics, PR Package, Deliverables,
  * Visual Components) is text/configuration the PO owns end-to-end.
  */
-export type CeoLibraryTab = 'concept' | 'externalNaming' | 'internalNaming'
-
-/** All CEO-overridable library keys, in canonical iteration order. */
-export const CEO_LIBRARY_KEYS: CeoLibraryTab[] = [
-  'concept',
-  'externalNaming',
-  'internalNaming',
-]
-
-/**
- * Section keys tracked by the PO returned-from-CEO "attention counter".
- * `general` is intentionally excluded — it has no resolved state and doesn't
- * block resubmit (per Figma 1973:7893 spec).
- */
-export const ATTENTION_SECTION_KEYS = [
-  'basics',
-  'concept',
-  'externalNaming',
-  'internalNaming',
-  'marketingPackage',
-  'deliverables',
-  'visualComponents',
-] as const
+export type { CeoLibraryTab } from '@/utils/ceoRevisionGate'
+export { CEO_LIBRARY_KEYS, ATTENTION_SECTION_KEYS } from '@/utils/ceoRevisionGate'
 
 interface UseCeoApplyVariantsOptions {
   /** True when the PO is viewing a brand that was returned by CEO (needs_revision). */
@@ -98,32 +83,16 @@ export function useCeoApplyVariants(opts: UseCeoApplyVariantsOptions) {
     return Object.keys(out).length > 0 ? out : null
   }
 
-  /**
-   * True when CEO's pick for `key` differs from the PO's current selection.
-   * Drives the "Apply CEO" CTA, attention counter and revision-validation
-   * required-comment list.
-   */
-  function isCeoChoiceAnAlternative(
-    key: CeoLibraryTab,
-    ceoValue: string | string[]
-  ): boolean {
-    if (key === 'concept') {
-      const ceoId = typeof ceoValue === 'string' ? ceoValue : ceoValue[0]
-      if (!ceoId?.trim()) return false
-      const poId = store.stepData.concept.selectedId
-      return !poId || ceoId !== poId
+  function poLibrarySelections() {
+    return {
+      conceptId: store.stepData.concept.selectedId,
+      externalIds: store.stepData.externalNaming.selectedIds ?? [],
+      internalId: store.stepData.internalNaming.selectedId,
     }
-    if (key === 'externalNaming') {
-      const ceoIds = ceoSelectionAsArray(ceoValue)
-      if (ceoIds.length === 0) return false
-      const poIds = store.stepData.externalNaming.selectedIds ?? []
-      if (poIds.length !== ceoIds.length) return true
-      return ceoIds.some(id => !poIds.includes(id))
-    }
-    const ceoId = typeof ceoValue === 'string' ? ceoValue : ceoValue[0]
-    if (!ceoId?.trim()) return false
-    const poId = store.stepData.internalNaming.selectedId
-    return !poId || ceoId !== poId
+  }
+
+  function isCeoChoiceAnAlternative(key: CeoLibraryTab, ceoValue: string | string[]): boolean {
+    return isCeoChoiceAnAlternativePure(key, ceoValue, poLibrarySelections())
   }
 
   // ─── Applied-state computeds (PO returned view) ────────────────────────────
@@ -178,24 +147,23 @@ export function useCeoApplyVariants(opts: UseCeoApplyVariantsOptions) {
    */
   const attentionCounter = computed(() => {
     if (!isPoReturnedView.value) return 0
-    let count = 0
-    for (const key of ATTENTION_SECTION_KEYS) {
-      const meta = store.brandCeoComments?.[key]
-      const hasUnresolvedComment = !!meta && meta.value.trim().length > 0 && !meta.resolved
-      const isLibraryKey = (k: string): k is CeoLibraryTab =>
-        CEO_LIBRARY_KEYS.includes(k as CeoLibraryTab)
-      const selectionValue = store.brandCeoSelections?.[key]
-      const hasUndecidedAlternative =
-        isLibraryKey(key) &&
-        selectionValue != null &&
-        isCeoChoiceAnAlternative(key, selectionValue)
-      if (hasUnresolvedComment || hasUndecidedAlternative) count++
-    }
-    return count
+    return countSectionsNeedingAttention({
+      comments: store.brandCeoComments,
+      ceoSelections: store.brandCeoSelections ?? undefined,
+      poSelections: poLibrarySelections(),
+    })
   })
 
   /** Blocks the "На погодження CEO" submit button when any section still needs attention. */
-  const submitBlocked = computed(() => isPoReturnedView.value && attentionCounter.value > 0)
+  const submitBlocked = computed(
+    () =>
+      isPoReturnedView.value &&
+      isSubmitBlockedForReturnedView({
+        comments: store.brandCeoComments,
+        ceoSelections: store.brandCeoSelections ?? undefined,
+        poSelections: poLibrarySelections(),
+      })
+  )
 
   /**
    * Per-section flags for `<ReviewUnifiedView>` — whether the section currently

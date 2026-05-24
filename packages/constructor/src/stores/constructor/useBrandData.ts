@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { apiPost, apiPut } from '@/composables/useApi'
 import { useLibrariesStore } from '@/stores/libraries'
-import { isExternalNamingStepValid } from '@/utils/externalNamingValidation'
+import { validateWizardStep } from '@/utils/wizardStepValidation'
 import { logSilent } from '@/utils/log'
 import type {
   BrandStepData,
@@ -141,52 +141,10 @@ export function useBrandData() {
   const shouldSkipStep3 = computed(() => stepData.value.concept.newConceptBrief !== null)
 
   function validateStep(step: number): boolean {
-    switch (step) {
-      case 1:
-        return (
-          stepData.value.brandBasics.geo.length > 0 && stepData.value.brandBasics.launchDate !== ''
-        )
-      case 2:
-        return (
-          stepData.value.mode !== null &&
-          (stepData.value.concept.selectedId !== null ||
-            stepData.value.concept.newConceptBrief !== null)
-        )
-      case 3: {
-        const en = stepData.value.externalNaming
-        return isExternalNamingStepValid(
-          en.selectedIds,
-          en.comment,
-          en.newNamingBrief !== null,
-          librariesStore.externalNamings
-        )
-      }
-      case 4: {
-        const inn = stepData.value.internalNaming
-        return (
-          inn.selectedId !== null ||
-          (inn.newNamingFeedback !== null && inn.newNamingFeedback.trim() !== '')
-        )
-      }
-      case 5:
-        return stepData.value.marketingPackage.selectedId !== null
-      case 6: {
-        const del = stepData.value.deliverables
-        const hasAnythingEnabled = del.legalLanding || del.partnerLanding
-        if (hasAnythingEnabled && del.developmentDeadline === '') return false
-        return true
-      }
-      case 7: {
-        const vc = stepData.value.visualComponents
-        if (vc.delegateToDesigners) return true
-        const selectionCount = Object.keys(vc.selections).length
-        if (selectionCount === 0) return false
-        if (hasComponentConflicts.value) return false
-        return true
-      }
-      default:
-        return true
-    }
+    return validateWizardStep(step, stepData.value, {
+      externalNamings: librariesStore.externalNamings,
+      hasComponentConflicts: hasComponentConflicts.value,
+    })
   }
 
   const isCurrentStepValid = computed(() => validateStep(currentStep.value))

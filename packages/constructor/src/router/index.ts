@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
 import type { Brand, BrandStepData } from '@brand-constructor/shared/types'
+import { resolveColdStartNavigation } from '@/router/coldStartNavigation'
 
 function ceoReselectGuard(to: RouteLocationNormalized) {
   const auth = useAuthStore()
@@ -323,20 +324,12 @@ const router = createRouter({
 //      so ReviewSubmitView marks these navigations with `?editBrand=<id>`;
 //      we use that query param to redirect back to the right brand on F5.
 router.beforeEach((to, from) => {
-  const isColdStart = from.name === undefined
-  if (!isColdStart) return true
-
-  const isEditSubRoute = to.meta.ceoReselect === true || to.meta.poEdit === true
-  if (isEditSubRoute) {
-    return { name: 'brand-view-review', params: { id: to.params.id as string } }
-  }
-
-  const editBrand = to.query.editBrand
-  if (typeof editBrand === 'string' && editBrand) {
-    return { name: 'brand-view-review', params: { id: editBrand } }
-  }
-
-  return true
+  return resolveColdStartNavigation({
+    fromName: from.name,
+    toMeta: { poEdit: to.meta.poEdit === true, ceoReselect: to.meta.ceoReselect === true },
+    toParamsId: to.params.id as string | undefined,
+    toQueryEditBrand: to.query.editBrand,
+  })
 })
 
 router.beforeEach(async to => {
