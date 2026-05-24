@@ -48,6 +48,14 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
     internalNamingId: null,
   })
 
+  /**
+   * True while the CEO has made at least one un-saved change in the current
+   * reselect session. Used by the `seed*` functions to AVOID overwriting an
+   * in-progress draft when the CEO navigates back and re-mounts a view.
+   * Cleared on save / reset / explicit clear.
+   */
+  const ceoReselectDraftInProgress = ref(false)
+
   function resetCeoReselectDraft() {
     ceoReselectDraft.value = {
       conceptId: null,
@@ -55,11 +63,18 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
       externalNamingIds: [],
       internalNamingId: null,
     }
+    ceoReselectDraftInProgress.value = false
+  }
+
+  /** Mark the draft as "user has un-saved changes". */
+  function markCeoReselectDraftInProgress() {
+    ceoReselectDraftInProgress.value = true
   }
 
   /** Confirmed CEO concept override. Pass `null` to clear (= keep PO concept). */
   function setCeoReselectConcept(id: string | null) {
     ceoReselectDraft.value = { ...ceoReselectDraft.value, conceptId: id }
+    ceoReselectDraftInProgress.value = true
   }
 
   /** Currently previewed concept in slider (independent of confirmation). */
@@ -71,15 +86,22 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
    * Atomic single-click selection: confirms a CEO override and syncs the
    * slider preview to it in one update. Pass `id = null` to clear the
    * override and revert the preview to `fallbackPreviewId` (usually the PO
-   * concept id). Used by `CeoReselectConceptView` for the unified PO-style
-   * click-to-select UX (no separate "Обрати концепт" button).
+   * concept id).
+   *
+   * If the CEO switches to a DIFFERENT concept than was previously selected
+   * in the draft, the external naming picks are cleared — they belonged to
+   * the old concept and are no longer valid.
    */
   function selectCeoReselectConcept(id: string | null, fallbackPreviewId: string | null) {
+    const prevConceptId = ceoReselectDraft.value.conceptId
+    const conceptChanged = prevConceptId !== id
     ceoReselectDraft.value = {
       ...ceoReselectDraft.value,
       conceptId: id,
       conceptPreviewId: id ?? fallbackPreviewId,
+      externalNamingIds: conceptChanged ? [] : ceoReselectDraft.value.externalNamingIds,
     }
+    ceoReselectDraftInProgress.value = true
   }
 
   /** Toggles an external naming id in/out of the staged set, with limit 3. */
@@ -93,6 +115,7 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
       current.push(id)
     }
     ceoReselectDraft.value = { ...ceoReselectDraft.value, externalNamingIds: current }
+    ceoReselectDraftInProgress.value = true
     return true
   }
 
@@ -105,13 +128,20 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
 
   function setCeoReselectInternalNaming(id: string | null) {
     ceoReselectDraft.value = { ...ceoReselectDraft.value, internalNamingId: id }
+    ceoReselectDraftInProgress.value = true
   }
 
   /**
    * Prefill draft from saved CEO picks, else PO `stepData`, for the given
    * re-select entry point.
+   *
+   * If the CEO already has in-progress (un-saved) changes in the draft,
+   * the seed is skipped — otherwise navigating back to a previous step would
+   * silently discard those changes (e.g. "Назад" from external naming would
+   * reset the just-picked concept on the concept screen).
    */
   function seedCeoReselectFromBrand(section: CeoReselectSection) {
+    if (ceoReselectDraftInProgress.value) return
     const sel = brandCeoSelections.value
     const sd = stepData.value
     resetCeoReselectDraft()
@@ -141,11 +171,17 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
    * Preserves `conceptId` in draft (after concept step) and seeds external
    * naming pick.
    *
-   * If the CEO chose the SAME concept as their last saved pick, we restore the
-   * previously saved external naming IDs so the user sees their prior selections.
-   * If the concept changed, we start fresh — old picks belonged to the old concept.
+   * Skip when the user has already touched the external naming selection in
+   * the current session — re-mounting after "Назад" must NOT discard their
+   * in-progress picks.
+   *
+   * Otherwise: if the CEO chose the SAME concept as their last saved pick,
+   * restore previously saved external naming IDs. If the concept changed,
+   * start fresh — old picks belonged to the old concept.
    */
   function seedCeoReselectExternalNamingChained() {
+    if (ceoReselectDraft.value.externalNamingIds.length > 0) return
+
     const savedConceptId = readSelectionAsString(brandCeoSelections.value?.concept)
     const savedExternalIds = readSelectionAsArray(brandCeoSelections.value?.externalNaming)
     const currentConceptId = ceoReselectDraft.value.conceptId
@@ -169,7 +205,9 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
 
   return {
     ceoReselectDraft,
+    ceoReselectDraftInProgress,
     resetCeoReselectDraft,
+    markCeoReselectDraftInProgress,
     setCeoReselectConcept,
     setCeoReselectConceptPreview,
     selectCeoReselectConcept,

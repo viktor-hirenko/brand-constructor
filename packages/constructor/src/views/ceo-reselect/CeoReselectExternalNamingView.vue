@@ -133,9 +133,11 @@ function handleToggle(id: string) {
 
 function goCancel() {
   if (isChainedFromConcept.value) {
+    // Keep the draft — user is just navigating back to the previous step.
     router.push(`/constructor/brand/${brandId.value}/ceo-reselect/concept`)
     return
   }
+  store.resetCeoReselectDraft()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 
@@ -152,6 +154,7 @@ async function goSave() {
 
   const ok = await store.saveCeoSelections(payload)
   if (ok) {
+    store.resetCeoReselectDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }

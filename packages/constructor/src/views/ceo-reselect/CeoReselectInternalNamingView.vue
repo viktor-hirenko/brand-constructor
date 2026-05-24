@@ -71,6 +71,7 @@ function handleSelect(id: string) {
 }
 
 function goCancel() {
+  store.resetCeoReselectDraft()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 
@@ -79,6 +80,7 @@ async function goSave() {
   if (!id) return
   const ok = await store.saveCeoSelections({ internalNaming: id })
   if (ok) {
+    store.resetCeoReselectDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }

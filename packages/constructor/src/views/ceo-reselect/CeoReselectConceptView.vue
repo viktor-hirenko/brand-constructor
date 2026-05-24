@@ -135,6 +135,7 @@ const conceptComment = computed({
 })
 
 function goBack() {
+  store.resetCeoReselectDraft()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 
