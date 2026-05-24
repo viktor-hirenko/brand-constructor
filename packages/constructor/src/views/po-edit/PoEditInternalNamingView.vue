@@ -6,7 +6,7 @@ import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
-import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
+import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -54,7 +54,10 @@ const otherNamings = computed(() => {
   )
 })
 
-const ceoCeoComment = computed(() => store.brandCeoComments?.internalNaming?.value ?? '')
+const poInternalComment = computed({
+  get: () => store.stepData.internalNaming.comment ?? '',
+  set: (val: string) => store.setInternalNaming({ comment: val }),
+})
 
 const primaryDisabled = computed(() => !store.stepData.internalNaming.selectedId)
 const isSaving = computed(() => store.isSaving)
@@ -202,7 +205,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         />
       </div>
 
-      <CeoCommentReadonly :value="ceoCeoComment" />
+      <StepCommentField v-model="poInternalComment" label="Коментар" />
     </template>
 
     <template #footer>

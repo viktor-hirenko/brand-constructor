@@ -8,7 +8,7 @@ import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
-import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue'
+import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -41,12 +41,32 @@ const {
 const localMode = ref<'light' | 'dark'>(store.stepData.mode === 'dark' ? 'dark' : 'light')
 
 const poConceptId = computed(() => store.stepData.concept.selectedId)
-const ceoConcept = computed(() => {
-  const id = store.brandCeoSelections?.concept
-  const ceoId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : null
-  if (!ceoId) return null
-  return concepts.value.find(c => c.id === ceoId) ?? null
-})
+
+/**
+ * CEO's concept — fetched independently so it stays visible regardless of
+ * which theme filter the grid is currently showing. Looking it up inside
+ * `concepts.value` would make the header card disappear whenever the CEO's
+ * concept is not in the theme-filtered list.
+ */
+const ceoConcept = ref<Concept | null>(null)
+const hasFetchedCeoConcept = ref(false)
+
+async function loadCeoConcept() {
+  const sel = store.brandCeoSelections?.concept
+  const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
+  if (!ceoId) {
+    ceoConcept.value = null
+    hasFetchedCeoConcept.value = true
+    return
+  }
+  try {
+    ceoConcept.value = await apiGet<Concept>(`/api/concepts/${ceoId}`)
+  } catch {
+    ceoConcept.value = null
+  } finally {
+    hasFetchedCeoConcept.value = true
+  }
+}
 
 const poConcept = ref<Concept | null>(null)
 async function loadPoConceptById(id: string | null) {
@@ -97,8 +117,12 @@ const availableConcepts = computed(() => {
     // post-apply: only exclude the applied (current) concept
     return concepts.value.filter(c => c.id !== poConceptId.value)
   }
-  // choice: exclude both PO original and CEO pick
-  const ceoId = ceoConcept.value?.id ?? null
+  // choice: exclude both PO original and CEO pick.
+  // Use brandCeoSelections directly (sync) instead of ceoConcept.value?.id so the
+  // CEO card is excluded from the grid immediately — before the async apiGet resolves —
+  // preventing the card from briefly appearing in the grid and then jumping to the header.
+  const sel = store.brandCeoSelections?.concept
+  const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
   return concepts.value.filter(c => c.id !== poConceptId.value && c.id !== ceoId)
 })
 
@@ -106,7 +130,10 @@ const primaryDisabled = computed(() => !selectedId.value)
 
 const isSaving = ref(false)
 
-const ceoCeoComment = computed(() => store.brandCeoComments?.concept?.value ?? '')
+const poConceptComment = computed({
+  get: () => store.stepData.concept.comment ?? '',
+  set: (val: string) => store.setConcept({ comment: val }),
+})
 
 const themeOptions = [
   { value: 'light', label: 'Світла тема' },
@@ -123,8 +150,12 @@ const subtitleText = computed(() =>
 const hasFetchedConcepts = ref(false)
 const hasFetchedPoConcept = ref(false)
 
-const showHeaderSkeleton = computed(() => !hasFetchedPoConcept.value)
-const showGridSkeleton = computed(() => !hasFetchedConcepts.value || loading.value)
+const showHeaderSkeleton = computed(
+  () => !hasFetchedPoConcept.value || (!isPostApply.value && !hasFetchedCeoConcept.value),
+)
+const showGridSkeleton = computed(
+  () => !hasFetchedConcepts.value || loading.value || (!isPostApply.value && !hasFetchedCeoConcept.value),
+)
 
 async function loadConcepts() {
   perPage.value = 100
@@ -169,6 +200,8 @@ onMounted(() => {
 
   // Always load PO concept by originalPoConceptId (not the possibly mutated store value).
   loadPoConceptById(originalPoConceptId.value)
+  // CEO concept fetched independently so theme changes don't make it disappear.
+  loadCeoConcept()
   loadConcepts()
 })
 
@@ -360,7 +393,7 @@ async function goDali() {
       />
     </div>
 
-    <CeoCommentReadonly :value="ceoCeoComment" />
+    <StepCommentField v-model="poConceptComment" label="Коментар" />
 
     <template #footer>
       <EditFlowFooter
