@@ -59,6 +59,10 @@ async function loadNamings() {
 
 onMounted(async () => {
   store.seedCeoReselectFromBrand('internalNaming')
+  // Pre-fill comment from PO's comment if CEO hasn't written one yet.
+  if (!store.brandCeoComments?.internalNaming) {
+    store.setCeoCommentValue('internalNaming', store.stepData.internalNaming.comment ?? '')
+  }
   await loadNamings()
 })
 

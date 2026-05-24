@@ -72,6 +72,19 @@ const excludedFromGrid = computed(() =>
   isChainedFromConcept.value ? [] : poSelectedIds.value,
 )
 
+/**
+ * In chained mode: all server-filtered namings (already filtered by concept_id via API param).
+ * In standalone mode: client-side filter by CEO's conceptId so only related namings are shown
+ * in the CEO grid. We still load ALL namings server-side so `poExternalMini` can resolve PO's
+ * picks regardless of which concept they belong to.
+ */
+const gridNamings = computed(() => {
+  if (isChainedFromConcept.value) return namings.value
+  const cid = store.ceoReselectDraft.conceptId
+  if (!cid) return namings.value
+  return namings.value.filter(n => n.concept_id === cid)
+})
+
 const primaryDisabled = computed(() => stagedExternalIds.value.length === 0)
 
 /** Guards against the initial-render flash: useApiList starts with loading=false
@@ -102,6 +115,10 @@ onMounted(async () => {
     const poIdSet = new Set(store.stepData.externalNaming.selectedIds ?? [])
     const filteredIds = store.ceoReselectDraft.externalNamingIds.filter(id => !poIdSet.has(id))
     store.setCeoReselectExternalNamingIds(filteredIds)
+  }
+  // Pre-fill comment from PO's comment if CEO hasn't written one yet.
+  if (!store.brandCeoComments?.externalNaming) {
+    store.setCeoCommentValue('externalNaming', store.stepData.externalNaming.comment ?? '')
   }
   await loadNamings()
 })
@@ -223,7 +240,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
       <div class="flex flex-col gap-3">
         <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
         <ExternalNamingGrid
-          :namings="namings"
+          :namings="gridNamings"
           :selected-ids="stagedExternalIds"
           :exclude-ids="excludedFromGrid"
           :max-selectable="CEO_RESELECT_EXTERNAL_NAMING_LIMIT"

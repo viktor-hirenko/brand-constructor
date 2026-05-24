@@ -138,18 +138,28 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
   }
 
   /**
-   * Preserves `conceptId` in draft (after concept step) and starts external
-   * naming pick fresh.
+   * Preserves `conceptId` in draft (after concept step) and seeds external
+   * naming pick.
    *
-   * In chained mode the CEO has just chosen a different concept, so any prior
-   * external naming selections (PO's or previously saved CEO's) belong to the
-   * OLD concept and are irrelevant. Starting empty forces the CEO to make a
-   * new decision against the new concept's naming set.
+   * If the CEO chose the SAME concept as their last saved pick, we restore the
+   * previously saved external naming IDs so the user sees their prior selections.
+   * If the concept changed, we start fresh — old picks belonged to the old concept.
    */
   function seedCeoReselectExternalNamingChained() {
+    const savedConceptId = readSelectionAsString(brandCeoSelections.value?.concept)
+    const savedExternalIds = readSelectionAsArray(brandCeoSelections.value?.externalNaming)
+    const currentConceptId = ceoReselectDraft.value.conceptId
+
+    const externalNamingIds =
+      currentConceptId &&
+      currentConceptId === savedConceptId &&
+      savedExternalIds.length > 0
+        ? savedExternalIds.slice(0, CEO_RESELECT_EXTERNAL_NAMING_LIMIT)
+        : []
+
     ceoReselectDraft.value = {
       ...ceoReselectDraft.value,
-      externalNamingIds: [],
+      externalNamingIds,
     }
   }
 

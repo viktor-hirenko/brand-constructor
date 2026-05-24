@@ -109,6 +109,10 @@ onMounted(() => {
   store.seedCeoReselectFromBrand('concept')
   // Do NOT pre-fill previewId with PO's concept — right panel starts empty
   // until CEO clicks a card.
+  // Pre-fill comment from PO's comment if CEO hasn't written one yet.
+  if (!store.brandCeoComments?.concept) {
+    store.setCeoCommentValue('concept', store.stepData.concept.comment ?? '')
+  }
   loadPoConcept()
   loadConcepts()
 })

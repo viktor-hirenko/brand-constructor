@@ -280,7 +280,12 @@ async function goDali() {
           </div>
           <div
             v-if="selectedId === poConcept.id"
-            class="absolute top-1.5 left-1.5 size-7 rounded-full bg-white flex items-center justify-center"
+            class="pointer-events-none absolute inset-0 z-[5] rounded-[14px] border-4 border-white"
+            aria-hidden="true"
+          />
+          <div
+            v-if="selectedId === poConcept.id"
+            class="absolute top-[6px] left-[6px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] flex items-center justify-center z-[6]"
           >
             <CheckIcon class="size-4 text-[#030213]" />
           </div>
@@ -311,7 +316,12 @@ async function goDali() {
           </div>
           <div
             v-if="selectedId === ceoConcept.id"
-            class="absolute top-1.5 left-1.5 size-7 rounded-full bg-white flex items-center justify-center"
+            class="pointer-events-none absolute inset-0 z-[5] rounded-[14px] border-4 border-white"
+            aria-hidden="true"
+          />
+          <div
+            v-if="selectedId === ceoConcept.id"
+            class="absolute top-[6px] left-[6px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_10px_0px_rgba(0,0,0,0.2)] flex items-center justify-center z-[6]"
           >
             <CheckIcon class="size-4 text-[#030213]" />
           </div>
