@@ -314,17 +314,30 @@ const router = createRouter({
   routes,
 })
 
-// Redirect F5 / direct-URL access to transient edit sub-routes back to the
-// brand review page. These routes (CEO reselect, PO edit) depend on Pinia
-// draft state that is lost on page reload. `from.name === undefined` is the
-// Vue Router 4 signal for the initial cold navigation (no prior SPA history).
+// Redirect F5 / direct-URL access to transient edit flows back to the brand
+// review page. `from.name === undefined` is the Vue Router 4 signal for the
+// initial cold navigation (no prior SPA history).
+//
+// Two edit-flow shapes are covered:
+//   1. Dedicated `/po-edit/*` and `/ceo-reselect/*` routes — recognised via
+//      route meta (`poEdit`, `ceoReselect`); brand id lives in `params.id`.
+//   2. Wizard URLs (`/constructor/step/N`) entered from the review screen
+//      for non-naming sections (basics, marketing package, deliverables,
+//      visual components). The wizard doesn't carry a brand id in the path,
+//      so ReviewSubmitView marks these navigations with `?editBrand=<id>`;
+//      we use that query param to redirect back to the right brand on F5.
 router.beforeEach((to, from) => {
-  const isEditSubRoute = to.meta.ceoReselect === true || to.meta.poEdit === true
   const isColdStart = from.name === undefined
+  if (!isColdStart) return true
 
-  if (isEditSubRoute && isColdStart) {
-    const brandId = to.params.id as string
-    return { name: 'brand-view-review', params: { id: brandId } }
+  const isEditSubRoute = to.meta.ceoReselect === true || to.meta.poEdit === true
+  if (isEditSubRoute) {
+    return { name: 'brand-view-review', params: { id: to.params.id as string } }
+  }
+
+  const editBrand = to.query.editBrand
+  if (typeof editBrand === 'string' && editBrand) {
+    return { name: 'brand-view-review', params: { id: editBrand } }
   }
 
   return true

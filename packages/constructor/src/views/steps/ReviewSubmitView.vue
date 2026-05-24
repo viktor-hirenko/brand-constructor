@@ -232,7 +232,10 @@ function editSection(step: number, sectionKey: string) {
     }
   }
   store.beginEditSection(sectionKey, 8)
-  router.push(`/constructor/step/${step}`)
+  // `editBrand` lets the router guard recognise an F5 on the wizard URL as
+  // an interrupted brand-edit session (not a fresh wizard run) and redirect
+  // back to the brand review page instead of dumping the user on step/1.
+  router.push({ path: `/constructor/step/${step}`, query: { editBrand: bid ?? undefined } })
 }
 
 /** PO footer "Назад" — plain step navigation, no edit-mode marker. */
