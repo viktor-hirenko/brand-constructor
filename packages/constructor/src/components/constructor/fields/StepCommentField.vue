@@ -33,9 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const hasValue = computed(() => (props.modelValue ?? '').trim().length > 0)
-const showRequiredHint = computed(
-  () => props.required && !!props.requiredHint && !hasValue.value
-)
+const showRequiredHint = computed(() => props.required && !!props.requiredHint && !hasValue.value)
 
 function onInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
@@ -44,7 +42,7 @@ function onInput(event: Event) {
 </script>
 
 <template>
-  <div class="step-comment-field flex flex-col gap-2">
+  <div class="step-comment-field pt-2 flex flex-col gap-2">
     <div class="step-comment-field__header flex items-center gap-2 h-6">
       <ChatBubbleIcon class="step-comment-field__icon text-[#5B5B62]" />
       <span

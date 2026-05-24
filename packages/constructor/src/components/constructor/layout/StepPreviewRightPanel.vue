@@ -4,9 +4,8 @@
  *
  * Owns the per-step visual previews so `ConstructorLayout` can focus on
  * mode-routing (CEO finalize / PO returned / approved / draft / etc.).
- * The outer 58%-width wrapper (background, scroll, padding) is encapsulated
- * inside this component, so parents render a single `<StepPreviewRightPanel>`
- * in the non-full-width branch of the layout.
+ * Shell/right-pane padding lives in `ConstructorDualPaneShell` via
+ * `dualPaneLayoutClasses.ts`; this component renders preview content only.
  *
  * NOTE: Step 8 preview is NOT handled here — it lives in `ConstructorLayout`
  * via `BrandPreviewPanel` + `ReviewSubmitView` (Figma "Product view" shell).
@@ -15,6 +14,7 @@
 
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
+import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
@@ -45,6 +45,8 @@ interface Props {
   delegateToDesigners: boolean
   /** True while concept library is loading — prevents empty-state flash on step 2. */
   librariesLoading?: boolean
+  /** Step 2: preview/selected id in store while libraries still loading. */
+  hasStoredConceptSelection?: boolean
 }
 
 const props = defineProps<Props>()
@@ -72,10 +74,7 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
 </script>
 
 <template>
-  <div
-    class="relative w-[58%] bg-white px-12 overflow-y-auto min-h-0"
-    :class="currentStep >= 2 && currentStep <= 4 ? 'pt-[20px] pb-[100px]' : 'pt-12 pb-12'"
-  >
+  <div class="relative w-full min-h-0 h-full">
     <!-- Step 1 Preview -->
     <template v-if="currentStep === 1">
       <div v-if="brandBasics && hasAnyBasics()" class="flex flex-col gap-6">
@@ -139,11 +138,13 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
       </div>
     </template>
 
-    <!-- Step 2 Preview: concept slider — selection happens immediately on card click.
-         Show skeleton while libraries are still loading to prevent the empty-state
-         flash (the slider's own null-concept state has no reserved header area). -->
+    <!-- Step 2: slider skeleton only when a concept is already stored (reload).
+         Empty skeleton = reserved header gap + preview box, no fake title bars. -->
     <template v-else-if="currentStep === 2">
-      <ConceptPreviewSliderSkeleton v-if="librariesLoading" />
+      <ConceptPreviewSliderSkeleton
+        v-if="librariesLoading && hasStoredConceptSelection"
+      />
+      <ConceptPreviewEmptySkeleton v-else-if="librariesLoading" />
       <ConceptPreviewSlider
         v-else
         :concept="conceptPreviewForSlider"
@@ -160,7 +161,7 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
 
     <!-- Step 7 Preview: iPhone with layered Visual Components -->
     <template v-else-if="currentStep === 7">
-      <div class="flex flex-col h-full">
+      <div class="flex flex-col h-full gap-[48px]">
         <div class="flex items-center gap-2 shrink-0">
           <SparklesIcon class="size-6" />
           <span class="text-[20px] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>
@@ -168,16 +169,11 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
         <div class="flex flex-col items-center justify-center flex-1">
           <div class="relative" style="width: 311.25px; height: 632.25px">
             <div class="absolute inset-0" style="z-index: 0">
-              <img
-                src="/assets/iphone-16-plus-light.png"
-                alt="iPhone frame"
-                class="object-cover"
-                style="width: 311.25px; height: 632.25px"
-              />
+              <img src="/assets/iphone-16-plus-light.png" alt="iPhone frame" class="object-cover" />
             </div>
             <div
               class="absolute overflow-hidden"
-              style="left: 9px; top: 9px; width: 288.75px; height: 614.25px; z-index: 10"
+              style="width: 288.75px; height: 614.25px; left: 11px; top: 9px; z-index: 10"
             >
               <div
                 v-if="!hasStep9Selections"
@@ -188,7 +184,7 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
                   <p class="text-sm text-muted-foreground">
                     {{
                       delegateToDesigners
-                        ? 'Вибір компонентів делеговано дизайнерам'
+                        ? 'Компоненти буде визначено дизайн-командою'
                         : 'Оберіть компоненти щоб побачити превʼю'
                     }}
                   </p>

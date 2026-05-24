@@ -12,6 +12,8 @@ import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/Con
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import ConceptMobilePreviewSkeleton from '@/components/constructor/skeletons/ConceptMobilePreviewSkeleton.vue'
 import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPanel.vue'
+import ConstructorDualPaneShell from '@/components/constructor/layout/ConstructorDualPaneShell.vue'
+import type { LayoutMode } from '@/components/constructor/layout/dualPaneLayoutClasses'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
@@ -134,6 +136,26 @@ const isLastStep = computed(() => currentStep.value === totalSteps)
 const isFullWidth = computed(() => [5, 6].includes(currentStep.value))
 const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'))
 
+/** Drives padding on left/right panes in ConstructorDualPaneShell */
+const layoutMode = computed<LayoutMode>(() => {
+  if (isCeoReselect.value || isPoEdit.value) return 'edit'
+  if (
+    isCeoFinalize.value ||
+    isPoDraftReview.value ||
+    isPoReturnedReview.value ||
+    isApprovedReview.value
+  ) {
+    return 'review'
+  }
+  return 'wizard'
+})
+
+const shellFullWidth = computed(
+  () => isFullWidth.value && !isCeoReselect.value && !isPoEdit.value
+)
+
+const showRightPane = computed(() => !shellFullWidth.value)
+
 const concepts = computed(() => librariesStore.concepts)
 
 const brandBasics = computed(() => store.stepData?.brandBasics)
@@ -148,6 +170,12 @@ const conceptPreviewForSlider = computed(() => {
   const id = store.stepData?.concept?.previewId ?? store.stepData?.concept?.selectedId
   if (!id) return null
   return concepts.value.find(item => item.id === id) ?? null
+})
+
+/** Step 2: concept id in store while libraries load → slider skeleton (with header). */
+const step2HasStoredConceptSelection = computed(() => {
+  const id = store.stepData?.concept?.previewId ?? store.stepData?.concept?.selectedId
+  return !!id
 })
 
 const isConceptSliderFinalSelected = computed(() => {
@@ -443,62 +471,46 @@ watch(currentStep, step => {
 
 <template>
   <div class="constructor-layout h-[100dvh] bg-background flex items-center justify-center overflow-hidden">
-    <div
-      class="constructor-layout__shell relative shrink-0 w-[1311px] h-[810px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex"
-      :style="{ transform: `scale(${shellScale})`, transformOrigin: 'center center' }"
+    <ConstructorDualPaneShell
+      :layout-mode="layoutMode"
+      :full-width="shellFullWidth"
+      :show-right="showRightPane"
+      :scale="shellScale"
+      :review-shell="isReviewShell"
+      :wizard-step="currentStep"
     >
-      <!-- Main Panel (full-width on step 3, 42% otherwise) -->
-      <div
-        :class="[
-          'constructor-layout__main-panel flex flex-col min-h-0',
-          isFullWidth && !isCeoReselect && !isPoEdit ? 'w-full' : 'w-[42%]',
-          isReviewShell ? 'bg-[#f9f9fb]' : 'bg-muted/30',
-        ]"
-      >
+      <template #left-header>
         <div
-          class="constructor-layout__main-content min-h-0 flex-1"
-          :class="[
-            isReviewShell ? 'flex flex-col overflow-hidden' : 'px-12 pt-5 pb-6',
-            isCeoReselect || isPoEdit ? 'px-8 pt-8 pb-0' : '',
-            !isReviewShell && currentStep === 8 ? 'flex flex-col overflow-hidden' : '',
-            !isReviewShell && currentStep !== 8 ? 'overflow-y-auto' : '',
-          ]"
+          v-if="!isReviewShell"
+          :class="currentStep === 8 ? 'shrink-0' : ''"
+          class="constructor-layout__wizard-header"
         >
-          <div v-if="!isReviewShell" :class="currentStep === 8 ? 'shrink-0' : ''" class="constructor-layout__wizard-header">
-            <h1 class="constructor-layout__wizard-title text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
-              {{ stepTitle }}
-            </h1>
-            <p class="constructor-layout__wizard-subtitle text-base text-muted-foreground tracking-[-0.31px] mb-6">
-              {{ stepSubtitle }}
-            </p>
+          <h1 class="constructor-layout__wizard-title text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
+            {{ stepTitle }}
+          </h1>
+          <p class="constructor-layout__wizard-subtitle text-base text-muted-foreground tracking-[-0.31px] mb-6">
+            {{ stepSubtitle }}
+          </p>
 
-            <div class="constructor-layout__wizard-progress mb-8">
-              <div class="constructor-layout__wizard-progress-label mb-2">
-                <span class="text-sm text-muted-foreground tracking-[-0.15px]">
-                  Крок {{ currentStep }} з {{ totalSteps }}
-                </span>
-              </div>
-              <div class="constructor-layout__wizard-progress-track h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  class="constructor-layout__wizard-progress-bar h-full bg-primary rounded-full transition-all duration-300"
-                  :style="{ width: `${progressPercent}%` }"
-                />
-              </div>
+          <div class="constructor-layout__wizard-progress mb-8">
+            <div class="constructor-layout__wizard-progress-label mb-2">
+              <span class="text-sm text-muted-foreground tracking-[-0.15px]">
+                Крок {{ currentStep }} з {{ totalSteps }}
+              </span>
+            </div>
+            <div class="constructor-layout__wizard-progress-track h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                class="constructor-layout__wizard-progress-bar h-full bg-primary rounded-full transition-all duration-300"
+                :style="{ width: `${progressPercent}%` }"
+              />
             </div>
           </div>
-
-          <div
-            class="constructor-layout__router-view"
-            :class="
-              isReviewShell || currentStep === 8
-                ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
-                : ''
-            "
-          >
-            <RouterView />
-          </div>
         </div>
+      </template>
 
+      <RouterView />
+
+      <template #left-footer>
         <div
           v-if="!isViewMode && !isReviewShell"
           class="constructor-layout__wizard-footer shrink-0 px-12 py-6 border-t border-border"
@@ -553,99 +565,82 @@ watch(currentStep, step => {
             </button>
           </div>
         </div>
-      </div>
+      </template>
 
-      <!--
-        Right Panel: CEO finalize / PO draft / PO returned / approved read-only preview.
-        Step 8 preview lives here only (BrandPreviewPanel + ReviewSubmitView).
-        Legacy 1-phone + summary-card layout was removed from StepPreviewRightPanel —
-        do not re-add a step-8 branch there.
-      -->
-      <div
-        v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isApprovedReview"
-        class="constructor-layout__right-panel constructor-layout__right-panel--preview w-[58%] bg-white min-h-0 flex flex-col overflow-hidden"
-      >
-        <BrandPreviewPanel />
-      </div>
-
-      <!-- Right Panel: PO edit — concept choice uses ConceptPreviewSlider;
-           external/internal naming sub-routes use ConceptMobilePreview (same as CEO reselect) -->
-      <div
-        v-else-if="isPoEdit"
-        class="constructor-layout__right-panel constructor-layout__right-panel--po-edit relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
-      >
-        <ConceptPreviewSlider
-          v-if="route.name === 'po-edit-concept' && route.query.mode !== 'post-apply'"
-          :concept="poEditPreviewConcept"
-          :is-final-selected="false"
-          :top-label="poEditSliderTopLabel"
-          hide-primary-action
+      <template #right>
+        <BrandPreviewPanel
+          v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isApprovedReview"
         />
-        <template v-else>
-          <ConceptMobilePreviewSkeleton v-if="poEditNamingRightPanelLoading" />
-          <ConceptMobilePreview v-else :concept="poEditMobilePreviewConcept" />
-        </template>
-      </div>
 
-      <!-- Right Panel: CEO re-select preview -->
-      <div
-        v-else-if="isCeoReselect"
-        class="constructor-layout__right-panel constructor-layout__right-panel--ceo-reselect relative w-[58%] bg-white overflow-y-auto min-h-0 pt-[20px] pb-[100px] px-12"
-      >
-        <template v-if="route.name === 'ceo-reselect-concept'">
-          <!-- Skeleton: shape matches what will appear after loading to prevent CLS.
-               CEO with a saved override → slider skeleton; without → empty-state skeleton. -->
-          <ConceptPreviewSliderSkeleton v-if="ceoReselectRightPanelLoading && hasCeoSavedConceptOverride" />
-          <ConceptPreviewEmptySkeleton v-else-if="ceoReselectRightPanelLoading" />
-
-          <!-- Slider: CEO has clicked a card or has a saved override. -->
+        <template v-else-if="isPoEdit">
           <ConceptPreviewSlider
-            v-else-if="ceoReselectPreviewConcept"
-            :concept="ceoReselectPreviewConcept"
+            v-if="route.name === 'po-edit-concept' && route.query.mode !== 'post-apply'"
+            :concept="poEditPreviewConcept"
             :is-final-selected="false"
-            :top-label="ceoReselectSliderTopLabel"
+            :top-label="poEditSliderTopLabel"
             hide-primary-action
           />
+          <template v-else>
+            <ConceptMobilePreviewSkeleton v-if="poEditNamingRightPanelLoading" />
+            <ConceptMobilePreview v-else :concept="poEditMobilePreviewConcept" />
+          </template>
+        </template>
 
-          <!-- Empty-state: Figma 2201:12563. Header-area spacer keeps the card
-               visually aligned with the slider canvas position. -->
-          <div v-else class="constructor-layout__ceo-reselect-empty flex flex-col h-full">
-            <div class="shrink-0 h-[56px]" aria-hidden="true" />
-            <div
-              class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px] flex flex-col items-center justify-center gap-6"
-            >
-              <ImagePlaceholderFilledIcon class="size-10 text-[#c8c8c8]" />
-              <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] text-center w-[200px]">
-                Оберіть концепт зліва, щоб переглянути прев'ю.
-              </p>
+        <template v-else-if="isCeoReselect">
+          <template v-if="route.name === 'ceo-reselect-concept'">
+            <ConceptPreviewSliderSkeleton
+              v-if="ceoReselectRightPanelLoading && hasCeoSavedConceptOverride"
+            />
+            <ConceptPreviewEmptySkeleton v-else-if="ceoReselectRightPanelLoading" />
+
+            <ConceptPreviewSlider
+              v-else-if="ceoReselectPreviewConcept"
+              :concept="ceoReselectPreviewConcept"
+              :is-final-selected="false"
+              :top-label="ceoReselectSliderTopLabel"
+              hide-primary-action
+            />
+
+            <div v-else class="constructor-layout__ceo-reselect-empty flex flex-col h-full">
+              <div class="shrink-0 h-[56px]" aria-hidden="true" />
+              <div
+                class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px] flex flex-col items-center justify-center gap-6"
+              >
+                <ImagePlaceholderFilledIcon class="size-10 text-[#c8c8c8]" />
+                <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] text-center w-[200px]">
+                  Оберіть концепт зліва, щоб переглянути прев'ю.
+                </p>
+              </div>
             </div>
-          </div>
+          </template>
+          <template v-else>
+            <ConceptMobilePreviewSkeleton v-if="ceoReselectNamingRightPanelLoading" />
+            <ConceptMobilePreview v-else :concept="ceoReselectMobilePreviewConcept" />
+          </template>
         </template>
-        <template v-else>
-          <ConceptMobilePreviewSkeleton v-if="ceoReselectNamingRightPanelLoading" />
-          <ConceptMobilePreview v-else :concept="ceoReselectMobilePreviewConcept" />
-        </template>
-      </div>
 
-      <!-- Right Panel: Step 1/2/3/4/7 previews (hidden on full-width steps and on step 8) -->
-      <StepPreviewRightPanel
-        v-else-if="!isFullWidth"
-        :current-step="currentStep"
-        :brand-basics="brandBasics"
-        :concept-preview-for-slider="conceptPreviewForSlider"
-        :is-concept-slider-final-selected="isConceptSliderFinalSelected"
-        :selected-concept="selectedConcept"
-        :step9-selected-layers="step9SelectedLayers"
-        :has-step9-selections="hasStep9Selections"
-        :has-sidebar-selected="hasSidebarSelected"
-        :step9-sidebar-visible="step9SidebarVisible"
-        :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
-        :libraries-loading="librariesStore.isLoading"
-        @confirm-concept="confirmConceptFromSlider"
-        @toggle-sidebar="toggleSidebarPreview"
-      />
+        <StepPreviewRightPanel
+          v-else-if="!isFullWidth"
+          :current-step="currentStep"
+          :brand-basics="brandBasics"
+          :concept-preview-for-slider="conceptPreviewForSlider"
+          :is-concept-slider-final-selected="isConceptSliderFinalSelected"
+          :selected-concept="selectedConcept"
+          :step9-selected-layers="step9SelectedLayers"
+          :has-step9-selections="hasStep9Selections"
+          :has-sidebar-selected="hasSidebarSelected"
+          :step9-sidebar-visible="step9SidebarVisible"
+          :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
+          :libraries-loading="librariesStore.isLoading"
+          :has-stored-concept-selection="step2HasStoredConceptSelection"
+          @confirm-concept="confirmConceptFromSlider"
+          @toggle-sidebar="toggleSidebarPreview"
+        />
+      </template>
 
-      <LayoutPreviewOverlays />
-    </div>
+      <template #overlays>
+        <LayoutPreviewOverlays />
+      </template>
+    </ConstructorDualPaneShell>
   </div>
 </template>

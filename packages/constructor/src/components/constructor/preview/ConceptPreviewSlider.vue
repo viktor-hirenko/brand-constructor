@@ -217,21 +217,23 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col gap-6 h-full">
-    <!-- Empty state -->
-    <div
-      v-if="!concept"
-      class="flex-1 flex flex-col items-center justify-center p-12 text-center text-muted-foreground rounded-[24px] border border-dashed border-black/10 bg-muted/20"
-    >
-      <ImagePlaceholderIcon class="size-16 mx-auto mb-4 opacity-30" />
-      <p class="text-base tracking-[-0.31px] max-w-sm">
-        Оберіть концепт зліва, щоб переглянути детальне превʼю тут.
-      </p>
-    </div>
+    <!-- Empty state — header area reserved (Figma / ConceptPreviewEmptySkeleton) -->
+    <template v-if="!concept">
+      <div class="shrink-0 h-[56px]" aria-hidden="true" />
+      <div
+        class="flex-1 min-h-0 flex flex-col items-center justify-center text-center text-muted-foreground rounded-[24px] border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb]"
+      >
+        <ImagePlaceholderIcon class="size-10 mb-6 text-[#c8c8c8]" />
+        <p class="text-base leading-6 tracking-[-0.3125px] text-[#717182] max-w-[200px]">
+          Оберіть концепт зліва, щоб переглянути превʼю
+        </p>
+      </div>
+    </template>
 
     <template v-else>
       <!-- Header: name + optional pill badge + select button -->
       <div v-if="!props.hideHeader" class="flex items-center justify-between gap-4 shrink-0">
-        <div class="min-w-0 flex items-center gap-3">
+        <div class="min-w-0 flex items-center gap-3 py-2">
           <h3
             class="min-w-0 flex-1 text-2xl font-medium tracking-[-0.4492px] leading-8 truncate text-[#0a0a0a]"
           >

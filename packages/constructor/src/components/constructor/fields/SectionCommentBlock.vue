@@ -62,9 +62,7 @@ const emit = defineEmits<{
 }>()
 
 const draft = ref<string>(props.ceoComment ?? '')
-const isExpanded = ref<boolean>(
-  props.alwaysExpanded || !!(props.ceoComment ?? '').trim()
-)
+const isExpanded = ref<boolean>(props.alwaysExpanded || !!(props.ceoComment ?? '').trim())
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -165,14 +163,12 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
     <!-- Product Owner comment (read-only) -->
     <div
       v-if="hasPoComment"
-      class="section-comment__po flex flex-col gap-1 rounded-lg bg-[rgba(197,197,200,0.2)] p-4"
+      class="section-comment__po flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
     >
       <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар замовника
       </p>
-      <p
-        class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line"
-      >
+      <p class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
         {{ poComment }}
       </p>
     </div>
@@ -232,10 +228,7 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
         @resolve="emit('resolve')"
         @unresolve="emit('unresolve')"
       />
-      <p
-        v-if="ceoResolveError"
-        class="section-comment__resolve-error text-sm text-red-600"
-      >
+      <p v-if="ceoResolveError" class="section-comment__resolve-error text-sm text-red-600">
         {{ ceoResolveError }}
       </p>
     </template>
@@ -248,9 +241,7 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
       <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар CEO
       </p>
-      <p
-        class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line"
-      >
+      <p class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
         {{ ceoComment }}
       </p>
     </div>

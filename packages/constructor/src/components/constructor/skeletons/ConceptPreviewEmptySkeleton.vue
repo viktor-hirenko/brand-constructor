@@ -7,11 +7,9 @@
 </script>
 
 <template>
-  <div class="concept-preview-empty-skeleton flex flex-col h-full" aria-hidden="true">
+  <div class="concept-preview-empty-skeleton flex flex-col h-full gap-6" aria-hidden="true">
     <!-- Spacer that matches the ConceptPreviewSlider header height (title + gap). -->
-    <div class="shrink-0 h-[56px]" />
-    <div
-      class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px]"
-    />
+    <div class="shrink-0 h-[48px]" />
+    <div class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px]" />
   </div>
 </template>
