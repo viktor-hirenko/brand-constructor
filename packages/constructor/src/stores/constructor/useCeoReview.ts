@@ -47,6 +47,7 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
 
   const saveCeoSelectionsError = ref<string | null>(null)
   const saveCeoCommentResolvedError = ref<string | null>(null)
+  const saveCeoCommentResolvedErrorSection = ref<string | null>(null)
   const saveCeoCommentResolvedLoading = ref<Set<string>>(new Set())
 
   const isApplyingCeoVariant = ref(false)
@@ -104,6 +105,7 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
     }
 
     saveCeoCommentResolvedError.value = null
+    saveCeoCommentResolvedErrorSection.value = null
     saveCeoCommentResolvedLoading.value = new Set([
       ...saveCeoCommentResolvedLoading.value,
       sectionKey,
@@ -123,11 +125,13 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
         { section: sectionKey, resolved }
       )
       brandCeoComments.value = data.ceoComments ?? null
+      saveCeoCommentResolvedError.value = null
+      saveCeoCommentResolvedErrorSection.value = null
       return true
     } catch (error) {
       brandCeoComments.value = prevSnapshot
-      saveCeoCommentResolvedError.value =
-        error instanceof Error ? error.message : 'Failed to update CEO comment'
+      saveCeoCommentResolvedErrorSection.value = sectionKey
+      saveCeoCommentResolvedError.value = 'Не вдалося зберегти. Спробуйте ще раз.'
       return false
     } finally {
       const next = new Set(saveCeoCommentResolvedLoading.value)
@@ -288,6 +292,12 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
     comments: BrandCeoComments | null,
     selections: Record<string, string | string[]> | null
   ) {
+    saveCeoSelectionsError.value = null
+    saveCeoCommentResolvedError.value = null
+    saveCeoCommentResolvedErrorSection.value = null
+    saveCeoCommentResolvedLoading.value = new Set()
+    isApplyingCeoVariant.value = false
+    applyCeoVariantError.value = null
     brandCeoComments.value = comments
     brandCeoSelections.value = selections
   }
@@ -296,6 +306,11 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
     brandCeoComments.value = null
     brandCeoSelections.value = null
     saveCeoSelectionsError.value = null
+    saveCeoCommentResolvedError.value = null
+    saveCeoCommentResolvedErrorSection.value = null
+    saveCeoCommentResolvedLoading.value = new Set()
+    isApplyingCeoVariant.value = false
+    applyCeoVariantError.value = null
   }
 
   return {
@@ -303,6 +318,7 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
     brandCeoSelections,
     saveCeoSelectionsError,
     saveCeoCommentResolvedError,
+    saveCeoCommentResolvedErrorSection,
     isApplyingCeoVariant,
     applyCeoVariantError,
     setCeoCommentValue,

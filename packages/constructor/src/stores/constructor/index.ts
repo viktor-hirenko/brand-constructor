@@ -101,6 +101,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ceoComments?: BrandCeoComments | null,
     ceoSelections?: Record<string, string | string[]> | null
   ) {
+    resetCeoReselectSlice()
+    resetPoEditDraftSlice()
+    resetPreviewsSlice()
+    resetEditSectionSlice()
     loadWizard(id, data, step, status, internalName)
     loadCeo(ceoComments ?? null, ceoSelections ?? null)
   }

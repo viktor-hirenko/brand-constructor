@@ -33,6 +33,8 @@ interface SectionCommentBlockProps {
   canResolve?: boolean
   /** Whether a resolve/unresolve request is in flight for this section. */
   ceoResolveLoading?: boolean
+  /** Inline error when resolve/unresolve fails for this section. */
+  ceoResolveError?: string | null
 }
 
 const props = withDefaults(defineProps<SectionCommentBlockProps>(), {
@@ -47,6 +49,7 @@ const props = withDefaults(defineProps<SectionCommentBlockProps>(), {
   ceoResolved: false,
   canResolve: false,
   ceoResolveLoading: false,
+  ceoResolveError: null,
 })
 
 const emit = defineEmits<{
@@ -220,15 +223,22 @@ const hasCeoComment = computed(() => (draft.value ?? '').trim().length > 0)
     </template>
 
     <!-- Read-only CEO comment with resolve UI (PO returned-from-CEO view) -->
-    <CeoCommentCard
-      v-else-if="hasCeoComment && showResolveUi"
-      :value="ceoComment ?? ''"
-      :resolved="ceoResolved"
-      :loading="ceoResolveLoading"
-      :can-resolve="canResolve"
-      @resolve="emit('resolve')"
-      @unresolve="emit('unresolve')"
-    />
+    <template v-else-if="hasCeoComment && showResolveUi">
+      <CeoCommentCard
+        :value="ceoComment ?? ''"
+        :resolved="ceoResolved"
+        :loading="ceoResolveLoading"
+        :can-resolve="canResolve"
+        @resolve="emit('resolve')"
+        @unresolve="emit('unresolve')"
+      />
+      <p
+        v-if="ceoResolveError"
+        class="section-comment__resolve-error text-sm text-red-600"
+      >
+        {{ ceoResolveError }}
+      </p>
+    </template>
 
     <!-- Read-only CEO comment without resolve UI (used outside the PO returned-from-CEO view) -->
     <div

@@ -1,5 +1,5 @@
 -- Brand Constructor D1 Schema
--- Version: 1.0
+-- Version: 1.1 (synced with migrations 003, 007)
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS external_namings (
   domain TEXT,
   price REAL,
   availability_status TEXT DEFAULT 'unknown',
+  domain_checked_at TEXT,
+  domain_check_source TEXT DEFAULT 'manual',
   concept_id TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   created_by TEXT NOT NULL,
@@ -149,11 +151,13 @@ CREATE TABLE IF NOT EXISTS brands (
   pr_package_comment TEXT,
   legal_landing INTEGER NOT NULL DEFAULT 0,
   partner_landing INTEGER NOT NULL DEFAULT 0,
+  development_deadline TEXT,
   deliverables_comment TEXT,
   component_selections TEXT,
   components_comment TEXT,
   delegate_to_designers INTEGER NOT NULL DEFAULT 0,
   new_concept_brief TEXT,
+  new_naming_brief TEXT,
   ceo_comments TEXT,
   ceo_selections TEXT,
   step_data TEXT,
@@ -167,6 +171,7 @@ CREATE TABLE IF NOT EXISTS brands (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_concepts_status ON concepts(status);
+CREATE INDEX IF NOT EXISTS idx_concepts_mode ON concepts(mode);
 CREATE INDEX IF NOT EXISTS idx_concepts_created_by ON concepts(created_by);
 CREATE INDEX IF NOT EXISTS idx_external_namings_concept_id ON external_namings(concept_id);
 CREATE INDEX IF NOT EXISTS idx_external_namings_status ON external_namings(status);

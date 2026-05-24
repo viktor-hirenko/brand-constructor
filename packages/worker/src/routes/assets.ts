@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { LIBRARY_WRITE_PERMISSIONS } from '@brand-constructor/shared'
 import type { Env, Variables } from '../types'
 import { generateId } from '../utils/id'
 import {
@@ -12,6 +13,13 @@ import { buildR2Key, getContentType } from '../utils/r2'
 import type { AssetEntityType } from '@brand-constructor/shared'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
+
+function libraryKeyForAssetUpload(entityType: AssetEntityType): string | null {
+  if (entityType === 'concept_visual') return 'concepts'
+  if (entityType === 'component_thumbnail') return 'component_variants'
+  if (/^concept_gallery_\d{1,2}$/.test(entityType)) return 'concepts'
+  return null
+}
 
 app.post('/upload', async c => {
   const formData = await c.req.formData()
@@ -32,6 +40,20 @@ app.post('/upload', async c => {
     return c.json(
       { success: false, error: 'component_type_id is required for component_thumbnail uploads' },
       400
+    )
+  }
+
+  const libraryKey = libraryKeyForAssetUpload(entityType)
+  if (!libraryKey) {
+    return c.json({ success: false, error: `Unsupported entity_type: ${entityType}` }, 400)
+  }
+
+  const user = c.get('user')
+  const allowedRoles = LIBRARY_WRITE_PERMISSIONS[libraryKey]
+  if (!allowedRoles?.includes(user.role)) {
+    return c.json(
+      { success: false, error: 'Forbidden: insufficient permissions for this library' },
+      403
     )
   }
 

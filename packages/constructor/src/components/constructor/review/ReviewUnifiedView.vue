@@ -161,6 +161,11 @@ function isCeoCommentResolveLoading(sectionKey: string): boolean {
   return store.isCeoCommentResolveLoading(sectionKey)
 }
 
+function getCeoResolveError(sectionKey: string): string | null {
+  if (store.saveCeoCommentResolvedErrorSection !== sectionKey) return null
+  return store.saveCeoCommentResolvedError
+}
+
 function isSectionHighlighted(sectionKey: string): boolean {
   return props.revisionMissingSections.has(sectionKey)
 }
@@ -353,6 +358,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
     ceoResolved: isSectionCeoCommentResolved(sectionKey),
     canResolve: props.isPoOwner,
     ceoResolveLoading: isCeoCommentResolveLoading(sectionKey),
+    ceoResolveError: getCeoResolveError(sectionKey),
   }
 }
 </script>
