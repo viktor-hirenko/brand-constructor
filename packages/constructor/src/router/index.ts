@@ -7,7 +7,6 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
-import { redirectLegacyStepPath } from '@/utils/stepMigration'
 import type { Brand, BrandStepData } from '@brand-constructor/shared/types'
 
 function ceoReselectGuard(to: RouteLocationNormalized) {
@@ -207,9 +206,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ConstructorLayout.vue'),
     meta: { requiresAuth: true, briefCreatorOnly: true },
     beforeEnter: to => {
-      const legacyRedirect = redirectLegacyStepPath(to.path)
-      if (legacyRedirect) return legacyRedirect
-
       const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/)
       if (!stepMatch) return true
 
