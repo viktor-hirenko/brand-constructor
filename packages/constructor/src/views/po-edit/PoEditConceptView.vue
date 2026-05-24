@@ -30,13 +30,7 @@ const snapshot = usePoEditSnapshot(brandId)
  */
 const isPostApply = computed(() => route.query.mode === 'post-apply')
 
-const {
-  data: concepts,
-  loading,
-  error,
-  fetchData,
-  perPage,
-} = useApiList<Concept>('/api/concepts')
+const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
 
 const localMode = ref<'light' | 'dark'>(store.stepData.mode === 'dark' ? 'dark' : 'light')
 
@@ -53,7 +47,7 @@ const hasFetchedCeoConcept = ref(false)
 
 async function loadCeoConcept() {
   const sel = store.brandCeoSelections?.concept
-  const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
+  const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? (sel[0] ?? null) : null
   if (!ceoId) {
     ceoConcept.value = null
     hasFetchedCeoConcept.value = true
@@ -94,7 +88,7 @@ const selectedId = ref<string | null>(
       return store.stepData.concept.selectedId ?? null
     }
     const sel = store.brandCeoSelections?.concept
-    return typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
+    return typeof sel === 'string' ? sel : Array.isArray(sel) ? (sel[0] ?? null) : null
   })()
 )
 
@@ -122,7 +116,7 @@ const availableConcepts = computed(() => {
   // CEO card is excluded from the grid immediately — before the async apiGet resolves —
   // preventing the card from briefly appearing in the grid and then jumping to the header.
   const sel = store.brandCeoSelections?.concept
-  const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
+  const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? (sel[0] ?? null) : null
   return concepts.value.filter(c => c.id !== poConceptId.value && c.id !== ceoId)
 })
 
@@ -143,7 +137,7 @@ const themeOptions = [
 const subtitleText = computed(() =>
   isPostApply.value
     ? "Оберіть концепт та перегляньте прев'ю праворуч."
-    : 'Ви можете залишити варіант CEO або обрати інший.',
+    : 'Ви можете залишити варіант CEO або обрати інший.'
 )
 
 /** Guards against initial-render flash (see CeoReselectExternalNamingView). */
@@ -151,10 +145,13 @@ const hasFetchedConcepts = ref(false)
 const hasFetchedPoConcept = ref(false)
 
 const showHeaderSkeleton = computed(
-  () => !hasFetchedPoConcept.value || (!isPostApply.value && !hasFetchedCeoConcept.value),
+  () => !hasFetchedPoConcept.value || (!isPostApply.value && !hasFetchedCeoConcept.value)
 )
 const showGridSkeleton = computed(
-  () => !hasFetchedConcepts.value || loading.value || (!isPostApply.value && !hasFetchedCeoConcept.value),
+  () =>
+    !hasFetchedConcepts.value ||
+    loading.value ||
+    (!isPostApply.value && !hasFetchedCeoConcept.value)
 )
 
 async function loadConcepts() {
@@ -191,7 +188,7 @@ onMounted(() => {
   // Pre-select CEO pick (choice mode) — always show CEO as highlighted.
   if (!isPostApply.value) {
     const sel = store.brandCeoSelections?.concept
-    const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? sel[0] ?? null : null
+    const ceoId = typeof sel === 'string' ? sel : Array.isArray(sel) ? (sel[0] ?? null) : null
     if (ceoId) selectedId.value = ceoId
   }
 
@@ -263,7 +260,11 @@ async function goDali() {
 </script>
 
 <template>
-  <EditFlowStepShell class="po-edit-concept-view" title="Concept Selection" :subtitle="subtitleText">
+  <EditFlowStepShell
+    class="po-edit-concept-view"
+    title="Concept Selection"
+    :subtitle="subtitleText"
+  >
     <!-- Header skeleton: kept in sync with the real layout below (single
          248×248 card in post-apply, 2 cards side-by-side in choice mode). -->
     <template v-if="showHeaderSkeleton">
@@ -284,7 +285,10 @@ async function goDali() {
       <p class="text-[16px] font-medium leading-6 text-[#414141] tracking-[-0.3125px]">
         Обраний концепт
       </p>
-      <div v-if="poConcept" class="relative w-[248px] h-[248px] rounded-2xl overflow-hidden border-2 border-[#030213]">
+      <div
+        v-if="poConcept"
+        class="relative w-[248px] h-[248px] rounded-2xl overflow-hidden border-2 border-[#030213]"
+      >
         <img
           v-if="poConcept.visual_url"
           :src="getAssetUrl(poConcept.visual_url)"
@@ -292,15 +296,22 @@ async function goDali() {
           class="w-full h-full object-cover"
           loading="lazy"
         />
-        <div class="absolute inset-x-0 bottom-0 px-4 pt-8 pb-4 bg-gradient-to-t from-black/70 to-transparent">
+        <div
+          class="absolute inset-x-0 bottom-0 px-4 pt-8 pb-4 bg-gradient-to-t from-black/70 to-transparent"
+        >
           <p class="text-[16px] font-medium text-white truncate">{{ poConcept.name }}</p>
         </div>
         <!-- Checkmark badge -->
-        <div class="absolute top-[7px] left-[7px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_5px_rgba(0,0,0,0.2)] flex items-center justify-center">
+        <div
+          class="absolute top-[7px] left-[7px] size-8 rounded-full bg-white border border-black/10 shadow-[0px_8px_5px_rgba(0,0,0,0.2)] flex items-center justify-center"
+        >
           <CheckIcon class="size-4 text-[#030213]" />
         </div>
       </div>
-      <div v-else class="w-[248px] h-[248px] rounded-2xl border border-black/10 bg-[#f3f3f5] flex items-center justify-center">
+      <div
+        v-else
+        class="w-[248px] h-[248px] rounded-2xl border border-black/10 bg-[#f3f3f5] flex items-center justify-center"
+      >
         <span class="text-sm text-[#717182]">—</span>
       </div>
     </div>
@@ -322,11 +333,16 @@ async function goDali() {
             class="w-full h-full object-cover"
             loading="lazy"
           />
-          <div class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent">
+          <div
+            class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent"
+          >
             <p class="text-[16px] font-medium text-white truncate">{{ poConcept.name }}</p>
           </div>
         </div>
-        <div v-else class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center">
+        <div
+          v-else
+          class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center"
+        >
           <span class="text-sm text-[#717182]">—</span>
         </div>
       </div>
@@ -347,7 +363,9 @@ async function goDali() {
             class="w-full h-full object-cover"
             loading="lazy"
           />
-          <div class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent">
+          <div
+            class="absolute inset-x-0 bottom-0 px-3 pt-8 pb-3 bg-gradient-to-t from-black/70 to-transparent"
+          >
             <p class="text-[16px] font-medium text-white truncate">{{ ceoConcept.name }}</p>
           </div>
           <div
@@ -362,7 +380,10 @@ async function goDali() {
             <CheckIcon class="size-4 text-[#030213]" />
           </div>
         </div>
-        <div v-else class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center">
+        <div
+          v-else
+          class="w-full aspect-square rounded-2xl border border-black/10 bg-muted flex items-center justify-center"
+        >
           <span class="text-sm text-[#717182]">—</span>
         </div>
       </div>
@@ -376,16 +397,15 @@ async function goDali() {
         <EditFlowSectionLabel>
           {{ isPostApply ? 'Доступні концепти' : 'Інші концепти' }}
         </EditFlowSectionLabel>
-        <SegmentedControl
-          v-model="localMode"
-          :options="themeOptions"
-        />
+        <SegmentedControl v-model="localMode" :options="themeOptions" />
       </div>
 
       <ConceptGridSkeleton v-if="showGridSkeleton" />
       <div v-else-if="error" class="text-center py-8 text-red-500">
         <p class="mb-2">{{ error }}</p>
-        <button type="button" class="text-primary underline text-sm" @click="loadConcepts">Спробувати знову</button>
+        <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
+          Спробувати знову
+        </button>
       </div>
       <ConceptGrid
         v-else

@@ -361,6 +361,7 @@ export function useBrandData() {
 
   const saveDraftToStorageDebounced = debounce(saveDraftToStorage, 500)
   watch(stepData, saveDraftToStorageDebounced, { deep: true })
+  watch(currentStep, saveDraftToStorageDebounced)
 
   // ─── Persistence ───────────────────────────────────────────────────────────
   async function saveBrand(): Promise<boolean> {

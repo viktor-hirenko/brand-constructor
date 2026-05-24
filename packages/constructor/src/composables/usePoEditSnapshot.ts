@@ -37,9 +37,9 @@ export interface PoEditSnapshot {
 }
 
 export function usePoEditSnapshot(
-  brandId: MaybeRef<string | number | null | undefined>,
+  brandId: MaybeRef<string | number | null | undefined>
 ): PoEditSnapshot {
-  const     keys = computed(() => {
+  const keys = computed(() => {
     const raw = unref(brandId)
     const suffix = raw == null ? '' : String(raw)
     return {
