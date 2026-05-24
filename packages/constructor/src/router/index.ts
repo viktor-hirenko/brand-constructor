@@ -314,6 +314,22 @@ const router = createRouter({
   routes,
 })
 
+// Redirect F5 / direct-URL access to transient edit sub-routes back to the
+// brand review page. These routes (CEO reselect, PO edit) depend on Pinia
+// draft state that is lost on page reload. `from.name === undefined` is the
+// Vue Router 4 signal for the initial cold navigation (no prior SPA history).
+router.beforeEach((to, from) => {
+  const isEditSubRoute = to.meta.ceoReselect === true || to.meta.poEdit === true
+  const isColdStart = from.name === undefined
+
+  if (isEditSubRoute && isColdStart) {
+    const brandId = to.params.id as string
+    return { name: 'brand-view-review', params: { id: brandId } }
+  }
+
+  return true
+})
+
 router.beforeEach(async to => {
   // Skip auth/role guards in local dev. `import.meta.env.DEV` is a Vite
   // compile-time constant (`true` for `vite dev`, statically `false` for
