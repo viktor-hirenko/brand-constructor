@@ -1,4 +1,12 @@
-export type BrandStatus = 'draft' | 'submitted' | 'needs_revision' | 'approved'
+import { BRAND_BRIEF_STATUS } from '../constants/statuses'
+export type { BrandBriefStatus } from '../constants/statuses'
+
+/**
+ * Server-contract status type. Kept as a literal union so the worker and
+ * existing Zod schemas need zero changes. For new frontend code prefer the
+ * named constant `BRAND_BRIEF_STATUS` from `@brand-constructor/shared/constants`.
+ */
+export type BrandStatus = (typeof BRAND_BRIEF_STATUS)[keyof typeof BRAND_BRIEF_STATUS]
 
 export interface BrandBasicsData {
   geo: string[]

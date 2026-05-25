@@ -8,7 +8,13 @@ export {
   isBrandBriefCreatorRole,
 } from './roles'
 
-export { ENTITY_STATUSES, STATUS_LABELS } from './statuses'
+export {
+  ENTITY_STATUSES,
+  STATUS_LABELS,
+  BRAND_BRIEF_STATUS,
+  BRAND_BRIEF_STATUS_TRANSITIONS,
+} from './statuses'
+export type { BrandBriefStatus } from './statuses'
 
 export { PR_TEAMS } from './teams'
 export type { PrTeam } from './teams'
