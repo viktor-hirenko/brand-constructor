@@ -37,8 +37,8 @@ export interface BriefSupervisorReselectEnvelope {
  *
  * Covers the full surface area the Author can mutate while the brief is in
  * `needs_revision` state:
- *  - `poEditDraft`              — chained `concept → external-naming` picks
- *    (baseline + pending), see {@link PoEditDraft}.
+ *  - `chainedDraft`             — chained `concept → external-naming` picks
+ *    (baseline + pending) — mirrors `AuthorRevisionDraft`.
  *  - `editingSection` / `editingSectionSnapshot` — inline section-edit state
  *    (basics, marketing, deliverables, visualComponents, …). Required so
  *    «Скасувати» can still revert untouched state after a refresh.
@@ -52,7 +52,7 @@ export interface BriefAuthorRevisionEnvelope {
   savedAt: number
   briefStatus?: string
   draft: {
-    poEditDraft: {
+    chainedDraft: {
       baselineConceptId: string | null
       baselineExternalIds: string[]
       pendingConceptId: string | null

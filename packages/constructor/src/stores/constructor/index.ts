@@ -6,7 +6,7 @@ import type {
 import { useBrandData } from './useBrandData'
 import { useCeoReview } from './useCeoReview'
 import { useCeoReselectDraft } from './useCeoReselectDraft'
-import { usePoEditDraft } from './usePoEditDraft'
+import { useAuthorRevisionDraft } from './useAuthorRevisionDraft'
 import { usePreviews } from './usePreviews'
 import { useEditSection } from './useEditSection'
 
@@ -24,7 +24,8 @@ export {
  *    validation, navigation, draft localStorage and `saveBrand()`
  *  - `useCeoReview` — CEO comments + selections, apply-variant flow
  *  - `useCeoReselectDraft` — transient draft for `/ceo-reselect/*` routes
- *  - `usePoEditDraft` — transient draft for `/po-edit/*` chained flow
+ *  - `useAuthorRevisionDraft` — transient draft for `/po-edit/*` chained flow
+ *    (Author = Product Owner side of the revision exchange)
  *  - `usePreviews` — concept overlay + PR package drawer
  *  - `useEditSection` — PO inline section-edit triggered from Step 10
  *
@@ -80,12 +81,12 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     returnToStep: brandDataPublic.returnToStep,
   })
 
-  // `usePoEditDraft` needs read-access to the active edit-section so its
-  // F5 overlay can capture (and restore) any in-progress inline-edit too.
+  // `useAuthorRevisionDraft` needs read-access to the active edit-section so
+  // its F5 overlay can capture (and restore) any in-progress inline-edit too.
   const {
-    resetSlice: resetPoEditDraftSlice,
-    ...poEditDraftPublic
-  } = usePoEditDraft({
+    resetSlice: resetAuthorRevisionDraftSlice,
+    ...authorRevisionDraftPublic
+  } = useAuthorRevisionDraft({
     brandId: brandDataPublic.brandId,
     brandStatus: brandDataPublic.brandStatus,
     stepData: brandDataPublic.stepData,
@@ -112,7 +113,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ceoSelections?: Record<string, string | string[]> | null
   ) {
     resetCeoReselectSlice()
-    resetPoEditDraftSlice()
+    resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
     resetEditSectionSlice()
     loadWizard(id, data, step, status, internalName)
@@ -124,7 +125,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     resetBrandDataSlice()
     resetCeoReviewSlice()
     resetCeoReselectSlice()
-    resetPoEditDraftSlice()
+    resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
     resetEditSectionSlice()
   }
@@ -133,7 +134,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ...brandDataPublic,
     ...ceoReviewPublic,
     ...ceoReselectPublic,
-    ...poEditDraftPublic,
+    ...authorRevisionDraftPublic,
     ...previewsPublic,
     ...editSectionPublic,
     loadBrand,

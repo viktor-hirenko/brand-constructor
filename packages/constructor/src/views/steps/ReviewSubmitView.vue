@@ -317,7 +317,7 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
     // would eventually catch this via `briefStatus` mismatch, but explicit
     // is better.
     if (newStatus === 'submitted') {
-      store.resetPoEditDraft()
+      store.resetAuthorRevisionDraft()
     }
 
     if (

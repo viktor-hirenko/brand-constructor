@@ -122,14 +122,14 @@ onMounted(async () => {
   if (isChained.value) {
     // Restore in-progress selections if user went Back from here and returned again.
     // If there are none (first visit), start with empty selection.
-    const pendingExternal = store.poEditDraft.pendingExternalIds
+    const pendingExternal = store.authorRevisionDraft.pendingExternalIds
     if (pendingExternal && pendingExternal.length > 0) {
       store.setExternalNaming({ selectedIds: pendingExternal, newNamingBrief: null })
     } else {
       store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
     }
   } else {
-    // standalone + post-apply: save PO's current picks so we can show them as reference
+    // standalone + post-apply: save the Author's current picks as a reference
     poOriginalPickIds.value = [...(store.stepData.externalNaming.selectedIds ?? [])]
     store.beginEditSection('externalNaming', 8)
   }
@@ -144,15 +144,15 @@ function goCancel() {
   if (isChained.value) {
     // «Назад» — stash the in-progress external picks so they survive a forward
     // navigation back to this view, then revert stepData to the captured
-    // baseline so PoEditConceptView opens with a clean external slice.
+    // baseline so the revision concept view opens with a clean external slice.
     // NB: draft is NOT reset — the baseline + pending concept must persist
     // across the hop to keep «Назад» idempotent.
-    store.setPoEditPendingExternal(store.stepData.externalNaming.selectedIds ?? [])
+    store.setAuthorRevisionPendingExternal(store.stepData.externalNaming.selectedIds ?? [])
     store.setExternalNaming({
-      selectedIds: [...store.poEditDraft.baselineExternalIds],
+      selectedIds: [...store.authorRevisionDraft.baselineExternalIds],
       newNamingBrief: null,
     })
-    // cancelEditSection restores concept.selectedId back to PO's original.
+    // cancelEditSection restores concept.selectedId back to the Author's original.
     store.cancelEditSection()
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept`)
   } else {
@@ -165,7 +165,7 @@ async function goSave() {
   const saved = await store.saveBrand()
   if (saved) {
     store.commitEditSection()
-    store.resetPoEditDraft()
+    store.resetAuthorRevisionDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }

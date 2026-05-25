@@ -94,12 +94,12 @@ const selectedId = ref<string | null>(
 )
 
 /**
- * The PO's original concept BEFORE the current edit session started.
- * Captured in `usePoEditDraft` (Pinia) on first mount so «Назад» from
- * external-naming can restore the correct value even after `goDali()`
+ * The Author's original concept BEFORE the current edit session started.
+ * Captured in `useAuthorRevisionDraft` (Pinia) on first mount so «Назад»
+ * from external-naming can restore the correct value even after `goDali()`
  * mutated `stepData.concept.selectedId`.
  */
-const originalPoConceptId = computed(() => store.poEditDraft.baselineConceptId)
+const originalPoConceptId = computed(() => store.authorRevisionDraft.baselineConceptId)
 
 /**
  * choice mode:    exclude PO original (shown in dual header) AND CEO pick (shown in dual header).
@@ -167,7 +167,7 @@ onMounted(() => {
   // Capture the PO concept BEFORE this edit session may have mutated it.
   // No-op if a baseline was already captured on a previous mount this session
   // (e.g. user is returning from external-naming via «Назад»).
-  store.capturePoEditBaselineConcept(store.stepData.concept.selectedId ?? null)
+  store.captureAuthorRevisionBaselineConcept(store.stepData.concept.selectedId ?? null)
 
   // Begin (or re-begin) the edit section. cancelEditSection in the chained
   // external-naming view restored store.stepData.concept on «Назад», so we
@@ -181,10 +181,11 @@ onMounted(() => {
     if (ceoId) selectedId.value = ceoId
   }
 
-  // When returning from external-naming («Назад»), restore the concept PO had
-  // picked so the checkmark stays on their selection, not on the CEO pick.
-  if (store.poEditDraft.pendingConceptId) {
-    selectedId.value = store.poEditDraft.pendingConceptId
+  // When returning from external-naming («Назад»), restore the concept the
+  // Author had picked so the checkmark stays on their selection, not on the
+  // CEO pick.
+  if (store.authorRevisionDraft.pendingConceptId) {
+    selectedId.value = store.authorRevisionDraft.pendingConceptId
   }
 
   // Seed previewId so the right-panel slider shows immediately on open.
@@ -208,10 +209,10 @@ function selectConcept(id: string) {
 function goCancel() {
   // Restore externalNaming to the baseline (what it was before the edit session).
   store.setExternalNaming({
-    selectedIds: [...store.poEditDraft.baselineExternalIds],
+    selectedIds: [...store.authorRevisionDraft.baselineExternalIds],
     newNamingBrief: null,
   })
-  store.resetPoEditDraft()
+  store.resetAuthorRevisionDraft()
   store.cancelEditSection()
   router.push(`/constructor/brand/${brandId.value}`)
 }
@@ -225,24 +226,26 @@ async function goDali() {
     // availableConcepts to briefly include the old PO concept before navigation completes.
     hasFetchedConcepts.value = false
     // Capture baseline external BEFORE clearing it, so «Скасувати» can restore it.
-    store.capturePoEditBaselineExternal(store.stepData.externalNaming.selectedIds ?? [])
+    store.captureAuthorRevisionBaselineExternal(
+      store.stepData.externalNaming.selectedIds ?? []
+    )
     // If user switched to a DIFFERENT concept than the one they previously navigated forward with,
     // drop the in-progress external selections — they belong to the old concept.
-    const previouslyPending = store.poEditDraft.pendingConceptId
+    const previouslyPending = store.authorRevisionDraft.pendingConceptId
     if (previouslyPending && previouslyPending !== selectedId.value) {
-      store.clearPoEditPendingExternal()
+      store.clearAuthorRevisionPendingExternal()
     }
-    store.setPoEditPendingConcept(selectedId.value)
+    store.setAuthorRevisionPendingConcept(selectedId.value)
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept/external-naming`)
   } else {
-    // Same concept as PO's original → save + return
+    // Same concept as Author's original → save + return
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     isSaving.value = true
     await store.saveBrand()
     isSaving.value = false
     store.commitEditSection()
-    store.resetPoEditDraft()
+    store.resetAuthorRevisionDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }

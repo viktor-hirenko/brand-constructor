@@ -16,29 +16,29 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
   }) as T
 }
 
-interface UsePoEditDraftOptions {
+interface UseAuthorRevisionDraftOptions {
   brandId: Ref<string | null>
   brandStatus: Ref<string>
   /** From `useBrandData` — replaced on restore by the cached overlay. */
   stepData: Ref<BrandStepData>
-  /** From `useEditSection` — included in the overlay so «Скасувати» still works after F5. */
+  /** From `useInlineSectionEdit` — included in the overlay so «Скасувати» still works after F5. */
   editingSection: Ref<string | null>
   editingSectionSnapshot: Ref<unknown>
-  /** From `useEditSection` — used during restore to re-apply key + snapshot. */
+  /** From `useInlineSectionEdit` — used during restore to re-apply key + snapshot. */
   restoreEditingSession: (key: string | null, snapshot: unknown) => void
 }
 
 /**
- * `baseline*` — snapshot of stepData taken when the PO opens an inline-edit
- *   session. Used by «Скасувати» to revert any mutations the PO made to
- *   stepData during the session.
+ * `baseline*` — snapshot of stepData taken when the Author opens an
+ *   inline-edit session. Used by «Скасувати» to revert any mutations the
+ *   Author made to stepData during the session.
  *
  * `pending*` — what the user has selected but not yet saved. Survives the
  *   chained `concept → external-naming → concept` navigation so the user
  *   sees their picks intact after going back and forward inside the same
  *   SPA session. Cleared when the corresponding flow commits or is reset.
  */
-export interface PoEditDraft {
+export interface AuthorRevisionDraft {
   baselineConceptId: string | null
   baselineExternalIds: string[]
   pendingConceptId: string | null
@@ -47,14 +47,14 @@ export interface PoEditDraft {
 }
 
 /**
- * Transient draft state for the PO (Author) inline-edit chained flow
- * (`/po-edit/concept` → `/po-edit/concept/external-naming`).
+ * Transient draft state for the Author (Product Owner) inline-edit chained
+ * flow (`/po-edit/concept` → `/po-edit/concept/external-naming`).
  *
  * The slice owns:
- *  - `poEditDraft` — see {@link PoEditDraft}
+ *  - `authorRevisionDraft` — see {@link AuthorRevisionDraft}
  *  - immutable-once-set baseline setters (no-op if a baseline is already
- *    captured), so re-mounting a view does not overwrite the original PO
- *    state with a mid-session value
+ *    captured), so re-mounting a view does not overwrite the original
+ *    Author state with a mid-session value
  *  - pending setters used by «Назад / Далі» navigation inside the flow
  *
  * F5 persistence: while the brief is in `needs_revision`, the slice
@@ -64,10 +64,10 @@ export interface PoEditDraft {
  * survives a refresh. Restored from the parent route guard after
  * `loadBrand()`.
  *
- * Sister slice to `useCeoReselectDraft` — same lifecycle shape (transient,
- * reset on save / cancel / brand load).
+ * Sister slice to `useSupervisorReselectDraft` — same lifecycle shape
+ * (transient, reset on save / cancel / brand load).
  */
-export function usePoEditDraft(opts: UsePoEditDraftOptions) {
+export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
   const {
     brandId,
     brandStatus,
@@ -77,7 +77,7 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
     restoreEditingSession,
   } = opts
 
-  const poEditDraft = ref<PoEditDraft>({
+  const authorRevisionDraft = ref<AuthorRevisionDraft>({
     baselineConceptId: null,
     baselineExternalIds: [],
     pendingConceptId: null,
@@ -87,27 +87,27 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
   /** Guards restore from re-triggering the autosave watcher. */
   const isRestoring = ref(false)
 
-  function capturePoEditBaselineConcept(id: string | null) {
+  function captureAuthorRevisionBaselineConcept(id: string | null) {
     if (!id) return
-    if (poEditDraft.value.baselineConceptId) return
-    poEditDraft.value.baselineConceptId = id
+    if (authorRevisionDraft.value.baselineConceptId) return
+    authorRevisionDraft.value.baselineConceptId = id
   }
 
-  function capturePoEditBaselineExternal(ids: string[]) {
-    poEditDraft.value.baselineExternalIds = [...ids]
+  function captureAuthorRevisionBaselineExternal(ids: string[]) {
+    authorRevisionDraft.value.baselineExternalIds = [...ids]
   }
 
-  function setPoEditPendingConcept(id: string) {
+  function setAuthorRevisionPendingConcept(id: string) {
     if (!id) return
-    poEditDraft.value.pendingConceptId = id
+    authorRevisionDraft.value.pendingConceptId = id
   }
 
-  function setPoEditPendingExternal(ids: string[]) {
-    poEditDraft.value.pendingExternalIds = [...ids]
+  function setAuthorRevisionPendingExternal(ids: string[]) {
+    authorRevisionDraft.value.pendingExternalIds = [...ids]
   }
 
-  function clearPoEditPendingExternal() {
-    poEditDraft.value.pendingExternalIds = null
+  function clearAuthorRevisionPendingExternal() {
+    authorRevisionDraft.value.pendingExternalIds = null
   }
 
   // ─── F5-safe localStorage persistence ─────────────────────────────────────
@@ -124,7 +124,7 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
 
   function snapshotEnvelopeDraft() {
     return {
-      poEditDraft: { ...poEditDraft.value },
+      chainedDraft: { ...authorRevisionDraft.value },
       editingSection: editingSection.value,
       editingSectionSnapshot: editingSectionSnapshot.value,
       stepDataOverlay: JSON.parse(JSON.stringify(stepData.value)) as BrandStepData,
@@ -138,11 +138,8 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
     writeAuthorRevisionDraft(id, snapshotEnvelopeDraft(), brandStatus.value)
   }, 400)
 
-  // One unified watcher — every Author-side mutation (chained picks, active
-  // inline-edit, or any field in `stepData`) triggers a single debounced
-  // write of the full overlay envelope.
   watch(
-    [poEditDraft, editingSection, editingSectionSnapshot, stepData],
+    [authorRevisionDraft, editingSection, editingSectionSnapshot, stepData],
     () => {
       if (isRestoring.value) return
       _persistEnvelopeDebounced()
@@ -160,7 +157,7 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
    *     with the Author's uncommitted mutations on top).
    *  2. Restore `editingSection` + its snapshot via the dedicated method so
    *     «Скасувати» still has the pre-edit baseline.
-   *  3. Re-apply the `poEditDraft` (chained-flow baseline + pending).
+   *  3. Re-apply the `authorRevisionDraft` (chained-flow baseline + pending).
    *
    * Stale-protection: envelope is dropped when `briefStatus` no longer
    * matches the current status (e.g. Supervisor approved while Author was
@@ -171,6 +168,12 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
       const envelope = readAuthorRevisionDraft(briefId)
       if (!envelope) return
       if (envelope.briefStatus && envelope.briefStatus !== brandStatus.value) {
+        clearAuthorRevisionDraft(briefId)
+        return
+      }
+      // Envelope-shape guard: silently discard legacy envelopes that pre-date
+      // the `chainedDraft` rename. (`poEditDraft` was the previous key.)
+      if (!envelope.draft || !envelope.draft.chainedDraft) {
         clearAuthorRevisionDraft(briefId)
         return
       }
@@ -186,24 +189,22 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
 
         restoreEditingSession(envelope.draft.editingSection, envelope.draft.editingSectionSnapshot)
 
-        poEditDraft.value = { ...envelope.draft.poEditDraft }
+        authorRevisionDraft.value = { ...envelope.draft.chainedDraft }
       } finally {
-        // Defer re-arming the watcher to the next microtask so all reactive
-        // updates triggered above settle without producing a redundant write.
         queueMicrotask(() => {
           isRestoring.value = false
         })
       }
     } catch (err) {
-      logSilent('usePoEditDraft/restore', err)
+      logSilent('useAuthorRevisionDraft/restore', err)
     }
   }
 
   /** Drop every key in the draft — call on save / cancel / commit. */
-  function resetPoEditDraft() {
+  function resetAuthorRevisionDraft() {
     const id = brandId.value
     if (id) clearAuthorRevisionDraft(id)
-    poEditDraft.value = {
+    authorRevisionDraft.value = {
       baselineConceptId: null,
       baselineExternalIds: [],
       pendingConceptId: null,
@@ -212,21 +213,21 @@ export function usePoEditDraft(opts: UsePoEditDraftOptions) {
   }
 
   function resetSlice() {
-    resetPoEditDraft()
+    resetAuthorRevisionDraft()
   }
 
   return {
-    poEditDraft,
-    capturePoEditBaselineConcept,
-    capturePoEditBaselineExternal,
-    setPoEditPendingConcept,
-    setPoEditPendingExternal,
-    clearPoEditPendingExternal,
-    resetPoEditDraft,
+    authorRevisionDraft,
+    captureAuthorRevisionBaselineConcept,
+    captureAuthorRevisionBaselineExternal,
+    setAuthorRevisionPendingConcept,
+    setAuthorRevisionPendingExternal,
+    clearAuthorRevisionPendingExternal,
+    resetAuthorRevisionDraft,
     restoreAuthorRevisionDraftFromStorage,
     // Facade-internal
     resetSlice,
   }
 }
 
-export type UsePoEditDraftReturn = ReturnType<typeof usePoEditDraft>
+export type UseAuthorRevisionDraftReturn = ReturnType<typeof useAuthorRevisionDraft>
