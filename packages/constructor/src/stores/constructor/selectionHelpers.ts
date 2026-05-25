@@ -3,8 +3,8 @@
  * stored as `string`, an external-naming pick as `string[]`. Both shapes
  * coexist in `brandCeoSelections` because the legacy schema accepted either,
  * and several call sites have to defensively read whichever variant was
- * persisted. Extracted as a shared util so `useCeoReview` and
- * `useSupervisorReselectDraft` can read selections without duplicating the
+ * persisted. Extracted as a shared util so `useSupervisorReview` and
+ * `useSupervisorAlternativeDraft` can read selections without duplicating the
  * normalisation logic.
  */
 

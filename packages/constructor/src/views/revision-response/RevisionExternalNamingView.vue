@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useConstructorStore,
-  SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT,
+  SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT,
 } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
@@ -178,7 +178,7 @@ async function goSave() {
   }
 }
 
-const subtitleText = `Оберіть до ${SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
+const subtitleText = `Оберіть до ${SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
 
 const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
 const showSkeleton = computed(() => !hasFetched.value || loading.value)
@@ -238,7 +238,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           <ExternalNamingGrid
             :namings="poOriginalNamings"
             :selected-ids="store.stepData.externalNaming.selectedIds"
-            :max-selectable="SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT"
+            :max-selectable="SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT"
             @toggle="handleToggle"
           />
         </div>
@@ -251,7 +251,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           <ExternalNamingGrid
             :namings="poOriginalNamings"
             :selected-ids="store.stepData.externalNaming.selectedIds"
-            :max-selectable="SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT"
+            :max-selectable="SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT"
             @toggle="handleToggle"
           />
         </div>
@@ -261,7 +261,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           <ExternalNamingGrid
             :namings="ceoNamings"
             :selected-ids="store.stepData.externalNaming.selectedIds"
-            :max-selectable="SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT"
+            :max-selectable="SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT"
             @toggle="handleToggle"
           />
         </div>
@@ -275,7 +275,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           :namings="namings"
           :selected-ids="store.stepData.externalNaming.selectedIds"
           :exclude-ids="excludeFromGrid"
-          :max-selectable="SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT"
+          :max-selectable="SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT"
           @toggle="handleToggle"
         />
       </div>

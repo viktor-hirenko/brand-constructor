@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useConstructorStore,
-  SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT,
+  SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT,
 } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
@@ -53,7 +53,7 @@ const {
  */
 const conceptIdForNamings = computed(() =>
   isChainedFromConcept.value
-    ? (store.supervisorReselectDraft.conceptId ?? null)
+    ? (store.supervisorAlternativeDraft.conceptId ?? null)
     : null,
 )
 
@@ -76,7 +76,7 @@ const poExternalMini = computed<ExternalNamingMini[]>(() =>
     }))
 )
 
-const stagedExternalIds = computed(() => store.supervisorReselectDraft.externalNamingIds)
+const stagedExternalIds = computed(() => store.supervisorAlternativeDraft.externalNamingIds)
 
 /** PO's selected IDs — excluded from the available grid in standalone mode. */
 const poSelectedIds = computed(() => store.stepData.externalNaming.selectedIds ?? [])
@@ -94,7 +94,7 @@ const excludedFromGrid = computed(() =>
  */
 const gridNamings = computed(() => {
   if (isChainedFromConcept.value) return namings.value
-  const cid = store.supervisorReselectDraft.conceptId
+  const cid = store.supervisorAlternativeDraft.conceptId
   if (!cid) return namings.value
   return namings.value.filter(n => n.concept_id === cid)
 })
@@ -129,16 +129,16 @@ async function loadNamings() {
 
 onMounted(async () => {
   if (isChainedFromConcept.value) {
-    store.seedSupervisorReselectExternalNamingChained()
+    store.seedSupervisorAlternativeExternalNamingChained()
   } else {
-    store.seedSupervisorReselectFromBrand('externalNaming')
+    store.seedSupervisorAlternativeFromBrand('externalNaming')
     // Strip any Author-picks from the Supervisor draft — they are shown above
     // and must not occupy Supervisor slots.
     const poIdSet = new Set(store.stepData.externalNaming.selectedIds ?? [])
-    const filteredIds = store.supervisorReselectDraft.externalNamingIds.filter(
+    const filteredIds = store.supervisorAlternativeDraft.externalNamingIds.filter(
       id => !poIdSet.has(id)
     )
-    store.setSupervisorReselectExternalNamingIds(filteredIds)
+    store.setSupervisorAlternativeExternalNamingIds(filteredIds)
   }
   // Comment field stays empty by default — see AlternativeConceptView for the
   // rationale (leaking Author text into the Supervisor slot + F5 wipe).
@@ -150,7 +150,7 @@ watch(conceptIdForNamings, () => {
 })
 
 function handleToggle(id: string) {
-  store.toggleSupervisorReselectExternalNaming(id)
+  store.toggleSupervisorAlternativeExternalNaming(id)
 }
 
 function goCancel() {
@@ -159,7 +159,7 @@ function goCancel() {
     router.push(`/constructor/brand/${brandId.value}/ceo-reselect/concept`)
     return
   }
-  store.resetSupervisorReselectDraft()
+  store.resetSupervisorAlternativeDraft()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 
@@ -169,14 +169,14 @@ async function goSave() {
 
   const payload: Record<string, string | string[]> = {}
   if (isChainedFromConcept.value) {
-    const c = store.supervisorReselectDraft.conceptId
+    const c = store.supervisorAlternativeDraft.conceptId
     if (c) payload.concept = c
   }
   payload.externalNaming = [...ext]
 
   const ok = await store.saveCeoSelections(payload)
   if (ok) {
-    store.resetSupervisorReselectDraft()
+    store.resetSupervisorAlternativeDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }
@@ -196,7 +196,7 @@ const commentHint = computed(() =>
   getExternalNamingCommentHint(stagedExternalIds.value, namings.value),
 )
 
-const subtitleText = `Оберіть до ${SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
+const subtitleText = `Оберіть до ${SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT}-х назв, що пройдуть перевірку юристами на можливі ризики.`
 
 const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
 const showSkeleton = computed(() => !hasFetched.value || loading.value)
@@ -219,7 +219,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
 
         <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
           <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
-          <!-- Supervisor can select up to SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT (3) — show 1 row. -->
+          <!-- Supervisor can select up to SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT (3) — show 1 row. -->
           <ExternalNamingGridSkeleton :count="3" />
         </div>
       </template>
@@ -246,7 +246,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
             :namings="gridNamings"
             :selected-ids="stagedExternalIds"
             :exclude-ids="excludedFromGrid"
-            :max-selectable="SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT"
+            :max-selectable="SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT"
             @toggle="handleToggle"
           />
         </div>

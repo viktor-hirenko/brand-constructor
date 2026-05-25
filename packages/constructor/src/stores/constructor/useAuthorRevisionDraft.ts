@@ -73,7 +73,7 @@ export interface AuthorRevisionDraft {
  * survives a refresh. Restored from the parent route guard after
  * `loadBrand()`.
  *
- * Sister slice to `useSupervisorReselectDraft` — same lifecycle shape
+ * Sister slice to `useSupervisorAlternativeDraft` — same lifecycle shape
  * (transient, reset on save / cancel / brand load).
  */
 export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {

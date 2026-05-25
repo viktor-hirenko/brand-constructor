@@ -2,7 +2,7 @@ import { ref, watch, type Ref } from 'vue'
 import { apiPatch } from '@/composables/useApi'
 import {
   clearSupervisorCommentsDraft,
-  clearSupervisorReselectDraft,
+  clearSupervisorAlternativeDraft,
   readSupervisorCommentsDraft,
   writeSupervisorCommentsDraft,
 } from '@/domain/persistence/briefDraftStorage'
@@ -56,7 +56,7 @@ interface UseSupervisorReviewOptions {
  *
  * Cross-slice deps received via opts: wizard `stepData` ref (mutated by apply
  * variants), `brandId`, `saveBrand` callback. The facade also receives the
- * outgoing `brandCeoSelections` ref to pass into `useSupervisorReselectDraft`.
+ * outgoing `brandCeoSelections` ref to pass into `useSupervisorAlternativeDraft`.
  *
  * NB on naming: this slice's **public surface** still uses the `ceo*` prefix
  * (`brandCeoComments`, `brandCeoSelections`, `setCeoCommentValue`, …) because
@@ -312,7 +312,7 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
           ? data.ceoSelections
           : null
       // Purge localStorage cache — picks are now persisted on the server.
-      if (brandId.value) clearSupervisorReselectDraft(brandId.value)
+      if (brandId.value) clearSupervisorAlternativeDraft(brandId.value)
       return true
     } catch (error) {
       brandCeoSelections.value = Object.keys(previous).length > 0 ? previous : null

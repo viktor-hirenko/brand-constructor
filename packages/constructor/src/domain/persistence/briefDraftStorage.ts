@@ -3,14 +3,14 @@ import { logSilent } from '@/utils/log'
 import { briefDraftStorageKey, type BriefDraftScope } from './briefDraftStorageKey'
 import {
   BRIEF_DRAFT_MAX_AGE_MS,
-  type BriefSupervisorReselectEnvelope,
+  type BriefSupervisorAlternativeEnvelope,
   type BriefSupervisorCommentsEnvelope,
   type BriefAuthorRevisionEnvelope,
   type BriefPreviewSlidesEnvelope,
 } from './briefDraftEnvelope'
 
 type Envelope =
-  | BriefSupervisorReselectEnvelope
+  | BriefSupervisorAlternativeEnvelope
   | BriefSupervisorCommentsEnvelope
   | BriefAuthorRevisionEnvelope
   | BriefPreviewSlidesEnvelope
@@ -76,12 +76,17 @@ export function clearBriefDraft(briefId: string, scope: BriefDraftScope): void {
 
 // ─── Convenience wrappers ─────────────────────────────────────────────────────
 
-export function writeSupervisorReselectDraft(
+/**
+ * NOTE: storage scope `'supervisor-reselect'` is kept as the literal key for
+ * backward-compat with any in-flight drafts already stored in users'
+ * browsers. The TypeScript symbols use the canonical `Alternative` name.
+ */
+export function writeSupervisorAlternativeDraft(
   briefId: string,
-  draft: BriefSupervisorReselectEnvelope['draft'],
+  draft: BriefSupervisorAlternativeEnvelope['draft'],
   briefStatus?: string
 ): void {
-  writeBriefDraft<BriefSupervisorReselectEnvelope>(briefId, 'supervisor-reselect', {
+  writeBriefDraft<BriefSupervisorAlternativeEnvelope>(briefId, 'supervisor-reselect', {
     briefId,
     savedAt: Date.now(),
     briefStatus,
@@ -89,13 +94,13 @@ export function writeSupervisorReselectDraft(
   })
 }
 
-export function readSupervisorReselectDraft(
+export function readSupervisorAlternativeDraft(
   activeBriefId: string
-): BriefSupervisorReselectEnvelope | null {
-  return readBriefDraft<BriefSupervisorReselectEnvelope>(activeBriefId, 'supervisor-reselect')
+): BriefSupervisorAlternativeEnvelope | null {
+  return readBriefDraft<BriefSupervisorAlternativeEnvelope>(activeBriefId, 'supervisor-reselect')
 }
 
-export function clearSupervisorReselectDraft(briefId: string): void {
+export function clearSupervisorAlternativeDraft(briefId: string): void {
   clearBriefDraft(briefId, 'supervisor-reselect')
 }
 
@@ -168,11 +173,3 @@ export function clearPreviewSlidesDraft(briefId: string): void {
   clearBriefDraft(briefId, 'preview-slides')
 }
 
-// ─── Aliases for useSupervisorAlternativeDraft ────────────────────────────────
-// The dedicated Supervisor alternative-selection store uses the same localStorage
-// scope as the reselect draft. These aliases keep the store's imports explicit
-// without duplicating envelope logic.
-
-export const writeSupervisorAlternativeDraft = writeSupervisorReselectDraft
-export const readSupervisorAlternativeDraft = readSupervisorReselectDraft
-export const clearSupervisorAlternativeDraft = clearSupervisorReselectDraft

@@ -88,8 +88,8 @@ const isReady = computed(
     !loading.value
 )
 
-const stagedConfirmedId = computed(() => store.supervisorReselectDraft.conceptId)
-const stagedPreviewId = computed(() => store.supervisorReselectDraft.conceptPreviewId)
+const stagedConfirmedId = computed(() => store.supervisorAlternativeDraft.conceptId)
+const stagedPreviewId = computed(() => store.supervisorAlternativeDraft.conceptPreviewId)
 
 /** Available concepts (excludes the customer's pick). */
 const availableConcepts = computed(() =>
@@ -111,7 +111,7 @@ async function loadConcepts() {
 }
 
 onMounted(() => {
-  store.seedSupervisorReselectFromBrand('concept')
+  store.seedSupervisorAlternativeFromBrand('concept')
   // Do NOT pre-fill previewId with the Author's concept — right panel starts
   // empty until the Supervisor clicks a card.
   // Comment field stays empty by default. Pre-seeding the Author's text into
@@ -130,9 +130,9 @@ watch(poConceptId, loadPoConcept)
 function handleSelectConcept(conceptId: string) {
   if (stagedConfirmedId.value === conceptId) {
     // Toggle off — clear both ids; right panel returns to empty state.
-    store.selectSupervisorReselectConcept(null, null)
+    store.selectSupervisorAlternativeConcept(null, null)
   } else {
-    store.selectSupervisorReselectConcept(conceptId, conceptId)
+    store.selectSupervisorAlternativeConcept(conceptId, conceptId)
   }
 }
 
@@ -142,7 +142,7 @@ const conceptComment = computed({
 })
 
 function goBack() {
-  store.resetSupervisorReselectDraft()
+  store.resetSupervisorAlternativeDraft()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 

@@ -136,14 +136,14 @@ const hasCeoSavedConceptOverride = computed(() => {
 /** Concept currently displayed in the right-column slider.
  *  Returns null until the Supervisor clicks a card — right panel stays empty on entry. */
 const ceoReselectPreviewConcept = computed(() => {
-  const id = store.supervisorReselectDraft.conceptPreviewId
+  const id = store.supervisorAlternativeDraft.conceptPreviewId
   if (!id) return null
   return concepts.value.find(c => c.id === id) ?? null
 })
 
 /** Confirmed Supervisor override concept (null = no override yet). */
 const ceoReselectConfirmedConcept = computed(() => {
-  const id = store.supervisorReselectDraft.conceptId
+  const id = store.supervisorAlternativeDraft.conceptId
   if (!id) return null
   return concepts.value.find(c => c.id === id) ?? null
 })
@@ -156,7 +156,7 @@ const ceoReselectConfirmedConcept = computed(() => {
  * "Обраний концепт".
  */
 const ceoReselectSliderTopLabel = computed<string | null>(() =>
-  store.supervisorReselectDraft.conceptPreviewId ? 'Вибір СЕО' : null
+  store.supervisorAlternativeDraft.conceptPreviewId ? 'Вибір СЕО' : null
 )
 
 /**

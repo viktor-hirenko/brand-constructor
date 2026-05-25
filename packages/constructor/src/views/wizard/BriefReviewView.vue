@@ -177,13 +177,13 @@ function startCeoReselectBySection(key: string) {
   const bid = store.brandId
   if (!bid) return
   if (key === 'concept') {
-    store.seedSupervisorReselectFromBrand('concept')
+    store.seedSupervisorAlternativeFromBrand('concept')
     router.push(`/constructor/brand/${bid}/ceo-reselect/concept`)
   } else if (key === 'externalNaming') {
-    store.seedSupervisorReselectFromBrand('externalNaming')
+    store.seedSupervisorAlternativeFromBrand('externalNaming')
     router.push(`/constructor/brand/${bid}/ceo-reselect/external-naming`)
   } else if (key === 'internalNaming') {
-    store.seedSupervisorReselectFromBrand('internalNaming')
+    store.seedSupervisorAlternativeFromBrand('internalNaming')
     router.push(`/constructor/brand/${bid}/ceo-reselect/internal-naming`)
   }
 }

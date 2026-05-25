@@ -199,7 +199,7 @@ const routes: RouteRecordRaw[] = [
 
         // Restore in-progress localStorage drafts (F5-safe).
         // Called AFTER loadBrand so it overlays the freshly-reset slices.
-        store.restoreSupervisorReselectDraftFromStorage(brandId)
+        store.restoreSupervisorAlternativeDraftFromStorage(brandId)
         store.restoreSupervisorCommentsFromStorage(brandId)
         store.restoreAuthorRevisionDraftFromStorage(brandId)
         store.restorePreviewSlidesFromStorage(brandId)
@@ -329,7 +329,7 @@ const router = createRouter({
 // Dedicated review sub-routes (`/po-edit/*`, `/ceo-reselect/*`) keep the
 // user on the page they returned to — in-progress drafts are restored from
 // localStorage by the per-brand `beforeEnter` guard (see
-// `restoreSupervisorReselectDraftFromStorage` /
+// `restoreSupervisorAlternativeDraftFromStorage` /
 // `restoreSupervisorCommentsFromStorage` /
 // `restoreAuthorRevisionDraftFromStorage`).
 //

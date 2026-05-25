@@ -5,16 +5,16 @@ import type {
 } from '@brand-constructor/shared/types'
 import { useBrandData } from './useBrandData'
 import { useSupervisorReview } from './useSupervisorReview'
-import { useSupervisorReselectDraft } from './useSupervisorReselectDraft'
+import { useSupervisorAlternativeDraft } from './useSupervisorAlternativeDraft'
 import { useAuthorRevisionDraft } from './useAuthorRevisionDraft'
 import { usePreviews } from './usePreviews'
 import { useInlineSectionEdit } from './useInlineSectionEdit'
 
 export {
-  SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT,
-  type SupervisorReselectSection,
-  type SupervisorReselectDraft,
-} from './useSupervisorReselectDraft'
+  SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT,
+  type SupervisorAlternativeSection,
+  type SupervisorAlternativeDraft,
+} from './useSupervisorAlternativeDraft'
 
 /**
  * The constructor store is a thin Pinia setup-store facade composing five
@@ -25,8 +25,9 @@ export {
  *  - `useSupervisorReview` — Supervisor comments + selections,
  *    apply-variant flow (public API keeps the `ceo*` prefix to match the
  *    frontend↔worker contract — see slice header for details)
- *  - `useSupervisorReselectDraft` — transient draft for `/ceo-reselect/*`
- *    routes (Supervisor proposing alternatives to the Author)
+ *  - `useSupervisorAlternativeDraft` — transient draft for `/ceo-reselect/*`
+ *    routes (Supervisor proposing alternatives to the Author; URL fragment
+ *    kept for backward-compat)
  *  - `useAuthorRevisionDraft` — transient draft for `/po-edit/*` chained flow
  *    (Author = Product Owner side of the revision exchange)
  *  - `usePreviews` — concept overlay + PR package drawer
@@ -62,11 +63,11 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   })
 
   const {
-    resetSlice: resetSupervisorReselectSlice,
-    ...supervisorReselectPublic
-  } = useSupervisorReselectDraft({
+    resetSlice: resetSupervisorAlternativeSlice,
+    ...supervisorAlternativePublic
+  } = useSupervisorAlternativeDraft({
     stepData: brandDataPublic.stepData,
-    brandCeoSelections: supervisorReviewPublic.brandCeoSelections,
+    brandSupervisorSelections: supervisorReviewPublic.brandCeoSelections,
     brandId: brandDataPublic.brandId,
   })
 
@@ -116,7 +117,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ceoComments?: BrandCeoComments | null,
     ceoSelections?: Record<string, string | string[]> | null
   ) {
-    resetSupervisorReselectSlice()
+    resetSupervisorAlternativeSlice()
     resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
     resetInlineSectionEditSlice()
@@ -128,7 +129,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   function reset() {
     resetBrandDataSlice()
     resetSupervisorReviewSlice()
-    resetSupervisorReselectSlice()
+    resetSupervisorAlternativeSlice()
     resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
     resetInlineSectionEditSlice()
@@ -137,7 +138,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   return {
     ...brandDataPublic,
     ...supervisorReviewPublic,
-    ...supervisorReselectPublic,
+    ...supervisorAlternativePublic,
     ...authorRevisionDraftPublic,
     ...previewsPublic,
     ...inlineSectionEditPublic,

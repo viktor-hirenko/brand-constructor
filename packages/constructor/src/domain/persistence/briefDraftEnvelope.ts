@@ -20,7 +20,7 @@ import type { BrandCeoComments, BrandStepData } from '@brand-constructor/shared/
 export const BRIEF_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000
 
 /** Cached state for the Supervisor's in-progress alternative selections. */
-export interface BriefSupervisorReselectEnvelope {
+export interface BriefSupervisorAlternativeEnvelope {
   briefId: string
   savedAt: number
   briefStatus?: string

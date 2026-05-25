@@ -32,7 +32,7 @@ const {
   perPage,
 } = useApiList<InternalNaming>('/api/namings/internal')
 
-const stagedId = computed(() => store.supervisorReselectDraft.internalNamingId)
+const stagedId = computed(() => store.supervisorAlternativeDraft.internalNamingId)
 
 const primaryDisabled = computed(() => !stagedId.value)
 
@@ -100,7 +100,7 @@ async function loadNamings() {
 }
 
 onMounted(async () => {
-  store.seedSupervisorReselectFromBrand('internalNaming')
+  store.seedSupervisorAlternativeFromBrand('internalNaming')
   // Comment field stays empty by default — see AlternativeConceptView for the
   // rationale (leaking Author text into the Supervisor slot + F5 wipe).
   // Both fetches run in parallel; skeleton stays until both resolve.
@@ -108,11 +108,11 @@ onMounted(async () => {
 })
 
 function handleSelect(id: string) {
-  store.setSupervisorReselectInternalNaming(id)
+  store.setSupervisorAlternativeInternalNaming(id)
 }
 
 function goCancel() {
-  store.resetSupervisorReselectDraft()
+  store.resetSupervisorAlternativeDraft()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 
@@ -121,7 +121,7 @@ async function goSave() {
   if (!id) return
   const ok = await store.saveCeoSelections({ internalNaming: id })
   if (ok) {
-    store.resetSupervisorReselectDraft()
+    store.resetSupervisorAlternativeDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }
