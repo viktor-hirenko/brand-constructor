@@ -51,13 +51,13 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/constructor/brand/:id',
     name: 'brand-view',
-    component: () => import('@/views/ConstructorLayout.vue'),
+    component: () => import('@/views/BriefShellView.vue'),
     meta: { requiresAuth: true, step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
     children: [
       {
         path: '',
         name: 'brand-view-review',
-        component: () => import('@/views/steps/ReviewSubmitView.vue'),
+        component: () => import('@/views/wizard/BriefReviewView.vue'),
         meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
       },
       {
@@ -210,7 +210,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/constructor',
-    component: () => import('@/views/ConstructorLayout.vue'),
+    component: () => import('@/views/BriefShellView.vue'),
     meta: { requiresAuth: true, briefCreatorOnly: true },
     beforeEnter: to => {
       const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/)
@@ -240,13 +240,13 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/1',
         name: 'step-1',
-        component: () => import('@/views/steps/BrandBasicsView.vue'),
+        component: () => import('@/views/wizard/BrandBasicsView.vue'),
         meta: { step: 1, title: 'Brand Basics', subtitle: 'GEO та опис' },
       },
       {
         path: 'step/2',
         name: 'step-2',
-        component: () => import('@/views/steps/ConceptSelectionView.vue'),
+        component: () => import('@/views/wizard/ConceptSelectionView.vue'),
         meta: {
           step: 2,
           title: 'Concept Selection',
@@ -256,7 +256,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/3',
         name: 'step-3',
-        component: () => import('@/views/steps/ExternalNamingView.vue'),
+        component: () => import('@/views/wizard/ExternalNamingView.vue'),
         meta: {
           step: 3,
           title: 'External Naming',
@@ -266,7 +266,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/4',
         name: 'step-4',
-        component: () => import('@/views/steps/InternalNamingView.vue'),
+        component: () => import('@/views/wizard/InternalNamingView.vue'),
         meta: {
           step: 4,
           title: 'Internal Naming',
@@ -276,25 +276,25 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'step/5',
         name: 'step-5',
-        component: () => import('@/views/steps/MarketingPackageView.vue'),
+        component: () => import('@/views/wizard/MarketingPackageView.vue'),
         meta: { step: 5, title: 'Marketing Package', subtitle: 'PR пакет для запуску' },
       },
       {
         path: 'step/6',
         name: 'step-6',
-        component: () => import('@/views/steps/DeliverablesView.vue'),
+        component: () => import('@/views/wizard/DeliverablesView.vue'),
         meta: { step: 6, title: 'Deliverables', subtitle: 'Додаткові опції' },
       },
       {
         path: 'step/7',
         name: 'step-7',
-        component: () => import('@/views/steps/VisualComponentsView.vue'),
+        component: () => import('@/views/wizard/VisualComponentsView.vue'),
         meta: { step: 7, title: 'Visual Components ⭐', subtitle: 'Візуальні компоненти' },
       },
       {
         path: 'step/8',
         name: 'step-8',
-        component: () => import('@/views/steps/ReviewSubmitView.vue'),
+        component: () => import('@/views/wizard/BriefReviewView.vue'),
         meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
       },
     ],

@@ -14,7 +14,7 @@ export type { BrandBriefReviewPhase } from '@/domain/reviewPhase/BrandBriefRevie
  * live route meta, brief status and user role.
  *
  * Replaces the six manual inline computed flags that previously lived in
- * `ConstructorLayout.vue` (`isCeoReselect`, `isPoEdit`, `isCeoFinalize`,
+ * `BriefShellView.vue` (`isCeoReselect`, `isPoEdit`, `isCeoFinalize`,
  * `isPoDraftReview`, `isPoReturnedReview`, `isApprovedReview`, `isReviewShell`,
  * `layoutMode`).
  */
@@ -60,7 +60,7 @@ export function useBrandBriefReviewPhase() {
   /**
    * True when the wizard chrome (step header, progress bar, nav footer) should
    * be hidden and the review shell is active.
-   * Equivalent to the former `isReviewShell` flag in `ConstructorLayout.vue`.
+   * Equivalent to the former `isReviewShell` flag in `BriefShellView.vue`.
    */
   const isReviewShell = computed(
     () => reviewPhase.value !== BRAND_BRIEF_REVIEW_PHASE.WIZARD
@@ -68,7 +68,7 @@ export function useBrandBriefReviewPhase() {
 
   /**
    * Pane layout mode consumed by `ConstructorDualPaneShell`.
-   * Replaces the former inline `layoutMode` computed in `ConstructorLayout.vue`.
+   * Replaces the former inline `layoutMode` computed in `BriefShellView.vue`.
    */
   const layoutMode = computed<LayoutMode>(() => {
     const phase = reviewPhase.value

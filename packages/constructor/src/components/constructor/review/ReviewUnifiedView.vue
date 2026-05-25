@@ -263,7 +263,7 @@ const unifiedReviewSubtitle = computed(() =>
  * `Редагувати` button is available in PO draft AND PO returned-from-CEO views,
  * but NOT in CEO finalize, PO submitted or approved read-only view.
  */
-const isPoEditable = computed(
+const isAuthorEditable = computed(
   () =>
     props.reviewMode !== 'ceo' &&
     props.reviewMode !== 'po-submitted' &&
@@ -298,7 +298,7 @@ const visualComponentsSummary = computed(() => {
     .join(', ')
 })
 
-function getPoCommentForSection(key: string): string {
+function getAuthorCommentForSection(key: string): string {
   switch (key) {
     case 'basics':
       return basics.value.comment?.trim() || ''

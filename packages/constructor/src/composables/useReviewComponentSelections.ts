@@ -23,7 +23,7 @@ interface ComponentVariantsResponse {
  * Used by the Brand Brief review screen (both the unified and legacy views)
  * to render the final "Visual Components" summary. Failures are reported via
  * `logSilent` and the affected entries fall back to the raw ids — preserving
- * the previous inline behaviour from `ReviewSubmitView.vue`.
+ * the previous inline behaviour from `BriefReviewView.vue`.
  */
 export function useReviewComponentSelections() {
   const store = useConstructorStore()

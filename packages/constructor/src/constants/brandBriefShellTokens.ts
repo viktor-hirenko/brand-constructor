@@ -2,7 +2,7 @@
  * Shared Tailwind utility class strings for the BrandBrief shell UI.
  *
  * Central source of truth for buttons and layout rules that are reused across
- * `ConstructorLayout.vue`, `ReviewSubmitView.vue`, and ceo-reselect / po-edit
+ * `BriefShellView.vue`, `BriefReviewView.vue`, and ceo-reselect / po-edit
  * sub-route views. Import the relevant constant instead of copy-pasting the
  * class string — this keeps visual consistency easy to maintain.
  *
