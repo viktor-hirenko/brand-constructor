@@ -345,20 +345,20 @@ const CEO_HIGHLIGHT_SECTIONS = new Set<SectionCommentKey>([
 function sectionCommentBindings(sectionKey: SectionCommentKey) {
   return {
     sectionKey,
-    poComment: getPoCommentForSection(sectionKey),
-    ceoComment: props.isPoReturnedView
+    authorComment: getAuthorCommentForSection(sectionKey),
+    supervisorComment: props.isPoReturnedView
       ? getSectionCeoCommentValue(sectionKey)
       : (props.ceoComments[sectionKey] ?? ''),
-    ceoEditable: props.reviewMode === 'ceo' && !props.ceoFrozenView,
+    supervisorEditable: props.reviewMode === 'ceo' && !props.ceoFrozenView,
     highlighted:
       CEO_HIGHLIGHT_SECTIONS.has(sectionKey) &&
       props.reviewMode === 'ceo' &&
       isSectionHighlighted(sectionKey),
     showResolveUi: props.isPoReturnedView && !!getSectionCeoCommentValue(sectionKey),
-    ceoResolved: isSectionCeoCommentResolved(sectionKey),
+    supervisorResolved: isSectionCeoCommentResolved(sectionKey),
     canResolve: props.isPoOwner,
-    ceoResolveLoading: isCeoCommentResolveLoading(sectionKey),
-    ceoResolveError: getCeoResolveError(sectionKey),
+    supervisorResolveLoading: isCeoCommentResolveLoading(sectionKey),
+    supervisorResolveError: getCeoResolveError(sectionKey),
   }
 }
 </script>
@@ -386,7 +386,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
         <div class="review-unified-view__sections space-y-4">
           <ReviewSection
             title="Brand Basics"
-            :edit-step="isPoEditable ? 1 : undefined"
+            :edit-step="isAuthorEditable ? 1 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('basics')"
             @edit="step => emitEditSection(step, 'basics')"
           >
@@ -420,7 +420,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('basics')"
-                @update:ceo-comment="value => emitInlineCommentUpdate('basics', value)"
+                @update:supervisor-comment="value => emitInlineCommentUpdate('basics', value)"
                 @resolve="emit('resolve-ceo-comment', 'basics')"
                 @unresolve="emit('unresolve-ceo-comment', 'basics')"
               />
@@ -429,7 +429,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
 
           <ReviewSection
             title="Concept"
-            :edit-step="isPoEditable ? 2 : undefined"
+            :edit-step="isAuthorEditable ? 2 : undefined"
             :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('concept')"
             :needs-choice="sectionApplyFlags.conceptNeedsChoice"
@@ -451,7 +451,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('concept')"
-                @update:ceo-comment="value => emitInlineCommentUpdate('concept', value)"
+                @update:supervisor-comment="value => emitInlineCommentUpdate('concept', value)"
                 @resolve="emit('resolve-ceo-comment', 'concept')"
                 @unresolve="emit('unresolve-ceo-comment', 'concept')"
               />
@@ -460,7 +460,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
 
           <ReviewSection
             title="External Naming"
-            :edit-step="isPoEditable ? 3 : undefined"
+            :edit-step="isAuthorEditable ? 3 : undefined"
             :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('externalNaming')"
             :needs-choice="sectionApplyFlags.externalNamingNeedsChoice"
@@ -480,7 +480,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('externalNaming')"
-                @update:ceo-comment="value => emitInlineCommentUpdate('externalNaming', value)"
+                @update:supervisor-comment="value => emitInlineCommentUpdate('externalNaming', value)"
                 @resolve="emit('resolve-ceo-comment', 'externalNaming')"
                 @unresolve="emit('unresolve-ceo-comment', 'externalNaming')"
               />
@@ -489,7 +489,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
 
           <ReviewSection
             title="Internal Naming"
-            :edit-step="isPoEditable ? 4 : undefined"
+            :edit-step="isAuthorEditable ? 4 : undefined"
             :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('internalNaming')"
             :needs-choice="sectionApplyFlags.internalNamingNeedsChoice"
@@ -509,7 +509,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('internalNaming')"
-                @update:ceo-comment="value => emitInlineCommentUpdate('internalNaming', value)"
+                @update:supervisor-comment="value => emitInlineCommentUpdate('internalNaming', value)"
                 @resolve="emit('resolve-ceo-comment', 'internalNaming')"
                 @unresolve="emit('unresolve-ceo-comment', 'internalNaming')"
               />
@@ -518,7 +518,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
 
           <ReviewSection
             title="PR Package"
-            :edit-step="isPoEditable ? 5 : undefined"
+            :edit-step="isAuthorEditable ? 5 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('marketingPackage')"
             @edit="step => emitEditSection(step, 'marketingPackage')"
           >
@@ -529,7 +529,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('marketingPackage')"
-                @update:ceo-comment="value => emitInlineCommentUpdate('marketingPackage', value)"
+                @update:supervisor-comment="value => emitInlineCommentUpdate('marketingPackage', value)"
                 @resolve="emit('resolve-ceo-comment', 'marketingPackage')"
                 @unresolve="emit('unresolve-ceo-comment', 'marketingPackage')"
               />
@@ -538,7 +538,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
 
           <ReviewSection
             title="Deliverables"
-            :edit-step="isPoEditable ? 6 : undefined"
+            :edit-step="isAuthorEditable ? 6 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('deliverables')"
             @edit="step => emitEditSection(step, 'deliverables')"
           >
@@ -549,7 +549,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('deliverables')"
-                @update:ceo-comment="value => emitInlineCommentUpdate('deliverables', value)"
+                @update:supervisor-comment="value => emitInlineCommentUpdate('deliverables', value)"
                 @resolve="emit('resolve-ceo-comment', 'deliverables')"
                 @unresolve="emit('unresolve-ceo-comment', 'deliverables')"
               />
@@ -558,7 +558,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
 
           <ReviewSection
             title="Visual Components"
-            :edit-step="isPoEditable ? 7 : undefined"
+            :edit-step="isAuthorEditable ? 7 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('visualComponents')"
             @edit="step => emitEditSection(step, 'visualComponents')"
           >
@@ -566,7 +566,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('visualComponents')"
-                @update:ceo-comment="value => emitInlineCommentUpdate('visualComponents', value)"
+                @update:supervisor-comment="value => emitInlineCommentUpdate('visualComponents', value)"
                 @resolve="emit('resolve-ceo-comment', 'visualComponents')"
                 @unresolve="emit('unresolve-ceo-comment', 'visualComponents')"
               />
@@ -609,12 +609,12 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
             <SectionCommentBlock
               section-key="general"
               always-expanded
-              :ceo-comment="ceoComments.general ?? ''"
-              :ceo-editable="true"
+              :supervisor-comment="ceoComments.general ?? ''"
+              :supervisor-editable="true"
               :highlighted="!!revisionWarning"
               empty-label="Коментар CEO"
               placeholder="Додайте ваші коментарі або побажання…"
-              @update:ceo-comment="value => emit('general-ceo-comment-update', value)"
+              @update:supervisor-comment="value => emit('general-ceo-comment-update', value)"
             />
           </div>
         </div>

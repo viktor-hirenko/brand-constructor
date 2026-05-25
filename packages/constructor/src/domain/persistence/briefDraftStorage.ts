@@ -114,3 +114,12 @@ export function readAuthorRevisionDraft(
 export function clearAuthorRevisionDraft(briefId: string): void {
   clearBriefDraft(briefId, 'author-revision')
 }
+
+// ─── Aliases for useSupervisorAlternativeDraft ────────────────────────────────
+// The dedicated Supervisor alternative-selection store uses the same localStorage
+// scope as the reselect draft. These aliases keep the store's imports explicit
+// without duplicating envelope logic.
+
+export const writeSupervisorAlternativeDraft = writeSupervisorReselectDraft
+export const readSupervisorAlternativeDraft = readSupervisorReselectDraft
+export const clearSupervisorAlternativeDraft = clearSupervisorReselectDraft

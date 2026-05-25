@@ -10,7 +10,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     sectionKey: 'basics',
-    'onUpdate:ceoComment': fn(),
+    'onUpdate:supervisorComment': fn(),
     onResolve: fn(),
     onUnresolve: fn(),
   },
@@ -19,67 +19,67 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const PoCommentOnly: Story = {
+export const AuthorCommentOnly: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: '',
-    ceoEditable: false,
+    authorComment: PO_COMMENT,
+    supervisorComment: '',
+    supervisorEditable: false,
   },
 };
 
-export const CeoEmptyCta: Story = {
+export const SupervisorEmptyCta: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: '',
-    ceoEditable: true,
+    authorComment: PO_COMMENT,
+    supervisorComment: '',
+    supervisorEditable: true,
   },
 };
 
-export const CeoEditing: Story = {
+export const SupervisorEditing: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: '',
-    ceoEditable: true,
+    authorComment: PO_COMMENT,
+    supervisorComment: '',
+    supervisorEditable: true,
     alwaysExpanded: true,
     placeholder: 'Додайте ваші коментарі або побажання…',
   },
 };
 
-export const CeoFilledReadonly: Story = {
+export const SupervisorFilledReadonly: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: CEO_COMMENT,
-    ceoEditable: false,
+    authorComment: PO_COMMENT,
+    supervisorComment: CEO_COMMENT,
+    supervisorEditable: false,
   },
 };
 
-export const CeoUnresolvedWithResolveUi: Story = {
+export const SupervisorUnresolvedWithResolveUi: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: CEO_COMMENT,
-    ceoEditable: false,
+    authorComment: PO_COMMENT,
+    supervisorComment: CEO_COMMENT,
+    supervisorEditable: false,
     showResolveUi: true,
-    ceoResolved: false,
+    supervisorResolved: false,
     canResolve: true,
   },
 };
 
-export const CeoResolved: Story = {
+export const SupervisorResolved: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: CEO_COMMENT,
-    ceoEditable: false,
+    authorComment: PO_COMMENT,
+    supervisorComment: CEO_COMMENT,
+    supervisorEditable: false,
     showResolveUi: true,
-    ceoResolved: true,
+    supervisorResolved: true,
     canResolve: true,
   },
 };
 
-export const CeoHighlightedValidation: Story = {
+export const SupervisorHighlightedValidation: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: '',
-    ceoEditable: true,
+    authorComment: PO_COMMENT,
+    supervisorComment: '',
+    supervisorEditable: true,
     highlighted: true,
     alwaysExpanded: true,
   },
@@ -88,24 +88,24 @@ export const CeoHighlightedValidation: Story = {
 export const GeneralCommentAlwaysExpanded: Story = {
   args: {
     sectionKey: 'general',
-    ceoComment: CEO_COMMENT,
-    ceoEditable: true,
+    supervisorComment: CEO_COMMENT,
+    supervisorEditable: true,
     alwaysExpanded: true,
     emptyLabel: 'Коментар CEO',
     placeholder: 'Додайте ваші коментарі або побажання…',
   },
 };
 
-/** CEO resolve button in loading state (API call in-flight) */
-export const CeoResolveLoading: Story = {
+/** Supervisor resolve button in loading state (API call in-flight) */
+export const SupervisorResolveLoading: Story = {
   args: {
-    poComment: PO_COMMENT,
-    ceoComment: CEO_COMMENT,
-    ceoEditable: false,
+    authorComment: PO_COMMENT,
+    supervisorComment: CEO_COMMENT,
+    supervisorEditable: false,
     showResolveUi: true,
-    ceoResolved: false,
+    supervisorResolved: false,
     canResolve: true,
-    ceoResolveLoading: true,
+    supervisorResolveLoading: true,
   },
 };
 
@@ -118,30 +118,30 @@ export const InteractiveResolve: Story = {
   render: (args) => ({
     components: { SectionCommentBlock },
     setup() {
-      const ceoResolved = ref(false);
-      const ceoResolveLoading = ref(false);
+      const supervisorResolved = ref(false);
+      const supervisorResolveLoading = ref(false);
 
       async function onResolve() {
-        ceoResolveLoading.value = true;
+        supervisorResolveLoading.value = true;
         await new Promise((r) => setTimeout(r, 600));
-        ceoResolved.value = true;
-        ceoResolveLoading.value = false;
+        supervisorResolved.value = true;
+        supervisorResolveLoading.value = false;
         args.onResolve?.();
       }
 
       async function onUnresolve() {
-        ceoResolveLoading.value = true;
+        supervisorResolveLoading.value = true;
         await new Promise((r) => setTimeout(r, 600));
-        ceoResolved.value = false;
-        ceoResolveLoading.value = false;
+        supervisorResolved.value = false;
+        supervisorResolveLoading.value = false;
         args.onUnresolve?.();
       }
 
       return {
-        poComment: PO_COMMENT,
-        ceoComment: CEO_COMMENT,
-        ceoResolved,
-        ceoResolveLoading,
+        authorComment: PO_COMMENT,
+        supervisorComment: CEO_COMMENT,
+        supervisorResolved,
+        supervisorResolveLoading,
         onResolve,
         onUnresolve,
       };
@@ -149,17 +149,17 @@ export const InteractiveResolve: Story = {
     template: `
       <SectionCommentBlock
         section-key="basics"
-        :po-comment="poComment"
-        :ceo-comment="ceoComment"
-        :ceo-editable="false"
+        :author-comment="authorComment"
+        :supervisor-comment="supervisorComment"
+        :supervisor-editable="false"
         show-resolve-ui
-        :ceo-resolved="ceoResolved"
-        :ceo-resolve-loading="ceoResolveLoading"
+        :supervisor-resolved="supervisorResolved"
+        :supervisor-resolve-loading="supervisorResolveLoading"
         can-resolve
         @resolve="onResolve"
         @unresolve="onUnresolve"
       />
     `,
   }),
-  args: { ceoEditable: false },
+  args: { supervisorEditable: false },
 };
