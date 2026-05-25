@@ -10,7 +10,7 @@ import type {
   BrandVisualComponentsData,
 } from '@brand-constructor/shared/types'
 
-interface UseEditSectionOptions {
+interface UseInlineSectionEditOptions {
   /** Wizard step-data from `useBrandData` — read for snapshot, written on cancel. */
   stepData: Ref<BrandStepData>
   /**
@@ -22,7 +22,7 @@ interface UseEditSectionOptions {
 }
 
 /**
- * Inline section-edit flow triggered from the PO final review (Step 10).
+ * Inline section-edit flow triggered from the Author's final review (Step 10).
  *
  * Owns:
  *  - `editingSection` — the key of the section currently being inline-edited
@@ -35,7 +35,7 @@ interface UseEditSectionOptions {
  * stay scoped to this slice — they are the slice's own mapping between review
  * section keys and the corresponding `stepData` slot.
  */
-export function useEditSection(opts: UseEditSectionOptions) {
+export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
   const { stepData, returnToStep } = opts
 
   const editingSection = ref<string | null>(null)
@@ -156,4 +156,4 @@ export function useEditSection(opts: UseEditSectionOptions) {
   }
 }
 
-export type UseEditSectionReturn = ReturnType<typeof useEditSection>
+export type UseInlineSectionEditReturn = ReturnType<typeof useInlineSectionEdit>

@@ -8,7 +8,7 @@ import { useSupervisorReview } from './useSupervisorReview'
 import { useSupervisorReselectDraft } from './useSupervisorReselectDraft'
 import { useAuthorRevisionDraft } from './useAuthorRevisionDraft'
 import { usePreviews } from './usePreviews'
-import { useEditSection } from './useEditSection'
+import { useInlineSectionEdit } from './useInlineSectionEdit'
 
 export {
   SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT,
@@ -30,7 +30,7 @@ export {
  *  - `useAuthorRevisionDraft` — transient draft for `/po-edit/*` chained flow
  *    (Author = Product Owner side of the revision exchange)
  *  - `usePreviews` — concept overlay + PR package drawer
- *  - `useEditSection` — PO inline section-edit triggered from Step 10
+ *  - `useInlineSectionEdit` — Author inline section-edit triggered from Step 10
  *
  * Cross-slice dependencies are wired through explicit `opts` parameters
  * (refs + callbacks) — there are no module-level import cycles between
@@ -77,9 +77,9 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   })
 
   const {
-    resetSlice: resetEditSectionSlice,
-    ...editSectionPublic
-  } = useEditSection({
+    resetSlice: resetInlineSectionEditSlice,
+    ...inlineSectionEditPublic
+  } = useInlineSectionEdit({
     stepData: brandDataPublic.stepData,
     returnToStep: brandDataPublic.returnToStep,
   })
@@ -93,9 +93,9 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     brandId: brandDataPublic.brandId,
     brandStatus: brandDataPublic.brandStatus,
     stepData: brandDataPublic.stepData,
-    editingSection: editSectionPublic.editingSection,
-    editingSectionSnapshot: editSectionPublic.editingSectionSnapshot,
-    restoreEditingSession: editSectionPublic.restoreEditingSession,
+    editingSection: inlineSectionEditPublic.editingSection,
+    editingSectionSnapshot: inlineSectionEditPublic.editingSectionSnapshot,
+    restoreEditingSession: inlineSectionEditPublic.restoreEditingSession,
   })
 
   // ─── Cross-slice orchestrators ─────────────────────────────────────────────
@@ -118,7 +118,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     resetSupervisorReselectSlice()
     resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
-    resetEditSectionSlice()
+    resetInlineSectionEditSlice()
     loadWizard(id, data, step, status, internalName)
     loadCeo(ceoComments ?? null, ceoSelections ?? null)
   }
@@ -130,7 +130,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     resetSupervisorReselectSlice()
     resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
-    resetEditSectionSlice()
+    resetInlineSectionEditSlice()
   }
 
   return {
@@ -139,7 +139,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ...supervisorReselectPublic,
     ...authorRevisionDraftPublic,
     ...previewsPublic,
-    ...editSectionPublic,
+    ...inlineSectionEditPublic,
     loadBrand,
     reset,
   }
