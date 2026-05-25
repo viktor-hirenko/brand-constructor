@@ -14,7 +14,11 @@ import AuthorNamingsRowSkeleton from '@/components/constructor/skeletons/AuthorN
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
-import { EDIT_FLOW_DIVIDER_CLASS } from '@/constants/editFlowLayout'
+import {
+  EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_DIVIDER_CLASS,
+  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+} from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import {
   getExternalNamingCommentHint,
@@ -204,64 +208,66 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     title="External Naming"
     :subtitle="subtitleText"
   >
-    <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
-         `showSkeleton` covers both `loading=true` and the initial pre-mount
-         frame when `hasFetched=false`. -->
-    <template v-if="showSkeleton">
-      <AuthorNamingsRowSkeleton v-if="!isChainedFromConcept" />
+    <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
+           `showSkeleton` covers both `loading=true` and the initial pre-mount
+           frame when `hasFetched=false`. -->
+      <template v-if="showSkeleton">
+        <AuthorNamingsRowSkeleton v-if="!isChainedFromConcept" />
 
-      <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
+        <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-      <div class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
-        <!-- Supervisor can select up to SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT (3) — show 1 row. -->
-        <ExternalNamingGridSkeleton :count="3" />
-      </div>
-    </template>
-
-    <!-- Error state -->
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-red-500 mb-3">{{ error }}</p>
-      <button class="text-primary underline text-sm" @click="loadNamings">
-        Спробувати знову
-      </button>
-    </div>
-
-    <!-- Ready state -->
-    <template v-else-if="isReady">
-      <template v-if="!isChainedFromConcept">
-        <AuthorNamingsRow :namings="poExternalMini" />
+        <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
+          <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
+          <!-- Supervisor can select up to SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT (3) — show 1 row. -->
+          <ExternalNamingGridSkeleton :count="3" />
+        </div>
       </template>
 
-      <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
-
-      <div class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
-        <ExternalNamingGrid
-          :namings="gridNamings"
-          :selected-ids="stagedExternalIds"
-          :exclude-ids="excludedFromGrid"
-          :max-selectable="SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT"
-          @toggle="handleToggle"
-        />
+      <!-- Error state -->
+      <div v-else-if="error" class="text-center py-12">
+        <p class="text-red-500 mb-3">{{ error }}</p>
+        <button class="text-primary underline text-sm" @click="loadNamings">
+          Спробувати знову
+        </button>
       </div>
-    </template>
 
-    <!-- Comment field + save error — intentionally OUTSIDE the
-         skeleton/ready/error branches above. They don't depend on the
-         namings API, so the CEO can start writing a comment immediately
-         instead of waiting for the grid to load (progressive enhancement;
-         matches the layout used by every other view in this flow). -->
-    <StepCommentField
-      v-model="externalComment"
-      label="Коментар"
-      :required="isCommentRequired"
-      :required-hint="commentHint"
-    />
+      <!-- Ready state -->
+      <template v-else-if="isReady">
+        <template v-if="!isChainedFromConcept">
+          <AuthorNamingsRow :namings="poExternalMini" />
+        </template>
 
-    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
-      {{ store.saveCeoSelectionsError }}
-    </p>
+        <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+
+        <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
+          <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
+          <ExternalNamingGrid
+            :namings="gridNamings"
+            :selected-ids="stagedExternalIds"
+            :exclude-ids="excludedFromGrid"
+            :max-selectable="SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT"
+            @toggle="handleToggle"
+          />
+        </div>
+      </template>
+
+      <!-- Comment field + save error — intentionally OUTSIDE the
+           skeleton/ready/error branches above. They don't depend on the
+           namings API, so the CEO can start writing a comment immediately
+           instead of waiting for the grid to load (progressive enhancement;
+           matches the layout used by every other view in this flow). -->
+      <StepCommentField
+        v-model="externalComment"
+        label="Коментар"
+        :required="isCommentRequired"
+        :required-hint="commentHint"
+      />
+
+      <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+        {{ store.saveCeoSelectionsError }}
+      </p>
+    </div>
 
     <template #footer>
       <EditFlowFooter

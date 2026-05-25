@@ -11,7 +11,11 @@ import AuthorInternalNamingPreviewSkeleton from '@/components/constructor/skelet
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
-import { EDIT_FLOW_DIVIDER_CLASS } from '@/constants/editFlowLayout'
+import {
+  EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_DIVIDER_CLASS,
+  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+} from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 
 const store = useConstructorStore()
@@ -99,49 +103,51 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     title="Internal Naming"
     subtitle="Оберіть назву для внутрішньої комунікації команди."
   >
-    <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
-         NB: AuthorInternalNamingPreview can't render real name until
-         `namings` resolves (it looks up by id), so we replace it too. -->
-    <template v-if="showSkeleton">
-      <AuthorInternalNamingPreviewSkeleton />
+    <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
+           NB: AuthorInternalNamingPreview can't render real name until
+           `namings` resolves (it looks up by id), so we replace it too. -->
+      <template v-if="showSkeleton">
+        <AuthorInternalNamingPreviewSkeleton />
 
-      <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
+        <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-      <div class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
-        <InternalNamingGridSkeleton :count="6" />
+        <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
+          <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
+          <InternalNamingGridSkeleton :count="6" />
+        </div>
+      </template>
+
+      <!-- Error state -->
+      <div v-else-if="error" class="text-center py-12">
+        <p class="text-red-500 mb-3">{{ error }}</p>
+        <button type="button" class="text-primary underline text-sm" @click="loadNamings">
+          Спробувати знову
+        </button>
       </div>
-    </template>
 
-    <!-- Error state -->
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-red-500 mb-3">{{ error }}</p>
-      <button type="button" class="text-primary underline text-sm" @click="loadNamings">
-        Спробувати знову
-      </button>
+      <!-- Ready state -->
+      <template v-else-if="isReady">
+        <AuthorInternalNamingPreview :name="poInternalName" />
+
+        <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+
+        <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
+          <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
+          <InternalNamingGrid
+            :namings="availableNamings"
+            :selected-id="stagedId"
+            @select="handleSelect"
+          />
+        </div>
+      </template>
+
+      <StepCommentField v-model="internalComment" label="Коментар" />
+
+      <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+        {{ store.saveCeoSelectionsError }}
+      </p>
     </div>
-
-    <!-- Ready state -->
-    <template v-else-if="isReady">
-      <AuthorInternalNamingPreview :name="poInternalName" />
-
-      <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
-
-      <div class="flex flex-col gap-3">
-        <EditFlowSectionLabel>Доступні внутрішні назви</EditFlowSectionLabel>
-        <InternalNamingGrid
-          :namings="availableNamings"
-          :selected-id="stagedId"
-          @select="handleSelect"
-        />
-      </div>
-    </template>
-
-    <StepCommentField v-model="internalComment" label="Коментар" />
-
-    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
-      {{ store.saveCeoSelectionsError }}
-    </p>
 
     <template #footer>
       <EditFlowFooter

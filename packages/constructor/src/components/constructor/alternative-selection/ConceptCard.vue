@@ -63,6 +63,17 @@ const overlayClass = computed(() => {
   return 'opacity-100 group-hover:opacity-0'
 })
 
+/**
+ * Bottom gradient states (Figma 2201:6968):
+ *  - Default (clickable, not selected): visible, fades out on hover.
+ *  - Hover: hidden (gradient fades with the dim overlay for a clean image reveal).
+ *  - Selected / non-clickable: always visible (title text readability on bright image).
+ */
+const gradientClass = computed(() => {
+  if (isHighlighted.value || !props.clickable || props.disabled) return 'opacity-100'
+  return 'opacity-100 group-hover:opacity-0'
+})
+
 function handleClick() {
   if (props.disabled || !props.clickable) return
   emit('click')
@@ -110,7 +121,8 @@ function handleClick() {
         />
 
         <div
-          class="concept-card__gradient pointer-events-none absolute inset-0 z-[2]"
+          class="concept-card__gradient pointer-events-none absolute inset-0 z-[2] transition-opacity duration-200"
+          :class="gradientClass"
           :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
         />
 

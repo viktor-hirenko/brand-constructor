@@ -304,7 +304,11 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor/success',
     name: 'brand-success',
     component: () => import('@/views/BrandSuccessView.vue'),
-    meta: { requiresAuth: true, briefCreatorOnly: true },
+    // No `briefCreatorOnly` guard — Supervisors must also reach this page
+    // after dispatching needs_revision / approved. Role-specific UI (e.g.
+    // "Створити новий бриф") is gated inside BrandSuccessView via
+    // `authStore.canStartNewBrandBrief` at the template level.
+    meta: { requiresAuth: true },
   },
   {
     path: '/:pathMatch(.*)*',

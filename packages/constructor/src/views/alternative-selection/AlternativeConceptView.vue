@@ -12,6 +12,7 @@ import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vu
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
+  EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_DIVIDER_CLASS,
   EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
 } from '@/constants/editFlowLayout'
@@ -158,43 +159,47 @@ function goNext() {
   <EditFlowStepShell
     class="ceo-reselect-concept-step"
     title="Concept Selection"
-    subtitle="Оберіть концепт та перегляньте прев’ю праворуч."
+    subtitle="Оберіть концепт та перегляньте прев'ю праворуч."
   >
-    <!-- Customer's pick (independent of theme filter) -->
-    <AuthorPickPreviewSkeleton v-if="!isReady" />
-    <AuthorPickPreview v-else :concept="poConcept" />
+    <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <!-- Customer's pick (independent of theme filter) -->
+      <AuthorPickPreviewSkeleton v-if="!isReady" />
+      <AuthorPickPreview v-else :concept="poConcept" />
 
-    <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
+      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-    <!-- Theme toggle (light / dark) — filters available concepts -->
-    <SegmentedControl v-model="localMode" :options="themeOptions" />
+      <!-- Available concepts — theme toggle right-aligned next to the section
+           label, mirroring RevisionConceptView layout (Figma 2201-6968). -->
+      <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
+        <div class="flex items-center justify-between">
+          <EditFlowSectionLabel>Доступні концепти</EditFlowSectionLabel>
+          <!-- Theme toggle (light / dark) — filters available concepts -->
+          <SegmentedControl v-model="localMode" :options="themeOptions" />
+        </div>
 
-    <!-- Available concepts -->
-    <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
-      <EditFlowSectionLabel>Доступні концепти</EditFlowSectionLabel>
-
-      <ConceptGridSkeleton v-if="!isReady" />
-      <div v-else-if="error" class="text-center py-12 text-red-500">
-        <p class="mb-3">{{ error }}</p>
-        <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
-          Спробувати знову
-        </button>
+        <ConceptGridSkeleton v-if="!isReady" />
+        <div v-else-if="error" class="text-center py-12 text-red-500">
+          <p class="mb-3">{{ error }}</p>
+          <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
+            Спробувати знову
+          </button>
+        </div>
+        <ConceptGrid
+          v-else
+          :concepts="availableConcepts"
+          :preview-id="stagedPreviewId"
+          :selected-id="stagedConfirmedId"
+          :selection-ring="true"
+          @select="handleSelectConcept"
+        />
       </div>
-      <ConceptGrid
-        v-else
-        :concepts="availableConcepts"
-        :preview-id="stagedPreviewId"
-        :selected-id="stagedConfirmedId"
-        :selection-ring="true"
-        @select="handleSelectConcept"
-      />
+
+      <StepCommentField v-model="conceptComment" label="Коментар" />
+
+      <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
+        {{ store.saveCeoSelectionsError }}
+      </p>
     </div>
-
-    <StepCommentField v-model="conceptComment" label="Коментар" />
-
-    <p v-if="store.saveCeoSelectionsError" class="text-sm text-red-600">
-      {{ store.saveCeoSelectionsError }}
-    </p>
 
     <template #footer>
       <EditFlowFooter
