@@ -19,3 +19,9 @@ export const EDIT_FLOW_DIVIDER_CLASS =
 export const EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS = 'gap-6'
 
 export const EDIT_FLOW_POST_DIVIDER_SECTION_CLASS = `flex flex-col ${EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS}`
+
+/** 32px from cards/grid block to the comment field below (Figma edit-flow). */
+export const EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS = 'mb-8'
+
+/** Cards/grid section immediately followed by StepCommentField on reselect screens. */
+export const EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS = `${EDIT_FLOW_POST_DIVIDER_SECTION_CLASS} ${EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS}`

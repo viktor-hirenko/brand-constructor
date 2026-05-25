@@ -16,8 +16,8 @@ import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSec
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS,
   EDIT_FLOW_DIVIDER_CLASS,
-  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
 } from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import {
@@ -217,7 +217,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
 
         <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-        <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
+        <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
           <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
           <!-- Supervisor can select up to SUPERVISOR_RESELECT_EXTERNAL_NAMING_LIMIT (3) — show 1 row. -->
           <ExternalNamingGridSkeleton :count="3" />
@@ -240,7 +240,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
 
         <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 
-        <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
+        <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
           <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
           <ExternalNamingGrid
             :namings="gridNamings"
