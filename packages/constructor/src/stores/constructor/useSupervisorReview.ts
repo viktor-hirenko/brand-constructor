@@ -9,7 +9,7 @@ import type {
   CeoCommentMeta,
 } from '@brand-constructor/shared/types'
 
-interface UseCeoReviewOptions {
+interface UseSupervisorReviewOptions {
   /** Wizard step-data ref owned by `useBrandData` — `applyCeoVariant` mutates it before saveBrand(). */
   stepData: Ref<BrandStepData>
   /** Brand id ref owned by `useBrandData` — used to address the PATCH endpoints. */
@@ -19,28 +19,40 @@ interface UseCeoReviewOptions {
 }
 
 /**
- * CEO-review slice of the constructor store.
+ * Supervisor-review slice of the constructor store.
  *
  * Owns:
  *  - `brandCeoComments` (the `CeoCommentMeta` map persisted on the brand)
- *  - `brandCeoSelections` (CEO library overrides — concept / external naming /
- *    internal naming) plus their save error + per-section loading flags
- *  - the "apply CEO variant" flow used by the PO returned-from-CEO view:
- *    `applyCeoVariant` (single section) and `applyCeoConceptAndExternal`
- *    (concept + external together, used by the "Застосувати все" modal)
+ *  - `brandCeoSelections` (Supervisor library overrides — concept /
+ *    external naming / internal naming) plus their save error +
+ *    per-section loading flags
+ *  - the "apply variant" flow used by the Author's returned-from-Supervisor
+ *    view: `applyCeoVariant` (single section) and
+ *    `applyCeoConceptAndExternal` (concept + external together, used by the
+ *    "Застосувати все" modal)
  *  - mutation helpers `setCeoCommentValue` / `setCeoSelectionValue` that
  *    perform optimistic local edits — persistence happens later through the
  *    status-change handler (`PATCH /:id/status`)
  *  - `setCeoCommentResolved` + `isCeoCommentResolveLoading` — the per-section
  *    resolve toggle that hits `PATCH /:id/ceo-comments/resolve` with optimistic
  *    update + rollback on failure
- *  - `saveCeoSelections` — partial merge of CEO picks via `PATCH /:id/ceo-selections`
+ *  - `saveCeoSelections` — partial merge of Supervisor picks via
+ *    `PATCH /:id/ceo-selections`
  *
  * Cross-slice deps received via opts: wizard `stepData` ref (mutated by apply
  * variants), `brandId`, `saveBrand` callback. The facade also receives the
  * outgoing `brandCeoSelections` ref to pass into `useSupervisorReselectDraft`.
+ *
+ * NB on naming: this slice's **public surface** still uses the `ceo*` prefix
+ * (`brandCeoComments`, `brandCeoSelections`, `setCeoCommentValue`, …) because
+ * those names are part of the frontend↔worker contract — the D1 `brands`
+ * row stores `ceoComments` / `ceoSelections` keys and the worker exposes
+ * `/api/brands/:id/ceo-comments/resolve` + `/api/brands/:id/ceo-selections`
+ * endpoints. Renaming the public surface requires a backend migration and
+ * sits outside this refactor's scope; only the slice's identity (factory
+ * function + filename) has been updated to the new `Supervisor` vocabulary.
  */
-export function useCeoReview(opts: UseCeoReviewOptions) {
+export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
   const { stepData, brandId, saveBrand } = opts
 
   const brandCeoComments = ref<BrandCeoComments | null>(null)
@@ -337,4 +349,4 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
   }
 }
 
-export type UseCeoReviewReturn = ReturnType<typeof useCeoReview>
+export type UseSupervisorReviewReturn = ReturnType<typeof useSupervisorReview>

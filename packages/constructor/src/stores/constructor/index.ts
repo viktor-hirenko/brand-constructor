@@ -4,7 +4,7 @@ import type {
   BrandCeoComments,
 } from '@brand-constructor/shared/types'
 import { useBrandData } from './useBrandData'
-import { useCeoReview } from './useCeoReview'
+import { useSupervisorReview } from './useSupervisorReview'
 import { useSupervisorReselectDraft } from './useSupervisorReselectDraft'
 import { useAuthorRevisionDraft } from './useAuthorRevisionDraft'
 import { usePreviews } from './usePreviews'
@@ -22,7 +22,9 @@ export {
  *
  *  - `useBrandData` — wizard state (Step 1–8), brand metadata, step
  *    validation, navigation, draft localStorage and `saveBrand()`
- *  - `useCeoReview` — CEO comments + selections, apply-variant flow
+ *  - `useSupervisorReview` — Supervisor comments + selections,
+ *    apply-variant flow (public API keeps the `ceo*` prefix to match the
+ *    frontend↔worker contract — see slice header for details)
  *  - `useSupervisorReselectDraft` — transient draft for `/ceo-reselect/*`
  *    routes (Supervisor proposing alternatives to the Author)
  *  - `useAuthorRevisionDraft` — transient draft for `/po-edit/*` chained flow
@@ -49,10 +51,10 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   } = useBrandData()
 
   const {
-    resetSlice: resetCeoReviewSlice,
+    resetSlice: resetSupervisorReviewSlice,
     loadCeo,
-    ...ceoReviewPublic
-  } = useCeoReview({
+    ...supervisorReviewPublic
+  } = useSupervisorReview({
     stepData: brandDataPublic.stepData,
     brandId: brandDataPublic.brandId,
     saveBrand: brandDataPublic.saveBrand,
@@ -63,7 +65,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ...supervisorReselectPublic
   } = useSupervisorReselectDraft({
     stepData: brandDataPublic.stepData,
-    brandCeoSelections: ceoReviewPublic.brandCeoSelections,
+    brandCeoSelections: supervisorReviewPublic.brandCeoSelections,
     brandId: brandDataPublic.brandId,
   })
 
@@ -124,7 +126,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   /** Resets every slice to its initial state. Called from `BrandSuccessView` and the create-new-brand flow. */
   function reset() {
     resetBrandDataSlice()
-    resetCeoReviewSlice()
+    resetSupervisorReviewSlice()
     resetSupervisorReselectSlice()
     resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
@@ -133,7 +135,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
 
   return {
     ...brandDataPublic,
-    ...ceoReviewPublic,
+    ...supervisorReviewPublic,
     ...supervisorReselectPublic,
     ...authorRevisionDraftPublic,
     ...previewsPublic,
