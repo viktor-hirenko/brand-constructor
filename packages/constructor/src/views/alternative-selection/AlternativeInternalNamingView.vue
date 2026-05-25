@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
-import { useApiList } from '@/composables/useApi'
+import { useApiList, apiGet } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/alternative-selection/InternalNamingGrid.vue'
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
@@ -38,9 +38,46 @@ const primaryDisabled = computed(() => !stagedId.value)
 
 const poInternalId = computed(() => store.stepData.internalNaming.selectedId)
 
+/**
+ * Author's naming fetched directly by ID.
+ *
+ * Why not just look it up in `namings.value`?
+ * The grid list is filtered by `available_for_brand` on the backend. In some
+ * edge cases (backend filtering quirk, naming marked inactive, race condition
+ * after a concept-edit flow) the Author's current pick might not appear in the
+ * paginated response, causing `AuthorInternalNamingPreview` to show
+ * "Назву не обрано" even though a naming IS selected. Fetching by ID bypasses
+ * the list filter and guarantees we always render the correct value.
+ */
+const poInternalNamingObj = ref<InternalNaming | null>(null)
+const poInternalNamingLoading = ref(false)
+const hasFetchedPoNaming = ref(false)
+
+async function loadPoInternalNaming() {
+  const id = poInternalId.value
+  if (!id) {
+    poInternalNamingObj.value = null
+    poInternalNamingLoading.value = false
+    hasFetchedPoNaming.value = true
+    return
+  }
+  poInternalNamingLoading.value = true
+  try {
+    poInternalNamingObj.value = await apiGet<InternalNaming>(`/api/namings/internal/${id}`)
+  } catch {
+    // Fall back to grid lookup if the direct endpoint fails.
+    poInternalNamingObj.value = null
+  } finally {
+    poInternalNamingLoading.value = false
+    hasFetchedPoNaming.value = true
+  }
+}
+
 const poInternalName = computed<string | null>(() => {
   const id = poInternalId.value
   if (!id) return store.stepData.internalNaming.newNamingFeedback || null
+  // Prefer the directly-fetched object; grid list is a fallback.
+  if (poInternalNamingObj.value?.id === id) return poInternalNamingObj.value.name
   const naming = namings.value.find(n => n.id === id)
   return naming?.name ?? null
 })
@@ -66,7 +103,8 @@ onMounted(async () => {
   store.seedSupervisorReselectFromBrand('internalNaming')
   // Comment field stays empty by default — see AlternativeConceptView for the
   // rationale (leaking Author text into the Supervisor slot + F5 wipe).
-  await loadNamings()
+  // Both fetches run in parallel; skeleton stays until both resolve.
+  await Promise.all([loadNamings(), loadPoInternalNaming()])
 })
 
 function handleSelect(id: string) {
@@ -93,8 +131,17 @@ const internalComment = computed({
   set: (value: string) => store.setCeoCommentValue('internalNaming', value),
 })
 
-const isReady = computed(() => hasFetched.value && !loading.value && !error.value)
-const showSkeleton = computed(() => !hasFetched.value || loading.value)
+const isReady = computed(
+  () =>
+    hasFetched.value &&
+    hasFetchedPoNaming.value &&
+    !loading.value &&
+    !poInternalNamingLoading.value &&
+    !error.value,
+)
+const showSkeleton = computed(
+  () => !hasFetched.value || !hasFetchedPoNaming.value || loading.value || poInternalNamingLoading.value,
+)
 </script>
 
 <template>

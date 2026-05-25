@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
-import { useApiList } from '@/composables/useApi'
+import { useApiList, apiGet } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import InternalNamingGrid from '@/components/constructor/alternative-selection/InternalNamingGrid.vue'
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
@@ -34,9 +34,21 @@ const { data: namings, loading, error, fetchData, perPage } = useApiList<Interna
 /** PO's original pick saved on mount — never changes during the session. */
 const poOriginalId = ref<string | null>(null)
 
-const poOriginalNaming = computed(() =>
-  namings.value.find(n => n.id === poOriginalId.value) ?? null,
-)
+/**
+ * Author's naming fetched directly by ID — same guard as in
+ * AlternativeInternalNamingView: `available_for_brand` filter on the list
+ * endpoint may omit the PO's own pick in edge cases, causing
+ * "Ваш попередній вибір → Назву не обрано" even when a naming is selected.
+ */
+const poOriginalNamingObj = ref<InternalNaming | null>(null)
+
+const poOriginalNaming = computed(() => {
+  const id = poOriginalId.value
+  if (!id) return null
+  // Prefer directly-fetched object; fall back to grid lookup.
+  if (poOriginalNamingObj.value?.id === id) return poOriginalNamingObj.value
+  return namings.value.find(n => n.id === id) ?? null
+})
 
 const ceoInternalId = computed<string | null>(() => {
   const sel = store.brandCeoSelections?.internalNaming
@@ -79,13 +91,26 @@ async function loadNamings() {
   hasFetched.value = true
 }
 
+async function loadPoOriginalNaming() {
+  const id = poOriginalId.value
+  if (!id) {
+    poOriginalNamingObj.value = null
+    return
+  }
+  try {
+    poOriginalNamingObj.value = await apiGet<InternalNaming>(`/api/namings/internal/${id}`)
+  } catch {
+    poOriginalNamingObj.value = null
+  }
+}
+
 onMounted(async () => {
   // Snapshot PO's original pick before beginEditSection snapshot
   poOriginalId.value = store.stepData.internalNaming.selectedId ?? null
   store.beginEditSection('internalNaming', 8)
   // Keep PO's original pre-selected so "Зберегти" is active immediately
   // (no override — it's already the selectedId in store)
-  await loadNamings()
+  await Promise.all([loadNamings(), loadPoOriginalNaming()])
 })
 
 /** Single-select: clicking the already-selected card does nothing (no toggle). */

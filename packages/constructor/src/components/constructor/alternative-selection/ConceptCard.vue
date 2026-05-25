@@ -136,7 +136,7 @@ function handleClick() {
 
         <div
           v-if="showCheckmark"
-          class="concept-card__check absolute left-1 top-1 z-[4] flex items-center justify-center rounded-full border border-black/10 bg-white p-2 shadow-[0px_8px_5px_rgba(0,0,0,0.2)]"
+          class="concept-card__check absolute left-[6px] top-[6px] z-[4] flex items-center justify-center rounded-full border border-black/10 bg-white p-2 shadow-[0px_8px_5px_rgba(0,0,0,0.2)]"
         >
           <CheckIcon class="size-4 text-[#030213]" />
         </div>
