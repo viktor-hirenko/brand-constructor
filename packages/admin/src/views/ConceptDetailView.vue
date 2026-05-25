@@ -3,11 +3,12 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared'
 import { parseAspectRatio } from '@brand-constructor/shared'
-import { useApi, apiPut, apiUpload, getAssetUrl } from '@/composables/useApi'
+import { useApi, apiPut, apiUpload, apiDelete, getAssetUrl } from '@/composables/useApi'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
 interface ConceptDetail extends Concept {
   namings: ExternalNaming[]
@@ -57,6 +58,7 @@ const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
 const {
   data: concept,
   loading,
+  error,
   fetchData,
 } = useApi<ConceptDetail>(`/api/concepts/${route.params.id}`)
 
@@ -65,6 +67,8 @@ const editName = ref('')
 const editDescription = ref('')
 const editMode = ref<'light' | 'dark' | null>(null)
 const uploadingType = ref<string | null>(null)
+const deletingType = ref<string | null>(null)
+const deleteAssetTarget = ref<{ entityType: string; label: string } | null>(null)
 
 const visualInputRef = ref<HTMLInputElement | null>(null)
 const galleryFileInputs = ref<Record<string, HTMLInputElement | null>>({})
@@ -120,9 +124,7 @@ async function handleFileUpload(event: Event, entityType: string) {
   if (!file || !concept.value) return
 
   const ratioInput =
-    entityType === 'concept_visual'
-      ? visualAspectRatio.value
-      : (galleryRatios[entityType] ?? '1:1')
+    entityType === 'concept_visual' ? visualAspectRatio.value : (galleryRatios[entityType] ?? '1:1')
   const parsedRatio = parseAspectRatio(ratioInput)
 
   uploadingType.value = entityType
@@ -148,6 +150,57 @@ async function handleFileUpload(event: Event, entityType: string) {
 function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
   return c[slot.fieldKey]
 }
+
+function findAssetRecord(entityType: string, fileUrl: string | null): Asset | undefined {
+  if (!fileUrl || !concept.value?.assets) return undefined
+  return concept.value.assets.find(a => a.entity_type === entityType && a.file_url === fileUrl)
+}
+
+function assetUploaderMeta(entityType: string, fileUrl: string | null): string | null {
+  const asset = findAssetRecord(entityType, fileUrl)
+  if (!asset) return null
+  const name =
+    (asset as Asset & { uploader_name?: string | null }).uploader_name ??
+    concept.value?.author_name ??
+    'Unknown'
+  const date = new Date(asset.created_at).toLocaleDateString('uk-UA')
+  return `by ${name} · ${date}`
+}
+
+function requestAssetDelete(entityType: string, label: string) {
+  deleteAssetTarget.value = { entityType, label }
+}
+
+async function confirmAssetDelete() {
+  if (!deleteAssetTarget.value || !concept.value) return
+
+  const { entityType } = deleteAssetTarget.value
+  const fileUrl =
+    entityType === 'concept_visual'
+      ? concept.value.visual_url
+      : galleryUrl(concept.value, GALLERY_SLOTS.find(s => s.entityType === entityType)!)
+
+  const assetRecord = findAssetRecord(entityType, fileUrl)
+
+  deletingType.value = entityType
+  try {
+    if (assetRecord) {
+      await apiDelete(`/api/assets/${assetRecord.id}`)
+    } else if (fileUrl) {
+      const payload =
+        entityType === 'concept_visual'
+          ? { visual_url: null }
+          : { [GALLERY_SLOTS.find(s => s.entityType === entityType)!.fieldKey]: null }
+      await apiPut(`/api/concepts/${concept.value.id}`, payload)
+    }
+    deleteAssetTarget.value = null
+    await fetchData()
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Delete failed')
+  } finally {
+    deletingType.value = null
+  }
+}
 </script>
 
 <template>
@@ -160,6 +213,11 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
 
     <div v-if="loading" class="concept-detail__loading">Loading...</div>
 
+    <div v-else-if="error" class="concept-detail__error">
+      <p>Failed to load concept: {{ error }}</p>
+      <BaseButton variant="secondary" size="sm" @click="fetchData()">Retry</BaseButton>
+    </div>
+
     <template v-else-if="concept">
       <div class="concept-detail__header">
         <div>
@@ -168,7 +226,8 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
             <BaseInput v-else v-model="editName" placeholder="Concept name" />
           </div>
           <p class="concept-detail__meta">
-            by {{ concept.author_name }} · {{ new Date(concept.created_at).toLocaleDateString() }}
+            by {{ concept.author_name }}
+            {{ new Date(concept.created_at).toLocaleDateString() }}
           </p>
         </div>
         <div v-if="canWrite" class="concept-detail__actions">
@@ -216,40 +275,63 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
       <div class="concept-detail__section">
         <h3>Visual Assets</h3>
         <div class="concept-detail__assets">
+          <!-- Visual -->
           <div class="asset-slot">
-            <span class="asset-slot__label">Visual</span>
             <div class="asset-slot__preview">
               <img v-if="concept.visual_url" :src="getAssetUrl(concept.visual_url)" alt="Visual" />
               <span v-else class="asset-slot__empty-text">No visual uploaded</span>
             </div>
-            <template v-if="canWrite">
-              <BaseInput
-                v-model="visualAspectRatio"
-                label="Співвідношення сторін"
-                placeholder="напр. 1:1"
-                class="asset-slot__ratio-input"
-              />
-              <input
-                ref="visualInputRef"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, 'concept_visual')"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === 'concept_visual'"
-                :disabled="uploadingType !== null"
-                @click="visualInputRef?.click()"
-              >
-                {{ concept.visual_url ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
+            <div class="asset-slot__body">
+              <span class="asset-slot__label">Visual</span>
+              <template v-if="canWrite">
+                <BaseInput
+                  v-model="visualAspectRatio"
+                  label="Співвідношення сторін"
+                  placeholder="напр. 1:1"
+                  class="asset-slot__ratio-input"
+                />
+                <input
+                  ref="visualInputRef"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  class="asset-slot__file-input"
+                  @change="e => handleFileUpload(e, 'concept_visual')"
+                />
+                <div class="asset-slot__actions">
+                  <BaseButton
+                    variant="secondary"
+                    size="sm"
+                    :loading="uploadingType === 'concept_visual'"
+                    :disabled="uploadingType !== null || deletingType !== null"
+                    @click="visualInputRef?.click()"
+                  >
+                    {{ concept.visual_url ? 'Change image' : 'Upload image' }}
+                  </BaseButton>
+                  <BaseButton
+                    v-if="concept.visual_url"
+                    variant="danger"
+                    size="sm"
+                    :loading="deletingType === 'concept_visual'"
+                    :disabled="uploadingType !== null || deletingType !== null"
+                    @click="requestAssetDelete('concept_visual', 'Visual')"
+                  >
+                    Delete
+                  </BaseButton>
+                </div>
+              </template>
+            </div>
+            <div
+              v-if="assetUploaderMeta('concept_visual', concept.visual_url)"
+              class="asset-slot__footer"
+            >
+              <span class="asset-slot__uploader">
+                {{ assetUploaderMeta('concept_visual', concept.visual_url) }}
+              </span>
+            </div>
           </div>
 
+          <!-- Gallery slots -->
           <div v-for="slot in GALLERY_SLOTS" :key="slot.entityType" class="asset-slot">
-            <span class="asset-slot__label">{{ slot.label }}</span>
             <div class="asset-slot__preview">
               <img
                 v-if="galleryUrl(concept, slot)"
@@ -258,30 +340,53 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
               />
               <span v-else class="asset-slot__empty-text">No image uploaded</span>
             </div>
-            <template v-if="canWrite">
-              <BaseInput
-                v-model="galleryRatios[slot.entityType]"
-                label="Співвідношення сторін"
-                placeholder="напр. 1:1"
-                class="asset-slot__ratio-input"
-              />
-              <input
-                :ref="el => setGalleryFileInputRef(slot.entityType, el)"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="asset-slot__file-input"
-                @change="e => handleFileUpload(e, slot.entityType)"
-              />
-              <BaseButton
-                variant="secondary"
-                size="sm"
-                :loading="uploadingType === slot.entityType"
-                :disabled="uploadingType !== null"
-                @click="openGalleryFileInput(slot.entityType)"
-              >
-                {{ galleryUrl(concept, slot) ? 'Change image' : 'Upload image' }}
-              </BaseButton>
-            </template>
+            <div class="asset-slot__body">
+              <span class="asset-slot__label">{{ slot.label }}</span>
+              <template v-if="canWrite">
+                <BaseInput
+                  v-model="galleryRatios[slot.entityType]"
+                  label="Співвідношення сторін"
+                  placeholder="напр. 1:1"
+                  class="asset-slot__ratio-input"
+                />
+                <input
+                  :ref="el => setGalleryFileInputRef(slot.entityType, el)"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  class="asset-slot__file-input"
+                  @change="e => handleFileUpload(e, slot.entityType)"
+                />
+                <div class="asset-slot__actions">
+                  <BaseButton
+                    variant="secondary"
+                    size="sm"
+                    :loading="uploadingType === slot.entityType"
+                    :disabled="uploadingType !== null || deletingType !== null"
+                    @click="openGalleryFileInput(slot.entityType)"
+                  >
+                    {{ galleryUrl(concept, slot) ? 'Change image' : 'Upload image' }}
+                  </BaseButton>
+                  <BaseButton
+                    v-if="galleryUrl(concept, slot)"
+                    variant="danger"
+                    size="sm"
+                    :loading="deletingType === slot.entityType"
+                    :disabled="uploadingType !== null || deletingType !== null"
+                    @click="requestAssetDelete(slot.entityType, slot.label)"
+                  >
+                    Delete
+                  </BaseButton>
+                </div>
+              </template>
+            </div>
+            <div
+              v-if="assetUploaderMeta(slot.entityType, galleryUrl(concept, slot))"
+              class="asset-slot__footer"
+            >
+              <span class="asset-slot__uploader">
+                {{ assetUploaderMeta(slot.entityType, galleryUrl(concept, slot)) }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -298,6 +403,23 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
         </div>
       </div>
     </template>
+
+    <BaseModal
+      v-if="deleteAssetTarget"
+      title="Delete Image"
+      width="420px"
+      @close="deleteAssetTarget = null"
+    >
+      <p class="concept-detail__confirm-text">
+        Remove <strong>"{{ deleteAssetTarget.label }}"</strong> from this concept?
+      </p>
+      <template #footer>
+        <BaseButton variant="secondary" @click="deleteAssetTarget = null">Cancel</BaseButton>
+        <BaseButton variant="danger" :loading="deletingType !== null" @click="confirmAssetDelete">
+          Delete
+        </BaseButton>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -315,6 +437,23 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
     text-align: center;
     padding: $spacing-12;
     color: $color-text-secondary;
+  }
+
+  &__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-4;
+    padding: $spacing-12;
+    background-color: $color-bg-white;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+
+    p {
+      margin: 0;
+      font-size: $font-size-sm;
+      color: $color-danger;
+    }
   }
 
   &__header {
@@ -394,6 +533,12 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
     gap: $spacing-2;
   }
 
+  &__confirm-text {
+    font-size: $font-size-sm;
+    color: $color-text;
+    line-height: $line-height-normal;
+  }
+
   &__mode-options {
     display: flex;
     gap: $spacing-4;
@@ -410,10 +555,6 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
     border: 1px solid $color-border;
     border-radius: $radius-md;
     transition: all $transition-fast;
-
-    &:hover {
-      border-color: $color-primary;
-    }
 
     &:has(input:checked) {
       border-color: $color-primary;
@@ -433,25 +574,26 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
 .asset-slot {
   display: flex;
   flex-direction: column;
-  gap: $spacing-2;
+  background-color: $color-bg-white;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  transition:
+    box-shadow $transition-fast,
+    border-color $transition-fast;
 
-  &__label {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-text-secondary;
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: $color-primary;
   }
 
   &__preview {
     aspect-ratio: 1;
     background-color: $color-bg;
-    border: 1px dashed $color-border;
-    border-radius: $radius-md;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
-    color: $color-text-muted;
-    font-size: $font-size-sm;
 
     img {
       width: 100%;
@@ -463,14 +605,48 @@ function galleryUrl(c: ConceptDetail, slot: GallerySlot): string | null {
   &__empty-text {
     font-size: $font-size-xs;
     color: $color-text-muted;
+    padding: $spacing-4;
+    text-align: center;
+  }
+
+  &__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: $spacing-3;
+    padding-inline: $spacing-4;
+    padding-block-start: $spacing-3;
+    padding-block-end: 0;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-text;
   }
 
   &__ratio-input {
-    margin-top: $spacing-1;
+    margin: 0;
+    font-weight: $font-weight-normal;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
   }
 
   &__file-input {
     display: none;
+  }
+
+  &__footer {
+    padding: $spacing-2 $spacing-4 $spacing-3;
+  }
+
+  &__uploader {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
   }
 }
 

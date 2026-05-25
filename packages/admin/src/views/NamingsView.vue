@@ -509,7 +509,12 @@ async function confirmDeleteNaming() {
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th>Availability</th>
+              <th class="sortable-th" @click="toggleExtSort('availability_status')">
+                Availability
+                <span v-if="extSortField === 'availability_status'" class="sort-arrow">{{
+                  extSortDir === 'asc' ? '\u2191' : '\u2193'
+                }}</span>
+              </th>
               <th>Usage</th>
               <th class="sortable-th" @click="toggleExtSort('concept_name')">
                 Linked Concept

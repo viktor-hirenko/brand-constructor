@@ -105,7 +105,10 @@ app.get('/:id', async c => {
     .all()
 
   const assets = await c.env.DB.prepare(
-    "SELECT * FROM assets WHERE entity_id = ? AND entity_type LIKE 'concept_%'"
+    `SELECT a.*, u.name AS uploader_name
+     FROM assets a
+     LEFT JOIN users u ON u.id = a.uploaded_by
+     WHERE a.entity_id = ? AND a.entity_type LIKE 'concept_%'`
   )
     .bind(id)
     .all()

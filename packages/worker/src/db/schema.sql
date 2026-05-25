@@ -119,7 +119,9 @@ CREATE TABLE IF NOT EXISTS assets (
   width INTEGER NOT NULL,
   height INTEGER NOT NULL,
   file_size INTEGER NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  uploaded_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (uploaded_by) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS audit_log (

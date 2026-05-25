@@ -247,7 +247,6 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
           <div v-if="canWrite" class="variant-card__actions">
             <BaseButton
               variant="secondary"
-              size="sm"
               :loading="uploadingIds.has(v.id)"
               @click="triggerUpload(v.id)"
             >

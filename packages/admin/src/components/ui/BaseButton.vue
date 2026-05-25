@@ -33,6 +33,7 @@ withDefaults(defineProps<ButtonProps>(), {
   border: 1px solid transparent;
   border-radius: $radius-md;
   font-weight: $font-weight-medium;
+  line-height: $line-height-tight;
   cursor: pointer;
   transition:
     background-color $transition-fast,
@@ -84,16 +85,19 @@ withDefaults(defineProps<ButtonProps>(), {
   }
 
   &--sm {
+    min-height: 28px;
     padding: $spacing-1 $spacing-3;
     font-size: $font-size-xs;
   }
 
   &--md {
+    min-height: 36px;
     padding: $spacing-2 $spacing-4;
     font-size: $font-size-sm;
   }
 
   &--lg {
+    min-height: 44px;
     padding: $spacing-3 $spacing-6;
     font-size: $font-size-base;
   }

@@ -14,6 +14,8 @@ export interface Asset {
   width: number;
   height: number;
   file_size: number;
+  uploaded_by?: string | null;
+  uploader_name?: string | null;
   created_at: string;
 }
 

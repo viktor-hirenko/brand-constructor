@@ -102,8 +102,8 @@ app.post('/upload', async c => {
   const fileUrl = `/api/assets/${r2Key}`
 
   await c.env.DB.prepare(
-    `INSERT INTO assets (id, entity_type, entity_id, file_url, file_name, file_type, aspect_ratio, width, height, file_size)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO assets (id, entity_type, entity_id, file_url, file_name, file_type, aspect_ratio, width, height, file_size, uploaded_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       id,
@@ -115,7 +115,8 @@ app.post('/upload', async c => {
       meta?.aspectRatio || 0,
       meta?.width || 0,
       meta?.height || 0,
-      buffer.byteLength
+      buffer.byteLength,
+      user.id
     )
     .run()
 
@@ -202,9 +203,30 @@ app.delete('/:id', async c => {
     }
   }
 
+  const entityType = asset.entity_type as string
+  const entityId = asset.entity_id as string
+
   const r2Key = (asset.file_url as string).replace('/api/assets/', '')
   await c.env.ASSETS_BUCKET.delete(r2Key)
   await c.env.DB.prepare('DELETE FROM assets WHERE id = ?').bind(id).run()
+
+  if (entityType === 'concept_visual') {
+    await c.env.DB.prepare(
+      "UPDATE concepts SET visual_url = NULL, updated_at = datetime('now') WHERE id = ?"
+    )
+      .bind(entityId)
+      .run()
+  } else {
+    const galleryMatch = /^concept_gallery_(\d{1,2})$/.exec(entityType)
+    if (galleryMatch) {
+      const slot = galleryMatch[1]
+      await c.env.DB.prepare(
+        `UPDATE concepts SET gallery_url_${slot} = NULL, updated_at = datetime('now') WHERE id = ?`
+      )
+        .bind(entityId)
+        .run()
+    }
+  }
 
   return c.json({ success: true, data: { deleted: true } })
 })

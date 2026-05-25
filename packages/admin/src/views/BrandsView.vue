@@ -109,7 +109,6 @@ async function confirmDeleteBrand() {
 <template>
   <div class="brands-view">
     <div class="brands-view__header">
-      <h1 class="brands-view__title">Brands</h1>
       <span class="brands-view__count">{{ total }} brand{{ total === 1 ? '' : 's' }}</span>
     </div>
 
