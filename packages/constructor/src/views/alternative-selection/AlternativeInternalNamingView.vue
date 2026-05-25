@@ -4,10 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
-import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue'
+import InternalNamingGrid from '@/components/constructor/alternative-selection/InternalNamingGrid.vue'
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
-import CustomerInternalNamingPreview from '@/components/constructor/ceo-reselect/CustomerInternalNamingPreview.vue'
-import CustomerInternalNamingPreviewSkeleton from '@/components/constructor/skeletons/CustomerInternalNamingPreviewSkeleton.vue'
+import AuthorInternalNamingPreview from '@/components/constructor/alternative-selection/AuthorInternalNamingPreview.vue'
+import AuthorInternalNamingPreviewSkeleton from '@/components/constructor/skeletons/AuthorInternalNamingPreviewSkeleton.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -102,10 +102,10 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     subtitle="Оберіть назву для внутрішньої комунікації команди."
   >
     <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
-         NB: CustomerInternalNamingPreview can't render real name until
+         NB: AuthorInternalNamingPreview can't render real name until
          `namings` resolves (it looks up by id), so we replace it too. -->
     <template v-if="showSkeleton">
-      <CustomerInternalNamingPreviewSkeleton />
+      <AuthorInternalNamingPreviewSkeleton />
 
       <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
 
@@ -125,7 +125,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
 
     <!-- Ready state -->
     <template v-else-if="isReady">
-      <CustomerInternalNamingPreview :name="poInternalName" />
+      <AuthorInternalNamingPreview :name="poInternalName" />
 
       <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
 

@@ -7,10 +7,10 @@ import {
 } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
-import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
+import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
-import CustomerNamingsRow from '@/components/constructor/ceo-reselect/CustomerNamingsRow.vue'
-import CustomerNamingsRowSkeleton from '@/components/constructor/skeletons/CustomerNamingsRowSkeleton.vue'
+import AuthorNamingsRow from '@/components/constructor/alternative-selection/AuthorNamingsRow.vue'
+import AuthorNamingsRowSkeleton from '@/components/constructor/skeletons/AuthorNamingsRowSkeleton.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -210,7 +210,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
          `showSkeleton` covers both `loading=true` and the initial pre-mount
          frame when `hasFetched=false`. -->
     <template v-if="showSkeleton">
-      <CustomerNamingsRowSkeleton v-if="!isChainedFromConcept" />
+      <AuthorNamingsRowSkeleton v-if="!isChainedFromConcept" />
 
       <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
 
@@ -232,7 +232,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     <!-- Ready state -->
     <template v-else-if="isReady">
       <template v-if="!isChainedFromConcept">
-        <CustomerNamingsRow :namings="poExternalMini" />
+        <AuthorNamingsRow :namings="poExternalMini" />
       </template>
 
       <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-interface CustomerInternalNamingPreviewProps {
+interface AuthorInternalNamingPreviewProps {
   name: string | null
 }
 
-defineProps<CustomerInternalNamingPreviewProps>()
+defineProps<AuthorInternalNamingPreviewProps>()
 </script>
 
 <template>
-  <div class="customer-internal-naming-preview flex flex-col gap-3">
-    <p class="customer-internal-naming-preview__label text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+  <div class="author-internal-naming-preview flex flex-col gap-3">
+    <p class="author-internal-naming-preview__label text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
       Вибір замовника
     </p>
-    <div v-if="name" class="customer-internal-naming-preview__grid grid grid-cols-3 gap-2 max-w-[506px]">
+    <div v-if="name" class="author-internal-naming-preview__grid grid grid-cols-3 gap-2 max-w-[506px]">
       <div
         class="h-[128px] rounded-[16px] bg-[#f1f1f3] border border-black/10 flex flex-col items-center justify-center px-6 py-10 text-center"
       >
@@ -22,7 +22,7 @@ defineProps<CustomerInternalNamingPreviewProps>()
     </div>
     <p
       v-else
-      class="customer-internal-naming-preview__empty text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
+      class="author-internal-naming-preview__empty text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
     >
       Назву не обрано
     </p>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Pixel-matched skeleton for `CustomerNamingsRow`.
+ * Pixel-matched skeleton for `AuthorNamingsRow`.
  *
  * Mirrors label + 3-col grid of greyed-out customer pick cards
  * (bg-[#f1f1f3], px-6 py-10) so swapping between skeleton and content
- * does not cause CLS on External Naming customer-pick blocks.
+ * does not cause CLS on External Naming author-pick blocks.
  */
 interface Props {
   /** Number of skeleton tiles (default 3 = one row). */
@@ -15,9 +15,9 @@ withDefaults(defineProps<Props>(), { count: 3 })
 </script>
 
 <template>
-  <div class="customer-namings-row-skeleton flex flex-col gap-3" aria-hidden="true">
+  <div class="author-namings-row-skeleton flex flex-col gap-3" aria-hidden="true">
     <div class="h-6 w-[140px] rounded bg-muted animate-pulse" />
-    <div class="customer-namings-row-skeleton__grid grid grid-cols-3 gap-2 max-w-[506px]">
+    <div class="author-namings-row-skeleton__grid grid grid-cols-3 gap-2 max-w-[506px]">
       <div
         v-for="i in count"
         :key="i"

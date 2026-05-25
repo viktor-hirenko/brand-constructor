@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import { ref } from 'vue';
 import { fn } from '@storybook/test';
-import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue';
+import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue';
 import { conceptGridItems } from '../mocks/fixtures';
 
 const meta = {

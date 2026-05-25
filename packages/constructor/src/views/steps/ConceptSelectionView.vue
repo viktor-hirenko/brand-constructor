@@ -7,7 +7,7 @@ import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
-import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
+import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
 

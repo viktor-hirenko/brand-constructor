@@ -7,7 +7,7 @@ import {
 } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
-import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
+import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'

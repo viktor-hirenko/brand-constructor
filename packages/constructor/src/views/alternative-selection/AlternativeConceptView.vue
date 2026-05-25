@@ -4,10 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, apiGet } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
-import ConceptGrid from '@/components/constructor/ceo-reselect/ConceptGrid.vue'
+import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
-import CustomerPickPreview from '@/components/constructor/ceo-reselect/CustomerPickPreview.vue'
-import CustomerPickPreviewSkeleton from '@/components/constructor/skeletons/CustomerPickPreviewSkeleton.vue'
+import AuthorPickPreview from '@/components/constructor/alternative-selection/AuthorPickPreview.vue'
+import AuthorPickPreviewSkeleton from '@/components/constructor/skeletons/AuthorPickPreviewSkeleton.vue'
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
@@ -159,8 +159,8 @@ function goNext() {
     subtitle="Оберіть концепт та перегляньте прев’ю праворуч."
   >
     <!-- Customer's pick (independent of theme filter) -->
-    <CustomerPickPreviewSkeleton v-if="!isReady" />
-    <CustomerPickPreview v-else :concept="poConcept" />
+    <AuthorPickPreviewSkeleton v-if="!isReady" />
+    <AuthorPickPreview v-else :concept="poConcept" />
 
     <div :class="EDIT_FLOW_DIVIDER_CLASS" role="separator" aria-hidden="true" />
 

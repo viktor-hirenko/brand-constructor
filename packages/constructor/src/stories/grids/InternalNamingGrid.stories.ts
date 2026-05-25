@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import { ref } from 'vue';
 import { fn } from '@storybook/test';
-import InternalNamingGrid from '@/components/constructor/ceo-reselect/InternalNamingGrid.vue';
+import InternalNamingGrid from '@/components/constructor/alternative-selection/InternalNamingGrid.vue';
 import { internalNamingGridItems } from '../mocks/fixtures';
 
 const meta = {

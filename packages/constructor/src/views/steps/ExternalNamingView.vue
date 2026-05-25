@@ -6,7 +6,7 @@ import type { ExternalNaming, NewNamingBrief } from '@brand-constructor/shared/t
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
-import ExternalNamingGrid from '@/components/constructor/ceo-reselect/ExternalNamingGrid.vue'
+import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
 import { isExternalNamingCommentRequired, getExternalNamingCommentHint } from '@/utils/externalNamingValidation'
