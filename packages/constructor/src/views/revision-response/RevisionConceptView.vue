@@ -201,13 +201,20 @@ onMounted(() => {
 watch(localMode, loadConcepts)
 
 /**
- * Update local selectedId, the store selectedId (so it lands in the stepDataOverlay
- * on every keystroke and survives F5 before "Далі" is clicked), and the previewId
- * so the right-panel slider reacts immediately.
+ * Update the local `selectedId`, persist it as the draft's `pendingConceptId`
+ * (so it survives F5 — `useAuthorRevisionDraft` auto-saves the draft to
+ * localStorage) and seed the store `previewId` so the right-panel slider
+ * reacts immediately.
+ *
+ * Crucially we do NOT write `selectedId` into `store.stepData.concept` here
+ * — `availableConcepts` filters by `poConceptId` (= `stepData.concept.selectedId`),
+ * so mutating it on click would yank the just-selected card out of the grid.
+ * The store's `stepData.concept.selectedId` is only committed in `goDali()`.
  */
 function selectConcept(id: string) {
   selectedId.value = id
-  store.setConcept({ selectedId: id, previewId: id })
+  store.setAuthorRevisionPendingConcept(id)
+  store.setConcept({ previewId: id })
 }
 
 function goCancel() {
