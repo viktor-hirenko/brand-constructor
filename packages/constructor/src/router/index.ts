@@ -196,6 +196,12 @@ const routes: RouteRecordRaw[] = [
           brand.ceoComments ?? undefined,
           brand.ceoSelections ?? undefined
         )
+
+        // Restore in-progress localStorage drafts (F5-safe).
+        // Called AFTER loadBrand so it overlays the freshly-reset slices.
+        store.restoreCeoReselectDraftFromStorage(brandId)
+        store.restoreAuthorRevisionDraftFromStorage(brandId)
+
         return true
       } catch {
         return { path: '/' }

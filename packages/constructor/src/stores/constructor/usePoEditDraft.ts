@@ -1,4 +1,22 @@
-import { ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
+import {
+  writeAuthorRevisionDraft,
+  readAuthorRevisionDraft,
+  clearAuthorRevisionDraft,
+} from '@/domain/persistence/briefDraftStorage'
+import { logSilent } from '@/utils/log'
+
+function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  return ((...args: Parameters<T>) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }) as T
+}
+
+interface UsePoEditDraftOptions {
+  brandId: Ref<string | null>
+}
 
 /**
  * `baseline*` — snapshot of stepData taken when the PO opens an inline-edit
@@ -36,7 +54,9 @@ export interface PoEditDraft {
  * Sister slice to `useCeoReselectDraft` — same lifecycle shape (transient,
  * reset on save / cancel / brand load).
  */
-export function usePoEditDraft() {
+export function usePoEditDraft(opts: UsePoEditDraftOptions) {
+  const { brandId } = opts
+
   const poEditDraft = ref<PoEditDraft>({
     baselineConceptId: null,
     baselineExternalIds: [],
@@ -78,8 +98,47 @@ export function usePoEditDraft() {
     poEditDraft.value.pendingExternalIds = null
   }
 
+  // ─── F5-safe localStorage persistence ─────────────────────────────────────
+
+  const _writeDraftDebounced = debounce((id: string, draft: PoEditDraft) => {
+    writeAuthorRevisionDraft(id, {
+      pendingConceptId: draft.pendingConceptId,
+      pendingExternalIds: draft.pendingExternalIds,
+    })
+  }, 400)
+
+  watch(
+    poEditDraft,
+    draft => {
+      const id = brandId.value
+      if (!id || draft.pendingConceptId === null) return
+      _writeDraftDebounced(id, draft)
+    },
+    { deep: true }
+  )
+
+  /**
+   * Called from the parent route guard after `store.loadBrand()` to overlay
+   * any cached in-progress picks over the freshly loaded store state.
+   */
+  function restoreAuthorRevisionDraftFromStorage(briefId: string) {
+    try {
+      const envelope = readAuthorRevisionDraft(briefId)
+      if (!envelope) return
+      poEditDraft.value = {
+        ...poEditDraft.value,
+        pendingConceptId: envelope.draft.pendingConceptId,
+        pendingExternalIds: envelope.draft.pendingExternalIds,
+      }
+    } catch (err) {
+      logSilent('usePoEditDraft/restore', err)
+    }
+  }
+
   /** Drop every key in the draft — call on save / cancel / commit. */
   function resetPoEditDraft() {
+    const id = brandId.value
+    if (id) clearAuthorRevisionDraft(id)
     poEditDraft.value = {
       baselineConceptId: null,
       baselineExternalIds: [],
@@ -100,6 +159,7 @@ export function usePoEditDraft() {
     setPoEditPendingExternal,
     clearPoEditPendingExternal,
     resetPoEditDraft,
+    restoreAuthorRevisionDraftFromStorage,
     // Facade-internal
     resetSlice,
   }

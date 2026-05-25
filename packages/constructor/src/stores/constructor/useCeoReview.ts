@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { apiPatch } from '@/composables/useApi'
+import { clearSupervisorReselectDraft } from '@/domain/persistence/briefDraftStorage'
 import { readSelectionAsString, readSelectionAsArray } from './selectionHelpers'
 import type {
   Brand,
@@ -276,6 +277,8 @@ export function useCeoReview(opts: UseCeoReviewOptions) {
         data.ceoSelections && Object.keys(data.ceoSelections).length > 0
           ? data.ceoSelections
           : null
+      // Purge localStorage cache — picks are now persisted on the server.
+      if (brandId.value) clearSupervisorReselectDraft(brandId.value)
       return true
     } catch (error) {
       brandCeoSelections.value = Object.keys(previous).length > 0 ? previous : null

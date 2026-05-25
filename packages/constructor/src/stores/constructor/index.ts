@@ -62,12 +62,13 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   } = useCeoReselectDraft({
     stepData: brandDataPublic.stepData,
     brandCeoSelections: ceoReviewPublic.brandCeoSelections,
+    brandId: brandDataPublic.brandId,
   })
 
   const {
     resetSlice: resetPoEditDraftSlice,
     ...poEditDraftPublic
-  } = usePoEditDraft()
+  } = usePoEditDraft({ brandId: brandDataPublic.brandId })
 
   const {
     resetSlice: resetPreviewsSlice,

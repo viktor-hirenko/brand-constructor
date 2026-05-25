@@ -1,6 +1,20 @@
-import { ref, type Ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 import { readSelectionAsString, readSelectionAsArray } from './selectionHelpers'
 import type { BrandStepData } from '@brand-constructor/shared/types'
+import {
+  writeSupervisorReselectDraft,
+  readSupervisorReselectDraft,
+  clearSupervisorReselectDraft,
+} from '@/domain/persistence/briefDraftStorage'
+import { logSilent } from '@/utils/log'
+
+function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  return ((...args: Parameters<T>) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }) as T
+}
 
 export type CeoReselectSection = 'concept' | 'externalNaming' | 'internalNaming'
 
@@ -20,6 +34,8 @@ interface UseCeoReselectDraftOptions {
   stepData: Ref<BrandStepData>
   /** Saved CEO picks from `useCeoReview` — preferred source for seeding the draft. */
   brandCeoSelections: Ref<Record<string, string | string[]> | null>
+  /** Brand id from `useBrandData` — used to scope the localStorage cache key. */
+  brandId: Ref<string | null>
 }
 
 /**
@@ -39,7 +55,7 @@ interface UseCeoReselectDraftOptions {
  * confirms via `saveCeoSelections` in the parent view.
  */
 export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
-  const { stepData, brandCeoSelections } = opts
+  const { stepData, brandCeoSelections, brandId } = opts
 
   const ceoReselectDraft = ref<CeoReselectDraft>({
     conceptId: null,
@@ -56,7 +72,40 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
    */
   const ceoReselectDraftInProgress = ref(false)
 
+  // ─── F5-safe localStorage persistence ─────────────────────────────────────
+
+  const _writeDraftDebounced = debounce((id: string, draft: CeoReselectDraft) => {
+    writeSupervisorReselectDraft(id, draft)
+  }, 400)
+
+  watch(
+    ceoReselectDraft,
+    draft => {
+      const id = brandId.value
+      if (!id || !ceoReselectDraftInProgress.value) return
+      _writeDraftDebounced(id, draft)
+    },
+    { deep: true }
+  )
+
+  /**
+   * Called from the parent route guard after `store.loadBrand()` to overlay
+   * any cached in-progress picks over the freshly loaded store state.
+   */
+  function restoreCeoReselectDraftFromStorage(briefId: string) {
+    try {
+      const envelope = readSupervisorReselectDraft(briefId)
+      if (!envelope) return
+      ceoReselectDraft.value = { ...envelope.draft }
+      ceoReselectDraftInProgress.value = true
+    } catch (err) {
+      logSilent('useCeoReselectDraft/restore', err)
+    }
+  }
+
   function resetCeoReselectDraft() {
+    const id = brandId.value
+    if (id) clearSupervisorReselectDraft(id)
     ceoReselectDraft.value = {
       conceptId: null,
       conceptPreviewId: null,
@@ -209,6 +258,7 @@ export function useCeoReselectDraft(opts: UseCeoReselectDraftOptions) {
     setCeoReselectInternalNaming,
     seedCeoReselectFromBrand,
     seedCeoReselectExternalNamingChained,
+    restoreCeoReselectDraftFromStorage,
     // Facade-internal
     resetSlice,
   }
