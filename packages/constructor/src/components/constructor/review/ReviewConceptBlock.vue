@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
+import { CONCEPT_CARD_TITLE_GRADIENT } from '@/constants/conceptCardVisual'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
@@ -118,8 +119,10 @@ const singlePoLabel = 'Вибір Замовника'
             loading="lazy"
           />
           <div
-            class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent"
-          >
+            class="pointer-events-none absolute inset-0 z-[1]"
+            :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
+          />
+          <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
             <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">
               {{ concept.name }}
             </p>
@@ -173,8 +176,10 @@ const singlePoLabel = 'Вибір Замовника'
             loading="lazy"
           />
           <div
-            class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent"
-          >
+            class="pointer-events-none absolute inset-0 z-[1]"
+            :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
+          />
+          <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
             <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">
               {{ ceoConcept.name }}
             </p>
@@ -196,7 +201,11 @@ const singlePoLabel = 'Вибір Замовника'
           class="review-concept-block__card relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
         >
           <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
-          <div class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent">
+          <div
+            class="pointer-events-none absolute inset-0 z-[1]"
+            :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
+          />
+          <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
             <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
           </div>
           <button
@@ -223,7 +232,11 @@ const singlePoLabel = 'Вибір Замовника'
           class="review-concept-block__card relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
         >
           <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
-          <div class="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/70 to-transparent">
+          <div
+            class="pointer-events-none absolute inset-0 z-[1]"
+            :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
+          />
+          <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
             <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
           </div>
           <button

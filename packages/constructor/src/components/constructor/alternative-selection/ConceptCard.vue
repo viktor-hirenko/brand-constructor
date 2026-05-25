@@ -53,6 +53,13 @@ const emit = defineEmits<{
 
 const isHighlighted = computed(() => props.isSelected || props.isActive)
 
+const conceptImageUrl = computed(() => {
+  const c = props.concept
+  if (!c) return null
+  const url = c.visual_url || c.gallery_url_1
+  return url && url.trim() !== '' ? url : null
+})
+
 const showDimOverlay = computed(
   () => props.showOverlay && props.concept != null && !isHighlighted.value,
 )
@@ -99,8 +106,8 @@ function handleClick() {
     <div class="concept-card__media absolute inset-0 bg-muted">
       <template v-if="concept">
         <img
-          v-if="concept.visual_url"
-          :src="getAssetUrl(concept.visual_url)"
+          v-if="conceptImageUrl"
+          :src="getAssetUrl(conceptImageUrl)"
           :alt="concept.name"
           class="concept-card__image h-full w-full object-cover"
           loading="lazy"
