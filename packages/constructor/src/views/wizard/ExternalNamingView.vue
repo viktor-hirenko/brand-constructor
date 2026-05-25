@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming, NewNamingBrief } from '@brand-constructor/shared/types'
@@ -62,6 +62,20 @@ function confirmDeleteBrief() {
   store.setNewNamingBrief(null)
   showDeleteConfirm.value = false
 }
+
+/**
+ * The read-only brief modal raises a one-shot edit request when the user
+ * clicks «Редагувати»; reuse the existing `showNewModal` flow so the same
+ * `NewNamingModal` instance handles both view → edit transitions.
+ */
+watch(
+  () => store.briefPreviewEditRequested,
+  kind => {
+    if (kind !== 'externalNaming') return
+    showNewModal.value = true
+    store.consumeBriefPreviewEditRequest()
+  },
+)
 </script>
 
 <template>

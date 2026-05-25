@@ -4,8 +4,9 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useLibrariesStore } from '@/stores/libraries'
 import ConceptPreviewPopup from '@/components/constructor/preview/ConceptPreviewPopup.vue'
 import PrPackagePreviewPopup from '@/components/constructor/preview/PrPackagePreviewPopup.vue'
-import BriefPreviewPopup from '@/components/constructor/preview/BriefPreviewPopup.vue'
-import { useBriefPreviewFields } from '@/composables/useBriefPreviewFields'
+import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
+import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
+import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
 
 const store = useConstructorStore()
 const librariesStore = useLibrariesStore()
@@ -16,37 +17,31 @@ const overlayConcept = computed(() => {
   return librariesStore.concepts.find(item => item.id === id) ?? null
 })
 
-const { conceptFields, externalNamingFields, internalNamingFields } = useBriefPreviewFields()
+const conceptBrief = computed(() => store.stepData.concept.newConceptBrief)
+const externalNamingBrief = computed(
+  () => store.stepData.externalNaming.newNamingBrief,
+)
+const internalNamingFeedback = computed(
+  () => store.stepData.internalNaming.newNamingFeedback,
+)
 
-const briefPreviewTitle = computed(() => {
-  switch (store.briefPreviewKind) {
-    case 'concept':
-      return 'Бриф нового концепту'
-    case 'externalNaming':
-      return 'Бриф нового External Naming'
-    case 'internalNaming':
-      return 'Бриф нової Internal Naming'
-    default:
-      return ''
-  }
-})
-
-const briefPreviewFields = computed(() => {
-  switch (store.briefPreviewKind) {
-    case 'concept':
-      return conceptFields.value
-    case 'externalNaming':
-      return externalNamingFields.value
-    case 'internalNaming':
-      return internalNamingFields.value
-    default:
-      return []
-  }
-})
+/**
+ * Read-only preview modals reuse the same `New*Modal` components used for
+ * editing — the form is wrapped in a disabled `<fieldset>` and the shell
+ * swaps «Зберегти» for «Редагувати», which raises a one-shot signal that
+ * the owning wizard view consumes to open its own editable modal.
+ */
+function handleRequestEdit() {
+  store.requestBriefPreviewEdit()
+}
 </script>
 
 <template>
-  <!-- Concept Preview: fullscreen backdrop + right-column popup -->
+  <!--
+    Concept gallery preview: existing slider opens as a right-side drawer
+    above the right column. The brief preview is what was switched to a
+    centered modal — the gallery preview keeps its drawer behaviour.
+  -->
   <Transition name="concept-backdrop">
     <div
       v-if="store.conceptPreviewOpen && overlayConcept"
@@ -63,39 +58,45 @@ const briefPreviewFields = computed(() => {
     </div>
   </Transition>
 
-  <!-- PR Package Preview: fullscreen backdrop + right-column drawer -->
-  <Transition name="concept-backdrop">
-    <div
-      v-if="store.prPackagePreviewOpen && store.prPackagePreviewPackage"
-      class="absolute inset-0 z-[28] bg-black/50 rounded-[14px]"
-      @click="store.closePrPackagePreview()"
-    />
-  </Transition>
-  <Transition name="concept-panel">
-    <div
-      v-if="store.prPackagePreviewOpen && store.prPackagePreviewPackage"
-      class="absolute right-0 top-0 h-full w-[58%] z-[29] overflow-hidden"
-    >
-      <PrPackagePreviewPopup :pkg="store.prPackagePreviewPackage" />
-    </div>
-  </Transition>
+  <!--
+    PR Package preview: centered modal (own Teleport inside
+    `PrPackagePreviewPopup` via `BriefModalShell`).
+  -->
+  <PrPackagePreviewPopup
+    v-if="store.prPackagePreviewOpen && store.prPackagePreviewPackage"
+    :pkg="store.prPackagePreviewPackage"
+  />
 
-  <!-- Brief Preview: fullscreen backdrop + right-column drawer -->
-  <Transition name="concept-backdrop">
-    <div
-      v-if="store.briefPreviewOpen"
-      class="absolute inset-0 z-[28] bg-black/50 rounded-[14px]"
-      @click="store.closeBriefPreview()"
-    />
-  </Transition>
-  <Transition name="concept-panel">
-    <div
-      v-if="store.briefPreviewOpen"
-      class="absolute right-0 top-0 h-full w-[58%] z-[29] overflow-hidden"
-    >
-      <BriefPreviewPopup :title="briefPreviewTitle" :fields="briefPreviewFields" />
-    </div>
-  </Transition>
+  <!--
+    Brief previews: render the same `New*Modal` used for editing but in
+    `readonly` mode. The shell handles centered layout + backdrop via its
+    own Teleport, and the disabled `<fieldset>` makes every field inert
+    while preserving the editable visual style.
+  -->
+  <NewConceptModal
+    v-if="store.briefPreviewKind === 'concept' && conceptBrief"
+    :initial-data="conceptBrief"
+    readonly
+    :show-edit-action="store.briefPreviewAllowEdit"
+    @cancel="store.closeBriefPreview()"
+    @edit="handleRequestEdit"
+  />
+  <NewNamingModal
+    v-if="store.briefPreviewKind === 'externalNaming' && externalNamingBrief"
+    :initial-data="externalNamingBrief"
+    readonly
+    :show-edit-action="store.briefPreviewAllowEdit"
+    @cancel="store.closeBriefPreview()"
+    @edit="handleRequestEdit"
+  />
+  <NewInternalNamingModal
+    v-if="store.briefPreviewKind === 'internalNaming' && internalNamingFeedback"
+    :initial-feedback="internalNamingFeedback"
+    readonly
+    :show-edit-action="store.briefPreviewAllowEdit"
+    @cancel="store.closeBriefPreview()"
+    @edit="handleRequestEdit"
+  />
 </template>
 
 <style scoped>

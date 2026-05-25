@@ -6,13 +6,21 @@ import BriefModalShell from '@/components/constructor/modals/BriefModalShell.vue
 import YesNoToggle from '@/components/ui/YesNoToggle.vue'
 import { BRIEF_LANGUAGES, BRIEF_DOMAIN_ZONES } from '@/data/brief-constants'
 
-const props = defineProps<{
-  initialData?: NewNamingBrief | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    initialData?: NewNamingBrief | null
+    /** Render as read-only preview (reuses the same markup as edit). */
+    readonly?: boolean
+    /** Show «Редагувати» primary action (only meaningful when `readonly`). */
+    showEditAction?: boolean
+  }>(),
+  { readonly: false, showEditAction: false },
+)
 
 const emit = defineEmits<{
   save: [brief: NewNamingBrief]
   cancel: []
+  edit: []
 }>()
 
 const init = props.initialData
@@ -56,19 +64,29 @@ function handleBudgetInput(e: Event) {
 }
 
 function handleSave() {
-  if (!isValid.value) return
+  if (props.readonly || !isValid.value) return
   emit('save', { ...form, domainZones: [...form.domainZones] })
 }
+
+const title = computed(() => {
+  if (props.readonly) return 'Бриф нового External Naming'
+  return isEditMode
+    ? 'Редагування брифу External Naming'
+    : 'Замовити новий External Naming'
+})
 </script>
 
 <template>
   <BriefModalShell
-    :title="isEditMode ? 'Редагування брифу External Naming' : 'Замовити новий External Naming'"
+    :title="title"
     :is-valid="isValid"
+    :readonly="readonly"
+    :show-edit-action="showEditAction"
     @cancel="emit('cancel')"
     @save="handleSave"
+    @edit="emit('edit')"
   >
-    <div class="flex flex-col gap-6">
+    <fieldset :disabled="readonly" class="brief-form m-0 p-0 border-0 min-w-0 flex flex-col gap-6">
       <div class="flex flex-col gap-3">
         <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
           1. Чи це нове ГЕО?
@@ -200,6 +218,19 @@ function handleSave() {
           placeholder="Будь-яка додаткова інформація..."
         />
       </div>
-    </div>
+    </fieldset>
   </BriefModalShell>
 </template>
+
+<style scoped>
+.brief-form:disabled {
+  opacity: 1;
+}
+.brief-form:disabled :deep(input),
+.brief-form:disabled :deep(textarea),
+.brief-form:disabled :deep(select),
+.brief-form:disabled :deep(button) {
+  opacity: 1 !important;
+  cursor: default;
+}
+</style>

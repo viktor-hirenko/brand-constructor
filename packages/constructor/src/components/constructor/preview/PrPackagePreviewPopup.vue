@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { PrPackage } from '@brand-constructor/shared/types'
 import { useConstructorStore } from '@/stores/constructor'
-import { useEscapeClose } from '@/composables/useEscapeClose'
+import BriefModalShell from '@/components/constructor/modals/BriefModalShell.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ClockIcon from '@/components/icons/ClockIcon.vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
@@ -44,43 +44,23 @@ const features = computed<PackageFeature[]>(() =>
 function handleClose() {
   store.closePrPackagePreview()
 }
-
-useEscapeClose(handleClose)
 </script>
 
 <template>
-  <div
+  <BriefModalShell
     v-if="pkg"
-    class="flex flex-col h-full w-full bg-white px-6 pt-6 pb-6 gap-6"
-    role="dialog"
-    aria-modal="true"
-    :aria-label="`Перегляд пакету ${pkg.name}`"
+    :title="pkg.name"
+    readonly
+    @cancel="handleClose"
   >
-    <header class="flex items-start justify-between gap-4 shrink-0">
-      <div class="min-w-0 flex-1">
-        <h2
-          class="text-[24px] font-medium leading-8 tracking-[-0.4492px] text-[#0a0a0a] truncate"
-        >
-          {{ pkg.name }}
-        </h2>
-        <p
-          v-if="pkg.description"
-          class="mt-2 text-base text-muted-foreground tracking-[-0.31px]"
-        >
-          {{ pkg.description }}
-        </p>
-      </div>
-      <button
-        type="button"
-        class="inline-flex items-center justify-center size-12 shrink-0 rounded-full bg-[#f9f9fb] text-[#141B34] hover:bg-[#ececf0] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8c7cc]"
-        aria-label="Закрити"
-        @click="handleClose"
+    <div class="flex flex-col gap-4">
+      <p
+        v-if="pkg.description"
+        class="text-base text-muted-foreground tracking-[-0.31px]"
       >
-        <CloseIcon class="size-6" :stroke-width="1.5" />
-      </button>
-    </header>
+        {{ pkg.description }}
+      </p>
 
-    <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pr-1">
       <div v-if="pkg.timeline" class="p-4 bg-[#f3f3f5] rounded-[10px]">
         <div class="flex items-center gap-2 mb-1">
           <ClockIcon class="size-4 text-muted-foreground shrink-0" />
@@ -132,5 +112,5 @@ useEscapeClose(handleClose)
         </ul>
       </div>
     </div>
-  </div>
+  </BriefModalShell>
 </template>

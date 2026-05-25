@@ -60,6 +60,20 @@ watch(selectedMode, loadConcepts)
 
 watch(hasBrief, val => { isCreatingNew.value = val }, { immediate: true })
 
+/**
+ * The read-only brief modal raises a one-shot edit request when the user
+ * clicks «Редагувати»; reuse the existing `showNewModal` flow so the same
+ * `NewConceptModal` instance handles both view → edit transitions.
+ */
+watch(
+  () => store.briefPreviewEditRequested,
+  kind => {
+    if (kind !== 'concept') return
+    showNewModal.value = true
+    store.consumeBriefPreviewEditRequest()
+  },
+)
+
 function handleSelect(conceptId: string) {
   if (conceptId === selectedId.value) {
     store.setConcept({ selectedId: null, previewId: null })

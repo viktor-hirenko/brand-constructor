@@ -4,18 +4,30 @@ import { useEscapeClose } from '@/composables/useEscapeClose'
 
 interface BriefModalShellProps {
   title: string
-  isValid: boolean
+  isValid?: boolean
   /** 'lg' = fixed 672px wide (default); 'md' = fluid max-w-[560px] */
   size?: 'md' | 'lg'
+  /**
+   * Read-only mode: shell renders the form (slot) as disabled and replaces
+   * the «Зберегти» action with optional «Редагувати». Used by brief preview
+   * overlays that reuse `New*Modal` components without duplicating markup.
+   */
+  readonly?: boolean
+  /** Show «Редагувати» primary action in read-only mode. */
+  showEditAction?: boolean
 }
 
 const props = withDefaults(defineProps<BriefModalShellProps>(), {
+  isValid: true,
   size: 'lg',
+  readonly: false,
+  showEditAction: false,
 })
 
 const emit = defineEmits<{
   cancel: []
   save: []
+  edit: []
 }>()
 
 useEscapeClose(() => emit('cancel'))
@@ -39,6 +51,7 @@ useEscapeClose(() => emit('cancel'))
           <button
             type="button"
             class="size-10 rounded-full bg-[#ececf0] flex items-center justify-center hover:bg-[#dddde2] transition-colors"
+            aria-label="Закрити"
             @click="emit('cancel')"
           >
             <CloseIcon class="size-5" />
@@ -57,15 +70,24 @@ useEscapeClose(() => emit('cancel'))
             class="h-[46px] px-6 border border-black/10 rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a] hover:bg-black/[0.02] transition-all"
             @click="emit('cancel')"
           >
-            Скасувати
+            {{ readonly ? 'Закрити' : 'Скасувати' }}
           </button>
           <button
+            v-if="!readonly"
             type="button"
             :disabled="!isValid"
             class="h-[46px] px-6 bg-[#030213] text-white rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all"
             @click="emit('save')"
           >
             Зберегти
+          </button>
+          <button
+            v-else-if="showEditAction"
+            type="button"
+            class="h-[46px] px-6 bg-[#030213] text-white rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] hover:opacity-90 transition-all"
+            @click="emit('edit')"
+          >
+            Редагувати
           </button>
         </div>
       </div>
