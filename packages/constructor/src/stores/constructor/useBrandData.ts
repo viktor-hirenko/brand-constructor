@@ -99,7 +99,19 @@ export function useBrandData() {
   const brandId = ref<string | null>(null)
   const brandInternalName = ref<string | null>(null)
   const brandStatus = ref<string>('draft')
-  const successType = ref<'saved' | 'submitted' | 'needs_revision' | 'approved'>('saved')
+
+  /**
+   * Derived from `brandStatus` — maps the server status to the legacy
+   * "what just happened" label consumed by `BrandSuccessView`.
+   * Read-only: mutations go through `setBrandStatus` only.
+   */
+  const successType = computed<'saved' | 'submitted' | 'needs_revision' | 'approved'>(() => {
+    const s = brandStatus.value
+    if (s === 'submitted') return 'submitted'
+    if (s === 'needs_revision') return 'needs_revision'
+    if (s === 'approved') return 'approved'
+    return 'saved'
+  })
   const saveError = ref<string | null>(null)
 
   // ─── Wizard state ──────────────────────────────────────────────────────────
@@ -269,10 +281,6 @@ export function useBrandData() {
     brandStatus.value = status
   }
 
-  function setSuccessType(type: 'saved' | 'submitted' | 'needs_revision' | 'approved') {
-    successType.value = type
-  }
-
   function setReturnToStep(step: number | null) {
     returnToStep.value = step
   }
@@ -435,7 +443,6 @@ export function useBrandData() {
     successType,
     saveError,
     setBrandStatus,
-    setSuccessType,
     // Wizard state
     currentStep,
     stepData,

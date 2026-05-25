@@ -21,6 +21,10 @@ import {
 } from '@/composables/usePrintBrand'
 import ReviewUnifiedView from '@/components/constructor/review/ReviewUnifiedView.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
+import {
+  useBrandBriefReviewPhase,
+  BRAND_BRIEF_REVIEW_PHASE,
+} from '@/composables/useBrandBriefReviewPhase'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -38,19 +42,15 @@ const prPackages = computed(() => librariesStore.prPackages)
 const isCeoView = computed(() => authStore.isCeo)
 const brandStatus = computed(() => store.brandStatus ?? 'draft')
 
+const { reviewPhase } = useBrandBriefReviewPhase()
+
 /** True when PO is viewing a brief that was returned from CEO (needs_revision). */
 const isPoReturnedView = computed(
-  () => !isCeoView.value && brandStatus.value === 'needs_revision'
+  () => reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.AUTHOR_RETURNED
 )
 
 /** True if the current user is the brand owner (can resolve CEO comments). */
 const isPoOwner = computed(() => !isCeoView.value && !!store.brandId)
-
-/** True when CEO/admin is reviewing a brand they need to act on (submitted or already returned). */
-const ceoFinalizeView = computed(
-  () =>
-    isCeoView.value && (brandStatus.value === 'submitted' || brandStatus.value === 'needs_revision')
-)
 
 /**
  * CEO viewing a brand that was already sent back to PO for revision.
@@ -61,34 +61,20 @@ const ceoFrozenView = computed(
   () => isCeoView.value && brandStatus.value === 'needs_revision'
 )
 
-/** PO final step in draft — Figma Product view (1566:27958). Same shell for CEO viewing a draft. */
-const poDraftView = computed(() => brandStatus.value === 'draft')
-
-/** PO viewing their submitted brand (awaiting CEO review) — read-only unified layout. */
-const poSubmittedView = computed(
-  () => !isCeoView.value && brandStatus.value === 'submitted'
-)
-
 /**
- * Approved brief — read-only terminal view shown to ANY role (PO, CEO/admin,
- * external teams). Same Figma "Product view" shell as PO draft. No edit, no
- * submit, no CEO actions. Footer keeps only Download PDF.
- *
- * `rejected` is intentionally not handled here: the CEO flow only exposes
- * "approve" and "send for revision", so no UI path produces this status.
- * The enum still exists in the worker `STATUS_TRANSITIONS` table and the
- * admin filter tab strictly for read-only display of legacy data.
+ * Maps the current review phase to the string union expected by
+ * `ReviewUnifiedView`'s `:review-mode` prop.
  */
-const approvedReadOnlyView = computed(() => brandStatus.value === 'approved')
-
 const reviewMode = computed<
   'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'approved'
 >(() => {
-  if (ceoFinalizeView.value) return 'ceo'
-  if (isPoReturnedView.value) return 'po-returned'
-  if (poSubmittedView.value) return 'po-submitted'
-  if (approvedReadOnlyView.value) return 'approved'
-  return 'po-draft'
+  switch (reviewPhase.value) {
+    case BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_REVIEW: return 'ceo'
+    case BRAND_BRIEF_REVIEW_PHASE.AUTHOR_RETURNED:   return 'po-returned'
+    case BRAND_BRIEF_REVIEW_PHASE.AUTHOR_SUBMITTED:  return 'po-submitted'
+    case BRAND_BRIEF_REVIEW_PHASE.APPROVED:          return 'approved'
+    default:                                          return 'po-draft'
+  }
 })
 
 // ─── CEO orchestration composables (explicit two-way wiring) ──────────────
@@ -324,20 +310,11 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
     await apiPatch<Brand>(`/api/brands/${store.brandId}/status`, payload)
     store.setBrandStatus(newStatus)
 
-    if (newStatus === 'needs_revision') {
-      store.setSuccessType('needs_revision')
-      router.push('/constructor/success')
-      return
-    }
-
-    if (newStatus === 'approved') {
-      store.setSuccessType('approved')
-      router.push('/constructor/success')
-      return
-    }
-
-    if (newStatus === 'submitted') {
-      store.setSuccessType('submitted')
+    if (
+      newStatus === 'needs_revision' ||
+      newStatus === 'approved' ||
+      newStatus === 'submitted'
+    ) {
       router.push('/constructor/success')
       return
     }

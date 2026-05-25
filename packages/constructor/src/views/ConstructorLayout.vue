@@ -12,13 +12,13 @@ import {
   DESIGN_SHELL_WIDTH,
 } from '@/constants/layoutShell'
 import { useViewportScale } from '@/composables/useViewportScale'
+import { useBrandBriefReviewPhase, BRAND_BRIEF_REVIEW_PHASE } from '@/composables/useBrandBriefReviewPhase'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import ConceptMobilePreviewSkeleton from '@/components/constructor/skeletons/ConceptMobilePreviewSkeleton.vue'
 import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPanel.vue'
 import ConstructorDualPaneShell from '@/components/constructor/layout/ConstructorDualPaneShell.vue'
-import type { LayoutMode } from '@/components/constructor/layout/dualPaneLayoutClasses'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
@@ -39,74 +39,19 @@ const { scale: shellScale } = useViewportScale({
 })
 
 /**
- * True when CEO/admin is reviewing a submitted brand (or one already returned)
- * on the final step — drives the "no header / no footer / brand preview panel"
- * layout that matches Figma 1473:23546.
+ * Derive the current interactive phase from status + role + route meta.
+ * Replaces the six manual phase flags that previously lived in this component.
  */
-const isCeoReselect = computed(() => route.meta.ceoReselect === true)
-const isPoEdit = computed(() => route.meta.poEdit === true)
-
-const isCeoFinalize = computed(() => {
-  if (route.meta.ceoReselect) return false
-  if ((route.meta.step as number | undefined) !== 8) return false
-  if (!authStore.isCeo) return false
-  const status = store.brandStatus
-  return status === 'submitted' || status === 'needs_revision'
-})
-
-/**
- * Final step in draft OR submitted — same shell as CEO finalize (Figma Product view).
- * Applies to ANY brief creator (PO/Admin/HeadDHC/CPO_CEO per PRD §4): the wizard's
- * own author always sees the unified review layout on step 8, never the legacy
- * wizard-shell. CEO/Admin reviewing someone else's submitted/needs_revision brief
- * is handled by `isCeoFinalize` (split by status, not by role).
- */
-const isPoDraftReview = computed(() => {
-  if (route.meta.ceoReselect) return false
-  if (route.meta.poEdit) return false
-  if ((route.meta.step as number | undefined) !== 8) return false
-  return store.brandStatus === 'draft' || store.brandStatus === 'submitted'
-})
-
-/**
- * Approved brief — read-only review (any role: PO, CEO/admin, external teams).
- * Uses the same Figma "Product view" shell as PO draft / CEO finalize:
- * no wizard header, no wizard footer, BrandPreviewPanel on the right.
- */
-const isApprovedReview = computed(() => {
-  if (route.meta.ceoReselect) return false
-  if (route.meta.poEdit) return false
-  if ((route.meta.step as number | undefined) !== 8) return false
-  return store.brandStatus === 'approved'
-})
-
-/**
- * PO viewing a brief returned from CEO (`needs_revision`).
- * Uses the same shell as CEO finalize / PO draft review — no wizard header,
- * no wizard footer, BrandPreviewPanel on the right (Figma 1958:3720).
- *
- * NOTE: PO edit routes (`route.meta.poEdit`) also live on step 8 with
- * status `needs_revision`, but they must NOT be treated as returned-review —
- * they have their own header/footer/right panel (ConceptPreviewSlider, etc.).
- */
-const isPoReturnedReview = computed(() => {
-  if (route.meta.ceoReselect) return false
-  if (route.meta.poEdit) return false
-  if ((route.meta.step as number | undefined) !== 8) return false
-  if (authStore.isCeo) return false
-  return store.brandStatus === 'needs_revision'
-})
-
-/** Aggregate flag — any review-shell layout (no wizard header/footer). */
-const isReviewShell = computed(
-  () =>
-    isCeoFinalize.value ||
-    isCeoReselect.value ||
-    isPoEdit.value ||
-    isPoDraftReview.value ||
-    isPoReturnedReview.value ||
-    isApprovedReview.value
-)
+const {
+  reviewPhase,
+  isAlternativeSelection,
+  isRevisionResponse,
+  isSupervisorReview,
+  isAuthorReturned,
+  isApprovedPhase,
+  isReviewShell,
+  layoutMode,
+} = useBrandBriefReviewPhase()
 
 const currentStep = computed(() => (route.meta.step as number) || 1)
 
@@ -136,22 +81,8 @@ const isLastStep = computed(() => currentStep.value === totalSteps)
 const isFullWidth = computed(() => [5, 6].includes(currentStep.value))
 const isViewMode = computed(() => route.path.startsWith('/constructor/brand/'))
 
-/** Drives padding on left/right panes in ConstructorDualPaneShell */
-const layoutMode = computed<LayoutMode>(() => {
-  if (isCeoReselect.value || isPoEdit.value) return 'edit'
-  if (
-    isCeoFinalize.value ||
-    isPoDraftReview.value ||
-    isPoReturnedReview.value ||
-    isApprovedReview.value
-  ) {
-    return 'review'
-  }
-  return 'wizard'
-})
-
 const shellFullWidth = computed(
-  () => isFullWidth.value && !isCeoReselect.value && !isPoEdit.value
+  () => isFullWidth.value && !isAlternativeSelection.value && !isRevisionResponse.value
 )
 
 const showRightPane = computed(() => !shellFullWidth.value)
@@ -276,7 +207,7 @@ const ceoReselectMobilePreviewConcept = computed(() => {
 const poEditMobilePreviewConceptFull = ref<Concept | null>(null)
 
 async function loadPoEditMobilePreviewConcept() {
-  if (!isPoEdit.value) return
+  if (!isRevisionResponse.value) return
   if (route.name === 'po-edit-concept') return
 
   const id = store.stepData.concept.selectedId
@@ -393,7 +324,9 @@ function handleCancelSectionEdit() {
 
 function loadPreviewData() {
   const shouldLoad =
-    isCeoReselect.value || isPoEdit.value || [2, 3, 4, 8].includes(currentStep.value)
+    isAlternativeSelection.value ||
+    isRevisionResponse.value ||
+    [2, 3, 4, 8].includes(currentStep.value)
   if (!shouldLoad) return
   librariesStore.load(store.brandId)
 }
@@ -403,10 +336,10 @@ onMounted(() => {
   loadStep9Variants()
 })
 watch(currentStep, loadPreviewData)
-watch(isCeoReselect, v => {
+watch(isAlternativeSelection, v => {
   if (v) loadPreviewData()
 })
-watch(isPoEdit, v => {
+watch(isRevisionResponse, v => {
   if (v) {
     loadPreviewData()
     void loadPoEditMobilePreviewConcept()
@@ -415,7 +348,7 @@ watch(isPoEdit, v => {
 watch(
   () => [store.stepData.concept.selectedId, route.name] as const,
   () => {
-    if (isPoEdit.value) void loadPoEditMobilePreviewConcept()
+    if (isRevisionResponse.value) void loadPoEditMobilePreviewConcept()
   },
 )
 
@@ -569,10 +502,10 @@ watch(currentStep, step => {
 
       <template #right>
         <BrandPreviewPanel
-          v-if="isCeoFinalize || isPoDraftReview || isPoReturnedReview || isApprovedReview"
+          v-if="layoutMode === 'review'"
         />
 
-        <template v-else-if="isPoEdit">
+        <template v-else-if="isRevisionResponse">
           <ConceptPreviewSlider
             v-if="route.name === 'po-edit-concept' && route.query.mode !== 'post-apply'"
             :concept="poEditPreviewConcept"
@@ -586,7 +519,7 @@ watch(currentStep, step => {
           </template>
         </template>
 
-        <template v-else-if="isCeoReselect">
+        <template v-else-if="isAlternativeSelection">
           <template v-if="route.name === 'ceo-reselect-concept'">
             <ConceptPreviewSliderSkeleton
               v-if="ceoReselectRightPanelLoading && hasCeoSavedConceptOverride"
