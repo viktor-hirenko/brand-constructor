@@ -6,8 +6,8 @@ import { useAuthStore } from '@/stores/auth'
 import { apiPatch, apiGet } from '@/composables/useApi'
 import { useLibrariesStore } from '@/stores/libraries'
 import { useReviewComponentSelections } from '@/composables/useReviewComponentSelections'
-import { useCeoApplyVariants } from '@/composables/useCeoApplyVariants'
-import { useCeoReviewComments } from '@/composables/useCeoReviewComments'
+import { useSupervisorApplyVariants } from '@/composables/useSupervisorApplyVariants'
+import { useSupervisorReviewComments } from '@/composables/useSupervisorReviewComments'
 import { logSilent } from '@/utils/log'
 import type {
   Concept,
@@ -79,7 +79,7 @@ const reviewMode = computed<
 
 // ─── CEO orchestration composables (explicit two-way wiring) ──────────────
 
-const apply = useCeoApplyVariants({
+const apply = useSupervisorApplyVariants({
   isPoReturnedView,
   concepts,
   externalNamings,
@@ -87,7 +87,7 @@ const apply = useCeoApplyVariants({
   router,
 })
 
-const comments = useCeoReviewComments({
+const comments = useSupervisorReviewComments({
   isPoReturnedView,
   isCeoChoiceAnAlternative: apply.isCeoChoiceAnAlternative,
 })

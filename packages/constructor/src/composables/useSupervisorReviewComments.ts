@@ -1,12 +1,13 @@
 import { computed, reactive, ref, watch, type ComputedRef } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
-import type { CeoLibraryTab } from '@/composables/useCeoApplyVariants'
+import type { CeoLibraryTab } from '@/composables/useSupervisorApplyVariants'
 
 /**
- * Sections that must have a CEO comment before "Повернути на доопрацювання"
- * is accepted, *when* CEO picked an alternative there. Mirrors
- * `CEO_LIBRARY_KEYS` from `useCeoApplyVariants` — kept local to keep this
- * composable's surface self-contained.
+ * Sections that must have a Supervisor comment before
+ * "Повернути на доопрацювання" is accepted, *when* the Supervisor picked
+ * an alternative there. Mirrors `CEO_LIBRARY_KEYS` from
+ * `useSupervisorApplyVariants` — kept local to keep this composable's
+ * surface self-contained.
  */
 const SELECTION_REQUIRING_COMMENT: CeoLibraryTab[] = [
   'concept',
@@ -32,19 +33,22 @@ const SECTION_TO_COMMENT_KEY: Record<string, string> = {
   visualComponents: 'visualComponents',
 }
 
-interface UseCeoReviewCommentsOptions {
-  /** True when the PO is viewing a brand returned by CEO (needs_revision). */
+interface UseSupervisorReviewCommentsOptions {
+  /**
+   * True when the Author (Product Owner) is viewing a brand returned by the
+   * Supervisor (`needs_revision`).
+   */
   isPoReturnedView: ComputedRef<boolean>
   /**
-   * Whether the CEO's current pick for `key` differs from the PO's selection.
-   * Supplied by `useCeoApplyVariants` so the two composables stay decoupled
-   * and explicit-wireable from the parent.
+   * Whether the Supervisor's current pick for `key` differs from the
+   * Author's selection. Supplied by `useSupervisorApplyVariants` so the two
+   * composables stay decoupled and explicit-wireable from the parent.
    */
   isCeoChoiceAnAlternative: (key: CeoLibraryTab, value: string | string[]) => boolean
 }
 
 /**
- * Orchestration layer for CEO comments on the Step 10 review screen.
+ * Orchestration layer for Supervisor comments on the Step 10 review screen.
  *
  * Owns:
  *  - the reactive `ceoComments` mirror (keyed by section + `general`),
@@ -52,18 +56,21 @@ interface UseCeoReviewCommentsOptions {
  *  - the `revisionMissingSections` / `revisionRequiresAnyComment` UI gates
  *    for the "Повернути на доопрацювання" flow, plus the derived
  *    `revisionWarning` message
- *  - inline read helpers for the PO returned view (`hasSectionUnresolvedComment`,
- *    `isSectionCeoCommentResolved`, `getSectionCeoCommentValue`,
- *    `isSectionHighlighted`)
+ *  - inline read helpers for the Author returned view
+ *    (`hasSectionUnresolvedComment`, `isSectionCeoCommentResolved`,
+ *    `getSectionCeoCommentValue`, `isSectionHighlighted`)
  *  - mutation handlers wired to the unified review template
  *    (`handleCeoCommentBySection`, `handleGeneralCeoCommentUpdate`,
  *    `handleCeoCommentResolve`, `handleCeoCommentUnresolve`) plus the
  *    `validateNeedsRevision` predicate used by `handleStatusChange`
  *
  * Apply-variant state and dependency-guard modals live in the sibling
- * `useCeoApplyVariants`; the parent wires them together.
+ * `useSupervisorApplyVariants`; the parent wires them together.
+ *
+ * NB on naming: public surface keeps `ceo*` prefixes — see
+ * `useSupervisorApplyVariants` header for the rationale.
  */
-export function useCeoReviewComments(opts: UseCeoReviewCommentsOptions) {
+export function useSupervisorReviewComments(opts: UseSupervisorReviewCommentsOptions) {
   const store = useConstructorStore()
   const { isPoReturnedView, isCeoChoiceAnAlternative } = opts
 

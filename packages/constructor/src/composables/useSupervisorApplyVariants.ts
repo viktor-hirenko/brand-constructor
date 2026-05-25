@@ -26,10 +26,13 @@ import type {
 export type { CeoLibraryTab } from '@/utils/ceoRevisionGate'
 export { CEO_LIBRARY_KEYS, ATTENTION_SECTION_KEYS } from '@/utils/ceoRevisionGate'
 
-interface UseCeoApplyVariantsOptions {
-  /** True when the PO is viewing a brand that was returned by CEO (needs_revision). */
+interface UseSupervisorApplyVariantsOptions {
+  /**
+   * True when the Author (Product Owner) is viewing a brand that was
+   * returned by the Supervisor (`needs_revision`).
+   */
   isPoReturnedView: ComputedRef<boolean>
-  /** Library entries needed to resolve CEO picks into display objects. */
+  /** Library entries needed to resolve Supervisor picks into display objects. */
   concepts: ComputedRef<Concept[]>
   externalNamings: ComputedRef<ExternalNaming[]>
   internalNamings: ComputedRef<InternalNaming[]>
@@ -38,28 +41,38 @@ interface UseCeoApplyVariantsOptions {
 }
 
 /**
- * Orchestration layer for the CEO "apply variant" flow on the Step 10 review
- * screen. Owns:
+ * Orchestration layer for the Supervisor "apply variant" flow on the
+ * Step 10 review screen. Owns:
  *
- *  - pure helpers for normalising `string | string[]` CEO selections
+ *  - pure helpers for normalising `string | string[]` Supervisor selections
  *    (`ceoSelectionAsString`, `ceoSelectionAsArray`,
  *    `flattenCeoCommentsForPdf`, `isCeoChoiceAnAlternative`)
- *  - per-section "applied" computeds (PO returned view)
+ *  - per-section "applied" computeds (Author returned view)
  *    (`isCeoConceptApplied`, `isCeoExternalApplied`,
  *    `isCeoInternalApplied`, `hasConceptMismatch`)
  *  - the unified `attentionCounter` + `submitBlocked` gate, plus
  *    `sectionApplyFlags` consumed by `<ReviewUnifiedView>`
- *  - CEO display projections rendered next to the PO selection
+ *  - Supervisor display projections rendered next to the Author selection
  *    (`reviewCeoConceptForBlock`, `ceoExternalItemsForReview`,
  *    `ceoInternalNameForReview`)
  *  - the two Figma dependency-guard modals (`1985:4362` / `1985:4657`)
  *    with their `showApply…` / `showEdit…` ref state and apply handlers
  *
- * The reactive CEO-comment mirror (Step 10 sibling concerns) lives in
- * `useCeoReviewComments`; that composable consumes `isCeoChoiceAnAlternative`
- * from here via explicit prop wiring done by the parent.
+ * The reactive Supervisor-comment mirror (Step 10 sibling concerns) lives
+ * in `useSupervisorReviewComments`; that composable consumes
+ * `isCeoChoiceAnAlternative` from here via explicit prop wiring done by
+ * the parent.
+ *
+ * NB on naming: the composable's **public surface** still uses the `ceo*`
+ * prefix on its computed refs and helper return values
+ * (`isCeoConceptApplied`, `ceoExternalItemsForReview`,
+ * `ceoSelectionAsString`, …) because those names mirror the
+ * frontend↔worker contract (D1 `brands.ceoSelections` /
+ * `brands.ceoComments`) — see `useSupervisorReview` for the full
+ * rationale. Only the composable's identity (factory function + filename)
+ * has been updated to the new vocabulary.
  */
-export function useCeoApplyVariants(opts: UseCeoApplyVariantsOptions) {
+export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptions) {
   const store = useConstructorStore()
   const { isPoReturnedView, concepts, externalNamings, internalNamings, router } = opts
 
