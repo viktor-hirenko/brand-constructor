@@ -113,10 +113,12 @@ onMounted(() => {
   store.seedSupervisorReselectFromBrand('concept')
   // Do NOT pre-fill previewId with the Author's concept — right panel starts
   // empty until the Supervisor clicks a card.
-  // Pre-fill comment from the Author's comment if the Supervisor hasn't written one yet.
-  if (!store.brandCeoComments?.concept) {
-    store.setCeoCommentValue('concept', store.stepData.concept.comment ?? '')
-  }
+  // Comment field stays empty by default. Pre-seeding the Author's text into
+  // the Supervisor's `brandCeoComments` slot would (a) mislead the Supervisor
+  // into editing what looks like their own comment but is the Author's, and
+  // (b) silently overwrite any in-progress Supervisor comment after F5 because
+  // the server has not yet persisted `brandCeoComments` (this only happens on
+  // status-change). The supervisor-comments envelope handles F5 persistence.
   loadPoConcept()
   loadConcepts()
 })

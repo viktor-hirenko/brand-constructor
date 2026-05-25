@@ -14,7 +14,7 @@
  * direct object spread without any transformation.
  */
 
-import type { BrandStepData } from '@brand-constructor/shared/types'
+import type { BrandCeoComments, BrandStepData } from '@brand-constructor/shared/types'
 
 /** Maximum age of a cached envelope. Stale entries are silently dropped. */
 export const BRIEF_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000
@@ -61,5 +61,29 @@ export interface BriefAuthorRevisionEnvelope {
     editingSection: string | null
     editingSectionSnapshot: unknown
     stepDataOverlay: BrandStepData | null
+  }
+}
+
+/**
+ * Cached state for the Supervisor's in-progress comment edits.
+ *
+ * Supervisor comments live in `brandCeoComments` (a Pinia ref in
+ * `useSupervisorReview`) but are NOT pushed to the server until the
+ * Supervisor presses Approve / Needs Revision (the status-change handler in
+ * `BriefReviewView` sends the full `ceoComments` payload alongside the new
+ * status). Without F5 persistence, every comment typed in
+ * `/ceo-reselect/*` views or on the final review screen would be lost on
+ * refresh because `loadBrand` re-hydrates from the stale server snapshot.
+ *
+ * The envelope stores the entire `BrandCeoComments` map (including the
+ * `resolved` flags) so the overlay can replace the loaded state verbatim.
+ * Cleared by `purgeSupervisorCommentsCache` after a successful PATCH /status.
+ */
+export interface BriefSupervisorCommentsEnvelope {
+  briefId: string
+  savedAt: number
+  briefStatus?: string
+  draft: {
+    commentsOverlay: BrandCeoComments
   }
 }

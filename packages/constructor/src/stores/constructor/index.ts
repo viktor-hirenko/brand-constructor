@@ -57,6 +57,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   } = useSupervisorReview({
     stepData: brandDataPublic.stepData,
     brandId: brandDataPublic.brandId,
+    brandStatus: brandDataPublic.brandStatus,
     saveBrand: brandDataPublic.saveBrand,
   })
 

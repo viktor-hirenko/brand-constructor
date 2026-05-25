@@ -60,10 +60,8 @@ async function loadNamings() {
 
 onMounted(async () => {
   store.seedSupervisorReselectFromBrand('internalNaming')
-  // Pre-fill comment from the Author's comment if the Supervisor hasn't written one yet.
-  if (!store.brandCeoComments?.internalNaming) {
-    store.setCeoCommentValue('internalNaming', store.stepData.internalNaming.comment ?? '')
-  }
+  // Comment field stays empty by default — see AlternativeConceptView for the
+  // rationale (leaking Author text into the Supervisor slot + F5 wipe).
   await loadNamings()
 })
 

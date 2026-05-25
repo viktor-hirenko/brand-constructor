@@ -1,6 +1,11 @@
-import { ref, type Ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 import { apiPatch } from '@/composables/useApi'
-import { clearSupervisorReselectDraft } from '@/domain/persistence/briefDraftStorage'
+import {
+  clearSupervisorCommentsDraft,
+  clearSupervisorReselectDraft,
+  readSupervisorCommentsDraft,
+  writeSupervisorCommentsDraft,
+} from '@/domain/persistence/briefDraftStorage'
 import { readSelectionAsString, readSelectionAsArray } from './selectionHelpers'
 import type {
   Brand,
@@ -9,11 +14,21 @@ import type {
   CeoCommentMeta,
 } from '@brand-constructor/shared/types'
 
+function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  return ((...args: Parameters<T>) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }) as T
+}
+
 interface UseSupervisorReviewOptions {
   /** Wizard step-data ref owned by `useBrandData` — `applyCeoVariant` mutates it before saveBrand(). */
   stepData: Ref<BrandStepData>
   /** Brand id ref owned by `useBrandData` — used to address the PATCH endpoints. */
   brandId: Ref<string | null>
+  /** Brand status ref owned by `useBrandData` — used as stale-protection in the supervisor-comments envelope. */
+  brandStatus: Ref<string>
   /** `saveBrand()` from `useBrandData` — applyCeoVariant persists via the same wizard PUT. */
   saveBrand: () => Promise<boolean>
 }
@@ -53,10 +68,17 @@ interface UseSupervisorReviewOptions {
  * function + filename) has been updated to the new `Supervisor` vocabulary.
  */
 export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
-  const { stepData, brandId, saveBrand } = opts
+  const { stepData, brandId, brandStatus, saveBrand } = opts
 
   const brandCeoComments = ref<BrandCeoComments | null>(null)
   const brandCeoSelections = ref<Record<string, string | string[]> | null>(null)
+
+  /**
+   * Guard against the F5-restore writing the just-restored overlay back to
+   * localStorage and resetting the `savedAt` timestamp (which would defeat
+   * stale-protection).
+   */
+  const isRestoringComments = ref(false)
 
   const saveCeoSelectionsError = ref<string | null>(null)
   const saveCeoCommentResolvedError = ref<string | null>(null)
@@ -300,6 +322,68 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
     }
   }
 
+  // ─── F5 persistence of Supervisor comments ─────────────────────────────────
+
+  /**
+   * Persists `brandCeoComments` to localStorage on every change (debounced).
+   *
+   * Why this exists: comments only reach the server on a status-change PATCH
+   * (Approve / Needs Revision). Between typing and pressing the button — and
+   * across page refreshes during that window — the only durable home for the
+   * comment text is the supervisor-comments envelope. The status-change
+   * handler in `BriefReviewView` purges this envelope after a successful
+   * PATCH via `purgeSupervisorCommentsCache`.
+   *
+   * The `isRestoringComments` guard prevents the watcher from echoing the
+   * just-restored overlay back to storage (which would reset `savedAt` and
+   * defeat stale-protection). It is also used during `loadCeo` / `resetSlice`
+   * so the server-loaded baseline (or null reset) doesn't overwrite a
+   * still-valid envelope before `restoreSupervisorCommentsFromStorage` runs.
+   */
+  const persistSupervisorComments = debounce(() => {
+    if (isRestoringComments.value) return
+    if (!brandId.value) return
+    const map = brandCeoComments.value
+    if (map && Object.keys(map).length > 0) {
+      writeSupervisorCommentsDraft(brandId.value, map, brandStatus.value)
+    } else {
+      clearSupervisorCommentsDraft(brandId.value)
+    }
+  }, 400)
+
+  watch(brandCeoComments, persistSupervisorComments, { deep: true })
+
+  /**
+   * Overlays cached Supervisor comments over the freshly loaded server state.
+   * Called from the router AFTER `loadBrand` (which in turn calls `loadCeo`).
+   *
+   * Stale-protection: if the cached `briefStatus` no longer matches the
+   * current `brandStatus` (e.g. the Author already resubmitted, moving the
+   * brief from `needs_revision` back to `submitted`), the envelope is
+   * discarded — there is no meaningful way to merge old supervisor comments
+   * onto a transitioned brief.
+   */
+  function restoreSupervisorCommentsFromStorage(briefId: string): void {
+    if (!briefId) return
+    const envelope = readSupervisorCommentsDraft(briefId)
+    if (!envelope) return
+    if (envelope.briefStatus && envelope.briefStatus !== brandStatus.value) {
+      clearSupervisorCommentsDraft(briefId)
+      return
+    }
+    const overlay = envelope.draft.commentsOverlay
+    isRestoringComments.value = true
+    brandCeoComments.value = overlay && Object.keys(overlay).length > 0 ? overlay : null
+    queueMicrotask(() => {
+      isRestoringComments.value = false
+    })
+  }
+
+  /** Drop the cached envelope — called after PATCH /status succeeds. */
+  function purgeSupervisorCommentsCache(): void {
+    if (brandId.value) clearSupervisorCommentsDraft(brandId.value)
+  }
+
   // ─── Facade-orchestrated load + reset ──────────────────────────────────────
 
   /** Hydrates CEO comments + selections. Called by the facade's `loadBrand`. */
@@ -313,11 +397,19 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
     saveCeoCommentResolvedLoading.value = new Set()
     isApplyingCeoVariant.value = false
     applyCeoVariantError.value = null
+    // Guard the watcher: server hydration must NOT overwrite a still-valid
+    // supervisor-comments envelope before the router has a chance to call
+    // `restoreSupervisorCommentsFromStorage`.
+    isRestoringComments.value = true
     brandCeoComments.value = comments
     brandCeoSelections.value = selections
+    queueMicrotask(() => {
+      isRestoringComments.value = false
+    })
   }
 
   function resetSlice() {
+    isRestoringComments.value = true
     brandCeoComments.value = null
     brandCeoSelections.value = null
     saveCeoSelectionsError.value = null
@@ -326,6 +418,9 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
     saveCeoCommentResolvedLoading.value = new Set()
     isApplyingCeoVariant.value = false
     applyCeoVariantError.value = null
+    queueMicrotask(() => {
+      isRestoringComments.value = false
+    })
   }
 
   return {
@@ -343,6 +438,9 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
     applyCeoConceptAndExternal,
     setCeoSelectionValue,
     saveCeoSelections,
+    // F5 persistence of Supervisor comments
+    restoreSupervisorCommentsFromStorage,
+    purgeSupervisorCommentsCache,
     // Facade-internal
     loadCeo,
     resetSlice,

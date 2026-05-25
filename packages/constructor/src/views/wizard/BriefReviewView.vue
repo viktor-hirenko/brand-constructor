@@ -320,6 +320,15 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
       store.resetAuthorRevisionDraft()
     }
 
+    // The Supervisor has dispatched the brief (approve / needs_revision) —
+    // `brandCeoComments` was sent in the PATCH payload above and is now
+    // durably persisted on the server. Drop the supervisor-comments envelope
+    // so a subsequent F5 doesn't resurrect the same text on top of the
+    // server-side snapshot.
+    if (newStatus === 'needs_revision' || newStatus === 'approved') {
+      store.purgeSupervisorCommentsCache()
+    }
+
     if (
       newStatus === 'needs_revision' ||
       newStatus === 'approved' ||

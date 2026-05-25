@@ -1,12 +1,17 @@
+import type { BrandCeoComments } from '@brand-constructor/shared/types'
 import { logSilent } from '@/utils/log'
 import { briefDraftStorageKey, type BriefDraftScope } from './briefDraftStorageKey'
 import {
   BRIEF_DRAFT_MAX_AGE_MS,
   type BriefSupervisorReselectEnvelope,
+  type BriefSupervisorCommentsEnvelope,
   type BriefAuthorRevisionEnvelope,
 } from './briefDraftEnvelope'
 
-type Envelope = BriefSupervisorReselectEnvelope | BriefAuthorRevisionEnvelope
+type Envelope =
+  | BriefSupervisorReselectEnvelope
+  | BriefSupervisorCommentsEnvelope
+  | BriefAuthorRevisionEnvelope
 
 // ─── Write ────────────────────────────────────────────────────────────────────
 
@@ -90,6 +95,31 @@ export function readSupervisorReselectDraft(
 
 export function clearSupervisorReselectDraft(briefId: string): void {
   clearBriefDraft(briefId, 'supervisor-reselect')
+}
+
+// ─── Supervisor comments (Supervisor's in-progress brandCeoComments) ──────────
+
+export function writeSupervisorCommentsDraft(
+  briefId: string,
+  comments: BrandCeoComments,
+  briefStatus?: string
+): void {
+  writeBriefDraft<BriefSupervisorCommentsEnvelope>(briefId, 'supervisor-comments', {
+    briefId,
+    savedAt: Date.now(),
+    briefStatus,
+    draft: { commentsOverlay: comments },
+  })
+}
+
+export function readSupervisorCommentsDraft(
+  activeBriefId: string
+): BriefSupervisorCommentsEnvelope | null {
+  return readBriefDraft<BriefSupervisorCommentsEnvelope>(activeBriefId, 'supervisor-comments')
+}
+
+export function clearSupervisorCommentsDraft(briefId: string): void {
+  clearBriefDraft(briefId, 'supervisor-comments')
 }
 
 export function writeAuthorRevisionDraft(

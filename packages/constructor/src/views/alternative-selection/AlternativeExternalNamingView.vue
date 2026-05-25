@@ -136,10 +136,8 @@ onMounted(async () => {
     )
     store.setSupervisorReselectExternalNamingIds(filteredIds)
   }
-  // Pre-fill comment from the Author's comment if the Supervisor hasn't written one yet.
-  if (!store.brandCeoComments?.externalNaming) {
-    store.setCeoCommentValue('externalNaming', store.stepData.externalNaming.comment ?? '')
-  }
+  // Comment field stays empty by default — see AlternativeConceptView for the
+  // rationale (leaking Author text into the Supervisor slot + F5 wipe).
   await loadNamings()
 })
 
