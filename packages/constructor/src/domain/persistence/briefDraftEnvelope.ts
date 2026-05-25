@@ -98,3 +98,12 @@ export interface BriefSupervisorCommentsEnvelope {
     commentsOverlay: BrandCeoComments
   }
 }
+
+/** Per-concept gallery slide indices for the right-column ConceptPreviewSlider. */
+export interface BriefPreviewSlidesEnvelope {
+  briefId: string
+  savedAt: number
+  draft: {
+    slideIndicesByConceptId: Record<string, number>
+  }
+}

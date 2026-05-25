@@ -16,6 +16,11 @@ import type {
   NewConceptBrief,
   NewNamingBrief,
 } from '@brand-constructor/shared/types'
+import {
+  clearPreviewSlidesDraft,
+  readPreviewSlidesDraft,
+  writePreviewSlidesDraft,
+} from '@/domain/persistence/briefDraftStorage'
 
 const DRAFT_STORAGE_KEY = 'brand-constructor-draft'
 
@@ -121,8 +126,10 @@ export function useBrandData() {
   const isLoading = ref(false)
   const isSaving = ref(false)
   const returnToStep = ref<number | null>(null)
-  /** Persists across concept preview switches on step 2 (not saved to API). */
+  /** Persists across concept preview switches (not saved to API). */
   const step3PreviewSlideIndex = ref(0)
+  /** F5-safe map: concept id -> last viewed gallery slide index. */
+  const previewSlideIndicesByConceptId = ref<Record<string, number>>({})
 
   const totalSteps = 8
 
@@ -285,8 +292,64 @@ export function useBrandData() {
     returnToStep.value = step
   }
 
-  function setStep3PreviewSlideIndex(index: number) {
+  function setStep3PreviewSlideIndex(index: number, conceptId?: string | null) {
     step3PreviewSlideIndex.value = index
+    if (!conceptId) return
+    previewSlideIndicesByConceptId.value = {
+      ...previewSlideIndicesByConceptId.value,
+      [conceptId]: index,
+    }
+    schedulePreviewSlidesPersist()
+  }
+
+  function applyPreviewSlideIndexForConcept(
+    conceptId: string | null | undefined,
+    maxIndex = Number.POSITIVE_INFINITY
+  ) {
+    if (!conceptId) {
+      step3PreviewSlideIndex.value = 0
+      return
+    }
+    const saved = previewSlideIndicesByConceptId.value[conceptId] ?? 0
+    const clampedMax = Number.isFinite(maxIndex) ? maxIndex : saved
+    step3PreviewSlideIndex.value = Math.min(Math.max(0, saved), Math.max(0, clampedMax))
+  }
+
+  function persistPreviewSlidesToStorage() {
+    const id = brandId.value
+    if (id) {
+      writePreviewSlidesDraft(id, previewSlideIndicesByConceptId.value)
+      return
+    }
+    if (!isDraft.value) return
+    saveDraftToStorage()
+  }
+
+  const schedulePreviewSlidesPersist = debounce(persistPreviewSlidesToStorage, 400)
+
+  function restorePreviewSlidesFromStorage(activeBriefId?: string) {
+    try {
+      const id = activeBriefId ?? brandId.value
+      if (id) {
+        const envelope = readPreviewSlidesDraft(id)
+        previewSlideIndicesByConceptId.value = envelope?.draft.slideIndicesByConceptId ?? {}
+        return
+      }
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as {
+        previewSlideIndicesByConceptId?: Record<string, number>
+      }
+      previewSlideIndicesByConceptId.value = parsed.previewSlideIndicesByConceptId ?? {}
+    } catch (err) {
+      logSilent('restorePreviewSlidesFromStorage', err)
+    }
+  }
+
+  function clearPreviewSlidesStorage(activeBriefId?: string | null) {
+    previewSlideIndicesByConceptId.value = {}
+    const id = activeBriefId ?? brandId.value
+    if (id) clearPreviewSlidesDraft(id)
   }
 
   // ─── Draft localStorage ────────────────────────────────────────────────────
@@ -306,6 +369,7 @@ export function useBrandData() {
         JSON.stringify({
           stepData: stepData.value,
           currentStep: currentStep.value,
+          previewSlideIndicesByConceptId: previewSlideIndicesByConceptId.value,
           savedAt: Date.now(),
         })
       )
@@ -326,6 +390,8 @@ export function useBrandData() {
           ...sd,
           stepLayoutVersion: 2,
         }
+        previewSlideIndicesByConceptId.value =
+          parsed.previewSlideIndicesByConceptId ?? {}
         return true
       }
     } catch (err) {
@@ -432,6 +498,7 @@ export function useBrandData() {
     isDraft.value = true
     returnToStep.value = null
     step3PreviewSlideIndex.value = 0
+    previewSlideIndicesByConceptId.value = {}
     clearDraftFromStorage()
   }
 
@@ -452,7 +519,11 @@ export function useBrandData() {
     returnToStep,
     setReturnToStep,
     step3PreviewSlideIndex,
+    previewSlideIndicesByConceptId,
     setStep3PreviewSlideIndex,
+    applyPreviewSlideIndexForConcept,
+    restorePreviewSlidesFromStorage,
+    clearPreviewSlidesStorage,
     totalSteps,
     // Computed
     progressPercent,

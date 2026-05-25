@@ -6,12 +6,14 @@ import {
   type BriefSupervisorReselectEnvelope,
   type BriefSupervisorCommentsEnvelope,
   type BriefAuthorRevisionEnvelope,
+  type BriefPreviewSlidesEnvelope,
 } from './briefDraftEnvelope'
 
 type Envelope =
   | BriefSupervisorReselectEnvelope
   | BriefSupervisorCommentsEnvelope
   | BriefAuthorRevisionEnvelope
+  | BriefPreviewSlidesEnvelope
 
 // ─── Write ────────────────────────────────────────────────────────────────────
 
@@ -143,6 +145,27 @@ export function readAuthorRevisionDraft(
 
 export function clearAuthorRevisionDraft(briefId: string): void {
   clearBriefDraft(briefId, 'author-revision')
+}
+
+export function writePreviewSlidesDraft(
+  briefId: string,
+  slideIndicesByConceptId: Record<string, number>
+): void {
+  writeBriefDraft<BriefPreviewSlidesEnvelope>(briefId, 'preview-slides', {
+    briefId,
+    savedAt: Date.now(),
+    draft: { slideIndicesByConceptId },
+  })
+}
+
+export function readPreviewSlidesDraft(
+  activeBriefId: string
+): BriefPreviewSlidesEnvelope | null {
+  return readBriefDraft<BriefPreviewSlidesEnvelope>(activeBriefId, 'preview-slides')
+}
+
+export function clearPreviewSlidesDraft(briefId: string): void {
+  clearBriefDraft(briefId, 'preview-slides')
 }
 
 // ─── Aliases for useSupervisorAlternativeDraft ────────────────────────────────

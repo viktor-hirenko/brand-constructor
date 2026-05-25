@@ -66,6 +66,9 @@ const store = useConstructorStore()
 
 const showExpanded = ref(false)
 
+/** 0-based: expand/modal button only on the 6th gallery slide (Figma). */
+const EXPAND_MODAL_SLIDE_INDEX = 5
+
 /** Slider uses gallery only — first DB image (`visual_url`) is thumbnail for grid, not carousel */
 const slideUrls = computed<string[]>(() => {
   const c = props.concept
@@ -89,16 +92,14 @@ const slideCount = computed(() => slideUrls.value.length)
 
 const activeIndex = computed({
   get: () => store.step3PreviewSlideIndex,
-  set: (v: number) => store.setStep3PreviewSlideIndex(v),
+  set: (v: number) => store.setStep3PreviewSlideIndex(v, props.concept?.id ?? null),
 })
 
 watch(
   () => [props.concept?.id, slideCount.value] as const,
-  () => {
-    const maxIdx = Math.max(0, slideCount.value - 1)
-    if (store.step3PreviewSlideIndex > maxIdx) {
-      store.setStep3PreviewSlideIndex(maxIdx)
-    }
+  ([conceptId, count]) => {
+    const maxIdx = Math.max(0, count - 1)
+    store.applyPreviewSlideIndexForConcept(conceptId, maxIdx)
   },
   { immediate: true }
 )
@@ -290,9 +291,9 @@ onUnmounted(() => {
           Немає візуалу для цього концепту.
         </div>
 
-        <!-- Expand (desktop preview) — only on 3rd slide (index 2) per Figma -->
+        <!-- Expand (desktop preview) — only on 6th slide (index 5) per Figma -->
         <button
-          v-if="activeIndex === 2 && currentSlideUrl"
+          v-if="activeIndex === EXPAND_MODAL_SLIDE_INDEX && currentSlideUrl"
           type="button"
           class="absolute top-5 right-5 z-20 flex items-center justify-center rounded-full bg-[rgba(68,67,86,0.3)] p-3 backdrop-blur-[10px] text-white transition-colors hover:bg-[rgba(68,67,86,0.5)]"
           aria-label="Розгорнути превʼю"
