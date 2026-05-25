@@ -63,7 +63,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'ceo-reselect/concept',
         name: 'ceo-reselect-concept',
-        component: () => import('@/views/ceo-reselect/CeoReselectConceptView.vue'),
+        component: () => import('@/views/alternative-selection/AlternativeConceptView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -76,7 +76,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'ceo-reselect/concept/external-naming',
         name: 'ceo-reselect-concept-external-naming',
-        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingView.vue'),
+        component: () => import('@/views/alternative-selection/AlternativeExternalNamingView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -89,7 +89,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'ceo-reselect/external-naming',
         name: 'ceo-reselect-external-naming',
-        component: () => import('@/views/ceo-reselect/CeoReselectExternalNamingView.vue'),
+        component: () => import('@/views/alternative-selection/AlternativeExternalNamingView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -102,7 +102,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'ceo-reselect/internal-naming',
         name: 'ceo-reselect-internal-naming',
-        component: () => import('@/views/ceo-reselect/CeoReselectInternalNamingView.vue'),
+        component: () => import('@/views/alternative-selection/AlternativeInternalNamingView.vue'),
         meta: {
           step: 8,
           ceoReselect: true,
@@ -116,28 +116,28 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'po-edit/concept',
         name: 'po-edit-concept',
-        component: () => import('@/views/po-edit/PoEditConceptView.vue'),
+        component: () => import('@/views/revision-response/RevisionConceptView.vue'),
         meta: { step: 8, poEdit: true, title: 'Редагувати концепт', subtitle: '' },
         beforeEnter: poEditGuard,
       },
       {
         path: 'po-edit/concept/external-naming',
         name: 'po-edit-concept-external-naming',
-        component: () => import('@/views/po-edit/PoEditExternalNamingView.vue'),
+        component: () => import('@/views/revision-response/RevisionExternalNamingView.vue'),
         meta: { step: 8, poEdit: true, title: 'Редагувати External Naming', subtitle: '' },
         beforeEnter: poEditGuard,
       },
       {
         path: 'po-edit/external-naming',
         name: 'po-edit-external-naming',
-        component: () => import('@/views/po-edit/PoEditExternalNamingView.vue'),
+        component: () => import('@/views/revision-response/RevisionExternalNamingView.vue'),
         meta: { step: 8, poEdit: true, title: 'Редагувати External Naming', subtitle: '' },
         beforeEnter: poEditGuard,
       },
       {
         path: 'po-edit/internal-naming',
         name: 'po-edit-internal-naming',
-        component: () => import('@/views/po-edit/PoEditInternalNamingView.vue'),
+        component: () => import('@/views/revision-response/RevisionInternalNamingView.vue'),
         meta: { step: 8, poEdit: true, title: 'Редагувати Internal Naming', subtitle: '' },
         beforeEnter: poEditGuard,
       },
