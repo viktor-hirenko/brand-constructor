@@ -18,8 +18,8 @@ import ReviewInternalNamingBlock from '@/components/constructor/review/ReviewInt
 import ReviewPrPackageBlock from '@/components/constructor/review/ReviewPrPackageBlock.vue'
 import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliverablesBlock.vue'
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
-import CeoActionsFooter from '@/components/constructor/review/CeoActionsFooter.vue'
-import PoActionsFooter from '@/components/constructor/review/PoActionsFooter.vue'
+import SupervisorActionsFooter from '@/components/constructor/review/SupervisorActionsFooter.vue'
+import AuthorActionsFooter from '@/components/constructor/review/AuthorActionsFooter.vue'
 import ChatBubbleIcon from '@/components/icons/ChatBubbleIcon.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
@@ -626,7 +626,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
           {{ statusActionError || saveError }}
         </div>
 
-        <CeoActionsFooter
+        <SupervisorActionsFooter
           v-if="reviewMode === 'ceo' && brandStatus === 'submitted'"
           :loading="statusActionLoading"
           :warning="revisionWarning"
@@ -635,7 +635,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
           @approve="emit('status-change', 'approved')"
           @revise="emit('status-change', 'needs_revision')"
         />
-        <PoActionsFooter
+        <AuthorActionsFooter
           v-else-if="!ceoFrozenView && reviewMode !== 'po-submitted'"
           :loading="statusActionLoading || isSaving"
           :submit-label="

@@ -63,7 +63,7 @@ const catMap = {
 
 const reviewTree = {
   ReviewSubmitView: ['ReviewUnifiedView'],
-  ReviewUnifiedView: ['ReviewHeader', 'ReviewSection', 'SectionCommentBlock', 'CeoActionsFooter', 'PoActionsFooter'],
+  ReviewUnifiedView: ['ReviewHeader', 'ReviewSection', 'SectionCommentBlock', 'SupervisorActionsFooter', 'AuthorActionsFooter'],
   ReviewSection: [
     'ReviewSectionRow',
     'ReviewConceptBlock',
