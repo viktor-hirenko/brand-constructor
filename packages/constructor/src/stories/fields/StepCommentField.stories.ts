@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 import { ref } from 'vue';
 import { fn } from '@storybook/test';
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue';
-import CeoCommentReadonly from '@/components/constructor/edit-flow/CeoCommentReadonly.vue';
+import SupervisorCommentReadonly from '@/components/constructor/edit-flow/SupervisorCommentReadonly.vue';
 import { CEO_COMMENT } from '../mocks/fixtures';
 
 const meta = {
@@ -80,13 +80,13 @@ export const RequiredWithHintFilled: Story = {
   },
 };
 
-export const CeoCommentReadonlyBlock: StoryObj = {
-  name: 'CeoCommentReadonly (PO edit flow)',
+export const SupervisorCommentReadonlyBlock: StoryObj = {
+  name: 'SupervisorCommentReadonly (revision-response flow)',
   render: () => ({
-    components: { CeoCommentReadonly },
+    components: { SupervisorCommentReadonly },
     setup() {
       return { value: CEO_COMMENT };
     },
-    template: '<CeoCommentReadonly :value="value" />',
+    template: '<SupervisorCommentReadonly :value="value" />',
   }),
 };
