@@ -200,10 +200,14 @@ onMounted(() => {
 
 watch(localMode, loadConcepts)
 
-/** Update both the local selectedId and the store previewId so the right-panel slider reacts. */
+/**
+ * Update local selectedId, the store selectedId (so it lands in the stepDataOverlay
+ * on every keystroke and survives F5 before "Далі" is clicked), and the previewId
+ * so the right-panel slider reacts immediately.
+ */
 function selectConcept(id: string) {
   selectedId.value = id
-  store.setConcept({ previewId: id })
+  store.setConcept({ selectedId: id, previewId: id })
 }
 
 function goCancel() {

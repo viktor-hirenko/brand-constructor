@@ -189,7 +189,33 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
 
         restoreEditingSession(envelope.draft.editingSection, envelope.draft.editingSectionSnapshot)
 
-        authorRevisionDraft.value = { ...envelope.draft.chainedDraft }
+        const restoredDraft = { ...envelope.draft.chainedDraft }
+
+        // F5-safe chained external-naming fix.
+        //
+        // Scenario: Author is on /po-edit/concept/external-naming and has selected some
+        // external namings. They press F5. At that point:
+        //   - stepDataOverlay.externalNaming.selectedIds = their in-progress picks
+        //   - chainedDraft.pendingExternalIds = null  (only set when they hit "Назад")
+        //
+        // Without this fix, RevisionExternalNamingView.onMounted sees pendingExternalIds=null
+        // and clears store.stepData.externalNaming.selectedIds to [], losing the picks.
+        //
+        // Fix: synthesize pendingExternalIds from the overlay whenever we are in
+        // chained mode (pendingConceptId set) but pendingExternalIds was not yet saved.
+        // This only runs inside restoreAuthorRevisionDraftFromStorage (F5 path), so it
+        // never interferes with normal navigation.
+        const overlayExternalIds =
+          envelope.draft.stepDataOverlay?.externalNaming?.selectedIds ?? []
+        if (
+          restoredDraft.pendingConceptId !== null &&
+          restoredDraft.pendingExternalIds === null &&
+          overlayExternalIds.length > 0
+        ) {
+          restoredDraft.pendingExternalIds = [...overlayExternalIds]
+        }
+
+        authorRevisionDraft.value = restoredDraft
       } finally {
         queueMicrotask(() => {
           isRestoring.value = false
