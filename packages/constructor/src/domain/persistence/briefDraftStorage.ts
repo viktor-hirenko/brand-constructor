@@ -71,11 +71,13 @@ export function clearBriefDraft(briefId: string, scope: BriefDraftScope): void {
 
 export function writeSupervisorReselectDraft(
   briefId: string,
-  draft: BriefSupervisorReselectEnvelope['draft']
+  draft: BriefSupervisorReselectEnvelope['draft'],
+  briefStatus?: string
 ): void {
   writeBriefDraft<BriefSupervisorReselectEnvelope>(briefId, 'supervisor-reselect', {
     briefId,
     savedAt: Date.now(),
+    briefStatus,
     draft,
   })
 }
@@ -92,11 +94,13 @@ export function clearSupervisorReselectDraft(briefId: string): void {
 
 export function writeAuthorRevisionDraft(
   briefId: string,
-  draft: BriefAuthorRevisionEnvelope['draft']
+  draft: BriefAuthorRevisionEnvelope['draft'],
+  briefStatus?: string
 ): void {
   writeBriefDraft<BriefAuthorRevisionEnvelope>(briefId, 'author-revision', {
     briefId,
     savedAt: Date.now(),
+    briefStatus,
     draft,
   })
 }

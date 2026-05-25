@@ -310,6 +310,16 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
     await apiPatch<Brand>(`/api/brands/${store.brandId}/status`, payload)
     store.setBrandStatus(newStatus)
 
+    // The Author has resubmitted their revision — any cached in-progress
+    // overlay is now durably persisted on the server and the local
+    // envelope must be dropped, otherwise reopening the brief in a future
+    // `needs_revision` cycle would resurrect stale picks. Stale-protection
+    // would eventually catch this via `briefStatus` mismatch, but explicit
+    // is better.
+    if (newStatus === 'submitted') {
+      store.resetPoEditDraft()
+    }
+
     if (
       newStatus === 'needs_revision' ||
       newStatus === 'approved' ||

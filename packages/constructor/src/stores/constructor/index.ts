@@ -66,11 +66,6 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   })
 
   const {
-    resetSlice: resetPoEditDraftSlice,
-    ...poEditDraftPublic
-  } = usePoEditDraft({ brandId: brandDataPublic.brandId })
-
-  const {
     resetSlice: resetPreviewsSlice,
     ...previewsPublic
   } = usePreviews({
@@ -83,6 +78,20 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   } = useEditSection({
     stepData: brandDataPublic.stepData,
     returnToStep: brandDataPublic.returnToStep,
+  })
+
+  // `usePoEditDraft` needs read-access to the active edit-section so its
+  // F5 overlay can capture (and restore) any in-progress inline-edit too.
+  const {
+    resetSlice: resetPoEditDraftSlice,
+    ...poEditDraftPublic
+  } = usePoEditDraft({
+    brandId: brandDataPublic.brandId,
+    brandStatus: brandDataPublic.brandStatus,
+    stepData: brandDataPublic.stepData,
+    editingSection: editSectionPublic.editingSection,
+    editingSectionSnapshot: editSectionPublic.editingSectionSnapshot,
+    restoreEditingSession: editSectionPublic.restoreEditingSession,
   })
 
   // ─── Cross-slice orchestrators ─────────────────────────────────────────────
