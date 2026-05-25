@@ -38,7 +38,7 @@ interface UseCeoReviewOptions {
  *
  * Cross-slice deps received via opts: wizard `stepData` ref (mutated by apply
  * variants), `brandId`, `saveBrand` callback. The facade also receives the
- * outgoing `brandCeoSelections` ref to pass into `useCeoReselectDraft`.
+ * outgoing `brandCeoSelections` ref to pass into `useSupervisorReselectDraft`.
  */
 export function useCeoReview(opts: UseCeoReviewOptions) {
   const { stepData, brandId, saveBrand } = opts

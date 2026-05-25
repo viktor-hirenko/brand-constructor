@@ -4,7 +4,7 @@
  * coexist in `brandCeoSelections` because the legacy schema accepted either,
  * and several call sites have to defensively read whichever variant was
  * persisted. Extracted as a shared util so `useCeoReview` and
- * `useCeoReselectDraft` can read selections without duplicating the
+ * `useSupervisorReselectDraft` can read selections without duplicating the
  * normalisation logic.
  */
 

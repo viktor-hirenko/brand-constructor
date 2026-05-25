@@ -199,7 +199,7 @@ const routes: RouteRecordRaw[] = [
 
         // Restore in-progress localStorage drafts (F5-safe).
         // Called AFTER loadBrand so it overlays the freshly-reset slices.
-        store.restoreCeoReselectDraftFromStorage(brandId)
+        store.restoreSupervisorReselectDraftFromStorage(brandId)
         store.restoreAuthorRevisionDraftFromStorage(brandId)
 
         return true

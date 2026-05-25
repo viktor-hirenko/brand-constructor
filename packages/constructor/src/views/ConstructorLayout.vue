@@ -134,28 +134,29 @@ const hasCeoSavedConceptOverride = computed(() => {
 })
 
 /** Concept currently displayed in the right-column slider.
- *  Returns null until CEO clicks a card — right panel stays empty on entry. */
+ *  Returns null until the Supervisor clicks a card — right panel stays empty on entry. */
 const ceoReselectPreviewConcept = computed(() => {
-  const id = store.ceoReselectDraft.conceptPreviewId
+  const id = store.supervisorReselectDraft.conceptPreviewId
   if (!id) return null
   return concepts.value.find(c => c.id === id) ?? null
 })
 
-/** Confirmed CEO override concept (null = no CEO override yet). */
+/** Confirmed Supervisor override concept (null = no override yet). */
 const ceoReselectConfirmedConcept = computed(() => {
-  const id = store.ceoReselectDraft.conceptId
+  const id = store.supervisorReselectDraft.conceptId
   if (!id) return null
   return concepts.value.find(c => c.id === id) ?? null
 })
 
 /**
- * Slider header badge on the CEO reselect concept route:
- * always "Вибір СЕО" — the slider is only shown after CEO has clicked a card,
- * so by definition the choice belongs to CEO. Naming sub-routes use
- * ConceptMobilePreview whose heading is already "Обраний концепт".
+ * Slider header badge on the Supervisor reselect concept route:
+ * always "Вибір СЕО" — the slider is only shown after the Supervisor has
+ * clicked a card, so by definition the choice belongs to them. Naming
+ * sub-routes use ConceptMobilePreview whose heading is already
+ * "Обраний концепт".
  */
 const ceoReselectSliderTopLabel = computed<string | null>(() =>
-  store.ceoReselectDraft.conceptPreviewId ? 'Вибір СЕО' : null
+  store.supervisorReselectDraft.conceptPreviewId ? 'Вибір СЕО' : null
 )
 
 /**

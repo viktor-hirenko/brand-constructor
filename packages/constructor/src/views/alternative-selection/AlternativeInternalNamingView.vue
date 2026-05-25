@@ -28,7 +28,7 @@ const {
   perPage,
 } = useApiList<InternalNaming>('/api/namings/internal')
 
-const stagedId = computed(() => store.ceoReselectDraft.internalNamingId)
+const stagedId = computed(() => store.supervisorReselectDraft.internalNamingId)
 
 const primaryDisabled = computed(() => !stagedId.value)
 
@@ -59,8 +59,8 @@ async function loadNamings() {
 }
 
 onMounted(async () => {
-  store.seedCeoReselectFromBrand('internalNaming')
-  // Pre-fill comment from PO's comment if CEO hasn't written one yet.
+  store.seedSupervisorReselectFromBrand('internalNaming')
+  // Pre-fill comment from the Author's comment if the Supervisor hasn't written one yet.
   if (!store.brandCeoComments?.internalNaming) {
     store.setCeoCommentValue('internalNaming', store.stepData.internalNaming.comment ?? '')
   }
@@ -68,11 +68,11 @@ onMounted(async () => {
 })
 
 function handleSelect(id: string) {
-  store.setCeoReselectInternalNaming(id)
+  store.setSupervisorReselectInternalNaming(id)
 }
 
 function goCancel() {
-  store.resetCeoReselectDraft()
+  store.resetSupervisorReselectDraft()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 
@@ -81,7 +81,7 @@ async function goSave() {
   if (!id) return
   const ok = await store.saveCeoSelections({ internalNaming: id })
   if (ok) {
-    store.resetCeoReselectDraft()
+    store.resetSupervisorReselectDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
 }
