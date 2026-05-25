@@ -6,9 +6,9 @@ import {
   readSelectionAsArray as ceoSelectionAsArray,
 } from '@/stores/constructor/selectionHelpers'
 import {
-  isCeoChoiceAnAlternative as isCeoChoiceAnAlternativePure,
-  type CeoLibraryTab,
-} from '@/utils/ceoRevisionGate'
+  isSupervisorChoiceAnAlternative as isCeoChoiceAnAlternativePure,
+  type SupervisorLibraryTab as CeoLibraryTab,
+} from '@/utils/supervisorRevisionGate'
 import type {
   Concept,
   ExternalNaming,
@@ -21,8 +21,11 @@ import type {
  * the CEO can re-pick — everything else (Brand Basics, PR Package, Deliverables,
  * Visual Components) is text/configuration the PO owns end-to-end.
  */
-export type { CeoLibraryTab } from '@/utils/ceoRevisionGate'
-export { CEO_LIBRARY_KEYS, ATTENTION_SECTION_KEYS } from '@/utils/ceoRevisionGate'
+export type { SupervisorLibraryTab as CeoLibraryTab } from '@/utils/supervisorRevisionGate'
+export {
+  SUPERVISOR_LIBRARY_KEYS as CEO_LIBRARY_KEYS,
+  ATTENTION_SECTION_KEYS,
+} from '@/utils/supervisorRevisionGate'
 
 interface UseSupervisorApplyVariantsOptions {
   /**
