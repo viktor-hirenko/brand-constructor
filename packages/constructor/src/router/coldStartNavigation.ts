@@ -2,8 +2,6 @@ import type { LocationQueryValue } from 'vue-router'
 
 export interface ColdStartNavigationInput {
   fromName: string | symbol | undefined
-  toMeta: { poEdit?: boolean; ceoReselect?: boolean }
-  toParamsId: string | undefined
   toQueryEditBrand?: LocationQueryValue | LocationQueryValue[]
 }
 
@@ -12,19 +10,26 @@ export type ColdStartNavigationResult =
   | { name: 'brand-view-review'; params: { id: string } }
 
 /**
- * Redirect F5 / direct-URL access on transient edit flows back to brand review.
- * `fromName === undefined` is Vue Router 4 cold-start signal.
+ * Cold-start (F5 / direct-URL) navigation handler.
+ *
+ * Previously this also redirected `/ceo-reselect/*` and `/po-edit/*` cold
+ * starts to the brand review page — a workaround for the lost in-progress
+ * selections. Now that the persistence layer
+ * (`domain/persistence/briefDraftStorage.ts`) restores both supervisor and
+ * author drafts after `loadBrand()`, that redirect is gone and users stay
+ * on the sub-route they came back to.
+ *
+ * The remaining `editBrand` query-fallback is for wizard URLs
+ * (`/constructor/step/N?editBrand=<id>`) which the brief review screen uses
+ * for inline-editing basics / marketing / deliverables / visual sections.
+ * Those URLs don't carry the brief id in the path, so on cold start we
+ * redirect to the brand review page where `loadBrand()` runs.
  */
 export function resolveColdStartNavigation(
   input: ColdStartNavigationInput
 ): ColdStartNavigationResult {
   const isColdStart = input.fromName === undefined
   if (!isColdStart) return true
-
-  const isEditSubRoute = input.toMeta.ceoReselect === true || input.toMeta.poEdit === true
-  if (isEditSubRoute && input.toParamsId) {
-    return { name: 'brand-view-review', params: { id: input.toParamsId } }
-  }
 
   const editBrand = input.toQueryEditBrand
   if (typeof editBrand === 'string' && editBrand) {

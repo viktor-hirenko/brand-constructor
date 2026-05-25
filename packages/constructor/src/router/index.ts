@@ -317,23 +317,23 @@ const router = createRouter({
   routes,
 })
 
-// Redirect F5 / direct-URL access to transient edit flows back to the brand
-// review page. `from.name === undefined` is the Vue Router 4 signal for the
-// initial cold navigation (no prior SPA history).
+// Cold-start (F5 / direct-URL) handling. `from.name === undefined` is the
+// Vue Router 4 signal for the initial cold navigation (no prior SPA history).
 //
-// Two edit-flow shapes are covered:
-//   1. Dedicated `/po-edit/*` and `/ceo-reselect/*` routes — recognised via
-//      route meta (`poEdit`, `ceoReselect`); brand id lives in `params.id`.
-//   2. Wizard URLs (`/constructor/step/N`) entered from the review screen
-//      for non-naming sections (basics, marketing package, deliverables,
-//      visual components). The wizard doesn't carry a brand id in the path,
-//      so ReviewSubmitView marks these navigations with `?editBrand=<id>`;
-//      we use that query param to redirect back to the right brand on F5.
+// Dedicated review sub-routes (`/po-edit/*`, `/ceo-reselect/*`) keep the
+// user on the page they returned to — in-progress drafts are restored from
+// localStorage by the per-brand `beforeEnter` guard (see
+// `restoreSupervisorReselectDraftFromStorage` /
+// `restoreAuthorRevisionDraftFromStorage`).
+//
+// Wizard URLs (`/constructor/step/N`) entered from the review screen for
+// non-naming sections (basics, marketing package, deliverables, visual
+// components) don't carry a brand id in the path, so ReviewSubmitView marks
+// those navigations with `?editBrand=<id>`. On a cold start we use that
+// query param to redirect back to the right brand review page.
 router.beforeEach((to, from) => {
   return resolveColdStartNavigation({
     fromName: from.name,
-    toMeta: { poEdit: to.meta.poEdit === true, ceoReselect: to.meta.ceoReselect === true },
-    toParamsId: to.params.id as string | undefined,
     toQueryEditBrand: to.query.editBrand,
   })
 })
