@@ -11,6 +11,13 @@ import {
   DESIGN_SHELL_MIN_VIEWPORT_WIDTH,
   DESIGN_SHELL_WIDTH,
 } from '@/constants/layoutShell'
+import {
+  BRIEF_BTN_PRIMARY,
+  BRIEF_BTN_SECONDARY,
+  BRIEF_BTN_PRIMARY_DARK,
+  BRIEF_FOOTER_BAR,
+  BRIEF_FOOTER_ACTIONS,
+} from '@/constants/brandBriefShellTokens'
 import { useViewportScale } from '@/composables/useViewportScale'
 import { useBrandBriefReviewPhase, BRAND_BRIEF_REVIEW_PHASE } from '@/composables/useBrandBriefReviewPhase'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
@@ -446,12 +453,14 @@ watch(currentStep, step => {
       <template #left-footer>
         <div
           v-if="!isViewMode && !isReviewShell"
-          class="constructor-layout__wizard-footer shrink-0 px-12 py-6 border-t border-border"
+          class="constructor-layout__wizard-footer"
+          :class="BRIEF_FOOTER_BAR"
         >
           <div v-if="store.editingSection" class="constructor-layout__footer-actions flex flex-col gap-2">
-            <div class="flex items-center gap-3">
+            <div :class="BRIEF_FOOTER_ACTIONS">
               <button
-                class="constructor-layout__footer-button constructor-layout__footer-button--secondary h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                :class="BRIEF_BTN_SECONDARY"
+                class="constructor-layout__footer-button constructor-layout__footer-button--secondary disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="store.isSaving"
                 @click="handleCancelSectionEdit"
               >
@@ -459,7 +468,8 @@ watch(currentStep, step => {
               </button>
               <button
                 :disabled="!store.isCurrentStepValid || store.isSaving"
-                class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
+                :class="BRIEF_BTN_PRIMARY"
+                class="constructor-layout__footer-button constructor-layout__footer-button--primary"
                 @click="handleSaveSectionEdit"
               >
                 {{ store.isSaving ? 'Збереження…' : 'Зберегти' }}
@@ -470,9 +480,10 @@ watch(currentStep, step => {
             </p>
           </div>
 
-          <div v-else-if="store.returnToStep" class="constructor-layout__footer-actions flex items-center gap-3">
+          <div v-else-if="store.returnToStep" :class="BRIEF_FOOTER_ACTIONS" class="constructor-layout__footer-actions">
             <button
-              class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-[#030213] text-white rounded-[10px] hover:opacity-90 transition-all text-base font-medium flex items-center gap-2"
+              :class="BRIEF_BTN_PRIMARY_DARK"
+              class="constructor-layout__footer-button constructor-layout__footer-button--primary"
               @click="handleReturnToPreview"
             >
               <CornerUpLeftIcon class="size-4" />
@@ -480,10 +491,11 @@ watch(currentStep, step => {
             </button>
           </div>
 
-          <div v-else class="constructor-layout__footer-actions flex items-center gap-3">
+          <div v-else :class="BRIEF_FOOTER_ACTIONS" class="constructor-layout__footer-actions">
             <button
               v-if="!isFirstStep"
-              class="constructor-layout__footer-button constructor-layout__footer-button--secondary h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
+              :class="BRIEF_BTN_SECONDARY"
+              class="constructor-layout__footer-button constructor-layout__footer-button--secondary"
               @click="goBack"
             >
               Назад
@@ -491,7 +503,8 @@ watch(currentStep, step => {
             <button
               v-if="!isLastStep"
               :disabled="!store.isCurrentStepValid"
-              class="constructor-layout__footer-button constructor-layout__footer-button--primary h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all text-base font-medium"
+              :class="BRIEF_BTN_PRIMARY"
+              class="constructor-layout__footer-button constructor-layout__footer-button--primary"
               @click="goNext"
             >
               Далі
