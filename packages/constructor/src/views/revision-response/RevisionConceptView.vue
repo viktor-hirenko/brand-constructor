@@ -250,7 +250,10 @@ async function goDali() {
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept/external-naming`)
   } else {
-    // Same concept as Author's original → save + return
+    // Same concept as Author's original → save + return.
+    // Mark 'concept' as explicitly resolved so the final review shows
+    // «Обраний концепт» even though PO kept their own pick (not CEO's).
+    store.markConflictSectionResolved('concept')
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     isSaving.value = true
     await store.saveBrand()

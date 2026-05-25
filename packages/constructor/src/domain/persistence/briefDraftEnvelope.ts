@@ -61,6 +61,17 @@ export interface BriefAuthorRevisionEnvelope {
     editingSection: string | null
     editingSectionSnapshot: unknown
     stepDataOverlay: BrandStepData | null
+    /**
+     * Sections where the Author went through the edit-flow and pressed Save,
+     * resolving any Supervisor alternative conflict — regardless of whether
+     * they picked the Supervisor's suggestion or a third option.
+     *
+     * Persisted separately from `chainedDraft` so that `resetAuthorRevisionDraft()`
+     * (called at chained-flow completion) does NOT erase these markers before the
+     * Author returns to the final review screen.
+     * Cleared only by `resetSlice()` (= loadBrand / full submit).
+     */
+    resolvedConflictSections?: string[]
   }
 }
 

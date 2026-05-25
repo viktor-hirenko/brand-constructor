@@ -6,9 +6,7 @@ import {
   readSelectionAsArray as ceoSelectionAsArray,
 } from '@/stores/constructor/selectionHelpers'
 import {
-  countSectionsNeedingAttention,
   isCeoChoiceAnAlternative as isCeoChoiceAnAlternativePure,
-  isSubmitBlockedForReturnedView,
   type CeoLibraryTab,
 } from '@/utils/ceoRevisionGate'
 import type {
@@ -111,31 +109,36 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
   // ─── Applied-state computeds (PO returned view) ────────────────────────────
 
   /**
-   * True when PO already applied the CEO concept (stepData.concept.selectedId
-   * now matches ceoSelections.concept). Derived from current state — no
-   * separate flag is persisted.
+   * True when the Author has resolved the concept conflict, either by:
+   *  1. Picking the Supervisor's exact suggestion, OR
+   *  2. Going through the edit-flow and saving their own deliberate choice
+   *     (the «third-option» case, tracked via `resolvedConflictSections`).
    */
   const isCeoConceptApplied = computed(() => {
     if (!isPoReturnedView.value) return false
     const ceoConcept = ceoSelectionAsString(store.brandCeoSelections?.concept)
     if (!ceoConcept) return false
-    return store.stepData.concept.selectedId === ceoConcept
+    if (store.stepData.concept.selectedId === ceoConcept) return true
+    return store.authorRevisionDraft.resolvedConflictSections.includes('concept')
   })
 
   const isCeoExternalApplied = computed(() => {
     if (!isPoReturnedView.value) return false
     const ceoExt = ceoSelectionAsArray(store.brandCeoSelections?.externalNaming)
     if (ceoExt.length === 0) return false
+    // Exact CEO match
     const poExt = store.stepData.externalNaming.selectedIds
-    if (poExt.length !== ceoExt.length) return false
-    return ceoExt.every(id => poExt.includes(id))
+    if (poExt.length === ceoExt.length && ceoExt.every(id => poExt.includes(id))) return true
+    // Author resolved via edit-flow with a third-option pick
+    return store.authorRevisionDraft.resolvedConflictSections.includes('externalNaming')
   })
 
   const isCeoInternalApplied = computed(() => {
     if (!isPoReturnedView.value) return false
     const ceoInt = ceoSelectionAsString(store.brandCeoSelections?.internalNaming)
     if (!ceoInt) return false
-    return store.stepData.internalNaming.selectedId === ceoInt
+    if (store.stepData.internalNaming.selectedId === ceoInt) return true
+    return store.authorRevisionDraft.resolvedConflictSections.includes('internalNaming')
   })
 
   /**
@@ -153,30 +156,56 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
   // ─── Attention counter + submit gate (PO returned view) ───────────────────
 
   /**
-   * Number of sections that require PO attention:
-   *  - has an unresolved CEO comment, OR
-   *  - CEO proposed an alternative that PO hasn't applied/overridden yet.
-   * `general` comment is excluded (per spec).
+   * Number of sections that require Author attention:
+   *  - has an unresolved Supervisor comment, OR
+   *  - Supervisor proposed an alternative that the Author hasn't resolved yet.
+   *
+   * Library sections (concept / externalNaming / internalNaming) use the
+   * updated `isCeoXxxApplied` computeds, which treat the Author's third-option
+   * pick as resolved — so this counter correctly reaches 0 after the edit-flow
+   * saves, regardless of whether the Author picked the Supervisor's suggestion
+   * or their own choice.
+   * `general` comment is excluded per spec.
    */
   const attentionCounter = computed(() => {
     if (!isPoReturnedView.value) return 0
-    return countSectionsNeedingAttention({
-      comments: store.brandCeoComments,
-      ceoSelections: store.brandCeoSelections ?? undefined,
-      poSelections: poLibrarySelections(),
-    })
+
+    const comments = store.brandCeoComments
+    const ceoSel = store.brandCeoSelections
+
+    function commentUnresolved(key: string): boolean {
+      const meta = comments?.[key]
+      return !!meta && !!meta.value?.trim() && !meta.resolved
+    }
+
+    let count = 0
+
+    // Non-library sections: only CEO comments matter.
+    for (const key of ['basics', 'marketingPackage', 'deliverables', 'visualComponents']) {
+      if (commentUnresolved(key)) count++
+    }
+
+    // Library sections: unresolved comment OR un-resolved alternative.
+    if (
+      commentUnresolved('concept') ||
+      (isCeoChoiceAnAlternative('concept', ceoSel?.concept ?? '') && !isCeoConceptApplied.value)
+    ) count++
+
+    if (
+      commentUnresolved('externalNaming') ||
+      (isCeoChoiceAnAlternative('externalNaming', ceoSel?.externalNaming ?? '') && !isCeoExternalApplied.value)
+    ) count++
+
+    if (
+      commentUnresolved('internalNaming') ||
+      (isCeoChoiceAnAlternative('internalNaming', ceoSel?.internalNaming ?? '') && !isCeoInternalApplied.value)
+    ) count++
+
+    return count
   })
 
-  /** Blocks the "На погодження CEO" submit button when any section still needs attention. */
-  const submitBlocked = computed(
-    () =>
-      isPoReturnedView.value &&
-      isSubmitBlockedForReturnedView({
-        comments: store.brandCeoComments,
-        ceoSelections: store.brandCeoSelections ?? undefined,
-        poSelections: poLibrarySelections(),
-      })
-  )
+  /** Blocks «На погодження CEO» while any section still needs attention. */
+  const submitBlocked = computed(() => isPoReturnedView.value && attentionCounter.value > 0)
 
   /**
    * Per-section flags for `<ReviewUnifiedView>` — whether the section currently

@@ -167,6 +167,11 @@ function goCancel() {
 async function goSave() {
   const saved = await store.saveBrand()
   if (saved) {
+    // Chained flow (concept → external) completes here — mark both sections as
+    // resolved so the final review shows «Обраний концепт / Обрані назви» even
+    // if PO picked neither their original nor the Supervisor's suggestion.
+    store.markConflictSectionResolved('concept')
+    store.markConflictSectionResolved('externalNaming')
     store.commitEditSection()
     store.resetAuthorRevisionDraft()
     router.push(`/constructor/brand/${brandId.value}`)

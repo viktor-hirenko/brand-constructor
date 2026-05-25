@@ -44,6 +44,15 @@ export interface AuthorRevisionDraft {
   pendingConceptId: string | null
   /** `null` = nothing has been staged yet (distinct from an empty array). */
   pendingExternalIds: string[] | null
+  /**
+   * Sections the Author explicitly resolved by going through the edit-flow
+   * and pressing Save — even if they chose neither their original nor the
+   * Supervisor's suggestion (the «third-option» case).
+   * Cleared only on `resetSlice()` (full brand load / submit), NOT on
+   * `resetAuthorRevisionDraft()` (chained-flow reset) so the markers
+   * survive the navigation back to the final review screen.
+   */
+  resolvedConflictSections: string[]
 }
 
 /**
@@ -82,6 +91,7 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
     baselineExternalIds: [],
     pendingConceptId: null,
     pendingExternalIds: null,
+    resolvedConflictSections: [],
   })
 
   /** Guards restore from re-triggering the autosave watcher. */
@@ -110,6 +120,19 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
     authorRevisionDraft.value.pendingExternalIds = null
   }
 
+  /**
+   * Mark `section` as explicitly resolved by the Author.
+   * Called from revision-response views after a successful `goSave()` / `goDali()`.
+   * Idempotent — calling it multiple times for the same section is safe.
+   */
+  function markConflictSectionResolved(section: string) {
+    if (authorRevisionDraft.value.resolvedConflictSections.includes(section)) return
+    authorRevisionDraft.value.resolvedConflictSections = [
+      ...authorRevisionDraft.value.resolvedConflictSections,
+      section,
+    ]
+  }
+
   // ─── F5-safe localStorage persistence ─────────────────────────────────────
 
   /**
@@ -128,6 +151,7 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
       editingSection: editingSection.value,
       editingSectionSnapshot: editingSectionSnapshot.value,
       stepDataOverlay: JSON.parse(JSON.stringify(stepData.value)) as BrandStepData,
+      resolvedConflictSections: [...authorRevisionDraft.value.resolvedConflictSections],
     }
   }
 
@@ -189,7 +213,10 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
 
         restoreEditingSession(envelope.draft.editingSection, envelope.draft.editingSectionSnapshot)
 
-        const restoredDraft = { ...envelope.draft.chainedDraft }
+        const restoredDraft = {
+          ...envelope.draft.chainedDraft,
+          resolvedConflictSections: envelope.draft.resolvedConflictSections ?? [],
+        }
 
         // F5-safe chained external-naming fix.
         //
@@ -226,7 +253,12 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
     }
   }
 
-  /** Drop every key in the draft — call on save / cancel / commit. */
+  /**
+   * Reset the chained-flow portion of the draft (concept + external picks).
+   * Called after the chained flow saves — intentionally does NOT clear
+   * `resolvedConflictSections` so those markers survive the navigation back
+   * to the final review screen (they're cleared by `resetSlice` instead).
+   */
   function resetAuthorRevisionDraft() {
     const id = brandId.value
     if (id) clearAuthorRevisionDraft(id)
@@ -235,11 +267,22 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
       baselineExternalIds: [],
       pendingConceptId: null,
       pendingExternalIds: null,
+      // Preserve resolved markers — cleared only on full reset (resetSlice).
+      resolvedConflictSections: authorRevisionDraft.value.resolvedConflictSections,
     }
   }
 
+  /** Full reset — called by the store facade on `loadBrand` / brand switch. */
   function resetSlice() {
-    resetAuthorRevisionDraft()
+    const id = brandId.value
+    if (id) clearAuthorRevisionDraft(id)
+    authorRevisionDraft.value = {
+      baselineConceptId: null,
+      baselineExternalIds: [],
+      pendingConceptId: null,
+      pendingExternalIds: null,
+      resolvedConflictSections: [],
+    }
   }
 
   return {
@@ -249,6 +292,7 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
     setAuthorRevisionPendingConcept,
     setAuthorRevisionPendingExternal,
     clearAuthorRevisionPendingExternal,
+    markConflictSectionResolved,
     resetAuthorRevisionDraft,
     restoreAuthorRevisionDraftFromStorage,
     // Facade-internal
