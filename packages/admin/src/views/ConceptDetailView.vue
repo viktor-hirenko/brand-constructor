@@ -616,7 +616,7 @@ async function confirmAssetDelete() {
     gap: $spacing-3;
     padding-inline: $spacing-4;
     padding-block-start: $spacing-3;
-    padding-block-end: 0;
+    padding-block-end: $spacing-3;
   }
 
   &__label {
