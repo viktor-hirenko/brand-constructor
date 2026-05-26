@@ -6,8 +6,8 @@ import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import {
   formatAuthorRole,
-  getBrandReviewLabel,
-} from '@/composables/useBrandReviewLabel'
+  getBrandReviewDisplay,
+} from '@/composables/useBrandReviewDisplay'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -25,11 +25,41 @@ const {
   fetchData: fetchBrands,
 } = useApiList<BrandListItem>('/api/brands')
 
-const { sortedData, sortField, sortDirection, toggleSort } = useTableSort(
+function brandsSortValue(brand: BrandListItem, field: string): unknown {
+  if (field === 'waitingSince') {
+    return getBrandReviewDisplay(brand).waitingSince ?? ''
+  }
+  if (field === 'internalName') return brand.internalName ?? ''
+  if (field === 'authorName') return brand.authorName
+  if (field === 'status') return brand.status
+  if (field === 'createdAt') return brand.createdAt
+  if (field === 'geo') return brand.geo ?? ''
+  if (field === 'launchDate') return brand.launchDate ?? ''
+  return undefined
+}
+
+const { sortedData, sortField, sortDirection, toggleSort, setSort } = useTableSort(
   brands,
   'createdAt',
-  'desc'
+  'desc',
+  brandsSortValue
 )
+
+function applyDefaultSortForTab(tab: string) {
+  if (tab === 'submitted' || tab === 'all') {
+    setSort('waitingSince', 'desc')
+  } else {
+    setSort('createdAt', 'desc')
+  }
+}
+
+function handleSort(field: string) {
+  if (field === 'waitingSince' && sortField.value !== 'waitingSince') {
+    setSort('waitingSince', 'desc')
+    return
+  }
+  toggleSort(field)
+}
 
 const activeTab = ref<string>('all')
 
@@ -62,11 +92,13 @@ function loadBrands(options?: { silent?: boolean }) {
 
 onMounted(() => {
   perPage.value = 50
+  applyDefaultSortForTab(activeTab.value)
   loadBrands()
 })
 
-watch(activeTab, () => {
+watch(activeTab, (tab) => {
   page.value = 1
+  applyDefaultSortForTab(tab)
   loadBrands()
 })
 
@@ -88,8 +120,8 @@ function formatDate(dateStr: string | null | undefined): string {
   return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function reviewLabel(brand: BrandListItem) {
-  return getBrandReviewLabel(brand)
+function reviewDisplay(brand: BrandListItem) {
+  return getBrandReviewDisplay(brand)
 }
 
 function authorTitle(brand: BrandListItem): string {
@@ -166,38 +198,44 @@ async function confirmDeleteBrand() {
       <table class="brands-view__table">
         <thead>
           <tr>
-            <th class="sortable-th" @click="toggleSort('internalName')">
+            <th class="sortable-th" @click="handleSort('internalName')">
               Name
               <span v-if="sortField === 'internalName'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
-            <th class="sortable-th" @click="toggleSort('status')">
+            <th class="sortable-th" @click="handleSort('status')">
               Status
               <span v-if="sortField === 'status'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
-            <th class="sortable-th" @click="toggleSort('authorName')">
+            <th class="sortable-th" @click="handleSort('authorName')">
               Author
               <span v-if="sortField === 'authorName'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
-            <th class="sortable-th" @click="toggleSort('createdAt')">
+            <th class="sortable-th" @click="handleSort('createdAt')">
               Created
               <span v-if="sortField === 'createdAt'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
-            <th>Review</th>
-            <th class="sortable-th" @click="toggleSort('geo')">
+            <th class="brands-view__review-col">Review</th>
+            <th class="sortable-th brands-view__waiting-col" @click="handleSort('waitingSince')">
+              Waiting
+              <span v-if="sortField === 'waitingSince'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
+            </th>
+            <th class="sortable-th" @click="handleSort('geo')">
               GEO
               <span v-if="sortField === 'geo'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
-            <th class="sortable-th" @click="toggleSort('launchDate')">
+            <th class="sortable-th" @click="handleSort('launchDate')">
               Launch Date
               <span v-if="sortField === 'launchDate'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
@@ -230,10 +268,26 @@ async function confirmDeleteBrand() {
             <td>{{ formatDate(brand.createdAt) }}</td>
             <td class="brands-view__review-cell">
               <span
-                class="brands-view__review-line"
-                :title="reviewLabel(brand).title ?? reviewLabel(brand).line"
+                class="brands-view__cell-line"
+                :class="{
+                  'brands-view__cell-line--muted': reviewDisplay(brand).reviewLine === '—',
+                }"
+                :title="reviewDisplay(brand).reviewTitle ?? reviewDisplay(brand).reviewLine"
               >
-                {{ reviewLabel(brand).line }}
+                {{ reviewDisplay(brand).reviewLine }}
+              </span>
+            </td>
+            <td
+              class="brands-view__waiting-cell"
+              :class="`brands-view__waiting-cell--${reviewDisplay(brand).waitingTone}`"
+            >
+              <span
+                class="brands-view__cell-line"
+                :title="
+                  reviewDisplay(brand).waitingTitle ?? reviewDisplay(brand).waitingLine
+                "
+              >
+                {{ reviewDisplay(brand).waitingLine }}
               </span>
             </td>
             <td>{{ formatGeo(brand.geo) }}</td>
@@ -371,7 +425,7 @@ async function confirmDeleteBrand() {
     background-color: $color-bg-white;
 
     @include mobile {
-      min-width: 900px;
+      min-width: 1020px;
     }
 
     th,
@@ -449,18 +503,45 @@ async function confirmDeleteBrand() {
     }
   }
 
-  &__review-cell {
-    min-width: 140px;
-    max-width: 200px;
+  &__review-col {
+    min-width: 120px;
   }
 
-  &__review-line {
+  &__waiting-col {
+    min-width: 110px;
+  }
+
+  &__review-cell {
+    min-width: 120px;
+    max-width: 180px;
+  }
+
+  &__waiting-cell {
+    min-width: 110px;
+    max-width: 150px;
+
+    &--warn .brands-view__cell-line {
+      color: #b45309;
+      font-weight: $font-weight-medium;
+    }
+
+    &--late .brands-view__cell-line {
+      color: #b91c1c;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  &__cell-line {
     display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.4;
     cursor: default;
+
+    &--muted {
+      color: $color-text-secondary;
+    }
   }
 
   &__actions {

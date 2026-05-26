@@ -27,10 +27,13 @@ function compareValues(a: unknown, b: unknown, direction: SortDirection): number
   return 0
 }
 
+export type SortValueAccessor<T> = (item: T, field: string) => unknown
+
 export function useTableSort<T>(
   data: Ref<T[]> | ComputedRef<T[]>,
   defaultField: string = 'created_at',
   defaultDirection: SortDirection = 'desc',
+  getSortValue?: SortValueAccessor<T>,
 ) {
   const sortField = ref(defaultField)
   const sortDirection = ref<SortDirection>(defaultDirection)
@@ -54,9 +57,11 @@ export function useTableSort<T>(
     const field = sortField.value
     const dir = sortDirection.value
 
-    return arr.sort((a, b) =>
-      compareValues(getNestedValue(a, field), getNestedValue(b, field), dir),
-    )
+    return arr.sort((a, b) => {
+      const aVal = getSortValue ? getSortValue(a, field) : getNestedValue(a, field)
+      const bVal = getSortValue ? getSortValue(b, field) : getNestedValue(b, field)
+      return compareValues(aVal, bVal, dir)
+    })
   })
 
   return {
