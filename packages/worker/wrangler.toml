@@ -25,7 +25,7 @@ crons = ["0 6 * * *"]
 # are stored as encrypted secrets in Cloudflare Dashboard.
 # Do NOT put secrets here. See `wrangler secret list --env production`.
 [env.production]
-vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev", CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev", GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com" }
+vars = { ENVIRONMENT = "production", CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev", CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev", GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com", ALLOWED_EMAIL_DOMAINS = "upstars.com" }
 
 [[env.production.d1_databases]]
 binding = "DB"

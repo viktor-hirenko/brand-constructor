@@ -6,6 +6,12 @@ export interface Env {
   JWT_SECRET: string
   CONSTRUCTOR_URL: string
   GOOGLE_CLIENT_ID: string
+  /**
+   * Comma-separated list of email domains permitted at Google login
+   * (e.g. `"upstars.com"`). Empty or unset disables the gate — see
+   * `utils/email-access.ts`.
+   */
+  ALLOWED_EMAIL_DOMAINS?: string
   SLACK_BOT_TOKEN: string
   SLACK_CHANNEL_STRATEGY: string
   SLACK_CHANNEL_PR: string

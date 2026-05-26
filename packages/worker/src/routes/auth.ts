@@ -5,6 +5,7 @@ import type { Env, Variables } from '../types'
 import { createJWT } from '../utils/jwt'
 import { createCsrfToken } from '../utils/csrf'
 import { authMiddleware, AUTH_COOKIE_NAME } from '../middleware/auth'
+import { corporateEmailDenialMessage, isCorporateEmailAllowed } from '../utils/email-access'
 
 const authRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -129,6 +130,14 @@ authRoutes.post('/google', async c => {
   // Check expiration
   if (Number(tokenInfo.exp) < Math.floor(Date.now() / 1000)) {
     return c.json({ success: false, error: 'Google credential has expired' }, 401)
+  }
+
+  // Corporate domain gate (toggleable via ALLOWED_EMAIL_DOMAINS).
+  if (!isCorporateEmailAllowed(tokenInfo.email, c.env.ALLOWED_EMAIL_DOMAINS)) {
+    return c.json(
+      { success: false, error: corporateEmailDenialMessage(c.env.ALLOWED_EMAIL_DOMAINS) },
+      403
+    )
   }
 
   // Check if user exists in D1 (email-based whitelist)
