@@ -2,14 +2,24 @@ import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
 import { createBrandSchema, updateBrandSchema } from '../schemas/brand'
 import { generateId } from '../utils/id'
-import { BRAND_APPROVAL_ROLES, isBrandBriefCreatorRole } from '@brand-constructor/shared'
+import {
+  BRAND_APPROVAL_ROLES,
+  BRAND_BRIEF_STATUS,
+  isBrandBriefCreatorRole,
+} from '@brand-constructor/shared'
 import type { BrandStatus } from '@brand-constructor/shared/types'
 import {
   applyFieldTransform,
   rowToBrand,
+  rowToBrandListItem,
   UPDATABLE_FIELDS,
+  type BrandListRow,
   type BrandRow,
 } from '../utils/brands'
+import {
+  insertWorkflowEvent,
+  WORKFLOW_EVENT_TYPES,
+} from '../utils/brand-workflow'
 
 const crud = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -19,6 +29,24 @@ const crud = new Hono<{ Bindings: Env; Variables: Variables }>()
 function canListAllBrands(role: string): boolean {
   return (BRAND_APPROVAL_ROLES as readonly string[]).includes(role) || role === 'admin'
 }
+
+const BRAND_LIST_FROM = `
+  FROM brands b
+  LEFT JOIN users u_creator ON u_creator.id = b.created_by
+  LEFT JOIN users u_submitted ON u_submitted.id = b.submitted_by
+  LEFT JOIN users u_approved ON u_approved.id = b.approved_by
+  LEFT JOIN users u_revision ON u_revision.id = b.needs_revision_by
+`
+
+const BRAND_LIST_SELECT = `
+  SELECT b.*,
+    u_creator.name AS author_name,
+    u_creator.role AS author_role,
+    u_submitted.name AS submitted_by_name,
+    u_approved.name AS approved_by_name,
+    u_revision.name AS needs_revision_by_name
+  ${BRAND_LIST_FROM}
+`
 
 crud.get('/', async c => {
   const user = c.get('user')
@@ -34,27 +62,25 @@ crud.get('/', async c => {
   const params: (string | number)[] = []
 
   if (canSeeAll) {
-    query = 'SELECT * FROM brands WHERE 1=1'
+    query = `${BRAND_LIST_SELECT} WHERE 1=1`
   } else if (isCreator) {
-    query = 'SELECT * FROM brands WHERE created_by = ?'
+    query = `${BRAND_LIST_SELECT} WHERE b.created_by = ?`
     params.push(user.id)
   } else {
-    // External teams (strategy / ui_designer / pr_marketing / product_designer)
-    // can only browse approved brands.
-    query = "SELECT * FROM brands WHERE status = 'approved'"
+    query = `${BRAND_LIST_SELECT} WHERE b.status = 'approved'`
   }
 
   if (status) {
-    query += ' AND status = ?'
+    query += ' AND b.status = ?'
     params.push(status)
   }
 
-  query += ' ORDER BY updated_at DESC LIMIT ? OFFSET ?'
+  query += ' ORDER BY b.updated_at DESC LIMIT ? OFFSET ?'
   params.push(perPage, offset)
 
   const result = await c.env.DB.prepare(query)
     .bind(...params)
-    .all<BrandRow>()
+    .all<BrandListRow>()
 
   let countQuery: string
   const countParams: (string | number)[] = []
@@ -79,7 +105,7 @@ crud.get('/', async c => {
 
   return c.json({
     success: true,
-    data: result.results.map(rowToBrand),
+    data: result.results.map(rowToBrandListItem),
     total: countResult?.count || 0,
     page,
     perPage,
@@ -205,6 +231,14 @@ crud.post('/', async c => {
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
 
+  try {
+    await insertWorkflowEvent(c.env.DB, id, WORKFLOW_EVENT_TYPES.CREATED, user.id, {
+      internalName: internalName ?? null,
+    })
+  } catch (err) {
+    console.error('Workflow event insert failed (created):', err)
+  }
+
   return c.json({ success: true, data: rowToBrand(row!) }, 201)
 })
 
@@ -238,7 +272,10 @@ crud.put('/:id', async c => {
     )
   }
 
-  const EDITABLE_STATUSES: readonly BrandStatus[] = ['draft', 'needs_revision'] as const
+  const EDITABLE_STATUSES: readonly BrandStatus[] = [
+    BRAND_BRIEF_STATUS.DRAFT,
+    BRAND_BRIEF_STATUS.NEEDS_REVISION,
+  ] as const
   if (!EDITABLE_STATUSES.includes(existing.status as BrandStatus)) {
     return c.json(
       {

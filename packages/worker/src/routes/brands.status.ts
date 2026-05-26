@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
-import { BRAND_APPROVAL_ROLES } from '@brand-constructor/shared'
+import { BRAND_APPROVAL_ROLES, BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
 import type { BrandStatus } from '@brand-constructor/shared/types'
 import {
   asIdArray,
@@ -26,6 +26,10 @@ import {
   buildNewBriefsDesignMessage,
 } from '../utils/slack'
 import { collectBrandNotificationData } from './brands.notifications'
+import {
+  appendWorkflowSnapshot,
+  recordStatusWorkflowEvents,
+} from '../utils/brand-workflow'
 
 const status = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -66,13 +70,16 @@ status.patch('/:id/status', async c => {
     )
   }
 
-  if (targetStatus === 'submitted') {
+  if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
     if (existing.created_by !== user.id) {
       return c.json({ success: false, error: 'Only the brand owner can submit for review' }, 403)
     }
   }
 
-  if (['approved', 'needs_revision'].includes(targetStatus)) {
+  if (
+    targetStatus === BRAND_BRIEF_STATUS.APPROVED ||
+    targetStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
+  ) {
     if (!(BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)) {
       return c.json(
         {
@@ -89,10 +96,16 @@ status.patch('/:id/status', async c => {
   // and folds the whole UPDATE into a single atomic db.batch alongside the
   // library marks (see the approval block below). All other branches
   // execute it as a standalone UPDATE here.
+  const now = new Date().toISOString()
   const updates: string[] = ['status = ?', 'updated_at = ?']
-  const values: (string | number | null)[] = [targetStatus, new Date().toISOString()]
+  const values: (string | number | null)[] = [targetStatus, now]
 
-  if (targetStatus === 'submitted' && currentStatus === 'needs_revision') {
+  appendWorkflowSnapshot(targetStatus, currentStatus, user.id, existing, now, updates, values)
+
+  if (
+    targetStatus === BRAND_BRIEF_STATUS.SUBMITTED &&
+    currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
+  ) {
     updates.push('ceo_comments = ?', 'ceo_selections = ?')
     values.push(null, null)
   }
@@ -107,15 +120,30 @@ status.patch('/:id/status', async c => {
     values.push(JSON.stringify(body.ceoSelections))
   }
 
-  if (targetStatus !== 'approved') {
+  if (targetStatus !== BRAND_BRIEF_STATUS.APPROVED) {
     values.push(id)
     await c.env.DB.prepare(`UPDATE brands SET ${updates.join(', ')} WHERE id = ?`)
       .bind(...values)
       .run()
+
+    try {
+      await recordStatusWorkflowEvents(c.env.DB, {
+        brandId: id,
+        userId: user.id,
+        targetStatus,
+        currentStatus,
+        existing,
+        ceoComments: body.ceoComments,
+        ceoSelections: body.ceoSelections,
+      })
+    } catch (err) {
+      console.error('Workflow event insert failed (status):', err)
+    }
   }
 
   if (
-    (targetStatus === 'submitted' || targetStatus === 'needs_revision') &&
+    (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED ||
+      targetStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION) &&
     c.env.SLACK_BOT_TOKEN
   ) {
     try {
@@ -130,7 +158,7 @@ status.patch('/:id/status', async c => {
           c.env.CONSTRUCTOR_URL ?? ''
         )
 
-        if (targetStatus === 'submitted') {
+        if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
           const hasNewBriefs = brand.new_concept_brief != null || brand.new_naming_brief != null
 
           if (hasNewBriefs) {
@@ -164,7 +192,7 @@ status.patch('/:id/status', async c => {
               ])
             )
           } else {
-            const isResubmit = currentStatus === 'needs_revision'
+            const isResubmit = currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
             const message = isResubmit
               ? buildResubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
               : buildSubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
@@ -225,7 +253,7 @@ status.patch('/:id/status', async c => {
     }
   }
 
-  if (targetStatus === 'approved') {
+  if (targetStatus === BRAND_BRIEF_STATUS.APPROVED) {
     // The status flip and library `used` marks must be applied atomically:
     // if the brand row flipped to `approved` while the library marks failed
     // (network blip, D1 transient error), the same library element could
@@ -322,6 +350,20 @@ status.patch('/:id/status', async c => {
         },
         500
       )
+    }
+
+    try {
+      await recordStatusWorkflowEvents(c.env.DB, {
+        brandId: id,
+        userId: user.id,
+        targetStatus,
+        currentStatus,
+        existing,
+        ceoComments: body.ceoComments,
+        ceoSelections: body.ceoSelections,
+      })
+    } catch (err) {
+      console.error('Workflow event insert failed (approved):', err)
     }
 
     // Slack is dispatched ONLY after the batch successfully commits. If the

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import type { Brand } from '@brand-constructor/shared'
+import type { BrandListItem } from '@brand-constructor/shared'
 import { useApiList, apiDelete } from '@/composables/useApi'
 import { useTableSort } from '@/composables/useTableSort'
+import {
+  formatAuthorRole,
+  getBrandReviewLabel,
+} from '@/composables/useBrandReviewLabel'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
-
-type BrandWithAuthor = Brand & { author_name?: string }
+import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryModal.vue'
 
 const authStore = useAuthStore()
 const canDeleteBrand = computed(() => authStore.user?.role === 'admin')
@@ -19,11 +22,11 @@ const {
   page,
   perPage,
   fetchData: fetchBrands,
-} = useApiList<BrandWithAuthor>('/api/brands')
+} = useApiList<BrandListItem>('/api/brands')
 
 const { sortedData, sortField, sortDirection, toggleSort } = useTableSort(
   brands,
-  'updatedAt',
+  'createdAt',
   'desc'
 )
 
@@ -67,14 +70,14 @@ const constructorBaseUrl = computed(() => {
   return url || ''
 })
 
-function openBrand(brand: BrandWithAuthor) {
+function openBrand(brand: BrandListItem) {
   const base = constructorBaseUrl.value
   if (base) {
     window.open(`${base}/constructor/brand/${brand.id}`, '_blank')
   }
 }
 
-function formatDate(dateStr: string | null): string {
+function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   const d = new Date(dateStr)
   return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -86,9 +89,15 @@ function formatGeo(geo: string | null): string {
 }
 
 const showDeleteConfirm = ref(false)
-const deleteTarget = ref<BrandWithAuthor | null>(null)
+const deleteTarget = ref<BrandListItem | null>(null)
 
-function handleDeleteBrand(brand: BrandWithAuthor) {
+const historyBrand = ref<BrandListItem | null>(null)
+
+function openHistory(brand: BrandListItem) {
+  historyBrand.value = brand
+}
+
+function handleDeleteBrand(brand: BrandListItem) {
   deleteTarget.value = brand
   showDeleteConfirm.value = true
 }
@@ -146,6 +155,19 @@ async function confirmDeleteBrand() {
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
+            <th class="sortable-th" @click="toggleSort('authorName')">
+              Author
+              <span v-if="sortField === 'authorName'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
+            </th>
+            <th class="sortable-th" @click="toggleSort('createdAt')">
+              Created
+              <span v-if="sortField === 'createdAt'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
+            </th>
+            <th>Review</th>
             <th class="sortable-th" @click="toggleSort('geo')">
               GEO
               <span v-if="sortField === 'geo'" class="sort-arrow">{{
@@ -155,12 +177,6 @@ async function confirmDeleteBrand() {
             <th class="sortable-th" @click="toggleSort('launchDate')">
               Launch Date
               <span v-if="sortField === 'launchDate'" class="sort-arrow">{{
-                sortDirection === 'asc' ? '↑' : '↓'
-              }}</span>
-            </th>
-            <th class="sortable-th" @click="toggleSort('updatedAt')">
-              Updated
-              <span v-if="sortField === 'updatedAt'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
@@ -182,10 +198,33 @@ async function confirmDeleteBrand() {
                 {{ STATUS_BADGES[brand.status]?.label ?? brand.status }}
               </span>
             </td>
+            <td class="brands-view__author-cell">
+              <span class="brands-view__author-name">{{ brand.authorName }}</span>
+              <span class="brands-view__author-role">{{ formatAuthorRole(brand.authorRole) }}</span>
+            </td>
+            <td>{{ formatDate(brand.createdAt) }}</td>
+            <td class="brands-view__review-cell">
+              <span class="brands-view__review-primary">{{
+                getBrandReviewLabel(brand).primary
+              }}</span>
+              <span
+                v-if="getBrandReviewLabel(brand).secondary"
+                class="brands-view__review-secondary"
+              >
+                {{ getBrandReviewLabel(brand).secondary }}
+              </span>
+            </td>
             <td>{{ formatGeo(brand.geo) }}</td>
             <td>{{ formatDate(brand.launchDate) }}</td>
-            <td>{{ formatDate(brand.updatedAt) }}</td>
             <td class="brands-view__actions" @click.stop>
+              <button
+                class="brands-view__history-btn"
+                type="button"
+                title="Workflow history"
+                @click="openHistory(brand)"
+              >
+                History
+              </button>
               <button
                 v-if="canDeleteBrand"
                 class="brands-view__delete-btn"
@@ -213,6 +252,13 @@ async function confirmDeleteBrand() {
         </tbody>
       </table>
     </div>
+
+    <BrandWorkflowHistoryModal
+      v-if="historyBrand"
+      :brand-id="historyBrand.id"
+      :brand-name="historyBrand.internalName || 'Brand'"
+      @close="historyBrand = null"
+    />
 
     <BaseModal
       v-if="showDeleteConfirm"
@@ -242,11 +288,6 @@ async function confirmDeleteBrand() {
     align-items: baseline;
     gap: $spacing-3;
     margin-bottom: $spacing-6;
-  }
-
-  &__title {
-    font-size: $font-size-2xl;
-    font-weight: $font-weight-bold;
   }
 
   &__count {
@@ -308,7 +349,7 @@ async function confirmDeleteBrand() {
     background-color: $color-bg-white;
 
     @include mobile {
-      min-width: 640px;
+      min-width: 900px;
     }
 
     th,
@@ -368,8 +409,61 @@ async function confirmDeleteBrand() {
     font-weight: $font-weight-medium;
   }
 
+  &__author-cell {
+    min-width: 120px;
+  }
+
+  &__author-name {
+    display: block;
+    font-weight: $font-weight-medium;
+  }
+
+  &__author-role {
+    display: block;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    margin-top: 2px;
+  }
+
+  &__review-cell {
+    min-width: 160px;
+    max-width: 220px;
+  }
+
+  &__review-primary {
+    display: block;
+    line-height: 1.4;
+  }
+
+  &__review-secondary {
+    display: block;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    margin-top: 2px;
+  }
+
   &__actions {
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+  }
+
+  &__history-btn {
+    padding: $spacing-1 $spacing-2;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-primary;
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: $color-bg;
+      border-color: $color-primary;
+    }
   }
 
   &__confirm-text {
@@ -424,11 +518,6 @@ async function confirmDeleteBrand() {
   &--amber {
     background-color: #fef3c7;
     color: #b45309;
-  }
-
-  &--red {
-    background-color: #fee2e2;
-    color: #b91c1c;
   }
 }
 </style>

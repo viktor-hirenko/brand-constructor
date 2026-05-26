@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
 import { updateBrandSchema } from '../schemas/brand'
 import type {
   Brand,
@@ -12,10 +13,16 @@ import type {
  * terminal state — no outgoing edges.
  */
 export const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
-  draft: ['submitted'],
-  submitted: ['approved', 'needs_revision'],
-  needs_revision: ['submitted', 'approved'],
-  approved: [],
+  [BRAND_BRIEF_STATUS.DRAFT]: [BRAND_BRIEF_STATUS.SUBMITTED],
+  [BRAND_BRIEF_STATUS.SUBMITTED]: [
+    BRAND_BRIEF_STATUS.APPROVED,
+    BRAND_BRIEF_STATUS.NEEDS_REVISION,
+  ],
+  [BRAND_BRIEF_STATUS.NEEDS_REVISION]: [
+    BRAND_BRIEF_STATUS.SUBMITTED,
+    BRAND_BRIEF_STATUS.APPROVED,
+  ],
+  [BRAND_BRIEF_STATUS.APPROVED]: [],
 }
 
 /** Section keys that may carry a `resolved` flag (everything except `general`). */
@@ -44,8 +51,15 @@ const ceoCommentMetaSchema = z.object({
 
 const ceoCommentValueSchema = z.union([z.string().max(5000), ceoCommentMetaSchema])
 
+const brandStatusValues = [
+  BRAND_BRIEF_STATUS.DRAFT,
+  BRAND_BRIEF_STATUS.SUBMITTED,
+  BRAND_BRIEF_STATUS.NEEDS_REVISION,
+  BRAND_BRIEF_STATUS.APPROVED,
+] as const
+
 export const updateStatusSchema = z.object({
-  status: z.enum(['draft', 'submitted', 'needs_revision', 'approved']),
+  status: z.enum(brandStatusValues),
   ceoComments: z.record(ceoCommentValueSchema).optional(),
   ceoSelections: z.record(ceoSelectionValueSchema).optional(),
 })
@@ -229,6 +243,21 @@ export interface BrandRow {
   current_step: number
   created_at: string
   updated_at: string
+  submitted_at?: string | null
+  submitted_by?: string | null
+  submit_count?: number
+  approved_at?: string | null
+  approved_by?: string | null
+  needs_revision_at?: string | null
+  needs_revision_by?: string | null
+}
+
+export interface BrandListRow extends BrandRow {
+  author_name?: string
+  author_role?: string
+  submitted_by_name?: string | null
+  approved_by_name?: string | null
+  needs_revision_by_name?: string | null
 }
 
 export function rowToBrand(row: BrandRow): Brand {
@@ -263,5 +292,24 @@ export function rowToBrand(row: BrandRow): Brand {
     currentStep: row.current_step,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    submittedAt: row.submitted_at ?? null,
+    submittedBy: row.submitted_by ?? null,
+    submitCount: row.submit_count ?? 0,
+    approvedAt: row.approved_at ?? null,
+    approvedBy: row.approved_by ?? null,
+    needsRevisionAt: row.needs_revision_at ?? null,
+    needsRevisionBy: row.needs_revision_by ?? null,
+  }
+}
+
+export function rowToBrandListItem(row: BrandListRow) {
+  const brand = rowToBrand(row)
+  return {
+    ...brand,
+    authorName: row.author_name ?? 'Unknown',
+    authorRole: row.author_role ?? '',
+    submittedByName: row.submitted_by_name ?? null,
+    approvedByName: row.approved_by_name ?? null,
+    needsRevisionByName: row.needs_revision_by_name ?? null,
   }
 }

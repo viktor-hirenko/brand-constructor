@@ -1,5 +1,8 @@
 import { BRAND_BRIEF_STATUS } from '../constants/statuses'
+import type { BrandWorkflowEventType } from '../constants/workflow'
+
 export type { BrandBriefStatus } from '../constants/statuses'
+export type { BrandWorkflowEventType } from '../constants/workflow'
 
 /**
  * Server-contract status type. Kept as a literal union so the worker and
@@ -162,6 +165,33 @@ export interface Brand {
   currentStep: number
   createdAt: string
   updatedAt: string
+  submittedAt?: string | null
+  submittedBy?: string | null
+  submitCount?: number
+  approvedAt?: string | null
+  approvedBy?: string | null
+  needsRevisionAt?: string | null
+  needsRevisionBy?: string | null
+}
+
+/** Admin list row: brand + resolved user display names. */
+export interface BrandListItem extends Brand {
+  authorName: string
+  authorRole: string
+  submittedByName?: string | null
+  approvedByName?: string | null
+  needsRevisionByName?: string | null
+}
+
+export interface BrandWorkflowEvent {
+  id: string
+  brandId: string
+  eventType: BrandWorkflowEventType
+  userId: string
+  userName: string
+  userRole: string
+  createdAt: string
+  meta: Record<string, unknown>
 }
 
 export interface CreateBrandPayload {

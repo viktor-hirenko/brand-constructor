@@ -164,11 +164,32 @@ CREATE TABLE IF NOT EXISTS brands (
   ceo_selections TEXT,
   step_data TEXT,
   current_step INTEGER NOT NULL DEFAULT 1,
+  submitted_at TEXT,
+  submitted_by TEXT,
+  submit_count INTEGER NOT NULL DEFAULT 0,
+  approved_at TEXT,
+  approved_by TEXT,
+  needs_revision_at TEXT,
+  needs_revision_by TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (submitted_by) REFERENCES users(id),
+  FOREIGN KEY (approved_by) REFERENCES users(id),
+  FOREIGN KEY (needs_revision_by) REFERENCES users(id),
   FOREIGN KEY (concept_id) REFERENCES concepts(id) ON DELETE SET NULL,
   FOREIGN KEY (pr_package_id) REFERENCES pr_packages(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS brand_workflow_events (
+  id TEXT PRIMARY KEY,
+  brand_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  meta TEXT NOT NULL DEFAULT '{}',
+  FOREIGN KEY (brand_id) REFERENCES brands(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Indexes
@@ -185,3 +206,4 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_brands_status ON brands(status);
 CREATE INDEX IF NOT EXISTS idx_brands_created_by ON brands(created_by);
+CREATE INDEX IF NOT EXISTS idx_brand_workflow_events_brand ON brand_workflow_events(brand_id, created_at DESC);

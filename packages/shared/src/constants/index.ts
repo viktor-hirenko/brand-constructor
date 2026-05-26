@@ -16,6 +16,14 @@ export {
 } from './statuses'
 export type { BrandBriefStatus } from './statuses'
 
+export {
+  BRAND_WORKFLOW_EVENT_TYPES,
+  BRAND_WORKFLOW_EVENT_LABELS,
+  BRIEF_SECTION_KEYS,
+  BRIEF_SECTION_LABELS,
+} from './workflow'
+export type { BrandWorkflowEventType, BriefSectionKey } from './workflow'
+
 export { PR_TEAMS } from './teams'
 export type { PrTeam } from './teams'
 

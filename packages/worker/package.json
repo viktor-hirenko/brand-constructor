@@ -13,6 +13,9 @@
     "db:migrate": "wrangler d1 execute brand-constructor-db --local --file=./src/db/schema.sql",
     "db:migrate:remote": "wrangler d1 execute brand-constructor-db --remote --file=./src/db/schema.sql",
     "db:migrate:009:remote": "wrangler d1 execute brand-constructor-db --env production --remote --file=./src/db/migrations/009_add_assets_uploaded_by.sql",
+    "db:migrate:010:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/010_brand_workflow_snapshot.sql",
+    "db:migrate:011:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/011_brand_workflow_events.sql",
+    "db:migrate:workflow:remote": "pnpm db:migrate:010:remote && pnpm db:migrate:011:remote",
     "db:seed": "wrangler d1 execute brand-constructor-db --local --file=./src/db/seed.sql",
     "db:seed:remote": "wrangler d1 execute brand-constructor-db --remote --file=./src/db/seed.sql"
   },

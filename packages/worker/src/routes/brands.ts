@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
 import crud from './brands.crud'
 import ceo from './brands.ceo'
+import events from './brands.events'
 import status from './brands.status'
 
 /**
@@ -17,6 +18,7 @@ import status from './brands.status'
  */
 const brands = new Hono<{ Bindings: Env; Variables: Variables }>()
 
+brands.route('/', events)
 brands.route('/', crud)
 brands.route('/', ceo)
 brands.route('/', status)
