@@ -21,19 +21,18 @@ export function getBrandReviewLabel(brand: BrandListItem): BrandReviewLabel {
     case BRAND_BRIEF_STATUS.DRAFT:
       return { primary: 'Not submitted', secondary: null }
     case BRAND_BRIEF_STATUS.SUBMITTED: {
-      const since = formatDate(brand.submittedAt)
+      const since = brand.submittedAt ? formatDate(brand.submittedAt) : null
       const secondary =
-        (brand.submitCount ?? 0) > 1
-          ? `Resubmit #${brand.submitCount} · ${since}`
-          : null
+        since && (brand.submitCount ?? 0) > 1 ? `Resubmit #${brand.submitCount} · ${since}` : null
       return {
-        primary: `Waiting CEO · since ${since}`,
+        primary: since ? `Waiting CEO · since ${since}` : 'Waiting CEO',
         secondary,
       }
     }
     case BRAND_BRIEF_STATUS.NEEDS_REVISION: {
       const by = brand.needsRevisionByName ?? 'CEO'
-      const primary = `Sent back by ${by} · ${formatDate(brand.needsRevisionAt)}`
+      const at = brand.needsRevisionAt ? formatDate(brand.needsRevisionAt) : null
+      const primary = at ? `Sent back by ${by} · ${at}` : `Sent back by ${by}`
       const resubmitted =
         brand.submittedAt && brand.needsRevisionAt && brand.submittedAt > brand.needsRevisionAt
           ? `Resubmitted ${formatDate(brand.submittedAt)}`
@@ -42,7 +41,8 @@ export function getBrandReviewLabel(brand: BrandListItem): BrandReviewLabel {
     }
     case BRAND_BRIEF_STATUS.APPROVED: {
       const by = brand.approvedByName ?? 'CEO'
-      const primary = `Approved by ${by} · ${formatDate(brand.approvedAt)}`
+      const at = brand.approvedAt ? formatDate(brand.approvedAt) : null
+      const primary = at ? `Approved by ${by} · ${at}` : `Approved by ${by}`
       const secondary =
         brand.submittedAt && brand.approvedAt
           ? `Submitted ${formatDate(brand.submittedAt)} → approved ${formatDate(brand.approvedAt)}`

@@ -199,19 +199,23 @@ async function confirmDeleteBrand() {
               </span>
             </td>
             <td class="brands-view__author-cell">
-              <span class="brands-view__author-name">{{ brand.authorName }}</span>
-              <span class="brands-view__author-role">{{ formatAuthorRole(brand.authorRole) }}</span>
+              <span class="brands-view__author-name">{{ brand.authorName }}</span><span
+                class="brands-view__author-role"
+                >{{ formatAuthorRole(brand.authorRole) }}</span
+              >
             </td>
             <td>{{ formatDate(brand.createdAt) }}</td>
             <td class="brands-view__review-cell">
-              <span class="brands-view__review-primary">{{
-                getBrandReviewLabel(brand).primary
-              }}</span>
-              <span
-                v-if="getBrandReviewLabel(brand).secondary"
-                class="brands-view__review-secondary"
-              >
-                {{ getBrandReviewLabel(brand).secondary }}
+              <span class="brands-view__review-line">
+                <span class="brands-view__review-primary">{{
+                  getBrandReviewLabel(brand).primary
+                }}</span>
+                <span
+                  v-if="getBrandReviewLabel(brand).secondary"
+                  class="brands-view__review-secondary"
+                >
+                  · {{ getBrandReviewLabel(brand).secondary }}
+                </span>
               </span>
             </td>
             <td>{{ formatGeo(brand.geo) }}</td>
@@ -411,35 +415,42 @@ async function confirmDeleteBrand() {
 
   &__author-cell {
     min-width: 120px;
+    white-space: nowrap;
   }
 
   &__author-name {
-    display: block;
     font-weight: $font-weight-medium;
   }
 
   &__author-role {
-    display: block;
     font-size: $font-size-xs;
     color: $color-text-secondary;
-    margin-top: 2px;
+
+    &::before {
+      content: ' · ';
+    }
   }
 
   &__review-cell {
     min-width: 160px;
-    max-width: 220px;
+    max-width: 320px;
   }
 
-  &__review-primary {
+  &__review-line {
     display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     line-height: 1.4;
   }
 
+  &__review-primary {
+    font-size: $font-size-sm;
+  }
+
   &__review-secondary {
-    display: block;
     font-size: $font-size-xs;
     color: $color-text-secondary;
-    margin-top: 2px;
   }
 
   &__actions {
