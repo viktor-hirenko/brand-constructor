@@ -4,6 +4,7 @@ import type { PrPackage } from '@brand-constructor/shared'
 import { PR_TEAMS } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
@@ -70,7 +71,20 @@ function parseTeams(str: string): string[] {
     : []
 }
 
-onMounted(fetchPackages)
+function reloadPackages(options?: { silent?: boolean }) {
+  fetchPackages({ silent: options?.silent })
+}
+
+onMounted(() => reloadPackages())
+
+const pollingPaused = computed(
+  () =>
+    showCreateModal.value ||
+    editingPkg.value !== null ||
+    viewingPkg.value !== null ||
+    deleteTarget.value !== null
+)
+useListPolling(() => reloadPackages({ silent: true }), { paused: pollingPaused })
 
 function resetForm() {
   form.value = {
@@ -113,7 +127,7 @@ async function handleSave() {
     showCreateModal.value = false
     editingPkg.value = null
     resetForm()
-    fetchPackages()
+    reloadPackages()
   } catch (err) {
     alert(err instanceof Error ? err.message : 'Failed to save package')
   }
@@ -136,7 +150,7 @@ async function confirmDelete() {
   try {
     await apiDelete(`/api/pr-packages/${deleteTarget.value.id}`)
     deleteTarget.value = null
-    fetchPackages()
+    reloadPackages()
   } finally {
     deleting.value = false
   }

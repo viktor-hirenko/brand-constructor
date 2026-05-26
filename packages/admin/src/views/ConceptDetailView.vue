@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared'
 import { parseAspectRatio } from '@brand-constructor/shared'
 import { useApi, apiPut, apiUpload, apiDelete, getAssetUrl } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -78,7 +79,20 @@ const galleryRatios = reactive<Record<string, string>>(
   Object.fromEntries(GALLERY_SLOTS.map(s => [s.entityType, '1:1']))
 )
 
-onMounted(() => fetchData())
+function reloadConcept(options?: { silent?: boolean }) {
+  return fetchData({ silent: options?.silent })
+}
+
+onMounted(() => reloadConcept())
+
+const pollingPaused = computed(
+  () =>
+    isEditing.value ||
+    deleteAssetTarget.value !== null ||
+    uploadingType.value !== null ||
+    deletingType.value !== null
+)
+useListPolling(() => reloadConcept({ silent: true }), { paused: pollingPaused })
 
 function setGalleryFileInputRef(entityType: string, el: unknown) {
   if (el && el instanceof HTMLInputElement) {
@@ -110,7 +124,7 @@ async function saveChanges() {
   try {
     await apiPut(`/api/concepts/${concept.value.id}`, payload)
     isEditing.value = false
-    await fetchData()
+    await reloadConcept()
   } catch (err) {
     alert(
       `Save failed: ${err instanceof Error ? err.message : 'Unknown error'}\n\nPayload sent: ${JSON.stringify(payload)}`
@@ -138,7 +152,7 @@ async function handleFileUpload(event: Event, entityType: string) {
     }
 
     await apiUpload<Asset>('/api/assets/upload', formData)
-    fetchData()
+    reloadConcept()
   } catch (err) {
     alert(err instanceof Error ? err.message : 'Upload failed')
   } finally {
@@ -194,7 +208,7 @@ async function confirmAssetDelete() {
       await apiPut(`/api/concepts/${concept.value.id}`, payload)
     }
     deleteAssetTarget.value = null
-    await fetchData()
+    await reloadConcept()
   } catch (err) {
     alert(err instanceof Error ? err.message : 'Delete failed')
   } finally {
@@ -215,7 +229,7 @@ async function confirmAssetDelete() {
 
     <div v-else-if="error" class="concept-detail__error">
       <p>Failed to load concept: {{ error }}</p>
-      <BaseButton variant="secondary" size="sm" @click="fetchData()">Retry</BaseButton>
+      <BaseButton variant="secondary" size="sm" @click="reloadConcept()">Retry</BaseButton>
     </div>
 
     <template v-else-if="concept">

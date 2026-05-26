@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Concept, ExternalNaming } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -46,8 +47,8 @@ const unlinkedNamings = computed(() =>
   availableNamings.value.filter(n => !n.concept_id).sort((a, b) => a.name.localeCompare(b.name))
 )
 
-function refreshConcepts() {
-  fetchData({ status: statusFilter.value })
+function refreshConcepts(options?: { silent?: boolean }) {
+  fetchData({ queryParams: { status: statusFilter.value }, silent: options?.silent })
 }
 
 onMounted(() => {
@@ -55,7 +56,7 @@ onMounted(() => {
   fetchNamings({ per_page: '100', filter: 'standalone' })
 })
 
-watch(statusFilter, refreshConcepts)
+watch(statusFilter, () => refreshConcepts())
 
 function openCreateModal() {
   newName.value = ''
@@ -102,6 +103,9 @@ async function handleCreate() {
 const showDeleteConfirm = ref(false)
 const deleteTargetId = ref('')
 const deleteTargetName = ref('')
+
+const pollingPaused = computed(() => showCreateModal.value || showDeleteConfirm.value)
+useListPolling(() => refreshConcepts({ silent: true }), { paused: pollingPaused })
 
 function handleDelete(id: string, name: string) {
   deleteTargetId.value = id

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import type { BrandListItem } from '@brand-constructor/shared'
 import { useApiList, apiDelete } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import {
   formatAuthorRole,
@@ -47,12 +48,16 @@ const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
   needs_revision: { label: 'Needs Revision', cls: 'badge--amber' },
 }
 
-function loadBrands() {
+function brandListParams(): Record<string, string> {
   const params: Record<string, string> = {}
   if (activeTab.value !== 'all') {
     params.status = activeTab.value
   }
-  fetchBrands(params)
+  return params
+}
+
+function loadBrands(options?: { silent?: boolean }) {
+  fetchBrands({ queryParams: brandListParams(), silent: options?.silent })
 }
 
 onMounted(() => {
@@ -100,6 +105,16 @@ const showDeleteConfirm = ref(false)
 const deleteTarget = ref<BrandListItem | null>(null)
 
 const historyBrand = ref<BrandListItem | null>(null)
+
+const pollingPaused = computed(
+  () => historyBrand.value !== null || showDeleteConfirm.value
+)
+useListPolling(() => loadBrands({ silent: true }), { paused: pollingPaused })
+
+function closeHistory() {
+  historyBrand.value = null
+  loadBrands({ silent: true })
+}
 
 function openHistory(brand: BrandListItem) {
   historyBrand.value = brand
@@ -264,7 +279,7 @@ async function confirmDeleteBrand() {
       v-if="historyBrand"
       :brand-id="historyBrand.id"
       :brand-name="historyBrand.internalName || 'Brand'"
-      @close="historyBrand = null"
+      @close="closeHistory"
     />
 
     <BaseModal

@@ -7,6 +7,22 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
 // HTTP methods that do not require a CSRF token (no side effects).
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
+export interface FetchDataOptions {
+  queryParams?: Record<string, string>
+  /** Background refresh: do not set loading or clear error */
+  silent?: boolean
+}
+
+export function normalizeFetchOptions(
+  options?: FetchDataOptions | Record<string, string>
+): FetchDataOptions {
+  if (!options) return {}
+  if ('silent' in options || 'queryParams' in options) {
+    return options as FetchDataOptions
+  }
+  return { queryParams: options as Record<string, string> }
+}
+
 export function getAssetUrl(url: string | null | undefined): string {
   if (!url) return ''
   if (url.startsWith('/api')) return `${API_BASE}${url}`
@@ -53,18 +69,25 @@ export function useApi<T>(url: string) {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchData(queryParams?: Record<string, string>) {
-    loading.value = true
-    error.value = null
+  async function fetchData(options?: FetchDataOptions | Record<string, string>) {
+    const { queryParams, silent } = normalizeFetchOptions(options)
+    if (!silent) {
+      loading.value = true
+      error.value = null
+    }
 
     try {
       const queryString = queryParams ? '?' + new URLSearchParams(queryParams).toString() : ''
       const result = await request<ApiResponse<T>>(`${url}${queryString}`)
       data.value = result.data
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
+      if (!silent) {
+        error.value = err instanceof Error ? err.message : 'Unknown error'
+      }
     } finally {
-      loading.value = false
+      if (!silent) {
+        loading.value = false
+      }
     }
   }
 
@@ -79,9 +102,12 @@ export function useApiList<T>(url: string) {
   const page = ref(1)
   const perPage = ref(20)
 
-  async function fetchData(queryParams?: Record<string, string>) {
-    loading.value = true
-    error.value = null
+  async function fetchData(options?: FetchDataOptions | Record<string, string>) {
+    const { queryParams, silent } = normalizeFetchOptions(options)
+    if (!silent) {
+      loading.value = true
+      error.value = null
+    }
 
     try {
       const params = {
@@ -94,9 +120,13 @@ export function useApiList<T>(url: string) {
       data.value = result.data
       total.value = result.total
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
+      if (!silent) {
+        error.value = err instanceof Error ? err.message : 'Unknown error'
+      }
     } finally {
-      loading.value = false
+      if (!silent) {
+        loading.value = false
+      }
     }
   }
 

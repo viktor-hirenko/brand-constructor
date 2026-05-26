@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import type { ExternalNaming, InternalNaming, Concept } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -195,15 +196,15 @@ function scheduleEditDomainPreview() {
   }, 500)
 }
 
-function refreshList() {
+function refreshList(options?: { silent?: boolean }) {
   const params: Record<string, string> = { status: statusFilter.value }
   if (activeTab.value === 'external') {
     if (conceptFilter.value !== 'all') {
       params.filter = conceptFilter.value
     }
-    fetchExternal(params)
+    fetchExternal({ queryParams: params, silent: options?.silent })
   } else {
-    fetchInternal(params)
+    fetchInternal({ queryParams: params, silent: options?.silent })
   }
 }
 
@@ -211,7 +212,10 @@ onMounted(() => {
   refreshList()
   fetchConcepts({ per_page: '100', status: 'all' })
 })
-watch([activeTab, conceptFilter, statusFilter], refreshList)
+watch([activeTab, conceptFilter, statusFilter], () => refreshList())
+
+const pollingPaused = computed(() => showCreateModal.value || showEditModal.value)
+useListPolling(() => refreshList({ silent: true }), { paused: pollingPaused })
 
 watch([newDomain, showCreateModal, activeTab], () => {
   if (!showCreateModal.value) {

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared'
 import { COMPONENT_TYPE_ASPECT_RATIOS, parseAspectRatio } from '@brand-constructor/shared'
 import { apiGet, apiPost, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -65,8 +66,10 @@ function triggerUpload(variantId: string) {
   uploadInputRefs.value.get(variantId)?.click()
 }
 
-async function fetchVariants() {
-  loading.value = true
+async function fetchVariants(options?: { silent?: boolean }) {
+  if (!options?.silent) {
+    loading.value = true
+  }
   try {
     const result = await apiGet<{
       type: ComponentType
@@ -77,12 +80,23 @@ async function fetchVariants() {
   } catch (err) {
     console.error('Failed to fetch variants:', err)
   } finally {
-    loading.value = false
+    if (!options?.silent) {
+      loading.value = false
+    }
   }
 }
 
-onMounted(fetchVariants)
-watch(statusFilter, fetchVariants)
+onMounted(() => fetchVariants())
+watch(statusFilter, () => fetchVariants())
+
+const pollingPaused = computed(
+  () =>
+    showCreateModal.value ||
+    lightboxUrl.value !== null ||
+    deleteTarget.value !== null ||
+    uploadingIds.value.size > 0
+)
+useListPolling(() => fetchVariants({ silent: true }), { paused: pollingPaused })
 
 async function handleCreate() {
   if (!newName.value.trim()) return

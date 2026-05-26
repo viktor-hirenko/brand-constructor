@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import type { ComponentType } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 import { useApiList, apiPost } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -40,13 +41,20 @@ async function handleCreate() {
     newName.value = ''
     newDescription.value = ''
     showCreateModal.value = false
-    fetchTypes()
+    reloadTypes()
   } finally {
     creating.value = false
   }
 }
 
-onMounted(fetchTypes)
+function reloadTypes(options?: { silent?: boolean }) {
+  fetchTypes({ silent: options?.silent })
+}
+
+onMounted(() => reloadTypes())
+
+const pollingPaused = computed(() => showCreateModal.value)
+useListPolling(() => reloadTypes({ silent: true }), { paused: pollingPaused })
 </script>
 
 <template>
