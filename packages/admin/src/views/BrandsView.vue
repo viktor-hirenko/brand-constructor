@@ -83,6 +83,14 @@ function formatDate(dateStr: string | null | undefined): string {
   return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function reviewLabel(brand: BrandListItem) {
+  return getBrandReviewLabel(brand)
+}
+
+function authorTitle(brand: BrandListItem): string {
+  return `${brand.authorName} · ${formatAuthorRole(brand.authorRole)}`
+}
+
 function formatGeo(geo: string | null): string {
   if (!geo) return '—'
   return geo
@@ -198,7 +206,7 @@ async function confirmDeleteBrand() {
                 {{ STATUS_BADGES[brand.status]?.label ?? brand.status }}
               </span>
             </td>
-            <td class="brands-view__author-cell">
+            <td class="brands-view__author-cell" :title="authorTitle(brand)">
               <span class="brands-view__author-name">{{ brand.authorName }}</span><span
                 class="brands-view__author-role"
                 >{{ formatAuthorRole(brand.authorRole) }}</span
@@ -206,16 +214,11 @@ async function confirmDeleteBrand() {
             </td>
             <td>{{ formatDate(brand.createdAt) }}</td>
             <td class="brands-view__review-cell">
-              <span class="brands-view__review-line">
-                <span class="brands-view__review-primary">{{
-                  getBrandReviewLabel(brand).primary
-                }}</span>
-                <span
-                  v-if="getBrandReviewLabel(brand).secondary"
-                  class="brands-view__review-secondary"
-                >
-                  · {{ getBrandReviewLabel(brand).secondary }}
-                </span>
+              <span
+                class="brands-view__review-line"
+                :title="reviewLabel(brand).title ?? reviewLabel(brand).line"
+              >
+                {{ reviewLabel(brand).line }}
               </span>
             </td>
             <td>{{ formatGeo(brand.geo) }}</td>
@@ -432,8 +435,8 @@ async function confirmDeleteBrand() {
   }
 
   &__review-cell {
-    min-width: 160px;
-    max-width: 320px;
+    min-width: 140px;
+    max-width: 200px;
   }
 
   &__review-line {
@@ -442,15 +445,7 @@ async function confirmDeleteBrand() {
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.4;
-  }
-
-  &__review-primary {
-    font-size: $font-size-sm;
-  }
-
-  &__review-secondary {
-    font-size: $font-size-xs;
-    color: $color-text-secondary;
+    cursor: default;
   }
 
   &__actions {

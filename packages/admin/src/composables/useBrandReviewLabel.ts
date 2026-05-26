@@ -8,8 +8,10 @@ function formatDate(dateStr: string | null | undefined): string {
 }
 
 export interface BrandReviewLabel {
-  primary: string
-  secondary: string | null
+  /** Compact single line for the table cell */
+  line: string
+  /** Full text for hover tooltip; null when same as line */
+  title: string | null
 }
 
 export function formatAuthorRole(role: string): string {
@@ -19,37 +21,39 @@ export function formatAuthorRole(role: string): string {
 export function getBrandReviewLabel(brand: BrandListItem): BrandReviewLabel {
   switch (brand.status) {
     case BRAND_BRIEF_STATUS.DRAFT:
-      return { primary: 'Not submitted', secondary: null }
+      return { line: 'Not submitted', title: null }
     case BRAND_BRIEF_STATUS.SUBMITTED: {
       const since = brand.submittedAt ? formatDate(brand.submittedAt) : null
-      const secondary =
-        since && (brand.submitCount ?? 0) > 1 ? `Resubmit #${brand.submitCount} · ${since}` : null
-      return {
-        primary: since ? `Waiting CEO · since ${since}` : 'Waiting CEO',
-        secondary,
-      }
+      const line = since ? `Waiting CEO · ${since}` : 'Waiting CEO'
+      const resubmit =
+        since && (brand.submitCount ?? 0) > 1 ? `Resubmit #${brand.submitCount}` : null
+      const title = resubmit ? `${line}. ${resubmit}` : null
+      return { line, title }
     }
     case BRAND_BRIEF_STATUS.NEEDS_REVISION: {
       const by = brand.needsRevisionByName ?? 'CEO'
       const at = brand.needsRevisionAt ? formatDate(brand.needsRevisionAt) : null
-      const primary = at ? `Sent back by ${by} · ${at}` : `Sent back by ${by}`
+      const line = at ? `Sent back · ${at}` : 'Sent back'
+      const full = at ? `Sent back by ${by} · ${at}` : `Sent back by ${by}`
       const resubmitted =
         brand.submittedAt && brand.needsRevisionAt && brand.submittedAt > brand.needsRevisionAt
           ? `Resubmitted ${formatDate(brand.submittedAt)}`
           : null
-      return { primary, secondary: resubmitted }
+      const title = resubmitted ? `${full}. ${resubmitted}` : full !== line ? full : null
+      return { line, title }
     }
     case BRAND_BRIEF_STATUS.APPROVED: {
       const by = brand.approvedByName ?? 'CEO'
       const at = brand.approvedAt ? formatDate(brand.approvedAt) : null
-      const primary = at ? `Approved by ${by} · ${at}` : `Approved by ${by}`
-      const secondary =
-        brand.submittedAt && brand.approvedAt
-          ? `Submitted ${formatDate(brand.submittedAt)} → approved ${formatDate(brand.approvedAt)}`
-          : null
-      return { primary, secondary }
+      const submitted = brand.submittedAt ? formatDate(brand.submittedAt) : null
+      const line = at ? `Approved · ${at}` : 'Approved'
+      const full = at ? `Approved by ${by} · ${at}` : `Approved by ${by}`
+      const timeline =
+        submitted && at ? `Submitted ${submitted} → approved ${at}` : null
+      const title = timeline ? `${full}. ${timeline}` : full !== line ? full : null
+      return { line, title }
     }
     default:
-      return { primary: brand.status, secondary: null }
+      return { line: brand.status, title: null }
   }
 }
