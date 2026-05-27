@@ -53,6 +53,10 @@ async function loadConcepts() {
 
 onMounted(() => {
   perPage.value = 50
+  // Server drafts may have mode null; UI shows light via ?? but API/validation need a real value.
+  if (store.stepData.mode == null) {
+    store.setMode('light')
+  }
   loadConcepts()
 })
 

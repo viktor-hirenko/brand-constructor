@@ -1,14 +1,26 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { computed } from 'vue'
+import { useConstructorStore } from '@/stores/constructor'
+import { apiGet, apiPost } from '@/composables/useApi'
+import { useLandingDrafts } from '@/composables/useLandingDrafts'
+import LandingDraftCta from '@/components/landing/LandingDraftCta.vue'
+import LandingCtaButton from '@/components/landing/LandingCtaButton.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import PaletteIcon from '@/components/icons/PaletteIcon.vue'
 import TargetIcon from '@/components/icons/TargetIcon.vue'
 import TrendingUpIcon from '@/components/icons/TrendingUpIcon.vue'
+import type { Brand, BrandListItem } from '@brand-constructor/shared/types'
+import {
+  applyBrandToStore,
+  clampWizardStep,
+  wizardStepLocation,
+} from '@/utils/brandHydration'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const store = useConstructorStore()
 
 const COVER_IMAGE =
   'https://raw.githubusercontent.com/lukaguzenko/brand-constructor-assets/a61fff81678850a0ead1e39a7a3770237d50ef5a/others/cover_1.png'
@@ -20,13 +32,62 @@ const features = [
   { label: 'Маркетінговий розвіток', icon: 'trending' },
 ] as const
 
+const creating = ref(false)
+const actionError = ref<string | null>(null)
+
 const showButton = computed(() => {
-  // Показываем кнопку если: не залогинен ИЛИ залогинен и имеет права
   return !authStore.isAuthenticated || authStore.canStartNewBrandBrief
 })
 
-function startConstructor() {
-  router.push('/constructor/step/1')
+const useDraftAwareCta = computed(
+  () => authStore.isAuthenticated && authStore.canStartNewBrandBrief
+)
+
+const { drafts, loading, fetchDrafts } = useLandingDrafts(() => useDraftAwareCta.value)
+
+async function navigateToDraft(brand: Brand) {
+  applyBrandToStore(store, brand)
+  const step = clampWizardStep(brand.currentStep ?? 1)
+  await router.push(wizardStepLocation(step, brand.id))
+}
+
+async function continueDraft(listItem: BrandListItem) {
+  if (creating.value) return
+  creating.value = true
+  actionError.value = null
+
+  try {
+    store.reset()
+    const brand = await apiGet<Brand>(`/api/brands/${listItem.id}`)
+    await navigateToDraft(brand)
+  } catch (err) {
+    actionError.value = err instanceof Error ? err.message : 'Не вдалося відкрити чернетку'
+  } finally {
+    creating.value = false
+  }
+}
+
+async function createNewBrand() {
+  if (creating.value) return
+  actionError.value = null
+
+  if (!authStore.isAuthenticated) {
+    await router.push('/constructor/step/1')
+    return
+  }
+
+  creating.value = true
+
+  try {
+    store.reset()
+    const brand = await apiPost<Brand>('/api/brands', { currentStep: 1 })
+    await navigateToDraft(brand)
+    void fetchDrafts()
+  } catch (err) {
+    actionError.value = err instanceof Error ? err.message : 'Не вдалося створити бриф'
+  } finally {
+    creating.value = false
+  }
 }
 </script>
 
@@ -56,15 +117,24 @@ function startConstructor() {
             новий
           </p>
 
-          <!-- CTA Button -->
-          <button
-            v-if="showButton"
-            class="inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] hover:shadow-[0px_15px_25px_rgba(0,0,0,0.15),0px_6px_10px_rgba(0,0,0,0.1)] transition-shadow text-lg font-medium tracking-[-0.44px] cursor-pointer"
-            @click="startConstructor"
-          >
+          <!-- CTA -->
+          <LandingDraftCta
+            v-if="showButton && useDraftAwareCta"
+            :drafts="drafts"
+            :loading="loading"
+            :creating="creating"
+            @continue="continueDraft"
+            @create-new="createNewBrand"
+          />
+
+          <LandingCtaButton v-else-if="showButton" :disabled="creating" @click="createNewBrand">
             Order New Brand
             <SparklesIcon class="size-5" />
-          </button>
+          </LandingCtaButton>
+
+          <p v-if="actionError" class="text-sm text-destructive mt-3">
+            {{ actionError }}
+          </p>
 
           <!-- Сообщение для залогиненных без прав -->
           <p

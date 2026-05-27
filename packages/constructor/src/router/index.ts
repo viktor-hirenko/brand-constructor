@@ -7,8 +7,9 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
-import type { Brand, BrandStepData } from '@brand-constructor/shared/types'
+import type { Brand } from '@brand-constructor/shared/types'
 import { resolveColdStartNavigation } from '@/router/coldStartNavigation'
+import { applyBrandToStore, buildStepDataFromBrand, clampWizardStep, wizardStepLocation } from '@/utils/brandHydration'
 
 function ceoReselectGuard(to: RouteLocationNormalized) {
   const auth = useAuthStore()
@@ -148,45 +149,7 @@ const routes: RouteRecordRaw[] = [
 
       try {
         const brand = await apiGet<Brand>(`/api/brands/${brandId}`)
-        const stepData = (brand.stepData ?? {
-          brandBasics: {
-            geo: brand.geo ? brand.geo.split(',') : [],
-            launchDate: brand.launchDate ?? '',
-            linkedProduct: '',
-            comment: '',
-          },
-          mode: brand.mode ?? null,
-          concept: {
-            selectedId: brand.conceptId ?? null,
-            comment: brand.conceptComment ?? '',
-            newConceptBrief: brand.newConceptBrief ?? null,
-          },
-          externalNaming: {
-            selectedIds: brand.externalNamingIds ?? [],
-            comment: brand.externalNamingComment ?? '',
-            newNamingBrief: brand.newNamingBrief ?? null,
-          },
-          internalNaming: {
-            selectedId: brand.internalNamingId ?? null,
-            comment: brand.internalNamingComment ?? '',
-            newNamingFeedback: null,
-          },
-          marketingPackage: {
-            selectedId: brand.prPackageId ?? null,
-            comment: brand.prPackageComment ?? '',
-          },
-          deliverables: {
-            legalLanding: brand.legalLanding ?? false,
-            partnerLanding: brand.partnerLanding ?? false,
-            developmentDeadline: brand.developmentDeadline ?? '',
-            comment: brand.deliverablesComment ?? '',
-          },
-          visualComponents: {
-            selections: brand.componentSelections ?? {},
-            delegateToDesigners: brand.delegateToDesigners ?? false,
-            comment: brand.componentsComment ?? '',
-          },
-        }) as BrandStepData
+        const stepData = buildStepDataFromBrand(brand)
         store.loadBrand(
           brandId,
           stepData,
@@ -214,23 +177,34 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor',
     component: () => import('@/views/BriefShellView.vue'),
     meta: { requiresAuth: true, briefCreatorOnly: true },
-    beforeEnter: to => {
+    beforeEnter: async to => {
       const stepMatch = to.path.match(/\/constructor\/step\/(\d+)/)
       if (!stepMatch) return true
 
       const targetStep = parseInt(stepMatch[1])
       const store = useConstructorStore()
+      const brandQuery = to.query.brand
 
-      // Restore unsaved draft (e.g. after F5 / accidental tab close) before the
-      // wizard mounts. Only applies to new-brand sessions that have no server ID yet.
-      if (!store.brandId) {
+      if (typeof brandQuery === 'string' && brandQuery && store.brandId !== brandQuery) {
+        try {
+          const brand = await apiGet<Brand>(`/api/brands/${brandQuery}`)
+          if (brand.status !== 'draft') {
+            return { path: `/constructor/brand/${brandQuery}` }
+          }
+          applyBrandToStore(store, brand)
+        } catch {
+          return { path: '/' }
+        }
+      } else if (!store.brandId) {
         store.restoreDraftFromStorage()
       }
 
       if (targetStep <= 1) return true
 
       if (targetStep > store.currentStep) {
-        return { path: `/constructor/step/${store.currentStep}` }
+        return {
+          ...wizardStepLocation(store.currentStep, store.brandId, typeof to.query.editBrand === 'string' ? to.query.editBrand : null),
+        }
       }
       return true
     },
@@ -334,10 +308,9 @@ const router = createRouter({
 // `restoreAuthorRevisionDraftFromStorage`).
 //
 // Wizard URLs (`/constructor/step/N`) entered from the review screen for
-// non-naming sections (basics, marketing package, deliverables, visual
-// components) don't carry a brand id in the path, so ReviewSubmitView marks
-// those navigations with `?editBrand=<id>`. On a cold start we use that
-// query param to redirect back to the right brand review page.
+// non-naming sections carry `?editBrand=<id>` — on cold start we redirect to
+// the brand review page. Draft continuation uses `?brand=<id>` and is handled
+// by the wizard `beforeEnter` guard (loads the draft from the API).
 router.beforeEach((to, from) => {
   return resolveColdStartNavigation({
     fromName: from.name,

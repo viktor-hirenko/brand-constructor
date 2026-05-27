@@ -21,6 +21,7 @@ import {
   readPreviewSlidesDraft,
   writePreviewSlidesDraft,
 } from '@/domain/persistence/briefDraftStorage'
+import { normalizeWizardStepData } from '@/utils/brandHydration'
 
 const DRAFT_STORAGE_KEY = 'brand-constructor-draft'
 
@@ -481,10 +482,7 @@ export function useBrandData() {
     brandId.value = id
     brandInternalName.value = internalName ?? null
     brandStatus.value = status ?? 'draft'
-    stepData.value = {
-      ...data,
-      stepLayoutVersion: 2,
-    }
+    stepData.value = normalizeWizardStepData(data)
     currentStep.value = clampWizardStep(step)
     isDraft.value = false
   }

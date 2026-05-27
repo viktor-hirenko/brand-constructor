@@ -31,6 +31,7 @@ import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreview
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
+import { wizardStepLocation } from '@/utils/brandHydration'
 import type { Concept } from '@brand-constructor/shared/types'
 
 const route = useRoute()
@@ -264,11 +265,17 @@ function confirmConceptFromSlider() {
   store.setConcept({ selectedId: id, newConceptBrief: null })
 }
 
+function wizardRoute(step: number) {
+  const editBrand =
+    typeof route.query.editBrand === 'string' ? route.query.editBrand : null
+  return wizardStepLocation(step, store.brandId, editBrand)
+}
+
 function goBack() {
   if (!isFirstStep.value) {
     let prev = currentStep.value - 1
     if (prev === 3 && store.shouldSkipStep3) prev = 2
-    router.push(`/constructor/step/${prev}`)
+    router.push(wizardRoute(prev))
   }
 }
 
@@ -286,7 +293,16 @@ async function goNext() {
 
   let next = currentStep.value + 1
   if (next === 3 && store.shouldSkipStep3) next = 4
-  router.push(`/constructor/step/${next}`)
+
+  const routeStep = currentStep.value
+  store.goToStep(next)
+  const saved = await store.saveBrand()
+  if (!saved) {
+    store.goToStep(routeStep)
+    return
+  }
+
+  router.push(wizardRoute(next))
 }
 
 function handleReturnToPreview() {
