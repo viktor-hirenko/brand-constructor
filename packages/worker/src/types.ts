@@ -18,6 +18,11 @@ export interface Env {
   SLACK_CHANNEL_DESIGN: string
   SLACK_CHANNEL_APPROVALS: string
   PANANAMES_SIGNATURE: string
+  JIRA_BASE_URL?: string
+  JIRA_EMAIL?: string
+  JIRA_API_TOKEN?: string
+  JIRA_PROJECT_KEY?: string
+  JIRA_ISSUE_TYPE_INITIATIVE_ID?: string
   // Cloudflare Rate Limiting binding. Defined only under [env.production]
   // in wrangler.toml, so it is optional at the type level — `wrangler dev`
   // without `--env production` boots without it. Consumers must tolerate

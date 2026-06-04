@@ -172,6 +172,9 @@ export interface Brand {
   approvedBy?: string | null
   needsRevisionAt?: string | null
   needsRevisionBy?: string | null
+  jiraInitiativeKey?: string | null
+  jiraInitiativeUrl?: string | null
+  jiraInitiativeCreatedAt?: string | null
 }
 
 /** Admin list row: brand + resolved user display names. */

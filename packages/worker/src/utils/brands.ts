@@ -250,6 +250,9 @@ export interface BrandRow {
   approved_by?: string | null
   needs_revision_at?: string | null
   needs_revision_by?: string | null
+  jira_initiative_key?: string | null
+  jira_initiative_url?: string | null
+  jira_initiative_created_at?: string | null
 }
 
 export interface BrandListRow extends BrandRow {
@@ -299,6 +302,9 @@ export function rowToBrand(row: BrandRow): Brand {
     approvedBy: row.approved_by ?? null,
     needsRevisionAt: row.needs_revision_at ?? null,
     needsRevisionBy: row.needs_revision_by ?? null,
+    jiraInitiativeKey: row.jira_initiative_key ?? null,
+    jiraInitiativeUrl: row.jira_initiative_url ?? null,
+    jiraInitiativeCreatedAt: row.jira_initiative_created_at ?? null,
   }
 }
 

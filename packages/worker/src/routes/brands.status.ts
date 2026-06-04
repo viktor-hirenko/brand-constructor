@@ -25,6 +25,7 @@ import {
   buildNewBriefsPrMessage,
   buildNewBriefsDesignMessage,
 } from '../utils/slack'
+import { createBrandJiraInitiative, isJiraConfigured } from '../utils/jira'
 import { collectBrandNotificationData } from './brands.notifications'
 import {
   appendWorkflowSnapshot,
@@ -381,6 +382,18 @@ status.patch('/:id/status', async c => {
             effectiveCeoSel
           )
           const token = c.env.SLACK_BOT_TOKEN
+          const constructorUrl = c.env.CONSTRUCTOR_URL ?? ''
+          const jiraPromise = isJiraConfigured(c.env)
+            ? createBrandJiraInitiative(
+                c.env,
+                c.env.DB,
+                id,
+                refreshed.jira_initiative_key,
+                notificationData,
+                constructorUrl
+              )
+            : Promise.resolve()
+
           c.executionCtx.waitUntil(
             Promise.allSettled([
               sendSlackMessage(
@@ -399,6 +412,7 @@ status.patch('/:id/status', async c => {
                 token,
                 buildApprovedWorkflowMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
               ),
+              jiraPromise,
             ])
           )
         }
