@@ -51,7 +51,8 @@ app.get('/', async c => {
   }
 
   if (mode && (mode === 'light' || mode === 'dark')) {
-    whereClause += ' AND c.mode = ?'
+    // Universal concepts (mode IS NULL) appear in both light and dark tabs.
+    whereClause += ' AND (c.mode = ? OR c.mode IS NULL)'
     params.push(mode)
   }
 
