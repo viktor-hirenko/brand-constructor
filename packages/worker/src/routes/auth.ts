@@ -6,6 +6,7 @@ import { createJWT } from '../utils/jwt'
 import { createCsrfToken } from '../utils/csrf'
 import { authMiddleware, AUTH_COOKIE_NAME } from '../middleware/auth'
 import { corporateEmailDenialMessage, isCorporateEmailAllowed } from '../utils/email-access'
+import { logAuthLoginAttempt } from '../utils/auth-login-log'
 
 const authRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -80,6 +81,7 @@ async function issueAuthSession(
 
 authRoutes.post('/google', async c => {
   const ip = c.req.header('CF-Connecting-IP') || 'unknown'
+  const allowedEmailDomains = c.env.ALLOWED_EMAIL_DOMAINS
 
   // Cloudflare Rate Limiting binding (configured under [env.production] in
   // wrangler.toml). Counters live per Cloudflare PoP, which is acceptable
@@ -89,6 +91,7 @@ authRoutes.post('/google', async c => {
   if (c.env.AUTH_RATE_LIMITER) {
     const { success } = await c.env.AUTH_RATE_LIMITER.limit({ key: ip })
     if (!success) {
+      logAuthLoginAttempt({ outcome: 'rate_limited', ip, httpStatus: 429 })
       return c.json(
         { success: false, error: 'Too many login attempts. Try again in 1 minute.' },
         429
@@ -100,10 +103,12 @@ authRoutes.post('/google', async c => {
   try {
     body = await c.req.json()
   } catch {
+    logAuthLoginAttempt({ outcome: 'invalid_body', ip, httpStatus: 400 })
     return c.json({ success: false, error: 'Invalid request body' }, 400)
   }
 
   if (!body.credential) {
+    logAuthLoginAttempt({ outcome: 'missing_credential', ip, httpStatus: 400 })
     return c.json({ success: false, error: 'Google credential is required' }, 400)
   }
 
@@ -113,29 +118,62 @@ authRoutes.post('/google', async c => {
   )
 
   if (!tokenInfoRes.ok) {
+    logAuthLoginAttempt({ outcome: 'invalid_google_credential', ip, httpStatus: 401 })
     return c.json({ success: false, error: 'Invalid Google credential' }, 401)
   }
 
   const tokenInfo = (await tokenInfoRes.json()) as GoogleTokenInfo
 
   if (tokenInfo.email_verified !== 'true') {
+    logAuthLoginAttempt({
+      outcome: 'email_not_verified',
+      ip,
+      email: tokenInfo.email,
+      googleSub: tokenInfo.sub,
+      httpStatus: 401,
+      allowedEmailDomains,
+    })
     return c.json({ success: false, error: 'Google email is not verified' }, 401)
   }
 
   // Verify aud matches our Google Client ID to prevent token reuse from other apps
   if (tokenInfo.aud !== c.env.GOOGLE_CLIENT_ID) {
+    logAuthLoginAttempt({
+      outcome: 'invalid_audience',
+      ip,
+      email: tokenInfo.email,
+      googleSub: tokenInfo.sub,
+      httpStatus: 401,
+      allowedEmailDomains,
+    })
     return c.json({ success: false, error: 'Invalid token audience' }, 401)
   }
 
   // Check expiration
   if (Number(tokenInfo.exp) < Math.floor(Date.now() / 1000)) {
+    logAuthLoginAttempt({
+      outcome: 'expired_credential',
+      ip,
+      email: tokenInfo.email,
+      googleSub: tokenInfo.sub,
+      httpStatus: 401,
+      allowedEmailDomains,
+    })
     return c.json({ success: false, error: 'Google credential has expired' }, 401)
   }
 
   // Corporate domain gate (toggleable via ALLOWED_EMAIL_DOMAINS).
-  if (!isCorporateEmailAllowed(tokenInfo.email, c.env.ALLOWED_EMAIL_DOMAINS)) {
+  if (!isCorporateEmailAllowed(tokenInfo.email, allowedEmailDomains)) {
+    logAuthLoginAttempt({
+      outcome: 'domain_not_allowed',
+      ip,
+      email: tokenInfo.email,
+      googleSub: tokenInfo.sub,
+      httpStatus: 403,
+      allowedEmailDomains,
+    })
     return c.json(
-      { success: false, error: corporateEmailDenialMessage(c.env.ALLOWED_EMAIL_DOMAINS) },
+      { success: false, error: corporateEmailDenialMessage(allowedEmailDomains) },
       403
     )
   }
@@ -146,6 +184,14 @@ authRoutes.post('/google', async c => {
     .first<{ id: string; email: string; name: string; role: string }>()
 
   if (!user) {
+    logAuthLoginAttempt({
+      outcome: 'not_whitelisted',
+      ip,
+      email: tokenInfo.email,
+      googleSub: tokenInfo.sub,
+      httpStatus: 403,
+      allowedEmailDomains,
+    })
     return c.json(
       {
         success: false,
@@ -162,6 +208,15 @@ authRoutes.post('/google', async c => {
       .bind(tokenInfo.name, user.id)
       .run()
   }
+
+  logAuthLoginAttempt({
+    outcome: 'success',
+    ip,
+    email: user.email,
+    googleSub: tokenInfo.sub,
+    httpStatus: 200,
+    allowedEmailDomains,
+  })
 
   return issueAuthSession(c, user, displayName)
 })
