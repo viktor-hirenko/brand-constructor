@@ -18,9 +18,12 @@ export interface Env {
   SLACK_CHANNEL_DESIGN: string
   SLACK_CHANNEL_APPROVALS: string
   PANANAMES_SIGNATURE: string
+  /** Site URL for browse links (e.g. https://upstars.atlassian.net). */
   JIRA_BASE_URL?: string
-  JIRA_EMAIL?: string
+  /** Scoped service-account token (secret). */
   JIRA_API_TOKEN?: string
+  /** Atlassian Cloud ID — Platform API gateway (`api.atlassian.com/ex/jira/{cloudId}`). */
+  JIRA_CLOUD_ID?: string
   JIRA_PROJECT_KEY?: string
   JIRA_ISSUE_TYPE_INITIATIVE_ID?: string
   // Cloudflare Rate Limiting binding. Defined only under [env.production]

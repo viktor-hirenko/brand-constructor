@@ -4,6 +4,7 @@ import type { BrandNotificationData } from './slack'
 const DEFAULT_JIRA_BASE_URL = 'https://upstars.atlassian.net'
 const DEFAULT_JIRA_PROJECT_KEY = 'DHC'
 const DEFAULT_JIRA_ISSUE_TYPE_INITIATIVE_ID = '10018'
+const JIRA_PLATFORM_API_ORIGIN = 'https://api.atlassian.com'
 
 export interface JiraAdfTextNode {
   type: 'text'
@@ -46,25 +47,29 @@ interface JiraErrorResponse {
 }
 
 export interface JiraResolvedConfig {
-  baseUrl: string
+  apiBaseUrl: string
+  browseBaseUrl: string
   projectKey: string
   issueTypeId: string
-  email: string
   token: string
 }
 
 export function isJiraConfigured(env: Env): boolean {
-  return Boolean(env.JIRA_API_TOKEN?.trim() && env.JIRA_EMAIL?.trim())
+  return Boolean(env.JIRA_API_TOKEN?.trim() && env.JIRA_CLOUD_ID?.trim())
 }
 
 export function resolveJiraConfig(env: Env): JiraResolvedConfig | null {
   if (!isJiraConfigured(env)) return null
+
+  const cloudId = env.JIRA_CLOUD_ID!.trim()
+  const browseBaseUrl = (env.JIRA_BASE_URL?.trim() || DEFAULT_JIRA_BASE_URL).replace(/\/$/, '')
+
   return {
-    baseUrl: (env.JIRA_BASE_URL?.trim() || DEFAULT_JIRA_BASE_URL).replace(/\/$/, ''),
+    apiBaseUrl: `${JIRA_PLATFORM_API_ORIGIN}/ex/jira/${cloudId}`,
+    browseBaseUrl,
     projectKey: env.JIRA_PROJECT_KEY?.trim() || DEFAULT_JIRA_PROJECT_KEY,
     issueTypeId:
       env.JIRA_ISSUE_TYPE_INITIATIVE_ID?.trim() || DEFAULT_JIRA_ISSUE_TYPE_INITIATIVE_ID,
-    email: env.JIRA_EMAIL!.trim(),
     token: env.JIRA_API_TOKEN!.trim(),
   }
 }
@@ -142,25 +147,29 @@ export function buildInitiativePayload(
   }
 }
 
-function jiraBrowseUrl(baseUrl: string, issueKey: string): string {
-  return `${baseUrl}/browse/${issueKey}`
+function jiraBrowseUrl(browseBaseUrl: string, issueKey: string): string {
+  return `${browseBaseUrl}/browse/${issueKey}`
 }
 
-function basicAuthHeader(email: string, token: string): string {
-  return `Basic ${btoa(`${email}:${token}`)}`
+export function buildJiraAuthorizationHeader(config: JiraResolvedConfig): string {
+  return `Bearer ${config.token}`
+}
+
+export function buildJiraCreateIssueUrl(config: JiraResolvedConfig): string {
+  return `${config.apiBaseUrl}/rest/api/3/issue`
 }
 
 export async function createJiraIssue(
   config: JiraResolvedConfig,
   body: JiraCreateIssueBody
 ): Promise<JiraCreateIssueResult | null> {
-  const url = `${config.baseUrl}/rest/api/3/issue`
+  const url = buildJiraCreateIssueUrl(config)
 
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: basicAuthHeader(config.email, config.token),
+        Authorization: buildJiraAuthorizationHeader(config),
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
@@ -181,8 +190,13 @@ export async function createJiraIssue(
       const err = parsed as JiraErrorResponse | null
       console.error('Jira create issue failed:', {
         status: res.status,
+        apiBaseUrl: config.apiBaseUrl,
         errorMessages: err?.errorMessages,
         errors: err?.errors,
+        message:
+          typeof parsed === 'object' && parsed && 'message' in parsed
+            ? parsed.message
+            : raw?.slice(0, 200),
       })
       return null
     }
@@ -197,7 +211,7 @@ export async function createJiraIssue(
       id: data.id,
       key: data.key,
       self: data.self ?? url,
-      browseUrl: jiraBrowseUrl(config.baseUrl, data.key),
+      browseUrl: jiraBrowseUrl(config.browseBaseUrl, data.key),
     }
   } catch (err) {
     console.error('Jira create issue fetch error:', err)

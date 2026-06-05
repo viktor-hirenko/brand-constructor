@@ -3,12 +3,16 @@ import type { BrandNotificationData } from '../../../src/utils/slack'
 import {
   buildInitiativeDescriptionText,
   buildInitiativePayload,
+  buildJiraAuthorizationHeader,
+  buildJiraCreateIssueUrl,
   createJiraIssue,
   isJiraConfigured,
   plainTextToAdfDocument,
   resolveJiraConfig,
 } from '../../../src/utils/jira'
 import type { Env } from '../../../src/types'
+
+const cloudId = '1cae3bd1-b0cd-4eb1-bfb6-0c11d5d77845'
 
 const sampleData: BrandNotificationData = {
   brandId: 'brand_test_001',
@@ -42,31 +46,39 @@ const sampleData: BrandNotificationData = {
 
 describe('jira utils', () => {
   describe('isJiraConfigured', () => {
-    it('returns false when token or email missing', () => {
+    it('returns false when token or cloud id missing', () => {
       expect(isJiraConfigured({} as Env)).toBe(false)
       expect(isJiraConfigured({ JIRA_API_TOKEN: 'x' } as Env)).toBe(false)
+      expect(isJiraConfigured({ JIRA_CLOUD_ID: cloudId } as Env)).toBe(false)
     })
 
-    it('returns true when token and email set', () => {
+    it('returns true with token + cloud id', () => {
       expect(
-        isJiraConfigured({ JIRA_API_TOKEN: 'tok', JIRA_EMAIL: 'a@upstars.com' } as Env)
+        isJiraConfigured({
+          JIRA_API_TOKEN: 'tok',
+          JIRA_CLOUD_ID: cloudId,
+        } as Env)
       ).toBe(true)
     })
   })
 
   describe('resolveJiraConfig', () => {
-    it('applies DHC defaults from Lidiia spec', () => {
+    it('uses Platform API + bearer for service account', () => {
       const config = resolveJiraConfig({
         JIRA_API_TOKEN: 'tok',
-        JIRA_EMAIL: 'dev@upstars.com',
+        JIRA_CLOUD_ID: cloudId,
       } as Env)
       expect(config).toMatchObject({
-        baseUrl: 'https://upstars.atlassian.net',
+        apiBaseUrl: `https://api.atlassian.com/ex/jira/${cloudId}`,
+        browseBaseUrl: 'https://upstars.atlassian.net',
         projectKey: 'DHC',
         issueTypeId: '10018',
-        email: 'dev@upstars.com',
         token: 'tok',
       })
+      expect(buildJiraAuthorizationHeader(config!)).toBe('Bearer tok')
+      expect(buildJiraCreateIssueUrl(config!)).toBe(
+        `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue`
+      )
     })
   })
 
@@ -116,14 +128,13 @@ describe('jira utils', () => {
         })
       )
 
+      const config = resolveJiraConfig({
+        JIRA_API_TOKEN: 'tok',
+        JIRA_CLOUD_ID: cloudId,
+      } as Env)!
+
       const result = await createJiraIssue(
-        {
-          baseUrl: 'https://upstars.atlassian.net',
-          projectKey: 'DHC',
-          issueTypeId: '10018',
-          email: 'a@upstars.com',
-          token: 'tok',
-        },
+        config,
         buildInitiativePayload(sampleData, sampleData.constructorUrl, {
           projectKey: 'DHC',
           issueTypeId: '10018',
@@ -132,6 +143,14 @@ describe('jira utils', () => {
 
       expect(result?.key).toBe('DHC-99')
       expect(result?.browseUrl).toBe('https://upstars.atlassian.net/browse/DHC-99')
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+        `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue`,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer tok',
+          }),
+        })
+      )
     })
 
     it('returns null on API error', async () => {
@@ -139,14 +158,13 @@ describe('jira utils', () => {
         new Response(JSON.stringify({ errorMessages: ['bad'] }), { status: 400 })
       )
 
+      const config = resolveJiraConfig({
+        JIRA_API_TOKEN: 'tok',
+        JIRA_CLOUD_ID: cloudId,
+      } as Env)!
+
       const result = await createJiraIssue(
-        {
-          baseUrl: 'https://upstars.atlassian.net',
-          projectKey: 'DHC',
-          issueTypeId: '10018',
-          email: 'a@upstars.com',
-          token: 'tok',
-        },
+        config,
         buildInitiativePayload(sampleData, sampleData.constructorUrl, {
           projectKey: 'DHC',
           issueTypeId: '10018',

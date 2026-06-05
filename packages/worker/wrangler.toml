@@ -21,7 +21,7 @@ crons = ["0 6 * * *"]
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Production environment
-# Note: JWT_SECRET, SLACK_BOT_TOKEN, JIRA_API_TOKEN, JIRA_EMAIL, SLACK_CHANNEL_*, PANANAMES_SIGNATURE
+# Note: JWT_SECRET, SLACK_BOT_TOKEN, JIRA_API_TOKEN, SLACK_CHANNEL_*, PANANAMES_SIGNATURE
 # are stored as encrypted secrets in Cloudflare Dashboard.
 # Do NOT put secrets here. See `wrangler secret list --env production`.
 [env.production]
@@ -35,6 +35,8 @@ CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev"
 GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com"
 ALLOWED_EMAIL_DOMAINS = "upstars.com,gmail.com"
 JIRA_BASE_URL = "https://upstars.atlassian.net"
+# Service account (design-access-dhc): scoped token + Bearer via Platform API
+JIRA_CLOUD_ID = "1cae3bd1-b0cd-4eb1-bfb6-0c11d5d77845"
 JIRA_PROJECT_KEY = "DHC"
 JIRA_ISSUE_TYPE_INITIATIVE_ID = "10018"
 
