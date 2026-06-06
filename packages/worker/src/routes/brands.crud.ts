@@ -331,6 +331,7 @@ crud.delete('/:id', async c => {
   }
 
   await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM brand_workflow_events WHERE brand_id = ?').bind(id),
     c.env.DB.prepare(
       "UPDATE concepts SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
     ).bind(id),
@@ -339,6 +340,12 @@ crud.delete('/:id', async c => {
     ).bind(id),
     c.env.DB.prepare(
       "UPDATE internal_namings SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
+    ).bind(id),
+    c.env.DB.prepare(
+      "UPDATE pr_packages SET used_in_brand_id = NULL, updated_at = datetime('now') WHERE used_in_brand_id = ?"
+    ).bind(id),
+    c.env.DB.prepare(
+      "UPDATE component_variants SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
     ).bind(id),
     c.env.DB.prepare('DELETE FROM brands WHERE id = ?').bind(id),
   ])
