@@ -25,7 +25,10 @@ import {
   buildNewBriefsPrMessage,
   buildNewBriefsDesignMessage,
 } from '../utils/slack'
-import { createBrandJiraInitiative, isJiraConfigured } from '../utils/jira'
+import {
+  brandHasNewBriefs,
+  enqueueJiraInitiativeCreation,
+} from '../utils/brand-export'
 import { collectBrandNotificationData } from './brands.notifications'
 import {
   appendWorkflowSnapshot,
@@ -142,6 +145,32 @@ status.patch('/:id/status', async c => {
     }
   }
 
+  if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
+    try {
+      const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
+        .bind(id)
+        .first<BrandRow>()
+
+      if (brand && brandHasNewBriefs(brand)) {
+        const notificationData = await collectBrandNotificationData(
+          c.env.DB,
+          brand,
+          c.env.CONSTRUCTOR_URL ?? ''
+        )
+        enqueueJiraInitiativeCreation(
+          c.executionCtx,
+          c.env,
+          c.env.DB,
+          brand,
+          notificationData,
+          'new_briefs'
+        )
+      }
+    } catch (err) {
+      console.error('Jira notification error (submitted/new_briefs):', err)
+    }
+  }
+
   if (
     (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED ||
       targetStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION) &&
@@ -160,7 +189,7 @@ status.patch('/:id/status', async c => {
         )
 
         if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
-          const hasNewBriefs = brand.new_concept_brief != null || brand.new_naming_brief != null
+          const hasNewBriefs = brandHasNewBriefs(brand)
 
           if (hasNewBriefs) {
             const token = c.env.SLACK_BOT_TOKEN
@@ -369,31 +398,29 @@ status.patch('/:id/status', async c => {
 
     // Slack is dispatched ONLY after the batch successfully commits. If the
     // batch threw above, we already returned 500 and never reach this point.
-    if (c.env.SLACK_BOT_TOKEN) {
-      try {
-        const refreshed = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
-          .bind(id)
-          .first<BrandRow>()
-        if (refreshed) {
-          const notificationData = await collectBrandNotificationData(
-            c.env.DB,
-            refreshed,
-            c.env.CONSTRUCTOR_URL ?? '',
-            effectiveCeoSel
-          )
-          const token = c.env.SLACK_BOT_TOKEN
-          const constructorUrl = c.env.CONSTRUCTOR_URL ?? ''
-          const jiraPromise = isJiraConfigured(c.env)
-            ? createBrandJiraInitiative(
-                c.env,
-                c.env.DB,
-                id,
-                refreshed.jira_initiative_key,
-                notificationData,
-                constructorUrl
-              )
-            : Promise.resolve()
+    try {
+      const refreshed = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
+        .bind(id)
+        .first<BrandRow>()
+      if (refreshed) {
+        const notificationData = await collectBrandNotificationData(
+          c.env.DB,
+          refreshed,
+          c.env.CONSTRUCTOR_URL ?? '',
+          effectiveCeoSel
+        )
 
+        enqueueJiraInitiativeCreation(
+          c.executionCtx,
+          c.env,
+          c.env.DB,
+          refreshed,
+          notificationData,
+          'ceo_approved'
+        )
+
+        if (c.env.SLACK_BOT_TOKEN) {
+          const token = c.env.SLACK_BOT_TOKEN
           c.executionCtx.waitUntil(
             Promise.allSettled([
               sendSlackMessage(
@@ -412,13 +439,12 @@ status.patch('/:id/status', async c => {
                 token,
                 buildApprovedWorkflowMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
               ),
-              jiraPromise,
             ])
           )
         }
-      } catch (err) {
-        console.error('Slack notification error (approved):', err)
       }
+    } catch (err) {
+      console.error('Post-approval notification error:', err)
     }
   }
 

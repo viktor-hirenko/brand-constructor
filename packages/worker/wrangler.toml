@@ -2,43 +2,60 @@ name = "brand-constructor-api"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+
 # account_id is intentionally omitted — set CLOUDFLARE_ACCOUNT_ID env var
 # or wrangler will auto-detect from your authenticated profile.
 
-# Daily domain availability check at 6:00 AM UTC
+# ─────────────────────────────────────────────────────────────────────────────
+# Cron triggers
+# ─────────────────────────────────────────────────────────────────────────────
+
 [triggers]
-crons = ["0 6 * * *"]
+crons = ["0 6 * * *"] # Daily domain availability check at 6:00 AM UTC
 
 # ─────────────────────────────────────────────────────────────────────────────
-# The default (top-level) environment is intentionally empty — it has NO
-# production bindings. Production D1 / R2 / vars / secrets live ONLY under
-# [env.production] below, so an accidental `wrangler deploy` without
-# `--env production` cannot expose production data via the public
-# *.workers.dev URL with an under-configured ENVIRONMENT value.
+# Default (top-level) environment is intentionally empty — NO production bindings.
+# Production D1 / R2 / vars / secrets live ONLY under [env.production] below,
+# so an accidental `wrangler deploy` without `--env production` cannot expose
+# production data via the public *.workers.dev URL.
 #
-# DEPLOY:    always use `wrangler deploy --env production`.
-# LOCAL DEV: `wrangler dev --env production` (with a populated `.dev.vars`).
+# DEPLOY:    wrangler deploy --env production
+# LOCAL DEV: wrangler dev --env production  (with a populated `.dev.vars`)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Production environment
-# Note: JWT_SECRET, SLACK_BOT_TOKEN, JIRA_API_TOKEN, SLACK_CHANNEL_*, PANANAMES_SIGNATURE
-# are stored as encrypted secrets in Cloudflare Dashboard.
-# Do NOT put secrets here. See `wrangler secret list --env production`.
+# ─────────────────────────────────────────────────────────────────────────────
+# Production
+# ─────────────────────────────────────────────────────────────────────────────
+# Secrets (Cloudflare Dashboard only — never commit):
+#   JWT_SECRET, SLACK_BOT_TOKEN, JIRA_API_TOKEN, SLACK_CHANNEL_*, PANANAMES_SIGNATURE
+# List: wrangler secret list --env production
+
 [env.production]
-# ALLOWED_EMAIL_DOMAINS — email *domains* only (part after @), not full addresses.
-# Per-user allow-list lives in D1 `users`. Example: gmail.com lets @gmail.com pass
-# the domain gate; only emails present in `users` receive a session.
+
+# ── App & Auth ──────────────────────────────────────────────────────────────
+
 [env.production.vars]
 ENVIRONMENT = "production"
-CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev"
 CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev"
+CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev"
+
 GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com"
+# Email *domains* only (part after @). Per-user allow-list lives in D1 `users`.
 ALLOWED_EMAIL_DOMAINS = "upstars.com,gmail.com"
+
+# ── Jira (DHC Initiative) ───────────────────────────────────────────────────
+# Token: wrangler secret put JIRA_API_TOKEN --env production
+# Auth: Platform API + Bearer (service account design-access-dhc)
+
 JIRA_BASE_URL = "https://upstars.atlassian.net"
-# Service account (design-access-dhc): scoped token + Bearer via Platform API
 JIRA_CLOUD_ID = "1cae3bd1-b0cd-4eb1-bfb6-0c11d5d77845"
 JIRA_PROJECT_KEY = "DHC"
 JIRA_ISSUE_TYPE_INITIATIVE_ID = "10018"
+JIRA_INITIATIVE_ENABLED = "true"
+# UAT marker in Jira summary — remove or set "" before go-live.
+JIRA_INITIATIVE_TITLE_PREFIX = "[TEST]"
+
+# ── Storage ─────────────────────────────────────────────────────────────────
 
 [[env.production.d1_databases]]
 binding = "DB"
@@ -49,15 +66,10 @@ database_id = "2aafe66b-27be-4058-9c09-e784efefa404"
 binding = "ASSETS_BUCKET"
 bucket_name = "brand-constructor-assets"
 
-# Cloudflare Rate Limiting binding for /api/auth/google. Counters live per
-# Cloudflare location, which is acceptable for auth brute-force protection
-# because an attacker is pinned to one edge per source IP.
-#
-# Requires wrangler >= 4 for the first-class [[ratelimits]] syntax. Older
-# wrangler 3.x silently ignored the equivalent [[unsafe.bindings]] block on
-# deploy, leaving the binding absent at runtime — do not downgrade.
+# ── Rate limiting (/api/auth/google) ────────────────────────────────────────
+# Requires wrangler >= 4. Older 3.x silently ignored ratelimits on deploy.
+
 [[env.production.ratelimits]]
 name = "AUTH_RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 5, period = 60 }
-

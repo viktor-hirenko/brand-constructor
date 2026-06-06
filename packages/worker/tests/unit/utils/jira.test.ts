@@ -1,18 +1,30 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import type { BrandNotificationData } from '../../../src/utils/slack'
 import {
+  buildInitiativeDescriptionAdf,
   buildInitiativeDescriptionText,
   buildInitiativePayload,
+  buildInitiativeSummary,
   buildJiraAuthorizationHeader,
   buildJiraCreateIssueUrl,
   createJiraIssue,
   isJiraConfigured,
+  isJiraInitiativeEnabled,
   plainTextToAdfDocument,
   resolveJiraConfig,
+  shouldCreateJiraInitiative,
+  type JiraBrandContext,
 } from '../../../src/utils/jira'
 import type { Env } from '../../../src/types'
 
 const cloudId = '1cae3bd1-b0cd-4eb1-bfb6-0c11d5d77845'
+const constructorUrl = 'https://brand-constructor-app.pages.dev'
+
+const emptyContext: JiraBrandContext = {
+  newConceptBrief: null,
+  newNamingBrief: null,
+  internalNamingFeedback: null,
+}
 
 const sampleData: BrandNotificationData = {
   brandId: 'brand_test_001',
@@ -28,7 +40,7 @@ const sampleData: BrandNotificationData = {
   partnerLanding: false,
   delegateToDesigners: false,
   developmentDeadline: '2026-08-01',
-  constructorUrl: 'https://brand-constructor-app.pages.dev',
+  constructorUrl,
   brandBasicsComment: null,
   conceptComment: null,
   externalNamingComment: null,
@@ -36,12 +48,12 @@ const sampleData: BrandNotificationData = {
   prPackageComment: null,
   deliverablesComment: null,
   componentsComment: null,
-  resolvedComponents: [],
-  ceoComments: null,
-  prPackageTimeline: null,
-  prPackageTeamsInvolved: null,
-  prPackageComponentsList: null,
-  prPackageRequirements: null,
+  resolvedComponents: [{ typeName: 'Logo', variantName: 'Variant A' }],
+  ceoComments: { basics: 'CEO basics note' },
+  prPackageTimeline: 'Q3',
+  prPackageTeamsInvolved: 'PR, Design',
+  prPackageComponentsList: 'Banner, Landing',
+  prPackageRequirements: 'Fast launch',
 }
 
 describe('jira utils', () => {
@@ -57,6 +69,42 @@ describe('jira utils', () => {
         isJiraConfigured({
           JIRA_API_TOKEN: 'tok',
           JIRA_CLOUD_ID: cloudId,
+        } as Env)
+      ).toBe(true)
+    })
+  })
+
+  describe('isJiraInitiativeEnabled', () => {
+    it('returns false when unset or not "true"', () => {
+      expect(isJiraInitiativeEnabled({} as Env)).toBe(false)
+      expect(isJiraInitiativeEnabled({ JIRA_INITIATIVE_ENABLED: 'false' } as Env)).toBe(false)
+      expect(isJiraInitiativeEnabled({ JIRA_INITIATIVE_ENABLED: '1' } as Env)).toBe(false)
+    })
+
+    it('returns true only for explicit "true"', () => {
+      expect(isJiraInitiativeEnabled({ JIRA_INITIATIVE_ENABLED: 'true' } as Env)).toBe(true)
+      expect(isJiraInitiativeEnabled({ JIRA_INITIATIVE_ENABLED: 'TRUE' } as Env)).toBe(true)
+    })
+  })
+
+  describe('shouldCreateJiraInitiative', () => {
+    it('requires both credentials and enabled flag', () => {
+      expect(
+        shouldCreateJiraInitiative({
+          JIRA_API_TOKEN: 'tok',
+          JIRA_CLOUD_ID: cloudId,
+        } as Env)
+      ).toBe(false)
+      expect(
+        shouldCreateJiraInitiative({
+          JIRA_INITIATIVE_ENABLED: 'true',
+        } as Env)
+      ).toBe(false)
+      expect(
+        shouldCreateJiraInitiative({
+          JIRA_API_TOKEN: 'tok',
+          JIRA_CLOUD_ID: cloudId,
+          JIRA_INITIATIVE_ENABLED: 'true',
         } as Env)
       ).toBe(true)
     })
@@ -92,23 +140,110 @@ describe('jira utils', () => {
     })
   })
 
+  describe('buildInitiativeSummary', () => {
+    it('uses [Нове замовлення] suffix for flow B', () => {
+      expect(buildInitiativeSummary(sampleData, 'ceo_approved')).toBe('[Brand Builder] Test Brand')
+      expect(buildInitiativeSummary(sampleData, 'new_briefs')).toBe(
+        '[Brand Builder] [Нове замовлення] Test Brand'
+      )
+    })
+
+    it('prepends optional title prefix for UAT', () => {
+      expect(buildInitiativeSummary(sampleData, 'ceo_approved', '[TEST]')).toBe(
+        '[TEST] [Brand Builder] Test Brand'
+      )
+    })
+  })
+
+  describe('buildInitiativeDescriptionText — flow A (ceo_approved)', () => {
+    it('includes library selections, CEO comments, components and brief URL', () => {
+      const text = buildInitiativeDescriptionText(
+        sampleData,
+        constructorUrl,
+        'ceo_approved',
+        emptyContext
+      )
+      expect(text).toContain('Бриф затверджено CEO')
+      expect(text).toContain('Concept A')
+      expect(text).toContain('Ext One')
+      expect(text).toContain('Logo: Variant A')
+      expect(text).toContain('Коментар CEO: CEO basics note')
+      expect(text).not.toContain('Коментарі CEO')
+      expect(text).toContain('PR, Design')
+      expect(text).toContain(`${constructorUrl}/constructor/brand/brand_test_001`)
+    })
+  })
+
+  describe('buildInitiativeDescriptionText — flow B (new_briefs)', () => {
+    it('includes new brief sections and skips CEO comments', () => {
+      const context: JiraBrandContext = {
+        newConceptBrief: {
+          isNewGeo: true,
+          geoInfo: 'Brazil',
+          conceptFeedback: 'Old concept did not fit',
+        },
+        newNamingBrief: {
+          namingLanguage: 'PT',
+          desiredWordsInName: 'Vegas',
+        },
+        internalNamingFeedback: 'Need fresh internal name',
+      }
+
+      const text = buildInitiativeDescriptionText(
+        sampleData,
+        constructorUrl,
+        'new_briefs',
+        context
+      )
+
+      expect(text).toContain('CEO review пропущено')
+      expect(text).toContain('Бриф нового концепту')
+      expect(text).toContain('Brazil')
+      expect(text).toContain('Бриф нового External Naming')
+      expect(text).toContain('PT')
+      expect(text).toContain('Need fresh internal name')
+      expect(text).not.toContain('CEO basics note')
+      expect(text).not.toContain('Обраний концепт')
+    })
+  })
+
+  describe('buildInitiativeDescriptionAdf', () => {
+    it('uses headings, bullet lists and link for brief URL', () => {
+      const doc = buildInitiativeDescriptionAdf(
+        sampleData,
+        constructorUrl,
+        'ceo_approved',
+        emptyContext
+      )
+
+      expect(doc.content.some(n => n.type === 'heading')).toBe(true)
+      expect(doc.content.some(n => n.type === 'bulletList')).toBe(true)
+      expect(doc.content.some(n => n.type === 'rule')).toBe(true)
+
+      const linkParagraph = doc.content.find(
+        n =>
+          n.type === 'paragraph' &&
+          n.content.some(
+            c => c.marks?.[0]?.type === 'link' && c.marks[0].attrs.href.includes('brand_test_001')
+          )
+      )
+      expect(linkParagraph).toBeDefined()
+    })
+  })
+
   describe('buildInitiativePayload', () => {
     it('builds summary and issuetype id 10018', () => {
-      const payload = buildInitiativePayload(sampleData, sampleData.constructorUrl, {
-        projectKey: 'DHC',
-        issueTypeId: '10018',
-      })
+      const payload = buildInitiativePayload(
+        sampleData,
+        constructorUrl,
+        { projectKey: 'DHC', issueTypeId: '10018' },
+        'ceo_approved',
+        emptyContext
+      )
       expect(payload.fields.project).toEqual({ key: 'DHC' })
       expect(payload.fields.issuetype).toEqual({ id: '10018' })
       expect(payload.fields.summary).toBe('[Brand Builder] Test Brand')
       expect(payload.fields.description.type).toBe('doc')
-    })
-
-    it('includes brief URL in description text', () => {
-      const text = buildInitiativeDescriptionText(sampleData, sampleData.constructorUrl)
-      expect(text).toContain(
-        'https://brand-constructor-app.pages.dev/constructor/brand/brand_test_001'
-      )
     })
   })
 
@@ -135,10 +270,13 @@ describe('jira utils', () => {
 
       const result = await createJiraIssue(
         config,
-        buildInitiativePayload(sampleData, sampleData.constructorUrl, {
-          projectKey: 'DHC',
-          issueTypeId: '10018',
-        })
+        buildInitiativePayload(
+          sampleData,
+          constructorUrl,
+          { projectKey: 'DHC', issueTypeId: '10018' },
+          'ceo_approved',
+          emptyContext
+        )
       )
 
       expect(result?.key).toBe('DHC-99')
@@ -165,10 +303,13 @@ describe('jira utils', () => {
 
       const result = await createJiraIssue(
         config,
-        buildInitiativePayload(sampleData, sampleData.constructorUrl, {
-          projectKey: 'DHC',
-          issueTypeId: '10018',
-        })
+        buildInitiativePayload(
+          sampleData,
+          constructorUrl,
+          { projectKey: 'DHC', issueTypeId: '10018' },
+          'ceo_approved',
+          emptyContext
+        )
       )
 
       expect(result).toBeNull()

@@ -26,6 +26,10 @@ export interface Env {
   JIRA_CLOUD_ID?: string
   JIRA_PROJECT_KEY?: string
   JIRA_ISSUE_TYPE_INITIATIVE_ID?: string
+  /** Set to `"true"` to create DHC Initiatives on brand approval. Default off. */
+  JIRA_INITIATIVE_ENABLED?: string
+  /** Optional prefix for Initiative summary, e.g. `[TEST]` during UAT. */
+  JIRA_INITIATIVE_TITLE_PREFIX?: string
   // Cloudflare Rate Limiting binding. Defined only under [env.production]
   // in wrangler.toml, so it is optional at the type level — `wrangler dev`
   // without `--env production` boots without it. Consumers must tolerate
