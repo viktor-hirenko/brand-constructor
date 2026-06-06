@@ -25,10 +25,7 @@ import {
   buildNewBriefsPrMessage,
   buildNewBriefsDesignMessage,
 } from '../utils/slack'
-import {
-  brandHasNewBriefs,
-  enqueueJiraInitiativeCreation,
-} from '../utils/brand-export'
+import { brandHasNewBriefs, enqueueJiraThenSlack } from '../utils/brand-export'
 import { collectBrandNotificationData } from './brands.notifications'
 import {
   appendWorkflowSnapshot,
@@ -145,32 +142,6 @@ status.patch('/:id/status', async c => {
     }
   }
 
-  if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
-    try {
-      const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
-        .bind(id)
-        .first<BrandRow>()
-
-      if (brand && brandHasNewBriefs(brand)) {
-        const notificationData = await collectBrandNotificationData(
-          c.env.DB,
-          brand,
-          c.env.CONSTRUCTOR_URL ?? ''
-        )
-        enqueueJiraInitiativeCreation(
-          c.executionCtx,
-          c.env,
-          c.env.DB,
-          brand,
-          notificationData,
-          'new_briefs'
-        )
-      }
-    } catch (err) {
-      console.error('Jira notification error (submitted/new_briefs):', err)
-    }
-  }
-
   if (
     (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED ||
       targetStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION) &&
@@ -193,33 +164,40 @@ status.patch('/:id/status', async c => {
 
           if (hasNewBriefs) {
             const token = c.env.SLACK_BOT_TOKEN
-            c.executionCtx.waitUntil(
-              Promise.allSettled([
-                sendSlackMessage(
-                  token,
-                  buildNewBriefsApprovalMessage(
-                    c.env.SLACK_CHANNEL_APPROVALS,
-                    notificationData,
-                    brand
-                  )
-                ),
-                sendSlackMessage(
-                  token,
-                  buildNewBriefsStrategyMessage(
-                    c.env.SLACK_CHANNEL_STRATEGY,
-                    notificationData,
-                    brand
-                  )
-                ),
-                sendSlackMessage(
-                  token,
-                  buildNewBriefsPrMessage(c.env.SLACK_CHANNEL_PR, notificationData)
-                ),
-                sendSlackMessage(
-                  token,
-                  buildNewBriefsDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)
-                ),
-              ])
+            enqueueJiraThenSlack(
+              c.executionCtx,
+              c.env,
+              c.env.DB,
+              brand,
+              notificationData,
+              'new_briefs',
+              async enriched =>
+                Promise.allSettled([
+                  sendSlackMessage(
+                    token,
+                    buildNewBriefsApprovalMessage(
+                      c.env.SLACK_CHANNEL_APPROVALS,
+                      enriched,
+                      brand
+                    )
+                  ),
+                  sendSlackMessage(
+                    token,
+                    buildNewBriefsStrategyMessage(
+                      c.env.SLACK_CHANNEL_STRATEGY,
+                      enriched,
+                      brand
+                    )
+                  ),
+                  sendSlackMessage(
+                    token,
+                    buildNewBriefsPrMessage(c.env.SLACK_CHANNEL_PR, enriched)
+                  ),
+                  sendSlackMessage(
+                    token,
+                    buildNewBriefsDesignMessage(c.env.SLACK_CHANNEL_DESIGN, enriched)
+                  ),
+                ])
             )
           } else {
             const isResubmit = currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
@@ -410,38 +388,36 @@ status.patch('/:id/status', async c => {
           effectiveCeoSel
         )
 
-        enqueueJiraInitiativeCreation(
+        enqueueJiraThenSlack(
           c.executionCtx,
           c.env,
           c.env.DB,
           refreshed,
           notificationData,
-          'ceo_approved'
-        )
-
-        if (c.env.SLACK_BOT_TOKEN) {
-          const token = c.env.SLACK_BOT_TOKEN
-          c.executionCtx.waitUntil(
-            Promise.allSettled([
+          'ceo_approved',
+          async enriched => {
+            if (!c.env.SLACK_BOT_TOKEN) return
+            const token = c.env.SLACK_BOT_TOKEN
+            return Promise.allSettled([
               sendSlackMessage(
                 token,
-                buildStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, notificationData)
+                buildStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, enriched)
               ),
               sendSlackMessage(
                 token,
-                buildPrMarketingMessage(c.env.SLACK_CHANNEL_PR, notificationData)
+                buildPrMarketingMessage(c.env.SLACK_CHANNEL_PR, enriched)
               ),
               sendSlackMessage(
                 token,
-                buildProductDesignMessage(c.env.SLACK_CHANNEL_DESIGN, notificationData)
+                buildProductDesignMessage(c.env.SLACK_CHANNEL_DESIGN, enriched)
               ),
               sendSlackMessage(
                 token,
-                buildApprovedWorkflowMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
+                buildApprovedWorkflowMessage(c.env.SLACK_CHANNEL_APPROVALS, enriched)
               ),
             ])
-          )
-        }
+          }
+        )
       }
     } catch (err) {
       console.error('Post-approval notification error:', err)

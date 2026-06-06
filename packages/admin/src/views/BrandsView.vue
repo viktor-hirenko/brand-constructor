@@ -241,6 +241,7 @@ async function confirmDeleteBrand() {
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
+            <th class="brands-view__jira-col">Jira</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -292,6 +293,19 @@ async function confirmDeleteBrand() {
             </td>
             <td>{{ formatGeo(brand.geo) }}</td>
             <td>{{ formatDate(brand.launchDate) }}</td>
+            <td class="brands-view__jira-cell" @click.stop>
+              <a
+                v-if="brand.jiraInitiativeUrl"
+                :href="brand.jiraInitiativeUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="brands-view__jira-link"
+                :title="brand.jiraInitiativeUrl"
+              >
+                {{ brand.jiraInitiativeKey ?? 'Jira' }}
+              </a>
+              <span v-else class="brands-view__cell-line brands-view__cell-line--muted">—</span>
+            </td>
             <td class="brands-view__actions" @click.stop>
               <button
                 class="brands-view__history-btn"
@@ -425,7 +439,7 @@ async function confirmDeleteBrand() {
     background-color: $color-bg-white;
 
     @include mobile {
-      min-width: 1020px;
+      min-width: 1100px;
     }
 
     th,
@@ -541,6 +555,25 @@ async function confirmDeleteBrand() {
 
     &--muted {
       color: $color-text-secondary;
+    }
+  }
+
+  &__jira-col {
+    min-width: 72px;
+  }
+
+  &__jira-cell {
+    min-width: 72px;
+  }
+
+  &__jira-link {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-primary;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
     }
   }
 

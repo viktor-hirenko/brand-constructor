@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
+import { useJiraInitiativePoll } from '@/composables/useJiraInitiativePoll'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import RevisionReturnIcon from '@/components/icons/RevisionReturnIcon.vue'
 import SendIcon from '@/components/icons/SendIcon.vue'
 
 const router = useRouter()
 const store = useConstructorStore()
+const { brandId } = storeToRefs(store)
 const authStore = useAuthStore()
 
 const brandDisplayName = computed(() => store.brandInternalName || 'New Brand')
@@ -21,6 +24,17 @@ const hasNewBriefs = computed(() => {
     sd?.internalNaming?.newNamingFeedback != null
   )
 })
+
+const shouldPollJira = computed(
+  () =>
+    store.successType === 'approved' ||
+    (store.successType === 'submitted' && hasNewBriefs.value)
+)
+
+const { jiraKey, jiraUrl, isPending: isJiraPending } = useJiraInitiativePoll(
+  brandId,
+  shouldPollJira
+)
 
 interface SuccessConfig {
   title: string
@@ -151,6 +165,20 @@ function handleGoHome() {
             <span class="text-sm font-medium" :class="successConfig.statusColor">{{
               successConfig.statusLabel
             }}</span>
+          </div>
+          <div v-if="shouldPollJira" class="flex justify-between items-center gap-4">
+            <span class="text-sm text-muted-foreground shrink-0">Jira Initiative</span>
+            <span v-if="isJiraPending" class="text-sm text-muted-foreground">Створюється…</span>
+            <a
+              v-else-if="jiraUrl"
+              :href="jiraUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm font-medium text-primary hover:underline"
+            >
+              {{ jiraKey ?? 'Відкрити в Jira' }}
+            </a>
+            <span v-else class="text-sm text-muted-foreground">Незабаром з’явиться</span>
           </div>
         </div>
 

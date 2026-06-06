@@ -517,6 +517,11 @@ export async function createJiraIssue(
   }
 }
 
+export interface JiraInitiativeRef {
+  key: string
+  browseUrl: string
+}
+
 export async function createBrandJiraInitiative(
   env: Env,
   db: D1Database,
@@ -526,11 +531,20 @@ export async function createBrandJiraInitiative(
   constructorUrl: string,
   flow: JiraInitiativeFlowType,
   context: JiraBrandContext
-): Promise<void> {
-  if (existingJiraKey?.trim()) return
+): Promise<JiraInitiativeRef | null> {
+  if (existingJiraKey?.trim()) {
+    return null
+  }
 
   const config = resolveJiraConfig(env)
-  if (!config) return
+  if (!config) {
+    console.error('[jira-initiative] skipped: Jira config incomplete', {
+      brandId,
+      internalName: data.internalName,
+      flow,
+    })
+    return null
+  }
 
   const payload = buildInitiativePayload(
     data,
@@ -541,7 +555,14 @@ export async function createBrandJiraInitiative(
     resolveInitiativeTitlePrefix(env)
   )
   const created = await createJiraIssue(config, payload)
-  if (!created) return
+  if (!created) {
+    console.error('[jira-initiative] create failed', {
+      brandId,
+      internalName: data.internalName,
+      flow,
+    })
+    return null
+  }
 
   const now = new Date().toISOString()
   try {
@@ -552,10 +573,20 @@ export async function createBrandJiraInitiative(
       .bind(created.key, created.browseUrl, now, brandId)
       .run()
   } catch (err) {
-    console.error('Jira initiative: failed to persist key on brand', {
+    console.error('[jira-initiative] failed to persist key on brand', {
       brandId,
       issueKey: created.key,
+      flow,
       err,
     })
+    return { key: created.key, browseUrl: created.browseUrl }
   }
+
+  console.log('[jira-initiative] created', {
+    brandId,
+    issueKey: created.key,
+    flow,
+  })
+
+  return { key: created.key, browseUrl: created.browseUrl }
 }

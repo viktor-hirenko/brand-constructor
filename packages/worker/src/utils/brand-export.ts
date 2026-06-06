@@ -5,6 +5,7 @@ import {
   createBrandJiraInitiative,
   type JiraBrandContext,
   type JiraInitiativeFlowType,
+  type JiraInitiativeRef,
   shouldCreateJiraInitiative,
 } from './jira'
 
@@ -44,6 +45,42 @@ function parseInternalNamingFeedback(brand: BrandRow): string | null {
   }
 }
 
+export function enrichNotificationWithJira(
+  data: BrandNotificationData,
+  jira: JiraInitiativeRef | null,
+  brand?: BrandRow
+): BrandNotificationData {
+  const key = jira?.key ?? brand?.jira_initiative_key ?? null
+  const url = jira?.browseUrl ?? brand?.jira_initiative_url ?? null
+  if (!key && !url) return data
+  return {
+    ...data,
+    jiraInitiativeKey: key,
+    jiraInitiativeUrl: url,
+  }
+}
+
+async function createJiraForBrand(
+  env: Env,
+  db: D1Database,
+  brand: BrandRow,
+  data: BrandNotificationData,
+  flow: JiraInitiativeFlowType
+): Promise<JiraInitiativeRef | null> {
+  const constructorUrl = env.CONSTRUCTOR_URL ?? ''
+  const context = parseJiraBrandContext(brand)
+  return createBrandJiraInitiative(
+    env,
+    db,
+    brand.id,
+    brand.jira_initiative_key,
+    data,
+    constructorUrl,
+    flow,
+    context
+  )
+}
+
 export function enqueueJiraInitiativeCreation(
   executionCtx: ExecutionContext,
   env: Env,
@@ -54,19 +91,26 @@ export function enqueueJiraInitiativeCreation(
 ): void {
   if (!shouldCreateJiraInitiative(env)) return
 
-  const constructorUrl = env.CONSTRUCTOR_URL ?? ''
-  const context = parseJiraBrandContext(brand)
+  executionCtx.waitUntil(createJiraForBrand(env, db, brand, data, flow))
+}
 
+export function enqueueJiraThenSlack(
+  executionCtx: ExecutionContext,
+  env: Env,
+  db: D1Database,
+  brand: BrandRow,
+  data: BrandNotificationData,
+  flow: JiraInitiativeFlowType,
+  sendSlack: (data: BrandNotificationData) => Promise<unknown>
+): void {
   executionCtx.waitUntil(
-    createBrandJiraInitiative(
-      env,
-      db,
-      brand.id,
-      brand.jira_initiative_key,
-      data,
-      constructorUrl,
-      flow,
-      context
-    )
+    (async () => {
+      let jira: JiraInitiativeRef | null = null
+      if (shouldCreateJiraInitiative(env)) {
+        jira = await createJiraForBrand(env, db, brand, data, flow)
+      }
+      const enriched = enrichNotificationWithJira(data, jira, brand)
+      await sendSlack(enriched)
+    })()
   )
 }

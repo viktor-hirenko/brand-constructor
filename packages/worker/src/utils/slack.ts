@@ -92,6 +92,9 @@ export interface BrandNotificationData {
   prPackageTeamsInvolved: string | null
   prPackageComponentsList: string | null
   prPackageRequirements: string | null
+
+  jiraInitiativeKey?: string | null
+  jiraInitiativeUrl?: string | null
 }
 
 /** Stable section order (matches constructor Step 10 review). */
@@ -255,15 +258,41 @@ function renderSections(sections: SectionOrSkip[]): string[] {
   return out
 }
 
+function jiraInitiativeFragment(data: BrandNotificationData): SectionOrSkip[] {
+  if (!data.jiraInitiativeUrl || !data.jiraInitiativeKey) return []
+  return [
+    spacer(),
+    field(
+      'Jira Initiative',
+      `<${data.jiraInitiativeUrl}|${data.jiraInitiativeKey}>`
+    ),
+  ]
+}
+
 function buildMessage(
   channel: string,
   fallbackText: string,
   sections: SectionOrSkip[],
-  brandId: string,
-  constructorUrl: string
+  data: BrandNotificationData
 ): SlackMessage {
   const text = renderSections(sections).join('\n')
-  const linkUrl = `${constructorUrl}/constructor/brand/${brandId}`
+  const linkUrl = `${data.constructorUrl}/constructor/brand/${data.brandId}`
+  const elements: SlackBlockButton[] = [
+    {
+      type: 'button',
+      text: { type: 'plain_text', text: 'Відкрити бриф' },
+      url: linkUrl,
+      action_id: 'open_brand_brief',
+    },
+  ]
+  if (data.jiraInitiativeUrl && data.jiraInitiativeKey) {
+    elements.push({
+      type: 'button',
+      text: { type: 'plain_text', text: `Jira ${data.jiraInitiativeKey}` },
+      url: data.jiraInitiativeUrl,
+      action_id: 'open_jira_initiative',
+    })
+  }
   return {
     channel,
     text: fallbackText,
@@ -271,14 +300,7 @@ function buildMessage(
       { type: 'section', text: { type: 'mrkdwn', text } },
       {
         type: 'actions',
-        elements: [
-          {
-            type: 'button',
-            text: { type: 'plain_text', text: 'Відкрити бриф' },
-            url: linkUrl,
-            action_id: 'open_brand_brief',
-          },
-        ],
+        elements,
       },
     ],
   }
@@ -552,9 +574,9 @@ export function buildStrategyMessage(channel: string, data: BrandNotificationDat
       ...externalNamingFragment(data, CEO_INLINE_OPTS),
       ...internalNamingFragment(data, CEO_INLINE_OPTS),
       ...generalCeoCommentFragment(data),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -571,9 +593,9 @@ export function buildPrMarketingMessage(
       ...basicsFragment(data, CEO_INLINE_OPTS),
       ...prPackageFragment(data, CEO_INLINE_OPTS),
       ...generalCeoCommentFragment(data),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -591,9 +613,9 @@ export function buildProductDesignMessage(
       ...deliverablesFragment(data, CEO_INLINE_OPTS),
       ...visualComponentsFragment(data, CEO_INLINE_OPTS),
       ...generalCeoCommentFragment(data),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -610,8 +632,7 @@ export function buildSubmittedMessage(channel: string, data: BrandNotificationDa
       spacer(),
       ...submissionReviewFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -629,8 +650,7 @@ export function buildResubmittedMessage(
       spacer(),
       ...submissionReviewFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -694,8 +714,7 @@ export function buildNeedsRevisionMessage(
         ceoComment: ceoComments.general,
       }),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -726,9 +745,9 @@ export function buildNewBriefsApprovalMessage(
       field('Нові замовлення', orderItems.join(', ')),
       spacer(),
       italic('Бриф містить нові замовлення. CEO-ревью не потрібне.'),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -754,9 +773,9 @@ export function buildNewBriefsStrategyMessage(
       ...namingBriefFragment(namingBrief),
       ...internalNamingFragment(data),
       ...internalNamingBriefFragment(stepData),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -774,9 +793,9 @@ export function buildNewBriefsPrMessage(
       ...prPackageFragment(data),
       spacer(),
       italic('Бриф містить нові замовлення (не з бібліотеки).'),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -795,9 +814,9 @@ export function buildNewBriefsDesignMessage(
       ...visualComponentsFragment(data),
       spacer(),
       italic('Бриф містить нові замовлення (не з бібліотеки).'),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }
 
@@ -814,8 +833,8 @@ export function buildApprovedWorkflowMessage(
       field('GEO', data.geo),
       field('Дата запуску', data.launchDate),
       italic('Повідомлення надіслано у командні канали.'),
+      ...jiraInitiativeFragment(data),
     ],
-    data.brandId,
-    data.constructorUrl
+    data
   )
 }

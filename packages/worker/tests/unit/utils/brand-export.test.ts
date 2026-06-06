@@ -7,13 +7,18 @@ vi.mock('../../../src/utils/jira', async importOriginal => {
   const actual = await importOriginal<typeof import('../../../src/utils/jira')>()
   return {
     ...actual,
-    createBrandJiraInitiative: vi.fn().mockResolvedValue(undefined),
+    createBrandJiraInitiative: vi.fn().mockResolvedValue({
+      key: 'DHC-99',
+      browseUrl: 'https://jira.example/browse/DHC-99',
+    }),
   }
 })
 
 import {
   brandHasNewBriefs,
+  enrichNotificationWithJira,
   enqueueJiraInitiativeCreation,
+  enqueueJiraThenSlack,
   parseJiraBrandContext,
 } from '../../../src/utils/brand-export'
 
@@ -131,6 +136,49 @@ describe('brand-export utils', () => {
       )
 
       expect(waitUntil).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('enrichNotificationWithJira', () => {
+    it('adds jira fields from created issue', () => {
+      const enriched = enrichNotificationWithJira(
+        { brandId: 'brand_1', internalName: 'Test' } as BrandNotificationData,
+        { key: 'DHC-10', browseUrl: 'https://jira.example/browse/DHC-10' }
+      )
+
+      expect(enriched.jiraInitiativeKey).toBe('DHC-10')
+      expect(enriched.jiraInitiativeUrl).toBe('https://jira.example/browse/DHC-10')
+    })
+  })
+
+  describe('enqueueJiraThenSlack', () => {
+    it('runs slack callback inside waitUntil', async () => {
+      const waitUntil = vi.fn((promise: Promise<unknown>) => promise)
+      const executionCtx = { waitUntil } as unknown as ExecutionContext
+      const sendSlack = vi.fn().mockResolvedValue(undefined)
+
+      enqueueJiraThenSlack(
+        executionCtx,
+        {
+          JIRA_API_TOKEN: 'tok',
+          JIRA_CLOUD_ID: 'cloud',
+          JIRA_INITIATIVE_ENABLED: 'true',
+        } as Env,
+        {} as D1Database,
+        baseBrand(),
+        { brandId: 'brand_1', internalName: 'Test' } as BrandNotificationData,
+        'new_briefs',
+        sendSlack
+      )
+
+      expect(waitUntil).toHaveBeenCalledOnce()
+      await waitUntil.mock.calls[0][0]
+      expect(sendSlack).toHaveBeenCalledWith(
+        expect.objectContaining({
+          jiraInitiativeKey: 'DHC-99',
+          jiraInitiativeUrl: 'https://jira.example/browse/DHC-99',
+        })
+      )
     })
   })
 })
