@@ -9,7 +9,7 @@
  *
  * States (Figma 2201:6968):
  *  - Default: 1px border, 45% dim overlay, bottom gradient
- *  - Hover (clickable): dim overlay fades out
+ *  - Hover (clickable): dim overlay fades out; bottom gradient stays for title legibility
  *  - Selected: 2px border, white inner ring, checkmark, no dim
  */
 import { computed } from 'vue'
@@ -70,17 +70,6 @@ const overlayClass = computed(() => {
   return 'opacity-100 group-hover:opacity-0'
 })
 
-/**
- * Bottom gradient states (Figma 2201:6968):
- *  - Default (clickable, not selected): visible, fades out on hover.
- *  - Hover: hidden (gradient fades with the dim overlay for a clean image reveal).
- *  - Selected / non-clickable: always visible (title text readability on bright image).
- */
-const gradientClass = computed(() => {
-  if (isHighlighted.value || !props.clickable || props.disabled) return 'opacity-100'
-  return 'opacity-100 group-hover:opacity-0'
-})
-
 function handleClick() {
   if (props.disabled || !props.clickable) return
   emit('click')
@@ -128,8 +117,7 @@ function handleClick() {
         />
 
         <div
-          class="concept-card__gradient pointer-events-none absolute inset-0 z-[2] transition-opacity duration-200"
-          :class="gradientClass"
+          class="concept-card__gradient pointer-events-none absolute inset-0 z-[2] opacity-100"
           :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
         />
 
