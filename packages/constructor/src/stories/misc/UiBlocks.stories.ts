@@ -6,6 +6,7 @@ import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewV
 import ReviewInternalNamingBlock from '@/components/constructor/review/ReviewInternalNamingBlock.vue';
 import ApplyCeoVariantButton from '@/components/constructor/review/ApplyCeoVariantButton.vue';
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue';
+import UiButton from '@/components/ui/UiButton.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue';
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue';
@@ -106,6 +107,28 @@ export const ApplyCeoButtonLoading: StoryObj = {
   render: () => ({
     components: { ApplyCeoVariantButton },
     template: '<ApplyCeoVariantButton :loading="true" />',
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+// ─── UiButton ──────────────────────────────────────────────────────────────
+
+export const UiButtonVariants: StoryObj = {
+  name: 'UiButton / Variants',
+  render: () => ({
+    components: { UiButton },
+    setup() {
+      return { onClick: fn() };
+    },
+    template: `
+      <div class="flex max-w-[450px] flex-col gap-4">
+        <div class="flex gap-2">
+          <UiButton variant="secondary" block @click="onClick">Скасувати</UiButton>
+          <UiButton variant="primary" block @click="onClick">Зберегти</UiButton>
+        </div>
+        <UiButton variant="primary" :loading="true" block loading-label="Збереження…" />
+      </div>
+    `,
   }),
   parameters: { cardWidth: 520 },
 };

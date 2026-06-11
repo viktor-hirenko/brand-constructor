@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CloseIcon from '@/components/icons/CloseIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
 import { useEscapeClose } from '@/composables/useEscapeClose'
 
 interface BriefModalShellProps {
@@ -63,32 +64,26 @@ useEscapeClose(() => emit('cancel'))
         </div>
 
         <div
-          class="flex items-start justify-end gap-3 px-6 pt-[17px] pb-4 border-t border-black/10 shrink-0"
+          class="flex items-stretch justify-end gap-2 px-6 pt-[17px] pb-4 border-t border-black/10 shrink-0"
         >
-          <button
-            type="button"
-            class="h-[46px] px-6 border border-black/10 rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a] hover:bg-black/[0.02] transition-all"
-            @click="emit('cancel')"
-          >
+          <UiButton variant="secondary" @click="emit('cancel')">
             {{ readonly ? 'Закрити' : 'Скасувати' }}
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             v-if="!readonly"
-            type="button"
+            variant="primary"
             :disabled="!isValid"
-            class="h-[46px] px-6 bg-[#030213] text-white rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all"
             @click="emit('save')"
           >
             Зберегти
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             v-else-if="showEditAction"
-            type="button"
-            class="h-[46px] px-6 bg-[#030213] text-white rounded-[10px] text-base font-medium leading-6 tracking-[-0.31px] hover:opacity-90 transition-all"
+            variant="primary"
             @click="emit('edit')"
           >
             Редагувати
-          </button>
+          </UiButton>
         </div>
       </div>
     </div>

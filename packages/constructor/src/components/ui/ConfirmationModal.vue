@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CloseIcon from '@/components/icons/CloseIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
 import { useEscapeClose } from '@/composables/useEscapeClose'
 
 interface ConfirmationModalProps {
@@ -66,22 +67,22 @@ const titleId = 'confirmation-modal-title'
           </p>
 
           <div class="confirmation-modal__actions flex w-full items-stretch gap-2">
-            <button
-              type="button"
-              class="confirmation-modal__cancel flex-1 rounded-[8px] border border-black/10 bg-white p-3 text-[16px] font-medium leading-6 tracking-[-0.3125px] text-[#0a0a0a] transition-colors hover:bg-black/[0.02] disabled:opacity-40"
+            <UiButton
+              variant="secondary"
+              block
               :disabled="primaryLoading"
               @click="emit('cancel')"
             >
               {{ cancelLabel }}
-            </button>
-            <button
-              type="button"
-              class="confirmation-modal__primary flex-1 rounded-[8px] bg-[#030213] p-3 text-[16px] font-medium leading-6 tracking-[-0.3125px] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-              :disabled="primaryLoading"
+            </UiButton>
+            <UiButton
+              variant="primary"
+              block
+              :loading="primaryLoading"
               @click="emit('primary')"
             >
-              {{ primaryLoading ? 'Зачекайте…' : primaryLabel }}
-            </button>
+              {{ primaryLabel }}
+            </UiButton>
           </div>
         </div>
       </div>

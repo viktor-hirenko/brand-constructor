@@ -10,6 +10,7 @@ import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
 import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
 import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
 
 const store = useConstructorStore()
 
@@ -482,19 +483,13 @@ onMounted(loadComponentTypes)
           <p class="text-base text-muted-foreground tracking-[-0.31px] mb-6">
             Усі вибрані компоненти буде скинуто. Компоненти визначить дизайн-команда.
           </p>
-          <div class="flex gap-3">
-            <button
-              class="flex-1 h-[50px] border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
-              @click="cancelDelegate"
-            >
+          <div class="flex w-full items-stretch gap-2">
+            <UiButton variant="secondary" block @click="cancelDelegate">
               Скасувати
-            </button>
-            <button
-              class="flex-1 h-[50px] bg-primary text-primary-foreground rounded-[10px] hover:opacity-90 transition-all text-base font-medium"
-              @click="confirmDelegate"
-            >
+            </UiButton>
+            <UiButton variant="primary" block @click="confirmDelegate">
               Довірити
-            </button>
+            </UiButton>
           </div>
         </div>
       </div>

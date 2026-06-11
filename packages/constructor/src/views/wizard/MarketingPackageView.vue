@@ -16,6 +16,7 @@ import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import StarIcon from '@/components/icons/StarIcon.vue'
 import TrophyIcon from '@/components/icons/TrophyIcon.vue'
 import ZapIcon from '@/components/icons/ZapIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
 
 const store = useConstructorStore()
 const {
@@ -243,7 +244,7 @@ onMounted(loadPackages)
       <div v-if="detailPackage" class="fixed inset-0 z-50 flex items-center justify-center p-6">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDetail" />
         <div
-          class="relative bg-white rounded-[14px] shadow-2xl max-w-[600px] w-full max-h-[90vh] overflow-y-auto p-8"
+          class="relative bg-white rounded-[16px] shadow-2xl max-w-[600px] w-full max-h-[90vh] overflow-y-auto p-8"
         >
           <button
             class="absolute top-4 right-4 size-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
@@ -309,19 +310,13 @@ onMounted(loadPackages)
             </div>
           </div>
 
-          <div class="flex gap-3 mt-6">
-            <button
-              class="flex-1 h-[50px] bg-primary text-primary-foreground rounded-[10px] font-medium hover:opacity-90 transition-all"
-              @click="selectFromDetail"
-            >
+          <div class="flex items-stretch gap-2 mt-6">
+            <UiButton variant="primary" block @click="selectFromDetail">
               Обрати пакет
-            </button>
-            <button
-              class="h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] font-medium hover:bg-black/[0.02] transition-all"
-              @click="closeDetail"
-            >
+            </UiButton>
+            <UiButton variant="secondary" @click="closeDetail">
               Закрити
-            </button>
+            </UiButton>
           </div>
         </div>
       </div>

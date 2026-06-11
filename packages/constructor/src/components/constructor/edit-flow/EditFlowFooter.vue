@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiButton from '@/components/ui/UiButton.vue'
 import { EDIT_FLOW_CONTENT_INSET_CLASS } from '@/constants/editFlowLayout'
 
 /**
@@ -32,21 +33,23 @@ const emit = defineEmits<{
       loading ? 'edit-flow-footer--loading' : '',
     ]"
   >
-    <button
-      type="button"
-      class="edit-flow-footer__cancel flex-1 rounded-[8px] border border-black/10 bg-white p-3 text-[16px] font-medium leading-6 tracking-[-0.3125px] text-[#0a0a0a] hover:bg-black/[0.02] transition-colors disabled:opacity-40"
+    <UiButton
+      variant="secondary"
+      block
       :disabled="loading"
       @click="emit('cancel')"
     >
       {{ cancelLabel }}
-    </button>
-    <button
-      type="button"
-      class="edit-flow-footer__primary flex-1 rounded-[8px] bg-[#030213] p-3 text-[16px] font-medium leading-6 tracking-[-0.3125px] text-white hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-      :disabled="primaryDisabled || loading"
+    </UiButton>
+    <UiButton
+      variant="primary"
+      block
+      :disabled="primaryDisabled"
+      :loading="loading"
+      loading-label="Збереження…"
       @click="emit('primary')"
     >
-      {{ loading ? 'Збереження…' : primaryLabel }}
-    </button>
+      {{ primaryLabel }}
+    </UiButton>
   </div>
 </template>
