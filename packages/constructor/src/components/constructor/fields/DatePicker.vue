@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue'
 import ChevronRightIcon from '@/components/icons/ChevronRightIcon.vue'
@@ -11,7 +11,9 @@ const props = defineProps<{
 const model = defineModel<string>({ required: true })
 
 const isOpen = ref(false)
+const containerRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLButtonElement | null>(null)
+const popoverRef = ref<HTMLElement | null>(null)
 const popoverStyle = ref({ top: '0px', left: '0px' })
 
 const MONTH_NAMES = [
@@ -45,6 +47,28 @@ watch(isOpen, open => {
     viewYear.value = today.getFullYear()
     viewMonth.value = today.getMonth()
   }
+
+  if (open) {
+    // Defer so the opening click does not immediately close the popover.
+    requestAnimationFrame(() => {
+      document.addEventListener('mousedown', handleDocumentPointerDown)
+    })
+  } else {
+    document.removeEventListener('mousedown', handleDocumentPointerDown)
+  }
+})
+
+function handleDocumentPointerDown(event: MouseEvent) {
+  if (!isOpen.value) return
+  const target = event.target
+  if (!(target instanceof Node)) return
+  if (containerRef.value?.contains(target)) return
+  if (popoverRef.value?.contains(target)) return
+  isOpen.value = false
+}
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleDocumentPointerDown)
 })
 
 const monthLabel = computed(() => `${MONTH_NAMES[viewMonth.value]} ${viewYear.value}`)
@@ -180,7 +204,7 @@ async function toggle() {
 </script>
 
 <template>
-  <div class="relative">
+  <div ref="containerRef" class="relative">
     <!-- Trigger button -->
     <button
       ref="triggerRef"
@@ -197,9 +221,6 @@ async function toggle() {
 
     <!-- Teleported to body to escape overflow clipping -->
     <Teleport to="body">
-      <!-- Backdrop -->
-      <div v-if="isOpen" class="fixed inset-0 z-[9998]" @click="isOpen = false" />
-
       <!-- Calendar popover -->
       <Transition
         enter-active-class="transition duration-150 ease-out"
@@ -211,7 +232,8 @@ async function toggle() {
       >
         <div
           v-if="isOpen"
-          class="fixed z-[9999] bg-card border border-border rounded-lg shadow-lg p-4"
+          ref="popoverRef"
+          class="fixed z-[10000] bg-card border border-border rounded-lg shadow-lg p-4"
           :style="popoverStyle"
         >
           <!-- Header: month navigation -->

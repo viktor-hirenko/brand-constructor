@@ -5,6 +5,7 @@ import { useApiList } from '@/composables/useApi'
 import type { Concept, NewConceptBrief } from '@brand-constructor/shared/types'
 import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
@@ -17,6 +18,8 @@ const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concep
 const isCreatingNew = ref(false)
 const showNewModal = ref(false)
 const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingConceptId = ref<string | null>(null)
 
 const selectedId = computed(() => store.stepData.concept.selectedId)
 const previewId = computed(() => store.stepData.concept.previewId ?? null)
@@ -78,12 +81,36 @@ watch(
   },
 )
 
-function handleSelect(conceptId: string) {
+function applyConceptSelection(conceptId: string) {
   if (conceptId === selectedId.value) {
     store.setConcept({ selectedId: null, previewId: null })
   } else {
     store.setConcept({ selectedId: conceptId, previewId: conceptId })
   }
+}
+
+function handleSelect(conceptId: string) {
+  if (hasBrief.value) {
+    pendingConceptId.value = conceptId
+    showSwitchConfirm.value = true
+    return
+  }
+  applyConceptSelection(conceptId)
+}
+
+function confirmSwitchSelection() {
+  const conceptId = pendingConceptId.value
+  if (conceptId == null) return
+  store.setNewConceptBrief(null)
+  isCreatingNew.value = false
+  showSwitchConfirm.value = false
+  pendingConceptId.value = null
+  applyConceptSelection(conceptId)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingConceptId.value = null
 }
 
 function handleCreateBrief() {
@@ -129,7 +156,6 @@ function confirmDeleteBrief() {
       :concepts="concepts"
       :selected-id="selectedId"
       :preview-id="previewId"
-      :disabled="isCreatingNew"
       :selection-ring="true"
       @select="handleSelect"
     />
@@ -164,6 +190,16 @@ function confirmDeleteBrief() {
       primary-label="Видалити"
       @cancel="showDeleteConfirm = false"
       @primary="confirmDeleteBrief"
+    />
+
+    <ConfirmationModal
+      v-if="showSwitchConfirm"
+      title="Обрати цей концепт?"
+      body="При виборі концепту створений бриф буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Обрати концепт"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmSwitchSelection"
     />
   </div>
 </template>

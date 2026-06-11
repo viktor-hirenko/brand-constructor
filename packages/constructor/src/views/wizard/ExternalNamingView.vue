@@ -5,6 +5,7 @@ import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming, NewNamingBrief } from '@brand-constructor/shared/types'
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
 import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
@@ -36,6 +37,8 @@ const selectedConceptId = computed(() => store.stepData.concept.selectedId)
 
 const showNewModal = ref(false)
 const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingNamingId = ref<string | null>(null)
 
 async function loadNamings() {
   const params: Record<string, string> = { per_page: '50', status: 'active' }
@@ -61,6 +64,29 @@ function handleBriefSave(brief: NewNamingBrief) {
 function confirmDeleteBrief() {
   store.setNewNamingBrief(null)
   showDeleteConfirm.value = false
+}
+
+function handleToggle(namingId: string) {
+  if (isCreatingNew.value) {
+    pendingNamingId.value = namingId
+    showSwitchConfirm.value = true
+    return
+  }
+  store.toggleExternalNaming(namingId)
+}
+
+function confirmSwitchSelection() {
+  const namingId = pendingNamingId.value
+  if (namingId == null) return
+  store.setNewNamingBrief(null)
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+  store.toggleExternalNaming(namingId)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
 }
 
 /**
@@ -91,8 +117,7 @@ watch(
       v-else
       :namings="namings"
       :selected-ids="selectedIds"
-      :disabled="isCreatingNew"
-      @toggle="store.toggleExternalNaming"
+      @toggle="handleToggle"
     />
 
     <BriefOrderButton
@@ -126,6 +151,16 @@ watch(
       primary-label="Видалити"
       @cancel="showDeleteConfirm = false"
       @primary="confirmDeleteBrief"
+    />
+
+    <ConfirmationModal
+      v-if="showSwitchConfirm"
+      title="Обрати цей неймінг?"
+      body="При виборі неймінгу створений бриф буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Обрати неймінг"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmSwitchSelection"
     />
   </div>
 </template>

@@ -5,6 +5,7 @@ import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import SimpleModal from '@/components/ui/SimpleModal.vue'
 import InternalNamingGrid from '@/components/constructor/alternative-selection/InternalNamingGrid.vue'
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
@@ -25,6 +26,8 @@ const isCreatingNew = computed(() => store.stepData.internalNaming.newNamingFeed
 
 const showNewModal = ref(false)
 const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingNamingId = ref<string | null>(null)
 
 function loadNamings() {
   const params: Record<string, string> = { per_page: '50', status: 'active' }
@@ -43,6 +46,29 @@ function handleFeedbackSave(feedback: string) {
 function confirmDeleteBrief() {
   store.setInternalNamingFeedback(null)
   showDeleteConfirm.value = false
+}
+
+function handleSelect(namingId: string) {
+  if (isCreatingNew.value) {
+    pendingNamingId.value = namingId
+    showSwitchConfirm.value = true
+    return
+  }
+  store.selectInternalNaming(namingId)
+}
+
+function confirmSwitchSelection() {
+  const namingId = pendingNamingId.value
+  if (namingId == null) return
+  store.setInternalNamingFeedback(null)
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+  store.selectInternalNaming(namingId)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
 }
 
 /**
@@ -73,8 +99,7 @@ watch(
       v-else
       :namings="namings"
       :selected-id="selectedId"
-      :disabled="isCreatingNew"
-      @select="store.selectInternalNaming"
+      @select="handleSelect"
     />
 
     <BriefOrderButton
@@ -104,6 +129,16 @@ watch(
       primary-label="Видалити"
       @cancel="showDeleteConfirm = false"
       @primary="confirmDeleteBrief"
+    />
+
+    <ConfirmationModal
+      v-if="showSwitchConfirm"
+      title="Обрати цю назву?"
+      body="При виборі назви створений бриф буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Обрати назву"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmSwitchSelection"
     />
   </div>
 </template>

@@ -109,7 +109,7 @@ const title = computed(() => {
 
       <div class="flex flex-col gap-3">
         <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
-          3. Потрібен Research GEO?
+          3. Потрібен Brand Research GEO?
         </label>
         <YesNoToggle v-model="form.needsGeoResearch" />
       </div>
@@ -231,18 +231,6 @@ const title = computed(() => {
           rows="4"
           class="w-full p-3 bg-white border border-black/10 rounded-[10px] resize-none text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
           placeholder="Ваш відгук про концепти..."
-        />
-      </div>
-
-      <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
-          13. Додаткова інформація по ГЕО
-        </label>
-        <textarea
-          v-model="form.additionalGeoInfo"
-          rows="3"
-          class="w-full p-3 bg-white border border-black/10 rounded-[10px] resize-none text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
-          placeholder="Будь-яка додаткова інформація по ГЕО..."
         />
       </div>
     </fieldset>
