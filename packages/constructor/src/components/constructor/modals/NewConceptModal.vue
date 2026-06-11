@@ -73,7 +73,7 @@ function handleSave() {
 
 const title = computed(() => {
   if (props.readonly) return 'Бриф нового концепту'
-  return isEditMode ? 'Редагування брифу концепту' : 'Створення нового концепту'
+  return isEditMode ? 'Редагування брифу концепту' : 'Замовити новий концепт'
 })
 </script>
 
