@@ -87,12 +87,12 @@ function handleSelect(conceptId: string) {
 }
 
 function handleCreateBrief() {
-  store.setConcept({ selectedId: null, previewId: null })
   showNewModal.value = true
 }
 
 function handleBriefSave(brief: NewConceptBrief) {
   store.setNewConceptBrief(brief)
+  store.setConcept({ selectedId: null, previewId: null })
   showNewModal.value = false
   isCreatingNew.value = true
 }
