@@ -20,7 +20,7 @@ import {
   type ComponentTypeInfo,
 } from '@/composables/usePrintBrand'
 import ReviewUnifiedView from '@/components/constructor/review/ReviewUnifiedView.vue'
-import SimpleModal from '@/components/ui/SimpleModal.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import {
   useBrandBriefReviewPhase,
   BRAND_BRIEF_REVIEW_PHASE,
@@ -470,7 +470,7 @@ async function handlePrintBrand() {
   />
 
   <!-- Modal 1 (Figma 1985:4362): PO applies CEO external naming while concept mismatch -->
-  <SimpleModal
+  <ConfirmationModal
     v-if="apply.showApplyExternalBeforeConceptModal.value"
     title="Застосувати варіант CEO?"
     body="Ці назви прив'язані до іншого концепту. Разом із ними буде застосовано концепт обраний СЕО."
@@ -482,7 +482,7 @@ async function handlePrintBrand() {
   />
 
   <!-- Modal 2 (Figma 1985:4657): PO tries to edit external naming with concept mismatch -->
-  <SimpleModal
+  <ConfirmationModal
     v-if="apply.showEditExternalBeforeConceptModal.value"
     title="Потрібно обрати концепт"
     body="Щоб редагувати назви, спочатку оберіть концепт. Застосуйте варіант СЕО або оберіть інший."

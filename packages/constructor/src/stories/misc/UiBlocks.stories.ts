@@ -5,7 +5,7 @@ import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliv
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue';
 import ReviewInternalNamingBlock from '@/components/constructor/review/ReviewInternalNamingBlock.vue';
 import ApplyCeoVariantButton from '@/components/constructor/review/ApplyCeoVariantButton.vue';
-import SimpleModal from '@/components/ui/SimpleModal.vue';
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue';
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue';
@@ -110,17 +110,17 @@ export const ApplyCeoButtonLoading: StoryObj = {
   parameters: { cardWidth: 520 },
 };
 
-// ─── SimpleModal ───────────────────────────────────────────────────────────
+// ─── ConfirmationModal ─────────────────────────────────────────────────────
 
-export const SimpleModalDefault: StoryObj = {
-  name: 'SimpleModal / Default',
+export const ConfirmationModalDefault: StoryObj = {
+  name: 'ConfirmationModal / Default',
   render: () => ({
-    components: { SimpleModal },
+    components: { ConfirmationModal },
     setup() {
       return { onCancel: fn(), onPrimary: fn() };
     },
     template: `
-      <SimpleModal
+      <ConfirmationModal
         title="Застосувати варіант CEO?"
         body="Ці назви прив'язані до іншого концепту. Разом із ними буде застосовано концепт обраний СЕО."
         cancel-label="Скасувати"
@@ -132,15 +132,15 @@ export const SimpleModalDefault: StoryObj = {
   }),
 };
 
-export const SimpleModalLoading: StoryObj = {
-  name: 'SimpleModal / Primary Loading',
+export const ConfirmationModalLoading: StoryObj = {
+  name: 'ConfirmationModal / Primary Loading',
   render: () => ({
-    components: { SimpleModal },
+    components: { ConfirmationModal },
     setup() {
       return { onCancel: fn(), onPrimary: fn() };
     },
     template: `
-      <SimpleModal
+      <ConfirmationModal
         title="Застосувати варіант CEO?"
         body="Зачекайте, обробляємо запит..."
         primary-label="Застосувати все"

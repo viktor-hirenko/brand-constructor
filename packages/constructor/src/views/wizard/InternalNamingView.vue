@@ -6,7 +6,6 @@ import type { InternalNaming } from '@brand-constructor/shared/types'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
-import SimpleModal from '@/components/ui/SimpleModal.vue'
 import InternalNamingGrid from '@/components/constructor/alternative-selection/InternalNamingGrid.vue'
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
@@ -121,7 +120,7 @@ watch(
       @cancel="showNewModal = false"
     />
 
-    <SimpleModal
+    <ConfirmationModal
       v-if="showDeleteConfirm"
       title="Видалити бриф?"
       body="Дані брифу буде втрачено. Цю дію неможливо скасувати."

@@ -6,7 +6,6 @@ import type { Concept, NewConceptBrief } from '@brand-constructor/shared/types'
 import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
-import SimpleModal from '@/components/ui/SimpleModal.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
@@ -182,7 +181,7 @@ function confirmDeleteBrief() {
       @cancel="handleBriefCancel"
     />
 
-    <SimpleModal
+    <ConfirmationModal
       v-if="showDeleteConfirm"
       title="Видалити бриф?"
       body="Дані брифу буде втрачено. Цю дію неможливо скасувати."

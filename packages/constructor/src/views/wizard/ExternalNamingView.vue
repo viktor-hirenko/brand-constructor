@@ -6,7 +6,6 @@ import type { ExternalNaming, NewNamingBrief } from '@brand-constructor/shared/t
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
-import SimpleModal from '@/components/ui/SimpleModal.vue'
 import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
@@ -143,7 +142,7 @@ watch(
       @cancel="showNewModal = false"
     />
 
-    <SimpleModal
+    <ConfirmationModal
       v-if="showDeleteConfirm"
       title="Видалити бриф?"
       body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
