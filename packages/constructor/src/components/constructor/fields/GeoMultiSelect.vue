@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { GEO_COUNTRIES, type GeoOption } from '@/data/geo-countries';
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue';
@@ -38,6 +38,7 @@ function toggleGeo(code: string) {
   } else {
     model.value = [...model.value, code];
   }
+  search.value = '';
 }
 
 function removeGeo(code: string) {
@@ -49,7 +50,32 @@ function openDropdown() {
   search.value = '';
 }
 
-// Click-outside handled by backdrop overlay
+function closeDropdown() {
+  isOpen.value = false;
+}
+
+function handleDocumentPointerDown(event: MouseEvent) {
+  if (!isOpen.value || !containerRef.value) return;
+  const target = event.target;
+  if (target instanceof Node && !containerRef.value.contains(target)) {
+    closeDropdown();
+  }
+}
+
+watch(isOpen, (open) => {
+  if (open) {
+    // Defer so the opening click does not immediately close the dropdown.
+    requestAnimationFrame(() => {
+      document.addEventListener('mousedown', handleDocumentPointerDown);
+    });
+  } else {
+    document.removeEventListener('mousedown', handleDocumentPointerDown);
+  }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleDocumentPointerDown);
+});
 </script>
 
 <template>
@@ -82,13 +108,6 @@ function openDropdown() {
         @focus="openDropdown"
       />
     </div>
-
-    <!-- Backdrop -->
-    <div
-      v-if="isOpen"
-      class="fixed inset-0 z-40"
-      @click="isOpen = false"
-    />
 
     <!-- Dropdown -->
     <Transition
