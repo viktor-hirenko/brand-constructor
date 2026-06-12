@@ -19,6 +19,14 @@ const sampleConceptBrief: NewConceptBrief = {
   additionalGeoInfo: '',
 }
 
+const fullVisualComponentSelections = {
+  ct_header: 'cvr_header',
+  ct_banners: 'cvr_banners',
+  ct_thumbnails: 'cvr_thumbnails',
+  ct_tabbar: 'cvr_tabbar',
+  ct_sidebar: 'cvr_sidebar',
+}
+
 function createStepData(overrides: Partial<BrandStepData> = {}): BrandStepData {
   return {
     stepLayoutVersion: 2,
@@ -34,7 +42,11 @@ function createStepData(overrides: Partial<BrandStepData> = {}): BrandStepData {
       developmentDeadline: '',
       comment: '',
     },
-    visualComponents: { selections: { hero: 'v1' }, delegateToDesigners: false, comment: '' },
+    visualComponents: {
+      selections: fullVisualComponentSelections,
+      delegateToDesigners: false,
+      comment: '',
+    },
     ...overrides,
   }
 }
@@ -150,6 +162,20 @@ describe('validateWizardStep', () => {
         ctx
       )
     ).toBe(false)
+    expect(
+      validateWizardStep(
+        7,
+        createStepData({
+          visualComponents: {
+            selections: { ct_header: 'cvr_1', ct_banners: 'cvr_2' },
+            delegateToDesigners: false,
+            comment: '',
+          },
+        }),
+        ctx
+      )
+    ).toBe(false)
+    expect(validateWizardStep(7, createStepData(), ctx)).toBe(true)
     expect(
       validateWizardStep(
         7,

@@ -1,6 +1,23 @@
 import type { BrandStepData, ExternalNaming } from '@brand-constructor/shared/types'
 import { isExternalNamingStepValid } from '@/utils/externalNamingValidation'
 
+/** Wizard step 7 requires one variant per type (Theme excluded from UI). */
+export const REQUIRED_WIZARD_VISUAL_COMPONENT_TYPE_IDS = [
+  'ct_header',
+  'ct_banners',
+  'ct_thumbnails',
+  'ct_tabbar',
+  'ct_sidebar',
+] as const
+
+export function hasAllRequiredVisualComponentSelections(
+  selections: Record<string, string>
+): boolean {
+  return REQUIRED_WIZARD_VISUAL_COMPONENT_TYPE_IDS.every(typeId =>
+    Boolean(selections[typeId]?.trim())
+  )
+}
+
 export interface WizardStepValidationContext {
   externalNamings: Pick<ExternalNaming, 'id' | 'availability_status'>[]
   hasComponentConflicts: boolean
@@ -47,10 +64,8 @@ export function validateWizardStep(
     case 7: {
       const vc = stepData.visualComponents
       if (vc.delegateToDesigners) return true
-      const selectionCount = Object.keys(vc.selections).length
-      if (selectionCount === 0) return false
       if (ctx.hasComponentConflicts) return false
-      return true
+      return hasAllRequiredVisualComponentSelections(vc.selections)
     }
     default:
       return true

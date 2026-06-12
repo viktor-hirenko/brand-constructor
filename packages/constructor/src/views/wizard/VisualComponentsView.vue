@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { useVisualComponentPreviewContext } from '@/composables/visualComponentPreviewContext'
 import { getAssetUrl, apiGet } from '@/composables/useApi'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared/types'
 import VisualComponentsAccordionSkeleton from '@/components/constructor/skeletons/VisualComponentsAccordionSkeleton.vue'
@@ -13,6 +14,9 @@ import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 
 const store = useConstructorStore()
+const previewContext = useVisualComponentPreviewContext()
+
+const SIDEBAR_TYPE_ID = 'ct_sidebar'
 
 const openAccordionId = ref<string | null>(null)
 const showDelegateModal = ref(false)
@@ -175,7 +179,12 @@ function getSelectedVariantName(typeId: string): string | null {
 }
 
 function toggleAccordion(typeId: string) {
-  openAccordionId.value = openAccordionId.value === typeId ? null : typeId
+  const isClosing = openAccordionId.value === typeId
+  openAccordionId.value = isClosing ? null : typeId
+
+  if (!isClosing && typeId === SIDEBAR_TYPE_ID && selections.value[SIDEBAR_TYPE_ID]) {
+    previewContext?.restoreSidebarPreview()
+  }
 }
 
 function selectVariant(typeId: string, variantId: string) {

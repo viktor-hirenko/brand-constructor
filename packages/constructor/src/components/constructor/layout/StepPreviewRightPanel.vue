@@ -26,6 +26,11 @@ import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewLayer } from '@/composables/useBrandPreviewLayers'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
+import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
+import {
+  SIDEBAR_HIDDEN_CALLOUT_DURATION_MS,
+  SIDEBAR_TEMPORARILY_HIDDEN_MESSAGE,
+} from '@/constants/visualComponentPreviewMessages'
 
 interface BrandBasics {
   geo: string[]
@@ -43,6 +48,7 @@ interface Props {
   hasStep9Selections: boolean
   hasSidebarSelected: boolean
   step9SidebarVisible: boolean
+  sidebarHiddenCalloutVisible: boolean
   delegateToDesigners: boolean
   /** True while concept library is loading — prevents empty-state flash on step 2. */
   librariesLoading?: boolean
@@ -174,7 +180,12 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
 
     <!-- Step 7 Preview: iPhone with layered Visual Components -->
     <template v-else-if="currentStep === 7">
-      <div :class="['flex flex-col h-full', MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS]">
+      <div :class="['relative flex flex-col h-full', MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS]">
+        <PreviewPanelToast
+          :visible="sidebarHiddenCalloutVisible"
+          :message="SIDEBAR_TEMPORARILY_HIDDEN_MESSAGE"
+          :duration-ms="SIDEBAR_HIDDEN_CALLOUT_DURATION_MS"
+        />
         <div class="flex items-center gap-2 shrink-0">
           <SparklesIcon class="size-6" />
           <span class="text-[20px] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>

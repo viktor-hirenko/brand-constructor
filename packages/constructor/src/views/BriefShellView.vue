@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, ref, onMounted } from 'vue'
+import { computed, watch, ref, onMounted, provide, onUnmounted } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
@@ -28,6 +28,12 @@ import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPane
 import ConstructorDualPaneShell from '@/components/constructor/layout/ConstructorDualPaneShell.vue'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
+import {
+  SIDEBAR_HIDDEN_CALLOUT_DURATION_MS,
+} from '@/constants/visualComponentPreviewMessages'
+import {
+  VISUAL_COMPONENT_PREVIEW_KEY,
+} from '@/composables/visualComponentPreviewContext'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
@@ -389,12 +395,45 @@ const {
 } = useBrandPreviewLayers()
 
 const step9SidebarVisible = ref(true)
+const sidebarHiddenCalloutVisible = ref(false)
+let sidebarHiddenCalloutTimer: ReturnType<typeof setTimeout> | null = null
 
 const step9SelectedLayers = computed(() => buildLayers(!step9SidebarVisible.value))
 
+function dismissSidebarHiddenCallout() {
+  sidebarHiddenCalloutVisible.value = false
+  if (sidebarHiddenCalloutTimer !== null) {
+    clearTimeout(sidebarHiddenCalloutTimer)
+    sidebarHiddenCalloutTimer = null
+  }
+}
+
+function showSidebarHiddenCallout() {
+  dismissSidebarHiddenCallout()
+  sidebarHiddenCalloutVisible.value = true
+  sidebarHiddenCalloutTimer = setTimeout(
+    dismissSidebarHiddenCallout,
+    SIDEBAR_HIDDEN_CALLOUT_DURATION_MS,
+  )
+}
+
+function restoreSidebarPreview() {
+  step9SidebarVisible.value = true
+  dismissSidebarHiddenCallout()
+}
+
 function toggleSidebarPreview() {
   step9SidebarVisible.value = !step9SidebarVisible.value
+  if (step9SidebarVisible.value) {
+    dismissSidebarHiddenCallout()
+  }
 }
+
+provide(VISUAL_COMPONENT_PREVIEW_KEY, {
+  restoreSidebarPreview,
+})
+
+onUnmounted(dismissSidebarHiddenCallout)
 
 const prevSelections = ref<Record<string, string>>({})
 
@@ -416,8 +455,16 @@ watch(
 
     if (sidebarChanged) {
       step9SidebarVisible.value = true
+      dismissSidebarHiddenCallout()
     } else if (nonSidebarChanged) {
-      step9SidebarVisible.value = false
+      const sidebarStillSelected = Boolean(sidebarKey && sel[sidebarKey])
+      const wasSidebarVisible = step9SidebarVisible.value
+      if (sidebarStillSelected) {
+        step9SidebarVisible.value = false
+        if (wasSidebarVisible && currentStep.value === 7) {
+          showSidebarHiddenCallout()
+        }
+      }
     }
 
     prevSelections.value = { ...sel }
@@ -426,6 +473,9 @@ watch(
 )
 
 watch(currentStep, step => {
+  if (step !== 7) {
+    dismissSidebarHiddenCallout()
+  }
   if (step === 7) loadStep9Variants()
   if (step === 8) loadStep9Variants()
 })
@@ -598,6 +648,7 @@ watch(currentStep, step => {
           :has-step9-selections="hasStep9Selections"
           :has-sidebar-selected="hasSidebarSelected"
           :step9-sidebar-visible="step9SidebarVisible"
+          :sidebar-hidden-callout-visible="sidebarHiddenCalloutVisible"
           :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
           :libraries-loading="librariesStore.isLoading"
           :has-stored-concept-selection="step2HasStoredConceptSelection"
