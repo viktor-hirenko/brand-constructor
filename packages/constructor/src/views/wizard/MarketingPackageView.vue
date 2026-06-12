@@ -17,6 +17,7 @@ import StarIcon from '@/components/icons/StarIcon.vue'
 import TrophyIcon from '@/components/icons/TrophyIcon.vue'
 import ZapIcon from '@/components/icons/ZapIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
+import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
 
 const store = useConstructorStore()
 const {
@@ -34,6 +35,10 @@ const comment = computed({
 
 const selectedId = computed(() => store.stepData.marketingPackage.selectedId)
 const detailPackage = ref<PrPackage | null>(null)
+
+const isDetailPackageSelected = computed(
+  () => detailPackage.value !== null && detailPackage.value.id === selectedId.value,
+)
 
 interface PackageFeature {
   name: string
@@ -72,9 +77,8 @@ function closeDetail() {
 }
 
 function selectFromDetail() {
-  if (detailPackage.value) {
-    store.setMarketingPackage({ selectedId: detailPackage.value.id })
-  }
+  if (!detailPackage.value || isDetailPackageSelected.value) return
+  store.setMarketingPackage({ selectedId: detailPackage.value.id })
   closeDetail()
 }
 
@@ -253,9 +257,15 @@ onMounted(loadPackages)
             <CloseIcon class="size-4" />
           </button>
 
-          <h2 class="text-2xl font-medium text-foreground tracking-[0.07px] mb-2 pr-10">
-            {{ detailPackage.name }}
-          </h2>
+          <div class="flex flex-wrap items-center gap-3 mb-2 pr-10">
+            <h2 class="text-2xl font-medium text-foreground tracking-[0.07px]">
+              {{ detailPackage.name }}
+            </h2>
+            <SelectionPillBadge
+              v-if="isDetailPackageSelected"
+              label="Обраний пакет"
+            />
+          </div>
           <p class="text-muted-foreground text-base tracking-[-0.31px] mb-6">
             {{ detailPackage.description }}
           </p>
@@ -310,12 +320,9 @@ onMounted(loadPackages)
             </div>
           </div>
 
-          <div class="flex items-stretch gap-2 mt-6">
+          <div v-if="!isDetailPackageSelected" class="mt-6">
             <UiButton variant="primary" block @click="selectFromDetail">
               Обрати пакет
-            </UiButton>
-            <UiButton variant="secondary" @click="closeDetail">
-              Закрити
             </UiButton>
           </div>
         </div>
