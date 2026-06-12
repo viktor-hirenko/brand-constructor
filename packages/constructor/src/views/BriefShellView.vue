@@ -117,6 +117,11 @@ const step2HasStoredConceptSelection = computed(() => {
   return !!id
 })
 
+/** Steps 3/4: PO ordered a custom concept brief instead of picking from the grid. */
+const hasOrderedNewConcept = computed(
+  () => store.stepData.concept.newConceptBrief !== null,
+)
+
 const isConceptSliderFinalSelected = computed(() => {
   const c = conceptPreviewForSlider.value
   if (!c) return false
@@ -596,6 +601,7 @@ watch(currentStep, step => {
           :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
           :libraries-loading="librariesStore.isLoading"
           :has-stored-concept-selection="step2HasStoredConceptSelection"
+          :has-ordered-new-concept="hasOrderedNewConcept"
           @confirm-concept="confirmConceptFromSlider"
           @toggle-sidebar="toggleSidebarPreview"
         />

@@ -2,10 +2,26 @@
 import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
+import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 
-const props = defineProps<{
+interface ConceptMobilePreviewProps {
   concept: Concept | null
-}>()
+  /**
+   * Empty panel copy when `concept` is null.
+   * `ordered-concept` — PO ordered a new concept brief (no grid pick yet).
+   */
+  emptyMode?: 'select-first' | 'ordered-concept'
+}
+
+const props = withDefaults(defineProps<ConceptMobilePreviewProps>(), {
+  emptyMode: 'select-first',
+})
+
+const emptyMessage = computed(() =>
+  props.emptyMode === 'ordered-concept'
+    ? 'Для замовленого концепту превʼю поки недоступне.'
+    : 'Спочатку оберіть концепт',
+)
 
 /** Admin: gallery_url_1 = "Gallery Image 1 (Mobile Preview)" — same as CEO reselect naming step. */
 const mobileSrc = computed(() => {
@@ -24,9 +40,12 @@ const mobileSrc = computed(() => {
 
     <div
       v-if="!concept"
-      class="flex-1 flex flex-col items-center justify-center rounded-[24px] border border-dashed border-black/10 bg-muted/20 p-8 text-center text-muted-foreground min-h-[400px]"
+      class="flex-1 flex flex-col items-center justify-center rounded-[24px] border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb] p-8 text-center min-h-[400px]"
     >
-      <p class="text-sm tracking-[-0.15px]">Спочатку оберіть концепт</p>
+      <ImagePlaceholderIcon class="size-10 mb-6 text-[#c8c8c8]" />
+      <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] max-w-[280px]">
+        {{ emptyMessage }}
+      </p>
     </div>
 
     <div v-else class="w-full aspect-square rounded-[24px] overflow-hidden bg-muted/30 flex-1">

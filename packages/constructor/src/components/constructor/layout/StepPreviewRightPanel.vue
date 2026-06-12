@@ -48,6 +48,8 @@ interface Props {
   librariesLoading?: boolean
   /** Step 2: preview/selected id in store while libraries still loading. */
   hasStoredConceptSelection?: boolean
+  /** Steps 3/4: PO ordered a new concept brief — no grid concept to preview. */
+  hasOrderedNewConcept?: boolean
 }
 
 const props = defineProps<Props>()
@@ -163,7 +165,11 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
         v-if="librariesLoading && hasStoredConceptSelection"
         single-header-line
       />
-      <ConceptMobilePreview v-else :concept="selectedConcept" />
+      <ConceptMobilePreview
+        v-else
+        :concept="selectedConcept"
+        :empty-mode="hasOrderedNewConcept && !selectedConcept ? 'ordered-concept' : 'select-first'"
+      />
     </template>
 
     <!-- Step 7 Preview: iPhone with layered Visual Components -->
