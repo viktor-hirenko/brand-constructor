@@ -69,11 +69,7 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
                 <img
                   :src="layer.url"
                   :alt="layer.typeId"
-                  :class="
-                    layer.slot.contain
-                      ? 'w-full h-full object-contain'
-                      : 'w-full h-full object-cover'
-                  "
+                  class="w-full h-full object-cover object-top"
                 />
               </div>
             </div>
@@ -120,11 +116,7 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
                 <img
                   :src="layer.url"
                   :alt="layer.typeId"
-                  :class="
-                    layer.slot.contain
-                      ? 'w-full h-full object-contain'
-                      : 'w-full h-full object-cover'
-                  "
+                  class="w-full h-full object-cover object-top"
                 />
               </div>
             </div>

@@ -403,7 +403,7 @@ onMounted(loadComponentTypes)
                       v-if="getThumbnailUrl(variant)"
                       :src="getThumbnailUrl(variant)"
                       :alt="variant.name"
-                      class="w-full h-full object-contain"
+                      class="w-full h-full object-cover object-top"
                       loading="lazy"
                     />
                     <div
