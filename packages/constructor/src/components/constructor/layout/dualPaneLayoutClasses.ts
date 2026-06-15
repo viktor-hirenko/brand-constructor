@@ -35,10 +35,11 @@ export function leftContentPaddingClass(mode: LayoutMode, opts: LeftContentPaddi
     return `${base} flex flex-col overflow-hidden p-12`
   }
 
-  // wizard
+  // wizard — asymmetric horizontal padding: narrow right gutter for scrollbar (Bug 1)
   const step8 = opts.wizardStep === 8
   const overflow = step8 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
-  return `${base} px-12 pt-12 pb-12 ${overflow}`
+  const horizontalPad = step8 ? 'px-12' : 'pl-12 pr-3'
+  return `${base} ${horizontalPad} pt-12 pb-12 ${overflow}`
 }
 
 interface RightPaneOptions {

@@ -44,13 +44,23 @@ const leftContentClass = computed(() =>
   })
 )
 
-const leftRouterClass = computed(() =>
-  props.reviewShell ||
-  props.layoutMode === 'edit' ||
-  (props.layoutMode === 'wizard' && props.wizardStep === 8)
-    ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
-    : ''
-)
+const leftRouterClass = computed(() => {
+  const isFixedHeightRouter =
+    props.reviewShell ||
+    props.layoutMode === 'edit' ||
+    (props.layoutMode === 'wizard' && props.wizardStep === 8)
+
+  if (isFixedHeightRouter) {
+    return 'flex-1 min-h-0 flex flex-col overflow-hidden'
+  }
+
+  // Compensate reduced scroll-container pr-3 so content keeps 48px inset from column edge.
+  if (props.layoutMode === 'wizard') {
+    return 'constructor-dual-pane-shell__scroll-inner pr-9'
+  }
+
+  return ''
+})
 
 const rightColumnClass = computed(() =>
   rightPaneClass(props.layoutMode, { wizardStep: props.wizardStep })
@@ -78,3 +88,31 @@ const showRightColumn = computed(() => props.showRight && !props.fullWidth)
     <slot name="overlays" />
   </div>
 </template>
+
+<style lang="scss" scoped>
+@use '@/styles/mixins' as *;
+
+.constructor-dual-pane-shell__main-content {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(0 0 0 / 0.12) transparent;
+
+  @include custom-scrollbar;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgb(0 0 0 / 0.12);
+
+    &:hover {
+      background: rgb(0 0 0 / 0.2);
+    }
+  }
+}
+</style>
