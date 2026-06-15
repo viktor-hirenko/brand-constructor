@@ -5,7 +5,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { apiGet } from '@/composables/useApi'
 import { useLibrariesStore } from '@/stores/libraries'
-import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
+import { useBrandPreviewLayers, type PreviewLayer } from '@/composables/useBrandPreviewLayers'
 import {
   DESIGN_SHELL_HEIGHT,
   DESIGN_SHELL_MIN_VIEWPORT_WIDTH,
@@ -389,16 +389,26 @@ watch(
 
 const {
   loadVariants: loadStep9Variants,
-  buildLayers,
+  buildBaseLayers,
+  getSidebarLayer,
+  buildSidebarLayerForVariant,
   hasSelections: hasStep9Selections,
   hasSidebarSelected,
 } = useBrandPreviewLayers()
 
 const step9SidebarVisible = ref(true)
+const step9SidebarSlideAnimated = ref(false)
+const pinnedSidebarLayer = ref<PreviewLayer | null>(null)
 const sidebarHiddenCalloutVisible = ref(false)
 let sidebarHiddenCalloutTimer: ReturnType<typeof setTimeout> | null = null
 
-const step9SelectedLayers = computed(() => buildLayers(!step9SidebarVisible.value))
+const step9BaseLayers = computed(() => buildBaseLayers())
+const step9SidebarLayer = computed(() => getSidebarLayer() ?? pinnedSidebarLayer.value)
+
+function setSidebarPreviewVisible(visible: boolean, animate: boolean) {
+  step9SidebarSlideAnimated.value = animate
+  step9SidebarVisible.value = visible
+}
 
 function dismissSidebarHiddenCallout() {
   sidebarHiddenCalloutVisible.value = false
@@ -418,12 +428,16 @@ function showSidebarHiddenCallout() {
 }
 
 function restoreSidebarPreview() {
-  step9SidebarVisible.value = true
+  setSidebarPreviewVisible(true, true)
   dismissSidebarHiddenCallout()
 }
 
+function clearPinnedSidebarLayer() {
+  pinnedSidebarLayer.value = null
+}
+
 function toggleSidebarPreview() {
-  step9SidebarVisible.value = !step9SidebarVisible.value
+  setSidebarPreviewVisible(!step9SidebarVisible.value, true)
   if (step9SidebarVisible.value) {
     dismissSidebarHiddenCallout()
   }
@@ -446,6 +460,23 @@ watch(
     const sidebarKey = Object.keys(sel).find(k => k.includes('sidebar'))
     const prevSidebarKey = Object.keys(prevSelections.value).find(k => k.includes('sidebar'))
 
+    if (prevSidebarKey && !sidebarKey) {
+      const prevVariantId = prevSelections.value[prevSidebarKey]
+      if (prevVariantId && step9SidebarVisible.value) {
+        const pinned = buildSidebarLayerForVariant(prevSidebarKey, prevVariantId)
+        if (pinned) {
+          pinnedSidebarLayer.value = pinned
+          setSidebarPreviewVisible(false, true)
+        } else {
+          clearPinnedSidebarLayer()
+          setSidebarPreviewVisible(true, false)
+        }
+      } else {
+        clearPinnedSidebarLayer()
+        setSidebarPreviewVisible(true, false)
+      }
+    }
+
     const sidebarChanged = sidebarKey && sel[sidebarKey] !== prevSelections.value[sidebarKey ?? '']
     const nonSidebarChanged =
       Object.keys(sel).some(k => !k.includes('sidebar') && sel[k] !== prevSelections.value[k]) ||
@@ -454,15 +485,16 @@ watch(
       )
 
     if (sidebarChanged) {
-      step9SidebarVisible.value = true
+      clearPinnedSidebarLayer()
+      setSidebarPreviewVisible(true, true)
       dismissSidebarHiddenCallout()
     } else if (nonSidebarChanged) {
       const sidebarStillSelected = Boolean(sidebarKey && sel[sidebarKey])
       const wasSidebarVisible = step9SidebarVisible.value
       if (sidebarStillSelected) {
-        step9SidebarVisible.value = false
+        setSidebarPreviewVisible(false, wasSidebarVisible)
         if (wasSidebarVisible && currentStep.value === 7) {
-          showSidebarHiddenCallout()
+          window.setTimeout(showSidebarHiddenCallout, 100)
         }
       }
     }
@@ -644,10 +676,12 @@ watch(currentStep, step => {
           :concept-preview-for-slider="conceptPreviewForSlider"
           :is-concept-slider-final-selected="isConceptSliderFinalSelected"
           :selected-concept="selectedConcept"
-          :step9-selected-layers="step9SelectedLayers"
+          :step9-base-layers="step9BaseLayers"
+          :step9-sidebar-layer="step9SidebarLayer"
           :has-step9-selections="hasStep9Selections"
           :has-sidebar-selected="hasSidebarSelected"
           :step9-sidebar-visible="step9SidebarVisible"
+          :step9-sidebar-slide-animated="step9SidebarSlideAnimated"
           :sidebar-hidden-callout-visible="sidebarHiddenCalloutVisible"
           :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
           :libraries-loading="librariesStore.isLoading"
@@ -655,6 +689,7 @@ watch(currentStep, step => {
           :has-ordered-new-concept="hasOrderedNewConcept"
           @confirm-concept="confirmConceptFromSlider"
           @toggle-sidebar="toggleSidebarPreview"
+          @sidebar-slide-leave-complete="clearPinnedSidebarLayer"
         />
       </template>
 

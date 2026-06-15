@@ -12,6 +12,7 @@
  * Do not re-add a step-8 branch to this component.
  */
 
+import { ref } from 'vue'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
@@ -44,10 +45,12 @@ interface Props {
   conceptPreviewForSlider: Concept | null
   isConceptSliderFinalSelected: boolean
   selectedConcept: Concept | null
-  step9SelectedLayers: PreviewLayer[]
+  step9BaseLayers: PreviewLayer[]
+  step9SidebarLayer: PreviewLayer | null
   hasStep9Selections: boolean
   hasSidebarSelected: boolean
   step9SidebarVisible: boolean
+  step9SidebarSlideAnimated: boolean
   sidebarHiddenCalloutVisible: boolean
   delegateToDesigners: boolean
   /** True while concept library is loading — prevents empty-state flash on step 2. */
@@ -63,6 +66,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'confirm-concept': []
   'toggle-sidebar': []
+  'sidebar-slide-leave-complete': []
 }>()
 
 function formatDate(dateStr: string): string {
@@ -80,6 +84,23 @@ const hasGeo = (): boolean => (props.brandBasics?.geo?.length ?? 0) > 0
 const hasDate = (): boolean => (props.brandBasics?.launchDate ?? '') !== ''
 const hasLinkedProduct = (): boolean => (props.brandBasics?.linkedProduct ?? '').trim() !== ''
 const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
+
+const sidebarTransitionLocked = ref(false)
+
+function lockSidebarTransition() {
+  if (props.step9SidebarSlideAnimated) {
+    sidebarTransitionLocked.value = true
+  }
+}
+
+function unlockSidebarTransition() {
+  sidebarTransitionLocked.value = false
+}
+
+function handleSidebarAfterLeave() {
+  unlockSidebarTransition()
+  emit('sidebar-slide-leave-complete')
+}
 </script>
 
 <template>
@@ -216,9 +237,9 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
               </div>
               <div v-else class="relative w-full h-full overflow-hidden rounded-[40px]">
                 <div
-                  v-for="layer in step9SelectedLayers"
+                  v-for="layer in step9BaseLayers"
                   :key="layer.typeId"
-                  class="absolute transition-opacity duration-300"
+                  class="absolute"
                   :style="{
                     left: layer.slot.left,
                     top: layer.slot.top,
@@ -230,17 +251,42 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
                   <img
                     :src="layer.url"
                     :alt="layer.typeId"
-                    :class="
-                      layer.slot.contain
-                        ? 'w-full h-full object-contain'
-                        : 'w-full h-full object-cover'
-                    "
+                    class="w-full h-full object-cover object-top"
                   />
                 </div>
+                <Transition
+                  name="sidebar-slide"
+                  :css="step9SidebarSlideAnimated"
+                  @before-enter="lockSidebarTransition"
+                  @after-enter="unlockSidebarTransition"
+                  @before-leave="lockSidebarTransition"
+                  @after-leave="handleSidebarAfterLeave"
+                >
+                  <div
+                    v-if="step9SidebarLayer && step9SidebarVisible"
+                    :key="step9SidebarLayer.url"
+                    class="absolute"
+                    :style="{
+                      left: step9SidebarLayer.slot.left,
+                      top: step9SidebarLayer.slot.top,
+                      width: step9SidebarLayer.slot.width,
+                      height: step9SidebarLayer.slot.height,
+                      zIndex: step9SidebarLayer.slot.zIndex,
+                    }"
+                  >
+                    <img
+                      :src="step9SidebarLayer.url"
+                      :alt="step9SidebarLayer.typeId"
+                      class="w-full h-full object-cover object-top"
+                    />
+                  </div>
+                </Transition>
                 <button
                   v-if="hasSidebarSelected"
-                  class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors"
+                  type="button"
+                  class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors disabled:opacity-50 disabled:pointer-events-none"
                   :style="{ right: '8px', top: '42px', zIndex: 35 }"
+                  :disabled="sidebarTransitionLocked"
                   :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
                   @click="emit('toggle-sidebar')"
                 >
@@ -265,3 +311,22 @@ const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
     </template>
   </div>
 </template>
+
+<style scoped>
+.sidebar-slide-enter-active,
+.sidebar-slide-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-slide-enter-from,
+.sidebar-slide-leave-to {
+  transform: translateY(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-slide-enter-active,
+  .sidebar-slide-leave-active {
+    transition: none;
+  }
+}
+</style>
