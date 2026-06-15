@@ -11,7 +11,6 @@ export interface ComponentSlot {
   width: string
   height: string
   zIndex: number
-  contain?: boolean
 }
 
 export interface PreviewLayer {
@@ -20,21 +19,38 @@ export interface PreviewLayer {
   slot: ComponentSlot
 }
 
+/** Visible iPhone status bar strip above full-height sidebar screenshots. */
+export const PHONE_STATUS_BAR_INSET_PX = 34
+
+const SIDEBAR_BASE_SLOT: ComponentSlot = {
+  left: '0px',
+  top: '0px',
+  width: '288.75px',
+  height: '614.25px',
+  zIndex: 30,
+}
+
+/**
+ * Sidebar variants that start at the top of the screen (no status-bar inset).
+ * TODO: move to DB field when preview layout is configurable in admin.
+ */
+const SIDEBAR_VARIANTS_WITHOUT_STATUS_BAR_INSET = new Set([
+  'Type 3',
+  'cvr_3b35e684ab1e4d2b',
+])
+
 /** Geometry for known component types on the iPhone preview. */
 export const COMPONENT_SLOTS: Record<string, ComponentSlot> = {
   ct_header: { left: '0px', top: '33.75px', width: '290.25px', height: '48px', zIndex: 20 },
   ct_banners: { left: '12px', top: '81.75px', width: '278.25px', height: '144px', zIndex: 19 },
   ct_thumbnails: { left: '12px', top: '394.5px', width: '270px', height: '126px', zIndex: 18 },
   ct_tabbar: { left: '0px', top: '557.25px', width: '289.5px', height: '57px', zIndex: 17 },
-  ct_sidebar: {
-    left: '0px',
-    top: '0px',
-    width: '288.75px',
-    height: '614.25px',
-    zIndex: 30,
-    contain: true,
-  },
+  ct_sidebar: SIDEBAR_BASE_SLOT,
   ct_theme: { left: '0px', top: '0px', width: '288.75px', height: '614.25px', zIndex: 5 },
+}
+
+function isSidebarTypeId(typeId: string): boolean {
+  return typeId.includes('sidebar')
 }
 
 interface UseBrandPreviewLayersResult {
@@ -42,6 +58,9 @@ interface UseBrandPreviewLayersResult {
   loadVariants: () => Promise<void>
   getPreviewUrl: (typeId: string) => string | null
   buildLayers: (hideSidebar: boolean) => PreviewLayer[]
+  buildBaseLayers: () => PreviewLayer[]
+  getSidebarLayer: () => PreviewLayer | null
+  buildSidebarLayerForVariant: (typeId: string, variantId: string) => PreviewLayer | null
   hasSelections: ComputedRef<boolean>
   hasSidebarSelected: ComputedRef<boolean>
 }
@@ -96,18 +115,82 @@ export function useBrandPreviewLayers(): UseBrandPreviewLayersResult {
     return url.startsWith('http') ? url : getAssetUrl(url)
   }
 
+  function sidebarUsesStatusBarInset(typeId: string, variantId: string): boolean {
+    if (SIDEBAR_VARIANTS_WITHOUT_STATUS_BAR_INSET.has(variantId)) return false
+
+    const variant = variantsCache.value[typeId]?.find(v => v.id === variantId)
+    if (variant && SIDEBAR_VARIANTS_WITHOUT_STATUS_BAR_INSET.has(variant.name)) return false
+
+    return true
+  }
+
+  function resolveSidebarSlotForVariant(typeId: string, variantId: string): ComponentSlot {
+    if (!sidebarUsesStatusBarInset(typeId, variantId)) {
+      return { ...SIDEBAR_BASE_SLOT }
+    }
+
+    return {
+      ...SIDEBAR_BASE_SLOT,
+      top: `${PHONE_STATUS_BAR_INSET_PX}px`,
+    }
+  }
+
+  function resolveSidebarSlot(typeId: string): ComponentSlot {
+    const variantId = store.stepData?.visualComponents?.selections?.[typeId]
+    if (!variantId) return { ...SIDEBAR_BASE_SLOT }
+    return resolveSidebarSlotForVariant(typeId, variantId)
+  }
+
+  function getPreviewUrlForVariant(typeId: string, variantId: string): string | null {
+    const variants = variantsCache.value[typeId] || []
+    const variant = variants.find(v => v.id === variantId)
+    if (!variant) return null
+    const url = variant.preview_url || variant.thumbnail_url
+    if (!url) return null
+    return url.startsWith('http') ? url : getAssetUrl(url)
+  }
+
+  function buildLayerForType(typeId: string): PreviewLayer | null {
+    const url = getPreviewUrl(typeId)
+    if (!url) return null
+
+    const slot = isSidebarTypeId(typeId) ? resolveSidebarSlot(typeId) : COMPONENT_SLOTS[typeId]
+    if (!slot) return null
+
+    return { typeId, url, slot }
+  }
+
   function buildLayers(hideSidebar: boolean): PreviewLayer[] {
     const selections = store.stepData?.visualComponents?.selections ?? {}
     const layers: PreviewLayer[] = []
     for (const typeId of Object.keys(selections)) {
-      if (typeId.includes('sidebar') && hideSidebar) continue
-      const slot = COMPONENT_SLOTS[typeId]
-      const url = getPreviewUrl(typeId)
-      if (slot && url) {
-        layers.push({ typeId, url, slot })
-      }
+      if (isSidebarTypeId(typeId) && hideSidebar) continue
+      const layer = buildLayerForType(typeId)
+      if (layer) layers.push(layer)
     }
     return layers.sort((a, b) => a.slot.zIndex - b.slot.zIndex)
+  }
+
+  function buildBaseLayers(): PreviewLayer[] {
+    return buildLayers(true)
+  }
+
+  function getSidebarLayer(): PreviewLayer | null {
+    const selections = store.stepData?.visualComponents?.selections ?? {}
+    const sidebarTypeId = Object.keys(selections).find(isSidebarTypeId)
+    if (!sidebarTypeId) return null
+    return buildLayerForType(sidebarTypeId)
+  }
+
+  function buildSidebarLayerForVariant(typeId: string, variantId: string): PreviewLayer | null {
+    if (!isSidebarTypeId(typeId)) return null
+    const url = getPreviewUrlForVariant(typeId, variantId)
+    if (!url) return null
+    return {
+      typeId,
+      url,
+      slot: resolveSidebarSlotForVariant(typeId, variantId),
+    }
   }
 
   return {
@@ -115,6 +198,9 @@ export function useBrandPreviewLayers(): UseBrandPreviewLayersResult {
     loadVariants,
     getPreviewUrl,
     buildLayers,
+    buildBaseLayers,
+    getSidebarLayer,
+    buildSidebarLayerForVariant,
     hasSelections,
     hasSidebarSelected,
   }
