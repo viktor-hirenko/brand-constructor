@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import { useEscapeClose } from '@/composables/useEscapeClose'
@@ -32,6 +33,9 @@ const emit = defineEmits<{
 }>()
 
 useEscapeClose(() => emit('cancel'))
+
+/** Whether the modal footer is shown (edit: cancel/save; read-only: edit action only, or none). */
+const showFooter = computed(() => !props.readonly || props.showEditAction)
 </script>
 
 <template>
@@ -64,10 +68,11 @@ useEscapeClose(() => emit('cancel'))
         </div>
 
         <div
+          v-if="showFooter"
           class="flex items-stretch justify-end gap-2 px-6 pt-[17px] pb-4 border-t border-black/10 shrink-0"
         >
-          <UiButton variant="secondary" @click="emit('cancel')">
-            {{ readonly ? 'Закрити' : 'Скасувати' }}
+          <UiButton v-if="!readonly" variant="secondary" @click="emit('cancel')">
+            Скасувати
           </UiButton>
           <UiButton
             v-if="!readonly"

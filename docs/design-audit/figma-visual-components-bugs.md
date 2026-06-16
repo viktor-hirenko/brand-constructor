@@ -11,8 +11,8 @@
 | 3 | Sidebar width | High | **done** |
 | 4 | Card padding без комментариев | Low | **done** (`76168a8`) |
 | 5 | «Переглянути» vs «Редагувати» | Low | **done** |
-| 6 | Дубль «Закрити» в модалке | Medium | pending ← следующий |
-| 7 | Empty state при delegate | Medium | pending |
+| 6 | Дубль «Закрити» в модалке | Medium | **done** |
+| 7 | Empty state при delegate | Medium | pending ← следующий |
 | 8 | Concept → reset External Naming | High | pending |
 
 ---
@@ -162,9 +162,18 @@
 
 **Figma:** убрать footer «Закрити», оставить × / backdrop / Esc.
 
-**Файл:** [`BriefModalShell.vue`](../../packages/constructor/src/components/constructor/modals/BriefModalShell.vue) — readonly показывает и ×, и footer button.
+**Файл:** [`BriefModalShell.vue`](../../packages/constructor/src/components/constructor/modals/BriefModalShell.vue) — readonly preview показывал и ×, и footer «Закрити».
 
-**Scope:** cross-step modals.
+**Scope:** все модалки на `BriefModalShell` (PR preview, brief preview concept/external/internal, edit через `New*Modal`).
+
+**Исправление (done):**
+
+- `showFooter`: footer только если `!readonly` (Скасувати + Зберегти) или `readonly && showEditAction` (только «Редагувати»).
+- `readonly && !showEditAction` (PR на review, brief на final review) — **без footer**; закрытие: ×, backdrop, Esc.
+
+**Не затронуто:** `ConfirmationModal`, `MarketingPackageView` detail, `VisualComponentsView` delegate — отдельные shell'ы.
+
+**Статус:** done.
 
 ---
 
@@ -228,6 +237,6 @@
 4. Sidebar Type 1/2/3 — full width в preview — **done (Bug 3)**
 5. Step 8 review: секции без комментариев — нет лишнего bottom padding — **done (Bug 4)**; step 7 wizard — отдельно при необходимости
 6. Delegate toggle — empty state без iPhone — **pending (Bug 7)**
-7. Brief readonly modal — один способ закрытия — **pending (Bug 6)**
+7. Brief readonly modal — один способ закрытия (× / backdrop / Esc), без footer «Закрити» — **done (Bug 6)**
 8. Review — «Переглянути» визуально слабее «Редагувати» — **done (Bug 5)**
 9. Смена concept → external naming сброшен, redirect на step 3 — **pending (Bug 8)**
