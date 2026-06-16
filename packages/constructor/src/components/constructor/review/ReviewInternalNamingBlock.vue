@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
+import { REVIEW_PREVIEW_LINK_BUTTON_CLASS } from './reviewActionClasses'
 
 interface ReviewInternalNamingBlockProps {
   poValue: string
@@ -72,7 +73,7 @@ const layoutModifier = computed(() => {
           </div>
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
+            :class="REVIEW_PREVIEW_LINK_BUTTON_CLASS"
             @click="emit('previewBrief')"
           >
             <EyeIcon />
@@ -107,7 +108,7 @@ const layoutModifier = computed(() => {
           </div>
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-1 h-10 px-3 rounded-lg text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#373737] hover:bg-black/[0.04] transition-colors"
+            :class="REVIEW_PREVIEW_LINK_BUTTON_CLASS"
             @click="emit('previewBrief')"
           >
             <EyeIcon />

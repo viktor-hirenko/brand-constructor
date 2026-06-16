@@ -9,9 +9,9 @@
 | 1 | Scrollbar | Low | **done** |
 | 2 | Top/bottom padding | Medium | **partial** (review/step 8 + edit — **done**; wizard 1–7 — pending) |
 | 3 | Sidebar width | High | **done** |
-| 4 | Card padding без комментариев | Low | **done** |
-| 5 | «Переглянути» vs «Редагувати» | Low | pending ← следующий |
-| 6 | Дубль «Закрити» в модалке | Medium | pending |
+| 4 | Card padding без комментариев | Low | **done** (`76168a8`) |
+| 5 | «Переглянути» vs «Редагувати» | Low | **done** |
+| 6 | Дубль «Закрити» в модалке | Medium | pending ← следующий |
 | 7 | Empty state при delegate | Medium | pending |
 | 8 | Concept → reset External Naming | High | pending |
 
@@ -136,7 +136,7 @@
 4. PO returned — CEO section comments + resolve UI + general block.
 5. Approved / po-submitted / ceo-frozen — read-only PO и CEO комментарии на месте.
 
-**Статус:** done.
+**Статус:** done — коммит `76168a8`.
 
 ---
 
@@ -144,9 +144,17 @@
 
 **Figma:** «Переглянути» — link-style, без pill как у «Редагувати».
 
-**Файлы:** [`ReviewExternalNamingsList.vue`](../../packages/constructor/src/components/constructor/review/ReviewExternalNamingsList.vue), [`ReviewInternalNamingBlock.vue`](../../packages/constructor/src/components/constructor/review/ReviewInternalNamingBlock.vue), [`ReviewPrPackageBlock.vue`](../../packages/constructor/src/components/constructor/review/ReviewPrPackageBlock.vue).
+**Файлы:** [`ReviewExternalNamingsList.vue`](../../packages/constructor/src/components/constructor/review/ReviewExternalNamingsList.vue), [`ReviewInternalNamingBlock.vue`](../../packages/constructor/src/components/constructor/review/ReviewInternalNamingBlock.vue), [`ReviewPrPackageBlock.vue`](../../packages/constructor/src/components/constructor/review/ReviewPrPackageBlock.vue), [`reviewActionClasses.ts`](../../packages/constructor/src/components/constructor/review/reviewActionClasses.ts).
 
 **Scope:** step 8 review.
+
+**Исправление (done):**
+
+- `REVIEW_PREVIEW_LINK_BUTTON_CLASS`: без pill (`h-10`, `rounded-lg`, `hover:bg`); текст `#373737`, 14px; hover `opacity-70` (не underline).
+- `ReviewPrPackageBlock`: `items-center` на строке title + «Переглянути» (Figma: 24px row, icon+text по центру).
+- Header «Редагувати» в `ReviewSection` — без изменений (pill + hover bg).
+
+**Статус:** done.
 
 ---
 
@@ -221,5 +229,5 @@
 5. Step 8 review: секции без комментариев — нет лишнего bottom padding — **done (Bug 4)**; step 7 wizard — отдельно при необходимости
 6. Delegate toggle — empty state без iPhone — **pending (Bug 7)**
 7. Brief readonly modal — один способ закрытия — **pending (Bug 6)**
-8. Review — «Переглянути» визуально слабее «Редагувати» — **pending (Bug 5)**
+8. Review — «Переглянути» визуально слабее «Редагувати» — **done (Bug 5)**
 9. Смена concept → external naming сброшен, redirect на step 3 — **pending (Bug 8)**
