@@ -8,6 +8,15 @@ export type LayoutMode = 'wizard' | 'edit' | 'review'
 export const SHELL_BASE_CLASS =
   'relative shrink-0 w-[1440px] h-[900px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex'
 
+/** Scroll track styling — see global `.left-pane-scroll`. */
+export const LEFT_PANE_SCROLL_TRACK_CLASS = 'left-pane-scroll'
+
+/** On the element with overflow-y-auto: narrow right gutter for scrollbar. */
+export const LEFT_PANE_SCROLL_GUTTER_CLASS = 'pl-12 pr-3'
+
+/** Inner content: keeps ~48px inset from column right (pr-3 + pr-9). */
+export const LEFT_PANE_SCROLL_INNER_CLASS = 'pr-9'
+
 export function leftPanelWidthClass(fullWidth: boolean): string {
   return fullWidth ? 'w-full' : 'w-[42%]'
 }
@@ -24,21 +33,22 @@ interface LeftContentPaddingOptions {
 
 /** Padding on the scrollable main-content area inside the left column. */
 export function leftContentPaddingClass(mode: LayoutMode, opts: LeftContentPaddingOptions): string {
-  const base = 'constructor-dual-pane-shell__main-content min-h-0 flex-1'
+  const base = `constructor-dual-pane-shell__main-content ${LEFT_PANE_SCROLL_TRACK_CLASS} min-h-0 flex-1`
 
   if (mode === 'edit') {
-    // Horizontal inset (48px) is on EditFlowStepShell — keeps HR/footer full column width.
+    // Horizontal inset on EditFlowStepShell scroll body — keeps HR/footer full column width.
     return `${base} pt-12 pb-0 flex flex-col overflow-hidden`
   }
 
   if (mode === 'review') {
-    return `${base} flex flex-col overflow-hidden p-12`
+    // Horizontal inset on ReviewUnifiedView scroll body; vertical pad scrolls with content.
+    return `${base} flex flex-col overflow-hidden`
   }
 
   // wizard — asymmetric horizontal padding: narrow right gutter for scrollbar (Bug 1)
   const step8 = opts.wizardStep === 8
   const overflow = step8 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
-  const horizontalPad = step8 ? 'px-12' : 'pl-12 pr-3'
+  const horizontalPad = step8 ? 'px-12' : LEFT_PANE_SCROLL_GUTTER_CLASS
   return `${base} ${horizontalPad} pt-12 pb-12 ${overflow}`
 }
 

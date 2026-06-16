@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { EDIT_FLOW_CONTENT_INSET_CLASS } from '@/constants/editFlowLayout'
+import {
+  LEFT_PANE_SCROLL_GUTTER_CLASS,
+  LEFT_PANE_SCROLL_INNER_CLASS,
+  LEFT_PANE_SCROLL_TRACK_CLASS,
+} from '@/components/constructor/layout/dualPaneLayoutClasses'
 
 /**
  * Shared chrome for CEO re-select and PO edit step screens — outer flex column,
  * scrollable body, identical header (title + subtitle). Body goes into the
  * default slot, footer into the `#footer` slot.
  *
- * Edit mode: dual-pane column has no horizontal padding; this shell applies
- * px-12 to scrollable content. Dividers and footer border span the full column.
+ * Edit mode: dual-pane column has no horizontal padding; scroll body applies
+ * LEFT_PANE_SCROLL_GUTTER_CLASS. Dividers and footer border span the full column.
  *
  * Pass `loading` / `error` + listen to `retry` to centralise the full-body
  * async boundary that is shared across all 6 edit/reselect views.
@@ -33,12 +37,16 @@ const emit = defineEmits<{
 <template>
   <div class="edit-flow-step-shell flex h-full min-h-0 w-full flex-col">
     <div
-      class="edit-flow-step-shell__body min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+      :class="[
+        'edit-flow-step-shell__body min-h-0 flex-1 overflow-x-hidden overflow-y-auto',
+        LEFT_PANE_SCROLL_TRACK_CLASS,
+        LEFT_PANE_SCROLL_GUTTER_CLASS,
+      ]"
     >
       <div
         :class="[
           'edit-flow-step-shell__inset flex flex-col gap-6 pb-[32px]',
-          EDIT_FLOW_CONTENT_INSET_CLASS,
+          LEFT_PANE_SCROLL_INNER_CLASS,
         ]"
       >
         <div>
@@ -79,7 +87,7 @@ const emit = defineEmits<{
 <style scoped>
 /**
  * Pull dividers out of the 48px inset so the rule spans the full left column.
- * Matches EDIT_FLOW_CONTENT_INSET_CLASS (3rem × 2 = 6rem).
+ * Matches horizontal inset (3rem × 2 = 6rem): scroll gutter pl-12 + inner pr-9.
  */
 .edit-flow-step-shell__inset :deep(.edit-flow-divider) {
   margin-left: -3rem;

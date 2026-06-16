@@ -20,6 +20,11 @@ import ReviewDeliverablesBlock from '@/components/constructor/review/ReviewDeliv
 import ReviewVisualComponentsBlock from '@/components/constructor/review/ReviewVisualComponentsBlock.vue'
 import SupervisorActionsFooter from '@/components/constructor/review/SupervisorActionsFooter.vue'
 import AuthorActionsFooter from '@/components/constructor/review/AuthorActionsFooter.vue'
+import {
+  LEFT_PANE_SCROLL_GUTTER_CLASS,
+  LEFT_PANE_SCROLL_INNER_CLASS,
+  LEFT_PANE_SCROLL_TRACK_CLASS,
+} from '@/components/constructor/layout/dualPaneLayoutClasses'
 import ChatBubbleIcon from '@/components/icons/ChatBubbleIcon.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
@@ -371,8 +376,19 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
       ceoFrozenView ? 'review-unified-view--ceo-frozen' : '',
     ]"
   >
-    <div class="flex-1 min-h-0 overflow-y-auto">
-      <div class="flex flex-col gap-6">
+    <div
+      :class="[
+        'review-unified-view__scroll flex-1 min-h-0 overflow-y-auto',
+        LEFT_PANE_SCROLL_TRACK_CLASS,
+        LEFT_PANE_SCROLL_GUTTER_CLASS,
+      ]"
+    >
+      <div
+        :class="[
+          'review-unified-view__scroll-inner flex flex-col gap-6 pt-12 pb-12',
+          LEFT_PANE_SCROLL_INNER_CLASS,
+        ]"
+      >
         <ReviewHeader
           :title="unifiedReviewTitle"
           :status="brandStatus"

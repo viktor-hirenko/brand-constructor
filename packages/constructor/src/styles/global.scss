@@ -112,3 +112,27 @@ img {
     padding: 0 $spacing-6;
   }
 }
+
+// Left dual-pane column scroll — wizard main-content, review/edit inner scroll bodies.
+.left-pane-scroll {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(0 0 0 / 0.12) transparent;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgb(0 0 0 / 0.12);
+    border-radius: $radius-full;
+
+    &:hover {
+      background: rgb(0 0 0 / 0.2);
+    }
+  }
+}
