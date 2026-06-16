@@ -3,10 +3,14 @@ import { computed, onMounted, watch } from 'vue'
 import { useBrandPreviewLayers } from '@/composables/useBrandPreviewLayers'
 import { useConstructorStore } from '@/stores/constructor'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
+import VisualComponentsIphoneFrame from '@/components/constructor/preview/VisualComponentsIphoneFrame.vue'
+import VisualComponentsPhoneEmptyState from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 
 const store = useConstructorStore()
-const { loadVariants, buildLayers, hasSelections } = useBrandPreviewLayers()
+const { loadVariants, buildLayers } = useBrandPreviewLayers()
+
+const isDelegated = computed(() => store.stepData.visualComponents.delegateToDesigners)
 
 const mainLayers = computed(() => buildLayers(true))
 const sidebarLayers = computed(() => buildLayers(false))
@@ -29,99 +33,66 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
       </h2>
     </header>
 
-    <div class="flex items-start justify-center gap-[40px] flex-1 min-h-0">
-      <!-- Main view: no sidebar -->
+    <!-- Delegated: single iPhone + empty state (same mockup as step 7). -->
+    <div
+      v-if="isDelegated"
+      class="flex flex-1 min-h-0 w-full items-center justify-center"
+    >
+      <VisualComponentsIphoneFrame>
+        <VisualComponentsPhoneEmptyState variant="delegated" />
+      </VisualComponentsIphoneFrame>
+    </div>
+
+    <!-- Normal: dual iPhone — main view + sidebar view. -->
+    <div v-else class="flex items-start justify-center gap-[40px] flex-1 min-h-0">
       <div class="flex flex-col items-center">
-        <div class="relative" style="width: 311.25px; height: 632.25px">
-          <img
-            src="/assets/iphone-16-plus-light.png"
-            alt="iPhone preview without sidebar"
-            class="absolute inset-0 object-cover"
-            style="width: 311.25px; height: 632.25px; z-index: 0"
-          />
-          <div
-            class="absolute overflow-hidden"
-            style="width: 288.75px; height: 614.25px; left: 9px; top: 9px; z-index: 10"
-          >
+        <VisualComponentsIphoneFrame>
+          <div class="relative w-full h-full overflow-hidden">
             <div
-              v-if="!hasSelections"
-              class="h-full flex items-center justify-center p-4 text-center bg-white/90 rounded-[27px]"
+              v-for="layer in mainLayers"
+              :key="layer.typeId"
+              class="absolute"
+              :style="{
+                left: layer.slot.left,
+                top: layer.slot.top,
+                width: layer.slot.width,
+                height: layer.slot.height,
+                zIndex: layer.slot.zIndex,
+              }"
             >
-              <p class="text-xs text-muted-foreground">Компоненти ще не обрано</p>
-            </div>
-            <div
-              v-else
-              class="relative w-full h-full overflow-hidden rounded-[40px]"
-              style="width: 288.75px; height: 614.25px"
-            >
-              <div
-                v-for="layer in mainLayers"
-                :key="layer.typeId"
-                class="absolute"
-                :style="{
-                  left: layer.slot.left,
-                  top: layer.slot.top,
-                  width: layer.slot.width,
-                  height: layer.slot.height,
-                  zIndex: layer.slot.zIndex,
-                }"
-              >
-                <img
-                  :src="layer.url"
-                  :alt="layer.typeId"
-                  class="w-full h-full object-cover object-top"
-                />
-              </div>
+              <img
+                :src="layer.url"
+                :alt="layer.typeId"
+                class="w-full h-full object-cover object-top"
+              />
             </div>
           </div>
-        </div>
+        </VisualComponentsIphoneFrame>
       </div>
 
-      <!-- Sidebar view -->
       <div class="flex flex-col items-center">
-        <div class="relative" style="width: 311.25px; height: 632.25px">
-          <img
-            src="/assets/iphone-16-plus-light.png"
-            alt="iPhone preview with sidebar"
-            class="absolute inset-0 object-cover"
-            style="width: 311.25px; height: 632.25px; z-index: 0"
-          />
-          <div
-            class="absolute overflow-hidden"
-            style="left: 6px; top: 6px; width: 288.75px; height: 614.25px; z-index: 10"
-          >
+        <VisualComponentsIphoneFrame>
+          <div class="relative w-full h-full overflow-hidden">
             <div
-              v-if="!hasSelections"
-              class="h-full flex items-center justify-center p-4 text-center bg-white/90 rounded-[27px]"
+              v-for="layer in sidebarLayers"
+              :key="layer.typeId"
+              class="absolute"
+              :style="{
+                left: layer.slot.left,
+                top: layer.slot.top,
+                width: layer.slot.width,
+                height: layer.slot.height,
+                zIndex: layer.slot.zIndex,
+              }"
             >
-              <p class="text-xs text-muted-foreground">Компоненти ще не обрано</p>
-            </div>
-            <div
-              v-else
-              class="relative w-full h-full overflow-hidden rounded-[40px]"
-              style="width: 288.75px; height: 614.25px"
-            >
-              <div
-                v-for="layer in sidebarLayers"
-                :key="layer.typeId"
-                class="absolute"
-                :style="{
-                  left: layer.slot.left,
-                  top: layer.slot.top,
-                  width: layer.slot.width,
-                  height: layer.slot.height,
-                  zIndex: layer.slot.zIndex,
-                }"
-              >
-                <img
-                  :src="layer.url"
-                  :alt="layer.typeId"
-                  class="w-full h-full object-cover object-top"
-                />
-              </div>
+              <img
+                :src="layer.url"
+                :alt="layer.typeId"
+                class="w-full h-full object-cover object-top"
+              />
             </div>
           </div>
-        </div>
+        </VisualComponentsIphoneFrame>
       </div>
     </div>
   </aside>

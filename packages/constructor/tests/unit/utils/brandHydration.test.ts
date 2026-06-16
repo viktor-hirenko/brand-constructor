@@ -51,4 +51,23 @@ describe('buildStepDataFromBrand', () => {
     expect(stepData.mode).toBe('light')
     expect(valid).toBe(true)
   })
+
+  it('merges delegateToDesigners from brand column when stepData exists', () => {
+    const brand = {
+      id: 'brand_delegate',
+      delegateToDesigners: true,
+      stepData: {
+        ...emptyStepData(),
+        visualComponents: {
+          selections: { ct_header: 'cvr_1' },
+          delegateToDesigners: false,
+          comment: '',
+        },
+      },
+    } as unknown as Brand
+
+    const stepData = buildStepDataFromBrand(brand)
+
+    expect(stepData.visualComponents.delegateToDesigners).toBe(true)
+  })
 })

@@ -12,7 +12,7 @@
  * Do not re-add a step-8 branch to this component.
  */
 
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
@@ -22,12 +22,14 @@ import CloseIcon from '@/components/icons/CloseIcon.vue'
 import ColumnsLayoutIcon from '@/components/icons/ColumnsLayoutIcon.vue'
 import FileIcon from '@/components/icons/FileIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
-import SmartphoneIcon from '@/components/icons/SmartphoneIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewLayer } from '@/composables/useBrandPreviewLayers'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
+import VisualComponentsIphoneFrame from '@/components/constructor/preview/VisualComponentsIphoneFrame.vue'
+import VisualComponentsPhoneEmptyState from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
+import type { VisualComponentsPhoneEmptyVariant } from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import {
   SIDEBAR_HIDDEN_CALLOUT_DURATION_MS,
   SIDEBAR_TEMPORARILY_HIDDEN_MESSAGE,
@@ -101,6 +103,10 @@ function handleSidebarAfterLeave() {
   unlockSidebarTransition()
   emit('sidebar-slide-leave-complete')
 }
+
+const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
+  props.delegateToDesigners ? 'delegated' : 'pick-components',
+)
 </script>
 
 <template>
@@ -212,30 +218,12 @@ function handleSidebarAfterLeave() {
           <span class="text-[20px] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>
         </div>
         <div class="flex flex-col items-center justify-center flex-1">
-          <div class="relative" style="width: 311.25px; height: 632.25px">
-            <div class="absolute inset-0" style="z-index: 0">
-              <img src="/assets/iphone-16-plus-light.png" alt="iPhone frame" class="object-cover" />
-            </div>
-            <div
-              class="absolute overflow-hidden"
-              style="width: 288.75px; height: 614.25px; left: 11px; top: 9px; z-index: 10"
-            >
-              <div
-                v-if="!hasStep9Selections"
-                class="h-full flex items-center justify-center p-6 text-center bg-white/90 backdrop-blur-sm rounded-[40px]"
-              >
-                <div>
-                  <SmartphoneIcon class="size-12 text-muted-foreground mx-auto mb-3" />
-                  <p class="text-sm text-muted-foreground">
-                    {{
-                      delegateToDesigners
-                        ? 'Компоненти буде визначено дизайн-командою'
-                        : 'Оберіть компоненти щоб побачити превʼю'
-                    }}
-                  </p>
-                </div>
-              </div>
-              <div v-else class="relative w-full h-full overflow-hidden rounded-[40px]">
+          <VisualComponentsIphoneFrame>
+            <VisualComponentsPhoneEmptyState
+              v-if="!hasStep9Selections"
+              :variant="step7EmptyVariant"
+            />
+            <div v-else class="relative w-full h-full overflow-hidden">
                 <div
                   v-for="layer in step9BaseLayers"
                   :key="layer.typeId"
@@ -293,9 +281,8 @@ function handleSidebarAfterLeave() {
                   <CloseIcon v-if="step9SidebarVisible" class="size-4 text-white" />
                   <ColumnsLayoutIcon v-else class="size-4 text-white" />
                 </button>
-              </div>
             </div>
-          </div>
+          </VisualComponentsIphoneFrame>
         </div>
       </div>
     </template>

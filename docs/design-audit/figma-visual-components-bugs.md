@@ -12,8 +12,8 @@
 | 4 | Card padding без комментариев | Low | **done** (`76168a8`) |
 | 5 | «Переглянути» vs «Редагувати» | Low | **done** |
 | 6 | Дубль «Закрити» в модалке | Medium | **done** |
-| 7 | Empty state при delegate | Medium | pending ← следующий |
-| 8 | Concept → reset External Naming | High | pending |
+| 7 | Empty state при delegate | Medium | **done** |
+| 8 | Concept → reset External Naming | High | pending ← следующий |
 
 ---
 
@@ -179,13 +179,19 @@
 
 ## Bug 7 — Empty state при delegateToDesigners (Medium)
 
-**Figma:** один экран с текстом «Компоненти буде визначено дизайн-командою», без iPhone mockup.
+**Figma:** один iPhone с текстом «Компоненти буде визначено дизайн-командою»; в обычном режиме — два iPhone.
 
-**Корень:** [`StepPreviewRightPanel.vue`](../../packages/constructor/src/components/constructor/layout/StepPreviewRightPanel.vue) — сообщение внутри iPhone frame.
+**Корень:** `BrandPreviewPanel` не ветвил delegate (всегда два телефона); геометрия viewport расходилась между step 7 и review.
 
-**Исправление:** full-panel empty без mockup; тот же паттерн в [`BrandPreviewPanel.vue`](../../packages/constructor/src/components/constructor/preview/BrandPreviewPanel.vue).
+**Исправление (done):**
 
-**Scope:** step 7 + step 8.
+- `iphoneVisualPreview.ts` + `VisualComponentsIphoneFrame.vue` — единая геометрия frame/viewport.
+- `VisualComponentsPhoneEmptyState.vue` — `delegated` | `pick-components`; empty `border-radius` из той же константы.
+- Step 7 + Final review переиспользуют те же компоненты; delegate на review → один iPhone.
+- `brandHydration.ts` — merge `delegateToDesigners` из колонки бренда при загрузке `stepData`.
+- Удалён мёртвый fallback `NO_VISUAL_COMPONENTS_SELECTED_MESSAGE` / `not-selected` (wizard не пускает на review без selections).
+
+**Статус:** done.
 
 ---
 
@@ -236,7 +242,7 @@
 3. Step 8 review: нет фиксированных top/bottom полос при скролле — **done (Bug 2)**
 4. Sidebar Type 1/2/3 — full width в preview — **done (Bug 3)**
 5. Step 8 review: секции без комментариев — нет лишнего bottom padding — **done (Bug 4)**; step 7 wizard — отдельно при необходимости
-6. Delegate toggle — empty state без iPhone — **pending (Bug 7)**
+6. Delegate toggle — один iPhone при delegate, два при выборе компонентов — **done (Bug 7)**
 7. Brief readonly modal — один способ закрытия (× / backdrop / Esc), без footer «Закрити» — **done (Bug 6)**
 8. Review — «Переглянути» визуально слабее «Редагувати» — **done (Bug 5)**
 9. Смена concept → external naming сброшен, redirect на step 3 — **pending (Bug 8)**

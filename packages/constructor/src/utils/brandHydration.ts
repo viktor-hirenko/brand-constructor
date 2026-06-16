@@ -27,7 +27,16 @@ export function normalizeWizardStepData(data: BrandStepData): BrandStepData {
 /** Build wizard stepData from a brand API row (shared by router + landing). */
 export function buildStepDataFromBrand(brand: Brand): BrandStepData {
   if (brand.stepData) {
-    return normalizeWizardStepData(brand.stepData)
+    const data = normalizeWizardStepData(brand.stepData)
+    return {
+      ...data,
+      visualComponents: {
+        ...data.visualComponents,
+        delegateToDesigners:
+          Boolean(brand.delegateToDesigners) || Boolean(data.visualComponents.delegateToDesigners),
+        selections: data.visualComponents.selections ?? brand.componentSelections ?? {},
+      },
+    }
   }
 
   return normalizeWizardStepData({
