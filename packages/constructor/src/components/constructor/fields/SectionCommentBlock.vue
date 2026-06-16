@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SupervisorCommentCard from '@/components/constructor/review/SupervisorCommentCard.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
+import { isSectionCommentBlockVisible } from '@/utils/sectionCommentBlockVisibility'
 
 interface SectionCommentBlockProps {
   /** Section identifier from CEO_COMMENT_SECTIONS (concept, externalNaming, ...). */
@@ -149,12 +150,25 @@ function openEditor() {
 
 const hasAuthorComment = computed(() => (props.authorComment ?? '').trim().length > 0)
 const hasSupervisorComment = computed(() => (draft.value ?? '').trim().length > 0)
+
+const isVisible = computed(() =>
+  isSectionCommentBlockVisible({
+    authorComment: props.authorComment,
+    supervisorComment: props.supervisorComment,
+    supervisorEditable: props.supervisorEditable,
+    showResolveUi: props.showResolveUi,
+    alwaysExpanded: props.alwaysExpanded,
+  })
+)
+
+defineExpose({ isVisible })
 </script>
 
 <template>
   <div
+    v-if="isVisible"
     :class="[
-      'section-comment flex flex-col gap-2',
+      'section-comment mt-4 flex flex-col gap-2',
       highlighted ? 'section-comment--highlighted' : '',
       alwaysExpanded ? 'section-comment--always-expanded' : '',
     ]"

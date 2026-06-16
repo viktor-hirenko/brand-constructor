@@ -58,8 +58,10 @@ const titleTruncates = computed(() => {
 </script>
 
 <template>
-  <section v-if="borderless" class="review-section review-section--borderless space-y-4">
-    <slot />
+  <section v-if="borderless" class="review-section review-section--borderless flex flex-col">
+    <div class="review-section__content flex flex-col gap-4">
+      <slot />
+    </div>
     <slot name="comment" />
   </section>
 
@@ -110,8 +112,10 @@ const titleTruncates = computed(() => {
       </button>
     </header>
     <hr class="border-t border-black/10" />
-    <div class="review-section__body p-4 flex flex-col gap-4">
-      <slot />
+    <div class="review-section__body p-4 flex flex-col">
+      <div class="review-section__content flex flex-col gap-4">
+        <slot />
+      </div>
       <slot name="comment" />
     </div>
   </section>
