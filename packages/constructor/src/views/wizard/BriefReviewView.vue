@@ -217,6 +217,13 @@ function editSection(step: number, sectionKey: string) {
       return
     }
   }
+  // Draft concept edit → dedicated cascade flow (concept → external naming).
+  // The edit session is begun inside DraftConceptEditView so it survives the
+  // brand-shell reload that happens when entering from the wizard step-8 review.
+  if (sectionKey === 'concept' && !isCeoView.value && brandStatus.value === 'draft' && bid) {
+    router.push(`/constructor/brand/${bid}/draft-edit/concept`)
+    return
+  }
   store.beginEditSection(sectionKey, 8)
   // `editBrand` lets the router guard recognise an F5 on the wizard URL as
   // an interrupted brand-edit session (not a fresh wizard run) and redirect

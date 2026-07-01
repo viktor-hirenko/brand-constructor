@@ -228,7 +228,8 @@ const poEditMobilePreviewConceptFull = ref<Concept | null>(null)
 
 async function loadPoEditMobilePreviewConcept() {
   if (!isRevisionResponse.value) return
-  if (route.name === 'po-edit-concept') return
+  // Concept-slider screens use ConceptPreviewSlider, not the mobile preview.
+  if (route.name === 'po-edit-concept' || route.name === 'draft-edit-concept') return
 
   const id = store.stepData.concept.selectedId
   if (!id) {
@@ -624,7 +625,7 @@ watch(currentStep, step => {
 
         <template v-else-if="isRevisionResponse">
           <ConceptPreviewSlider
-            v-if="route.name === 'po-edit-concept' && route.query.mode !== 'post-apply'"
+            v-if="(route.name === 'po-edit-concept' || route.name === 'draft-edit-concept') && route.query.mode !== 'post-apply'"
             :concept="poEditPreviewConcept"
             :is-final-selected="false"
             :top-label="poEditSliderTopLabel"

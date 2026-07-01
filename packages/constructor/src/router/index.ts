@@ -38,6 +38,25 @@ function poEditGuard(to: RouteLocationNormalized) {
   return true
 }
 
+/**
+ * Guards the draft inline-edit cascade routes (`/draft-edit/*`). These are the
+ * dedicated edit-flow screens the Author (PO) opens from the *draft* final
+ * review to re-pick a concept and the dependent external naming. Only the
+ * brand owner (non-CEO) editing a `draft` brief may enter.
+ */
+function draftEditGuard(to: RouteLocationNormalized) {
+  const auth = useAuthStore()
+  const store = useConstructorStore()
+  const id = to.params.id as string
+  if (auth.isCeo) {
+    return { path: `/constructor/brand/${id}` }
+  }
+  if (store.brandStatus !== 'draft') {
+    return { path: `/constructor/brand/${id}` }
+  }
+  return true
+}
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -141,6 +160,23 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/revision-response/RevisionInternalNamingView.vue'),
         meta: { step: 8, poEdit: true, title: 'Редагувати Internal Naming', subtitle: '' },
         beforeEnter: poEditGuard,
+      },
+      // Draft inline-edit cascade routes (concept → external naming).
+      // Opened from the draft final review; mirror the po-edit pattern but for
+      // `draft` status. `draftEdit` meta drives the edit layout/preview reuse.
+      {
+        path: 'draft-edit/concept',
+        name: 'draft-edit-concept',
+        component: () => import('@/views/draft-edit/DraftConceptEditView.vue'),
+        meta: { step: 8, draftEdit: true, title: 'Редагувати концепт', subtitle: '' },
+        beforeEnter: draftEditGuard,
+      },
+      {
+        path: 'draft-edit/concept/external-naming',
+        name: 'draft-edit-concept-external-naming',
+        component: () => import('@/views/draft-edit/DraftExternalNamingEditView.vue'),
+        meta: { step: 8, draftEdit: true, title: 'Редагувати External Naming', subtitle: '' },
+        beforeEnter: draftEditGuard,
       },
     ],
     beforeEnter: async to => {
@@ -315,6 +351,8 @@ router.beforeEach((to, from) => {
   return resolveColdStartNavigation({
     fromName: from.name,
     toQueryEditBrand: to.query.editBrand,
+    toIsDraftEdit: to.matched.some(r => r.meta.draftEdit === true),
+    toParamsId: typeof to.params.id === 'string' ? to.params.id : undefined,
   })
 })
 

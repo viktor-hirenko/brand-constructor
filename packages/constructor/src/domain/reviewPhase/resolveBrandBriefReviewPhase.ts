@@ -9,6 +9,8 @@ export interface ResolveBriefReviewPhaseParams {
   routeIsCeoReselect: boolean
   /** `route.meta.poEdit === true` — active on `/po-edit/*` sub-routes. */
   routeIsPoEdit: boolean
+  /** `route.meta.draftEdit === true` — active on `/draft-edit/*` cascade sub-routes. */
+  routeIsDraftEdit: boolean
   /** `route.meta.step` — numeric wizard step, or `undefined` on non-step routes. */
   routeStep: number | undefined
 }
@@ -26,10 +28,16 @@ export function resolveBrandBriefReviewPhase({
   isSupervisor,
   routeIsCeoReselect,
   routeIsPoEdit,
+  routeIsDraftEdit,
   routeStep,
 }: ResolveBriefReviewPhaseParams): BrandBriefReviewPhase {
   if (routeIsCeoReselect) return BRAND_BRIEF_REVIEW_PHASE.ALTERNATIVE_SELECTION
-  if (routeIsPoEdit) return BRAND_BRIEF_REVIEW_PHASE.REVISION_RESPONSE
+  // `draft-edit` is a distinct flow (draft concept→external cascade) but shares
+  // the exact edit-flow layout + right-panel preview machinery of the
+  // revision-response screens, so it deliberately reuses REVISION_RESPONSE
+  // rather than introducing a new phase (which would force changes across
+  // every phase `switch`). Route name disambiguates where behaviour differs.
+  if (routeIsPoEdit || routeIsDraftEdit) return BRAND_BRIEF_REVIEW_PHASE.REVISION_RESPONSE
 
   // Everything below is the step-8 review surface.
   if (routeStep !== 8) return BRAND_BRIEF_REVIEW_PHASE.WIZARD

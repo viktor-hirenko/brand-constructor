@@ -37,4 +37,24 @@ describe('resolveColdStartNavigation', () => {
       })
     ).toBe(true)
   })
+
+  it('redirects cold start on a draft-edit cascade route to the brand review', () => {
+    expect(
+      resolveColdStartNavigation({
+        fromName: undefined,
+        toIsDraftEdit: true,
+        toParamsId: 'brand-9',
+      })
+    ).toEqual({ name: 'brand-view-review', params: { id: 'brand-9' } })
+  })
+
+  it('keeps in-app navigation on a draft-edit route (session is still in memory)', () => {
+    expect(
+      resolveColdStartNavigation({
+        fromName: 'draft-edit-concept',
+        toIsDraftEdit: true,
+        toParamsId: 'brand-9',
+      })
+    ).toBe(true)
+  })
 })

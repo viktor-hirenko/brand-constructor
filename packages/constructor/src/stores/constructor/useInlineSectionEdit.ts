@@ -41,6 +41,14 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
   const editingSection = ref<string | null>(null)
   const editingSectionSnapshot = ref<unknown>(null)
 
+  /**
+   * Extra snapshots for sections affected by a cross-step cascade.
+   * Example: editing concept triggers a cascade to externalNaming —
+   * `cascadeSnapshots['externalNaming']` holds the pre-cascade state
+   * so Cancel can restore both concept AND externalNaming atomically.
+   */
+  const cascadeSnapshots = ref<Record<string, unknown>>({})
+
   /** Maps a Review section key to the matching slice of stepData. */
   function getSectionStateByKey(key: string): unknown {
     switch (key) {
@@ -103,10 +111,23 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
     returnToStep.value = fromStep
   }
 
+  /**
+   * Capture a deep snapshot of a related section that will be affected by a
+   * cascade (e.g. externalNaming when concept changes). The snapshot is stored
+   * separately from the primary `editingSectionSnapshot` so `cancelEditSection`
+   * can restore ALL affected sections atomically.
+   */
+  function captureCascadeSnapshot(key: string) {
+    const snapshot = getSectionStateByKey(key)
+    cascadeSnapshots.value[key] =
+      snapshot == null ? null : JSON.parse(JSON.stringify(snapshot))
+  }
+
   /** Commit the current edits and clear the edit flag. */
   function commitEditSection() {
     editingSection.value = null
     editingSectionSnapshot.value = null
+    cascadeSnapshots.value = {}
     returnToStep.value = null
   }
 
@@ -116,8 +137,12 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
     if (key) {
       restoreSectionStateByKey(key, editingSectionSnapshot.value)
     }
+    for (const [cascadeKey, cascadeValue] of Object.entries(cascadeSnapshots.value)) {
+      restoreSectionStateByKey(cascadeKey, cascadeValue)
+    }
     editingSection.value = null
     editingSectionSnapshot.value = null
+    cascadeSnapshots.value = {}
     returnToStep.value = null
   }
 
@@ -142,12 +167,15 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
   function resetSlice() {
     editingSection.value = null
     editingSectionSnapshot.value = null
+    cascadeSnapshots.value = {}
   }
 
   return {
     editingSection,
     editingSectionSnapshot,
+    cascadeSnapshots,
     beginEditSection,
+    captureCascadeSnapshot,
     commitEditSection,
     cancelEditSection,
     restoreEditingSession,

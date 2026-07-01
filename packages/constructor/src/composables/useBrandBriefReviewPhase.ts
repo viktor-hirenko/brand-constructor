@@ -29,6 +29,7 @@ export function useBrandBriefReviewPhase() {
       isSupervisor: authStore.isCeo,
       routeIsCeoReselect: route.meta.ceoReselect === true,
       routeIsPoEdit: route.meta.poEdit === true,
+      routeIsDraftEdit: route.meta.draftEdit === true,
       routeStep: route.meta.step as number | undefined,
     })
   )
