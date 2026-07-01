@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SupervisorCommentCard from '@/components/constructor/review/SupervisorCommentCard.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import { isSectionCommentBlockVisible } from '@/utils/sectionCommentBlockVisibility'
+import { computeCappedTextareaLayout } from '@/constants/ceoCommentFieldVisual'
 
 interface SectionCommentBlockProps {
   /** Section identifier from CEO_COMMENT_SECTIONS (concept, externalNaming, ...). */
@@ -71,7 +72,9 @@ function autosize() {
   const ta = textareaRef.value
   if (!ta) return
   ta.style.height = 'auto'
-  ta.style.height = `${ta.scrollHeight}px`
+  const { heightPx, overflowY } = computeCappedTextareaLayout(ta.scrollHeight)
+  ta.style.height = `${heightPx}px`
+  ta.style.overflowY = overflowY
 }
 
 watch(
@@ -225,7 +228,7 @@ defineExpose({ isVisible })
           :value="draft"
           rows="1"
           :placeholder="placeholder"
-          class="section-comment__ceo-textarea block w-full resize-none overflow-hidden bg-transparent border-0 p-0 text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:ring-0"
+          class="section-comment__ceo-textarea block w-full resize-none bg-transparent border-0 p-0 text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:ring-0"
           @input="onInput"
           @blur="onBlur"
         />

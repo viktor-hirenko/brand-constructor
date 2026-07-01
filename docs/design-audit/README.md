@@ -4,6 +4,8 @@
 
 - **Product Owner Flow**: https://www.figma.com/design/aCe1cUDNaA7Tmcn9Mmvv1w/Brand-Builder?node-id=0-1&m=dev
 - **Visual Components Extended**: https://www.figma.com/design/aCe1cUDNaA7Tmcn9Mmvv1w/Brand-Builder?node-id=171-4188&m=dev
+- **Visual Components bugs (Design Review)**: node `2837-4389` → [`figma-visual-components-bugs.md`](./figma-visual-components-bugs.md)
+- **CEO Review bugs (Design Review)**: node `2925-9240` → [`figma-ceo-review-bugs.md`](./figma-ceo-review-bugs.md)
 
 ## Screen to Step Mapping
 
@@ -58,3 +60,5 @@ get_design_context(nodeId: "X:Y", fileKey: "aCe1cUDNaA7Tmcn9Mmvv1w")
 - `screens-product-owner-flow.md` - описание 13 экранов Product Owner Flow
 - `screens-visual-components.md` - описание 7 состояний Visual Components
 - `figma-discrepancies.md` - расхождения макета с PRD v2
+- `figma-visual-components-bugs.md` - progress tracker: 8 багов Visual Components (node 2837-4389)
+- `figma-ceo-review-bugs.md` - progress tracker: 11 багов CEO Review (node 2925-9240) ← **текущий фокус**
