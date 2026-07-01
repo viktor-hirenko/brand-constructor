@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
+  CEO_GENERAL_COMMENT_MAX_HEIGHT_PX,
+  CEO_GENERAL_COMMENT_MIN_HEIGHT_PX,
   CEO_SECTION_COMMENT_MAX_HEIGHT_PX,
   computeCappedTextareaLayout,
 } from '@/constants/ceoCommentFieldVisual'
@@ -25,5 +27,19 @@ describe('computeCappedTextareaLayout', () => {
       heightPx: CEO_SECTION_COMMENT_MAX_HEIGHT_PX,
       overflowY: 'hidden',
     })
+  })
+
+  it('applies min height for general comment when content is shorter', () => {
+    expect(
+      computeCappedTextareaLayout(24, CEO_GENERAL_COMMENT_MAX_HEIGHT_PX, CEO_GENERAL_COMMENT_MIN_HEIGHT_PX),
+    ).toEqual({
+      heightPx: CEO_GENERAL_COMMENT_MIN_HEIGHT_PX,
+      overflowY: 'hidden',
+    })
+  })
+
+  it('caps general comment higher than section comment', () => {
+    expect(CEO_GENERAL_COMMENT_MAX_HEIGHT_PX).toBeGreaterThan(CEO_SECTION_COMMENT_MAX_HEIGHT_PX)
+    expect(CEO_GENERAL_COMMENT_MIN_HEIGHT_PX).toBeGreaterThan(CEO_SECTION_COMMENT_MAX_HEIGHT_PX)
   })
 })

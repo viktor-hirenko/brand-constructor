@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SupervisorCommentCard from '@/components/constructor/review/SupervisorCommentCard.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import { isSectionCommentBlockVisible } from '@/utils/sectionCommentBlockVisibility'
-import { computeCappedTextareaLayout } from '@/constants/ceoCommentFieldVisual'
+import { computeCappedTextareaLayout, CEO_GENERAL_COMMENT_MAX_HEIGHT_PX, CEO_GENERAL_COMMENT_MIN_HEIGHT_PX, CEO_SECTION_COMMENT_MAX_HEIGHT_PX } from '@/constants/ceoCommentFieldVisual'
 
 interface SectionCommentBlockProps {
   /** Section identifier from CEO_COMMENT_SECTIONS (concept, externalNaming, ...). */
@@ -72,7 +72,15 @@ function autosize() {
   const ta = textareaRef.value
   if (!ta) return
   ta.style.height = 'auto'
-  const { heightPx, overflowY } = computeCappedTextareaLayout(ta.scrollHeight)
+  const maxHeightPx = props.alwaysExpanded
+    ? CEO_GENERAL_COMMENT_MAX_HEIGHT_PX
+    : CEO_SECTION_COMMENT_MAX_HEIGHT_PX
+  const minHeightPx = props.alwaysExpanded ? CEO_GENERAL_COMMENT_MIN_HEIGHT_PX : undefined
+  const { heightPx, overflowY } = computeCappedTextareaLayout(
+    ta.scrollHeight,
+    maxHeightPx,
+    minHeightPx,
+  )
   ta.style.height = `${heightPx}px`
   ta.style.overflowY = overflowY
 }
@@ -219,6 +227,7 @@ defineExpose({ isVisible })
         ]"
       >
         <span
+          v-if="!alwaysExpanded"
           class="section-comment__ceo-editor-label block text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62] mb-1"
         >
           Коментар CEO

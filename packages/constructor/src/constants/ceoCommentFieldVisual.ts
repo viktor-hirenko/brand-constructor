@@ -1,16 +1,28 @@
 /**
  * Layout tokens for CEO inline comment textareas on the step-10 review screen.
- * Both section-level and general CEO fields use a capped height with internal scroll.
+ * Section fields cap lower; the general comment field is taller by default and scrolls later.
  */
 
 /** Matches SectionCommentBlock textarea `leading-6` (24px). */
-export const CEO_SECTION_COMMENT_LINE_HEIGHT_PX = 24
+export const CEO_COMMENT_LINE_HEIGHT_PX = 24
 
-/** Visible line count before the section CEO textarea scrolls internally. */
+/** Visible line count before a section CEO textarea scrolls internally. */
 export const CEO_SECTION_COMMENT_MAX_VISIBLE_LINES = 5
 
 export const CEO_SECTION_COMMENT_MAX_HEIGHT_PX =
-  CEO_SECTION_COMMENT_LINE_HEIGHT_PX * CEO_SECTION_COMMENT_MAX_VISIBLE_LINES
+  CEO_COMMENT_LINE_HEIGHT_PX * CEO_SECTION_COMMENT_MAX_VISIBLE_LINES
+
+/** Minimum visible lines for the general CEO comment (empty or short text). */
+export const CEO_GENERAL_COMMENT_MIN_VISIBLE_LINES = 6
+
+export const CEO_GENERAL_COMMENT_MIN_HEIGHT_PX =
+  CEO_COMMENT_LINE_HEIGHT_PX * CEO_GENERAL_COMMENT_MIN_VISIBLE_LINES
+
+/** Visible line count before the general CEO textarea scrolls internally. */
+export const CEO_GENERAL_COMMENT_MAX_VISIBLE_LINES = 12
+
+export const CEO_GENERAL_COMMENT_MAX_HEIGHT_PX =
+  CEO_COMMENT_LINE_HEIGHT_PX * CEO_GENERAL_COMMENT_MAX_VISIBLE_LINES
 
 export interface CappedTextareaLayout {
   heightPx: number
@@ -19,15 +31,20 @@ export interface CappedTextareaLayout {
 
 /**
  * Returns pixel height and overflow for a CEO comment textarea after measuring
- * `scrollHeight`. Content shorter than the cap grows naturally; taller content
- * stays at the cap and scrolls inside the field.
+ * `scrollHeight`. Optional `minHeightPx` enforces a floor (general comment).
+ * Content taller than the cap scrolls inside the field.
  */
 export function computeCappedTextareaLayout(
   scrollHeightPx: number,
   maxHeightPx: number = CEO_SECTION_COMMENT_MAX_HEIGHT_PX,
+  minHeightPx?: number,
 ): CappedTextareaLayout {
-  if (scrollHeightPx <= maxHeightPx) {
-    return { heightPx: scrollHeightPx, overflowY: 'hidden' }
+  const contentHeightPx = minHeightPx
+    ? Math.max(scrollHeightPx, minHeightPx)
+    : scrollHeightPx
+
+  if (contentHeightPx <= maxHeightPx) {
+    return { heightPx: contentHeightPx, overflowY: 'hidden' }
   }
   return { heightPx: maxHeightPx, overflowY: 'auto' }
 }
