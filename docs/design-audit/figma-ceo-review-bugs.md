@@ -41,12 +41,12 @@
 | 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **done** | `69cd593` |
 | 5 | BRIEF-033 | Восстановить scroll после возврата из ceo-reselect | Medium | C | **pending** | — |
 | 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **pending** | — |
-| 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **in_progress** | — |
+| 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **done** | `ff31929` |
 | 8 | BRIEF-036 | Имена заказчика недоступны для re-select (External Naming) | **High** | B | **pending** | — |
 | 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **partial** | — |
 | 10 | BRIEF-038 | Модалка подтверждения перед «Погодити» CEO | **High** | C | **pending** | — |
 
-**Итого:** 4 done · 1 partial · 6 pending
+**Итого:** 5 done · 1 partial · 5 pending
 
 ---
 
@@ -89,6 +89,7 @@ Acceptance: секция «Как проверить» в doc
 | 2026-07-01 | Figma №1 (BRIEF-028) | Cap + internal scroll для секционных и general CEO comments; unit-тесты | Viktor prod QA |
 | 2026-07-01 | BRIEF-028b, BRIEF-029 | General label removed; taller general field (6–12 lines) | Viktor prod QA |
 | 2026-07-20 | Figma №4 (BRIEF-032) | Highlight all empty CEO comment fields on failed needs_revision; unit-тесты | Viktor prod QA |
+| 2026-07-20 | Figma №7 (BRIEF-035) | PO concept card selectable on ceo-reselect; save + return to review | Viktor prod QA |
 
 ---
 
@@ -266,7 +267,7 @@ Acceptance: секция «Как проверить» в doc
 
 **Модель:** **Composer**
 
-**Статус:** in_progress (ждёт prod QA)
+**Статус:** done (prod QA OK)
 
 ---
 
