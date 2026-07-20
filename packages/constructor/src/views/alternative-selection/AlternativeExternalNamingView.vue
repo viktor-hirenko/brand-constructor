@@ -132,13 +132,6 @@ onMounted(async () => {
     store.seedSupervisorAlternativeExternalNamingChained()
   } else {
     store.seedSupervisorAlternativeFromBrand('externalNaming')
-    // Strip any Author-picks from the Supervisor draft — they are shown above
-    // and must not occupy Supervisor slots.
-    const poIdSet = new Set(store.stepData.externalNaming.selectedIds ?? [])
-    const filteredIds = store.supervisorAlternativeDraft.externalNamingIds.filter(
-      id => !poIdSet.has(id)
-    )
-    store.setSupervisorAlternativeExternalNamingIds(filteredIds)
   }
   // Comment field stays empty by default — see AlternativeConceptView for the
   // rationale (leaking Author text into the Supervisor slot + F5 wipe).
@@ -151,6 +144,17 @@ watch(conceptIdForNamings, () => {
 
 function handleToggle(id: string) {
   store.toggleSupervisorAlternativeExternalNaming(id)
+}
+
+function handleSelectAllPoNamings() {
+  const current = new Set(stagedExternalIds.value)
+  for (const id of poSelectedIds.value) {
+    if (current.size >= SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT) break
+    if (!current.has(id)) {
+      const added = store.toggleSupervisorAlternativeExternalNaming(id)
+      if (added) current.add(id)
+    }
+  }
 }
 
 function goCancel() {
@@ -235,7 +239,14 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
       <!-- Ready state -->
       <template v-else-if="isReady">
         <template v-if="!isChainedFromConcept">
-          <AuthorNamingsRow :namings="poExternalMini" />
+          <AuthorNamingsRow
+            :namings="poExternalMini"
+            selectable
+            :selected-ids="stagedExternalIds"
+            :max-selectable="SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT"
+            @toggle="handleToggle"
+            @select-all="handleSelectAllPoNamings"
+          />
         </template>
 
         <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
