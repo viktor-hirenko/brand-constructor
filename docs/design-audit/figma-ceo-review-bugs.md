@@ -40,13 +40,13 @@
 | 3 | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария | Medium | A | **done** | `60ef870` |
 | 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **done** | `69cd593` |
 | 5 | BRIEF-033 | Восстановить scroll после возврата из ceo-reselect | Medium | C | **pending** | — |
-| 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **pending** | — |
+| 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **done** | `9b135e8` |
 | 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **done** | `ff31929` |
-| 8 | BRIEF-036 | Имена заказчика недоступны для re-select (External Naming) | **High** | B | **pending** | — |
+| 8 | BRIEF-036 | Имена заказчика недоступны для re-select (External Naming) | **High** | B | **done** | `b45bbbc` |
 | 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **partial** | — |
 | 10 | BRIEF-038 | Модалка подтверждения перед «Погодити» CEO | **High** | C | **pending** | — |
 
-**Итого:** 5 done · 1 partial · 5 pending
+**Итого:** 7 done · 1 partial · 3 pending
 
 ---
 
@@ -90,6 +90,8 @@ Acceptance: секция «Как проверить» в doc
 | 2026-07-01 | BRIEF-028b, BRIEF-029 | General label removed; taller general field (6–12 lines) | Viktor prod QA |
 | 2026-07-20 | Figma №4 (BRIEF-032) | Highlight all empty CEO comment fields on failed needs_revision; unit-тесты | Viktor prod QA |
 | 2026-07-20 | Figma №7 (BRIEF-035) | PO concept card selectable on ceo-reselect; save + return to review | Viktor prod QA |
+| 2026-07-20 | Figma №8 (BRIEF-036) | PO external naming selectable on ceo-reselect | Viktor prod QA |
+| 2026-07-20 | Figma №6 (BRIEF-034) | PO concept preview in right slider on ceo-reselect | Viktor prod QA |
 
 ---
 
@@ -233,13 +235,25 @@ Acceptance: секция «Как проверить» в doc
 
 **Figma:** на ceo-reselect CEO может кликнуть «Вибір замовника» и увидеть preview справа.
 
-**Текущее:** [`AuthorPickPreview.vue`](../../packages/constructor/src/components/constructor/alternative-selection/AuthorPickPreview.vue) — `ConceptCard` с `:clickable="false"`.
+**Корень:** PO concept загружается отдельно (`apiGet`), но `BriefShellView` искал его только в `librariesStore.concepts` → slider пустой.
 
-**Fix:** click → `selectSupervisorAlternativeConcept` только для preview ИЛИ отдельный `@preview` → right panel в [`BriefShellView.vue`](../../packages/constructor/src/views/BriefShellView.vue) (без сохранения как CEO pick).
+**Реализация (in_progress):**
+
+- `BriefShellView.vue` — fetch concept by `conceptPreviewId` when missing from library; label «Вибір замовника» vs «Вибір СЕО»
+- `AuthorPickPreview.vue` — emit `@preview` + `previewed` active state
+- `AlternativeConceptView.vue` — `setSupervisorAlternativeConceptPreview` on PO click
+
+**Как проверить:**
+
+1. CEO (`cpo_ceo`) → review → Concept «Змінити».
+2. Правая панель пустая до клика.
+3. Клик по карточке в «Вибір замовника» → справа slider с PO concept, badge **«Вибір замовника»**.
+4. Клик по концепту из «Доступні концепти» → slider переключается, badge **«Вибір СЕО»**.
+5. Регрессия BRIEF-035: повторный клик по PO → selected + «Далі» → save PO concept.
 
 **Модель:** **Composer**
 
-**Статус:** pending
+**Статус:** done (prod QA OK)
 
 ---
 
@@ -281,9 +295,23 @@ Acceptance: секция «Как проверить» в doc
 
 **Fix:** toggle PO names into `supervisorAlternativeDraft.externalNamingIds` (click row / «Обрати ці назви»); не дублировать в grid и row одновременно.
 
+**Реализация (in_progress):**
+
+- `AuthorNamingsRow.vue` — selectable PO cards + checkmark; кнопка «Обрати ці назви»
+- `AlternativeExternalNamingView.vue` — убран strip PO ids при mount; wire toggle/select-all в draft
+
+**Как проверить:**
+
+1. CEO (`cpo_ceo`) → review → External Naming «Змінити» (standalone route, не chained).
+2. В «Вибір замовника» клик по карточке PO → selected (ring + checkmark), «Зберегти» активна при валидном наборе.
+3. Повторный клик → deselect; имена PO **не** появляются в гриде «Варіанти назв» (только в row).
+4. «Обрати ці назви» → все PO-имена в selection (до лимита 3).
+5. Сохранить → review: external naming совпадает с PO picks (CEO подтвердил выбор заказчика).
+6. Регрессия: выбор альтернатив из CEO-грида + mixed с PO — лимит 3, comment validation для sold.
+
 **Модель:** **Composer**
 
-**Статус:** pending
+**Статус:** done (prod QA OK)
 
 ---
 
@@ -323,7 +351,7 @@ Acceptance: секция «Как проверить» в doc
 - Маршруты `ceo-reselect/concept`, `ceo-reselect/concept/external-naming`, standalone external naming
 - [`useSupervisorReviewComments`](../../packages/constructor/src/composables/useSupervisorReviewComments.ts) — базовая валидация needs_revision
 - [`ReviewChoiceGroup`](../../packages/constructor/src/components/constructor/review/ReviewChoiceGroup.vue) — dual PO/CEO layout
-- [`AuthorPickPreview`](../../packages/constructor/src/components/constructor/alternative-selection/AuthorPickPreview.vue) — read-only карточка PO (без preview click)
+- [`AuthorPickPreview`](../../packages/constructor/src/components/constructor/alternative-selection/AuthorPickPreview.vue) — selectable PO card + preview click
 - PO apply CEO variant modals (Figma 1985:4362, 1985:4657) — **не** approve modal
 
 ---
