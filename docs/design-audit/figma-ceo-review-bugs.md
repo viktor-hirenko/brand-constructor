@@ -36,9 +36,9 @@
 |---|-------|------------------------|-----------|------|--------|--------|
 | — | *(без №)* | CEO має доступ до брифу, у якому ще не обрано концепт/неймінг, а замовлено новий | **High** | C | **pending** | — |
 | 1 | **№1** | Блок коментаря CEO необмежено розтягується по висоті під довжину тексту | Medium | A | **done** | `4ce8625` |
-| 2 | BRIEF-029 | Общий комментарий выше, чем секционные | Low | A | **in_progress** | — |
-| 3 | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария | Medium | A | **in_progress** | — |
-| 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **partial** | — |
+| 2 | BRIEF-029 | Общий комментарий выше, чем секционные | Low | A | **done** | `60ef870` |
+| 3 | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария | Medium | A | **done** | `60ef870` |
+| 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **done** | *(commit below)* |
 | 5 | BRIEF-033 | Восстановить scroll после возврата из ceo-reselect | Medium | C | **pending** | — |
 | 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **pending** | — |
 | 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **pending** | — |
@@ -46,7 +46,7 @@
 | 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **partial** | — |
 | 10 | BRIEF-038 | Модалка подтверждения перед «Погодити» CEO | **High** | C | **pending** | — |
 
-**Итого:** 1 done · 2 partial · 8 pending
+**Итого:** 4 done · 1 partial · 6 pending
 
 ---
 
@@ -87,6 +87,8 @@ Acceptance: секция «Как проверить» в doc
 |------|-----|----------|--------------|
 | 2026-07-01 | — | Создан tracker; аудит кода — все NEW, инфра ceo-reselect есть, фиксов нет | AI audit |
 | 2026-07-01 | Figma №1 (BRIEF-028) | Cap + internal scroll для секционных и general CEO comments; unit-тесты | Viktor prod QA |
+| 2026-07-01 | BRIEF-028b, BRIEF-029 | General label removed; taller general field (6–12 lines) | Viktor prod QA |
+| 2026-07-20 | Figma №4 (BRIEF-032) | Highlight all empty CEO comment fields on failed needs_revision; unit-тесты | Viktor prod QA |
 
 ---
 
@@ -193,9 +195,22 @@ Acceptance: секция «Как проверить» в doc
 
 **Fix:** при `reason === 'no-comment'` помечать все editable empty section fields + general; единый amber border token.
 
-**Модель:** **Composer** · тесты в `useSupervisorReviewComments` spec
+**Реализация:**
 
-**Статус:** partial
+- `useSupervisorReviewComments.ts` — при `no-comment` в `revisionMissingSections` попадают все editable пустые секции
+- `ReviewUnifiedView.vue` — highlight на всех секциях CEO (не только concept/external/internal)
+- Ввод текста в любое поле сбрасывает no-comment highlight
+- Unit-тесты в `useSupervisorReviewComments.test.ts`
+
+**Как проверить:**
+
+1. CEO review, все комментарии пустые → «Повернути на доопрацювання».
+2. Amber border на **всех** «+ Коментар CEO» / пустых textarea + «Загальний коментар».
+3. Предупреждение под кнопкой остаётся.
+4. Начать печатать в любом поле — подсветка снимается.
+5. Alternative pick без комментария — по-прежнему только нужные секции.
+
+**Статус:** done (prod QA OK)
 
 ---
 

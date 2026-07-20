@@ -341,12 +341,6 @@ type SectionCommentKey =
   | 'deliverables'
   | 'visualComponents'
 
-const CEO_HIGHLIGHT_SECTIONS = new Set<SectionCommentKey>([
-  'concept',
-  'externalNaming',
-  'internalNaming',
-])
-
 function sectionCommentBindings(sectionKey: SectionCommentKey) {
   return {
     sectionKey,
@@ -355,10 +349,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
       ? getSectionCeoCommentValue(sectionKey)
       : (props.ceoComments[sectionKey] ?? ''),
     supervisorEditable: props.reviewMode === 'ceo' && !props.ceoFrozenView,
-    highlighted:
-      CEO_HIGHLIGHT_SECTIONS.has(sectionKey) &&
-      props.reviewMode === 'ceo' &&
-      isSectionHighlighted(sectionKey),
+    highlighted: props.reviewMode === 'ceo' && isSectionHighlighted(sectionKey),
     showResolveUi: props.isPoReturnedView && !!getSectionCeoCommentValue(sectionKey),
     supervisorResolved: isSectionCeoCommentResolved(sectionKey),
     canResolve: props.isPoOwner,

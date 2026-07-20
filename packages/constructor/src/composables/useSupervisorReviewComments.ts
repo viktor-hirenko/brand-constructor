@@ -15,6 +15,17 @@ const SELECTION_REQUIRING_COMMENT: CeoLibraryTab[] = [
   'internalNaming',
 ]
 
+/** Section keys mirrored in `ceoComments` except `general`. */
+const CEO_EDITABLE_SECTION_KEYS = [
+  'basics',
+  'concept',
+  'externalNaming',
+  'internalNaming',
+  'marketingPackage',
+  'deliverables',
+  'visualComponents',
+] as const
+
 /**
  * Maps a `data-section` attribute used by the review template (and the
  * scroll-into-view triggered by failed revision validation) to the
@@ -148,9 +159,11 @@ export function useSupervisorReviewComments(opts: UseSupervisorReviewCommentsOpt
     ceoComments[key] = value
     store.setCeoCommentValue(key, value)
     if (value.trim()) {
-      revisionMissingSections.value.delete(key)
-      if (revisionMissingSections.value.size === 0) {
+      if (revisionRequiresAnyComment.value) {
         revisionRequiresAnyComment.value = false
+        revisionMissingSections.value = new Set()
+      } else {
+        revisionMissingSections.value.delete(key)
       }
     }
   }
@@ -160,6 +173,7 @@ export function useSupervisorReviewComments(opts: UseSupervisorReviewCommentsOpt
     store.setCeoCommentValue('general', value)
     if (value.trim()) {
       revisionRequiresAnyComment.value = false
+      revisionMissingSections.value = new Set()
     }
   }
 
@@ -200,6 +214,9 @@ export function useSupervisorReviewComments(opts: UseSupervisorReviewCommentsOpt
       return { ok: false, reason: 'missing-section' }
     }
     if (Object.keys(nonEmptyCeoComments.value).length === 0) {
+      revisionMissingSections.value = new Set(
+        CEO_EDITABLE_SECTION_KEYS.filter(key => !(ceoComments[key] ?? '').trim()),
+      )
       revisionRequiresAnyComment.value = true
       return { ok: false, reason: 'no-comment' }
     }
