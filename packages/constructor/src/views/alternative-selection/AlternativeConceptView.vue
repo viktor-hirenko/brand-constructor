@@ -132,6 +132,12 @@ onMounted(() => {
 watch(localMode, loadConcepts)
 watch(poConceptId, loadPoConcept)
 
+function handlePreviewPoConcept() {
+  const po = poConceptId.value
+  if (!po) return
+  store.setSupervisorAlternativeConceptPreview(po)
+}
+
 function handleSelectPoConcept() {
   const po = poConceptId.value
   if (!po) return
@@ -202,6 +208,8 @@ async function confirmConceptSelection() {
         :concept="poConcept"
         selectable
         :selected="stagedConfirmedId === poConceptId"
+        :previewed="stagedPreviewId === poConceptId"
+        @preview="handlePreviewPoConcept"
         @select="handleSelectPoConcept"
       />
 

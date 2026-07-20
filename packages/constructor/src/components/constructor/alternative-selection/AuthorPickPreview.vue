@@ -9,14 +9,18 @@ interface AuthorPickPreviewProps {
   selectable?: boolean
   /** Highlights the PO card when it matches the staged CEO selection. */
   selected?: boolean
+  /** Highlights the PO card when it drives the right-panel preview. */
+  previewed?: boolean
 }
 
 const props = withDefaults(defineProps<AuthorPickPreviewProps>(), {
   selectable: false,
   selected: false,
+  previewed: false,
 })
 
 const emit = defineEmits<{
+  preview: []
   select: []
 }>()
 
@@ -25,8 +29,9 @@ const previewUrl = computed(() => {
   return url && url.trim() !== '' ? url : null
 })
 
-function handleSelect() {
+function handleClick() {
   if (!props.selectable || !props.concept) return
+  emit('preview')
   emit('select')
 }
 </script>
@@ -42,10 +47,10 @@ function handleSelect() {
         :show-overlay="true"
         :clickable="selectable"
         :is-selected="selected"
-        :is-active="selected"
+        :is-active="selected || previewed"
         :show-selection-ring="selectable && selected"
         :show-checkmark="selectable && selected"
-        @click="handleSelect"
+        @click="handleClick"
       />
     </div>
     <p

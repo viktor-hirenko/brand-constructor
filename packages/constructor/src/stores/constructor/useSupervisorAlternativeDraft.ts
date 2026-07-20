@@ -129,6 +129,7 @@ export function useSupervisorAlternativeDraft(opts: UseSupervisorAlternativeDraf
   /** Currently previewed concept in slider (independent of confirmation). */
   function setSupervisorAlternativeConceptPreview(id: string | null) {
     supervisorAlternativeDraft.value = { ...supervisorAlternativeDraft.value, conceptPreviewId: id }
+    if (id) supervisorAlternativeDraftInProgress.value = true
   }
 
   /**

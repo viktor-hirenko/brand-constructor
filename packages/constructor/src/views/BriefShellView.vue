@@ -145,13 +145,46 @@ const hasCeoSavedConceptOverride = computed(() => {
   return false
 })
 
-/** Concept currently displayed in the right-column slider.
- *  Returns null until the Supervisor clicks a card — right panel stays empty on entry. */
-const ceoReselectPreviewConcept = computed(() => {
+/** Concept currently displayed in the right-column slider on ceo-reselect concept route. */
+const ceoReselectPreviewConceptFull = ref<Concept | null>(null)
+const ceoReselectPreviewConceptLoading = ref(false)
+
+async function loadCeoReselectPreviewConcept() {
+  if (route.name !== 'ceo-reselect-concept') return
+
   const id = store.supervisorAlternativeDraft.conceptPreviewId
-  if (!id) return null
-  return concepts.value.find(c => c.id === id) ?? null
-})
+  if (!id) {
+    ceoReselectPreviewConceptFull.value = null
+    ceoReselectPreviewConceptLoading.value = false
+    return
+  }
+
+  if (
+    ceoReselectPreviewConceptFull.value &&
+    ceoReselectPreviewConceptFull.value.id !== id
+  ) {
+    ceoReselectPreviewConceptFull.value = null
+  }
+
+  const fromList = concepts.value.find(c => c.id === id)
+  if (fromList?.visual_url?.trim() || fromList?.gallery_url_1?.trim()) {
+    ceoReselectPreviewConceptFull.value = fromList
+    ceoReselectPreviewConceptLoading.value = false
+    return
+  }
+
+  ceoReselectPreviewConceptLoading.value = true
+  try {
+    ceoReselectPreviewConceptFull.value = await apiGet<Concept>(`/api/concepts/${id}`)
+  } catch {
+    ceoReselectPreviewConceptFull.value = fromList ?? null
+  } finally {
+    ceoReselectPreviewConceptLoading.value = false
+  }
+}
+
+/** Returns null until the Supervisor clicks a card — right panel stays empty on entry. */
+const ceoReselectPreviewConcept = computed(() => ceoReselectPreviewConceptFull.value)
 
 /** Confirmed Supervisor override concept (null = no override yet). */
 const ceoReselectConfirmedConcept = computed(() => {
@@ -162,14 +195,14 @@ const ceoReselectConfirmedConcept = computed(() => {
 
 /**
  * Slider header badge on the Supervisor reselect concept route:
- * always "Вибір СЕО" — the slider is only shown after the Supervisor has
- * clicked a card, so by definition the choice belongs to them. Naming
- * sub-routes use ConceptMobilePreview whose heading is already
- * "Обраний концепт".
+ * PO preview → «Вибір замовника»; CEO override → «Вибір СЕО».
  */
-const ceoReselectSliderTopLabel = computed<string | null>(() =>
-  store.supervisorAlternativeDraft.conceptPreviewId ? 'Вибір СЕО' : null
-)
+const ceoReselectSliderTopLabel = computed<string | null>(() => {
+  const previewId = store.supervisorAlternativeDraft.conceptPreviewId
+  if (!previewId) return null
+  if (previewId === poConceptId.value) return 'Вибір замовника'
+  return 'Вибір СЕО'
+})
 
 /**
  * Right-column loading flag for the CEO reselect concept route.
@@ -177,7 +210,9 @@ const ceoReselectSliderTopLabel = computed<string | null>(() =>
  * is selected yet, we deliberately show nothing (empty right panel) rather
  * than a skeleton or the PO pick.
  */
-const ceoReselectRightPanelLoading = computed(() => librariesStore.isLoading)
+const ceoReselectRightPanelLoading = computed(
+  () => librariesStore.isLoading || ceoReselectPreviewConceptLoading.value,
+)
 
 /**
  * Right-column loading flag for the CEO reselect *naming* sub-routes
@@ -370,11 +405,28 @@ function loadPreviewData() {
 onMounted(() => {
   loadPreviewData()
   loadStep9Variants()
+  if (route.name === 'ceo-reselect-concept') {
+    void loadCeoReselectPreviewConcept()
+  }
 })
 watch(currentStep, loadPreviewData)
 watch(isAlternativeSelection, v => {
-  if (v) loadPreviewData()
+  if (v) {
+    loadPreviewData()
+    void loadCeoReselectPreviewConcept()
+  }
 })
+watch(
+  () =>
+    [
+      store.supervisorAlternativeDraft.conceptPreviewId,
+      route.name,
+      concepts.value.length,
+    ] as const,
+  () => {
+    if (route.name === 'ceo-reselect-concept') void loadCeoReselectPreviewConcept()
+  },
+)
 watch(isRevisionResponse, v => {
   if (v) {
     loadPreviewData()
