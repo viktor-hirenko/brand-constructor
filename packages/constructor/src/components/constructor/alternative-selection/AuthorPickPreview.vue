@@ -5,14 +5,30 @@ import ConceptCard from '@/components/constructor/alternative-selection/ConceptC
 
 interface AuthorPickPreviewProps {
   concept: Concept | null
+  /** When true, the PO card can be selected as the CEO's confirmed pick. */
+  selectable?: boolean
+  /** Highlights the PO card when it matches the staged CEO selection. */
+  selected?: boolean
 }
 
-const props = defineProps<AuthorPickPreviewProps>()
+const props = withDefaults(defineProps<AuthorPickPreviewProps>(), {
+  selectable: false,
+  selected: false,
+})
+
+const emit = defineEmits<{
+  select: []
+}>()
 
 const previewUrl = computed(() => {
   const url = props.concept?.visual_url || props.concept?.gallery_url_1
   return url && url.trim() !== '' ? url : null
 })
+
+function handleSelect() {
+  if (!props.selectable || !props.concept) return
+  emit('select')
+}
 </script>
 
 <template>
@@ -21,8 +37,16 @@ const previewUrl = computed(() => {
       Вибір замовника
     </p>
     <div v-if="concept && previewUrl" class="author-pick-preview__card w-[162px] shrink-0">
-      <!-- Reference-only card: same dim overlay + title gradient as other edit-flow cards. -->
-      <ConceptCard :concept="concept" :show-overlay="true" :clickable="false" />
+      <ConceptCard
+        :concept="concept"
+        :show-overlay="true"
+        :clickable="selectable"
+        :is-selected="selected"
+        :is-active="selected"
+        :show-selection-ring="selectable && selected"
+        :show-checkmark="selectable && selected"
+        @click="handleSelect"
+      />
     </div>
     <p
       v-else

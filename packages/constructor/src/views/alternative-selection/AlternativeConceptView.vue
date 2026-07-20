@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useConstructorStore } from '@/stores/constructor'
+import {
+  useConstructorStore,
+  SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT,
+} from '@/stores/constructor'
 import { useApiList, apiGet } from '@/composables/useApi'
 import type { Concept } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
@@ -96,8 +99,10 @@ const availableConcepts = computed(() =>
   concepts.value.filter(c => c.id !== poConceptId.value)
 )
 
+const isSaving = ref(false)
+
 const primaryDisabled = computed(
-  () => !stagedConfirmedId.value || stagedConfirmedId.value === poConceptId.value
+  () => !stagedConfirmedId.value || isSaving.value,
 )
 
 async function loadConcepts() {
@@ -127,6 +132,12 @@ onMounted(() => {
 watch(localMode, loadConcepts)
 watch(poConceptId, loadPoConcept)
 
+function handleSelectPoConcept() {
+  const po = poConceptId.value
+  if (!po) return
+  handleSelectConcept(po)
+}
+
 function handleSelectConcept(conceptId: string) {
   if (stagedConfirmedId.value === conceptId) {
     // Toggle off — clear both ids; right panel returns to empty state.
@@ -147,10 +158,32 @@ function goBack() {
 }
 
 function goNext() {
+  void confirmConceptSelection()
+}
+
+async function confirmConceptSelection() {
   const id = stagedConfirmedId.value
   const po = poConceptId.value
-  if (!id || !po) return
-  if (id === po) return
+  if (!id || !po || isSaving.value) return
+
+  if (id === po) {
+    isSaving.value = true
+    try {
+      const poExternalIds = store.stepData.externalNaming.selectedIds ?? []
+      const ok = await store.saveCeoSelections({
+        concept: po,
+        externalNaming: poExternalIds.slice(0, SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT),
+      })
+      if (ok) {
+        store.resetSupervisorAlternativeDraft()
+        router.push(`/constructor/brand/${brandId.value}`)
+      }
+    } finally {
+      isSaving.value = false
+    }
+    return
+  }
+
   router.push(`/constructor/brand/${brandId.value}/ceo-reselect/concept/external-naming`)
 }
 </script>
@@ -164,7 +197,13 @@ function goNext() {
     <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
       <!-- Customer's pick (independent of theme filter) -->
       <AuthorPickPreviewSkeleton v-if="!isReady" />
-      <AuthorPickPreview v-else :concept="poConcept" />
+      <AuthorPickPreview
+        v-else
+        :concept="poConcept"
+        selectable
+        :selected="stagedConfirmedId === poConceptId"
+        @select="handleSelectPoConcept"
+      />
 
       <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
 

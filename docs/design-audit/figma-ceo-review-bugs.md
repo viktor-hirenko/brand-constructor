@@ -38,10 +38,10 @@
 | 1 | **№1** | Блок коментаря CEO необмежено розтягується по висоті під довжину тексту | Medium | A | **done** | `4ce8625` |
 | 2 | BRIEF-029 | Общий комментарий выше, чем секционные | Low | A | **done** | `60ef870` |
 | 3 | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария | Medium | A | **done** | `60ef870` |
-| 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **done** | *(commit below)* |
+| 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **done** | `69cd593` |
 | 5 | BRIEF-033 | Восстановить scroll после возврата из ceo-reselect | Medium | C | **pending** | — |
 | 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **pending** | — |
-| 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **pending** | — |
+| 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **in_progress** | — |
 | 8 | BRIEF-036 | Имена заказчика недоступны для re-select (External Naming) | **High** | B | **pending** | — |
 | 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **partial** | — |
 | 10 | BRIEF-038 | Модалка подтверждения перед «Погодити» CEO | **High** | C | **pending** | — |
@@ -252,9 +252,21 @@ Acceptance: секция «Как проверить» в doc
 
 **Fix:** явный CTA «Погодитись з вибором замовника» или включить PO card в grid + save path `ceoSelections.concept = poConceptId` без chained external-naming redirect.
 
-**Модель:** планирование **Composer** (product clear) · при споре flow — **Opus**
+**Реализация (in_progress):**
 
-**Статус:** pending
+- `AuthorPickPreview.vue` — PO card selectable + selected state (ring/checkmark)
+- `AlternativeConceptView.vue` — клик по «Вибір замовника»; «Далі» при PO concept сохраняет `concept` + PO `externalNaming` и возвращает на review
+
+**Как проверить:**
+
+1. CEO (`cpo_ceo`) → review → Concept «Змінити» → выбрать другой concept → сохранить → снова «Змінити».
+2. Клик по карточке в «Вибір замовника» → selected, «Далі» активна.
+3. «Далі» → review; concept снова PO, без CEO alternative.
+4. Регрессия: выбор из грида «Доступні концепти» → chained flow на external naming как раньше.
+
+**Модель:** **Composer**
+
+**Статус:** in_progress (ждёт prod QA)
 
 ---
 
