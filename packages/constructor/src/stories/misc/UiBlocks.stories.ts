@@ -175,6 +175,28 @@ export const ConfirmationModalLoading: StoryObj = {
   }),
 };
 
+export const ConfirmationModalStacked: StoryObj = {
+  name: 'ConfirmationModal / Stacked (BRIEF-038 warning)',
+  render: () => ({
+    components: { ConfirmationModal },
+    setup() {
+      return { onCancel: fn(), onPrimary: fn() };
+    },
+    template: `
+      <ConfirmationModal
+        title="Ви внесли зміни до брифу"
+        body="Ви змінили вибір концепту або неймінгу.
+За потреби поверніть бриф на доопрацювання перед затвердженням."
+        cancel-label="Повернути на доопрацювання"
+        primary-label="Затвердити бриф"
+        actions-layout="stack"
+        @cancel="onCancel"
+        @primary="onPrimary"
+      />
+    `,
+  }),
+};
+
 // ─── SegmentedControl ──────────────────────────────────────────────────────
 
 export const SegmentedControlExample: StoryObj = {

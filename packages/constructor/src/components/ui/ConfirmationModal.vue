@@ -9,11 +9,14 @@ interface ConfirmationModalProps {
   cancelLabel?: string
   primaryLabel: string
   primaryLoading?: boolean
+  /** `row` — side-by-side (default). `stack` — full-width buttons in a column. */
+  actionsLayout?: 'row' | 'stack'
 }
 
 const props = withDefaults(defineProps<ConfirmationModalProps>(), {
   cancelLabel: 'Скасувати',
   primaryLoading: false,
+  actionsLayout: 'row',
 })
 
 const emit = defineEmits<{
@@ -61,12 +64,17 @@ const titleId = 'confirmation-modal-title'
 
         <div class="confirmation-modal__body flex flex-col gap-6 p-6">
           <p
-            class="confirmation-modal__text text-[16px] font-normal leading-6 tracking-[-0.3125px] text-[#717182]"
+            class="confirmation-modal__text whitespace-pre-line text-[16px] font-normal leading-6 tracking-[-0.3125px] text-[#717182]"
           >
             {{ body }}
           </p>
 
-          <div class="confirmation-modal__actions flex w-full items-stretch gap-2">
+          <div
+            :class="[
+              'confirmation-modal__actions flex w-full items-stretch gap-2',
+              actionsLayout === 'stack' ? 'flex-col' : 'flex-row',
+            ]"
+          >
             <UiButton
               variant="secondary"
               block

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
@@ -25,6 +25,14 @@ import {
   useBrandBriefReviewPhase,
   BRAND_BRIEF_REVIEW_PHASE,
 } from '@/composables/useBrandBriefReviewPhase'
+import {
+  consumeReviewScrollPosition,
+  saveReviewScrollPosition,
+} from '@/composables/useReviewScrollMemory'
+import {
+  isSupervisorChoiceAnAlternative,
+  type SupervisorLibraryTab,
+} from '@/utils/supervisorRevisionGate'
 
 const router = useRouter()
 const { downloadPdf } = usePrintBrand()
@@ -136,6 +144,10 @@ const saveError = computed(() => store.saveError)
 const statusActionLoading = ref(false)
 const statusActionError = ref<string | null>(null)
 const isPdfLoading = ref(false)
+const reviewUnifiedViewRef = ref<InstanceType<typeof ReviewUnifiedView> | null>(null)
+
+const showApproveConfirm = ref(false)
+const approveConfirmMode = ref<'standard' | 'warning'>('standard')
 
 const hasNewBrief = computed(() => {
   return (
@@ -158,11 +170,61 @@ const showPdfButton = computed(() => {
   )
 })
 
+const authorLibrarySelections = computed(() => ({
+  conceptId: store.stepData.concept.selectedId,
+  externalIds: [...store.stepData.externalNaming.selectedIds],
+  internalId: store.stepData.internalNaming.selectedId,
+}))
+
+/** True when CEO saved alternative picks that differ from PO selections. */
+const hasCeoAlternativesForApprove = computed(() => {
+  const sel = store.brandCeoSelections
+  if (!sel) return false
+  const po = authorLibrarySelections.value
+  for (const key of ['concept', 'externalNaming', 'internalNaming'] as SupervisorLibraryTab[]) {
+    const value = sel[key]
+    if (value != null && isSupervisorChoiceAnAlternative(key, value, po)) {
+      return true
+    }
+  }
+  return false
+})
+
+const approveConfirmCopy = computed(() => {
+  if (approveConfirmMode.value === 'warning') {
+    return {
+      title: 'Ви внесли зміни до брифу',
+      body: 'Ви змінили вибір концепту або неймінгу.\nЗа потреби поверніть бриф на доопрацювання перед затвердженням.',
+      cancelLabel: 'Повернути на доопрацювання',
+      primaryLabel: 'Затвердити бриф',
+    }
+  }
+  return {
+    title: 'Затвердити бриф?',
+    body: 'Після затвердження буде запущено наступні етапи роботи над брендом та надіслано повідомлення в командні канали.',
+    cancelLabel: 'Скасувати',
+    primaryLabel: 'Затвердити',
+  }
+})
+
+async function restoreReviewScrollIfPending(): Promise<void> {
+  const brandId = store.brandId
+  if (!brandId) return
+  const scrollTop = consumeReviewScrollPosition(brandId)
+  if (scrollTop == null) return
+
+  await nextTick()
+  requestAnimationFrame(() => {
+    reviewUnifiedViewRef.value?.setScrollTop(scrollTop)
+  })
+}
+
 // ─── Lifecycle ────────────────────────────────────────────────────────────
 
-onMounted(() => {
-  librariesStore.load(store.brandId)
-  loadComponentSelectionDetails()
+onMounted(async () => {
+  await librariesStore.load(store.brandId)
+  await loadComponentSelectionDetails()
+  await restoreReviewScrollIfPending()
 })
 
 // ─── Section / navigation handlers ────────────────────────────────────────
@@ -176,6 +238,7 @@ function openConceptPreview(concept?: Concept | null) {
 function startCeoReselectBySection(key: string) {
   const bid = store.brandId
   if (!bid) return
+  saveReviewScrollPosition(bid, reviewUnifiedViewRef.value?.getScrollTop() ?? 0)
   if (key === 'concept') {
     store.seedSupervisorAlternativeFromBrand('concept')
     router.push(`/constructor/brand/${bid}/ceo-reselect/concept`)
@@ -295,6 +358,30 @@ async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_r
     comments.revisionMissingSections.value = new Set()
   }
 
+  if (newStatus === 'approved') {
+    approveConfirmMode.value = hasCeoAlternativesForApprove.value ? 'warning' : 'standard'
+    showApproveConfirm.value = true
+    return
+  }
+
+  await executeStatusChange(newStatus)
+}
+
+function cancelApproveConfirm() {
+  showApproveConfirm.value = false
+}
+
+async function confirmApprove() {
+  showApproveConfirm.value = false
+  await executeStatusChange('approved')
+}
+
+async function handleApproveWarningReturn() {
+  showApproveConfirm.value = false
+  await handleStatusChange('needs_revision')
+}
+
+async function executeStatusChange(newStatus: 'submitted' | 'approved' | 'needs_revision') {
   if (newStatus === 'submitted') {
     const saved = await store.saveBrand()
     if (!saved) return
@@ -423,6 +510,7 @@ async function handlePrintBrand() {
 
 <template>
   <ReviewUnifiedView
+    ref="reviewUnifiedViewRef"
     :review-mode="reviewMode"
     :is-po-returned-view="isPoReturnedView"
     :is-po-owner="isPoOwner"
@@ -497,5 +585,18 @@ async function handlePrintBrand() {
     primary-label="Редагувати концепт"
     @cancel="apply.showEditExternalBeforeConceptModal.value = false"
     @primary="apply.handleGoToEditConcept"
+  />
+
+  <!-- Figma №10 (BRIEF-038): CEO approve confirmation — nodes 2929:11846 / 2929:12425 -->
+  <ConfirmationModal
+    v-if="showApproveConfirm"
+    :title="approveConfirmCopy.title"
+    :body="approveConfirmCopy.body"
+    :cancel-label="approveConfirmCopy.cancelLabel"
+    :primary-label="approveConfirmCopy.primaryLabel"
+    :actions-layout="approveConfirmMode === 'warning' ? 'stack' : 'row'"
+    :primary-loading="statusActionLoading"
+    @cancel="approveConfirmMode === 'warning' ? handleApproveWarningReturn() : cancelApproveConfirm()"
+    @primary="confirmApprove"
   />
 </template>

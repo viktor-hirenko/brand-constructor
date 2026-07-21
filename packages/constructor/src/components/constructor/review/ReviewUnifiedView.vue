@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import type {
   Concept,
@@ -357,6 +357,23 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
     supervisorResolveError: getCeoResolveError(sectionKey),
   }
 }
+
+const scrollContainerRef = ref<HTMLElement | null>(null)
+
+function getScrollTop(): number {
+  return scrollContainerRef.value?.scrollTop ?? 0
+}
+
+function setScrollTop(value: number): void {
+  if (scrollContainerRef.value) {
+    scrollContainerRef.value.scrollTop = Math.max(0, value)
+  }
+}
+
+defineExpose({
+  getScrollTop,
+  setScrollTop,
+})
 </script>
 
 <template>
@@ -368,6 +385,7 @@ function sectionCommentBindings(sectionKey: SectionCommentKey) {
     ]"
   >
     <div
+      ref="scrollContainerRef"
       :class="[
         'review-unified-view__scroll flex-1 min-h-0 overflow-y-auto',
         LEFT_PANE_SCROLL_TRACK_CLASS,
