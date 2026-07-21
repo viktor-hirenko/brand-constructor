@@ -1,14 +1,5 @@
 <script setup lang="ts">
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
-
-function goToAdminBrands() {
-  const adminBase = import.meta.env.VITE_ADMIN_URL?.replace(/\/$/, '')
-  if (adminBase) {
-    window.location.href = `${adminBase}/brands`
-    return
-  }
-  window.location.href = '/brands'
-}
 </script>
 
 <template>
@@ -23,20 +14,10 @@ function goToAdminBrands() {
         </div>
 
         <h1 class="text-2xl font-medium text-foreground mb-2">Бриф ще в роботі</h1>
-        <p class="text-muted-foreground mb-8">
+        <p class="text-muted-foreground">
           CEO-ревʼю буде доступне після того, як Product Owner обере готовий концепт і відправить
           бриф на погодження.
         </p>
-
-        <div class="flex flex-col gap-3">
-          <button
-            type="button"
-            class="w-full h-[50px] border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
-            @click="goToAdminBrands"
-          >
-            Повернутися до списку
-          </button>
-        </div>
       </div>
     </div>
   </div>
