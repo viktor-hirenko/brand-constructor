@@ -250,11 +250,7 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
   const ceoExternalItemsForReview = computed(() => {
     const ids = ceoSelectionAsArray(store.brandCeoSelections?.externalNaming)
     if (ids.length === 0 || !isCeoChoiceAnAlternative('externalNaming', ids)) return []
-    const poIdSet = new Set(store.stepData.externalNaming.selectedIds ?? [])
-    // Show in the CEO column only items not present in the customer's selection (avoid duplicating items like TestEcho, etc.).
-    let displayIds = ids.filter(id => !poIdSet.has(id))
-    if (displayIds.length === 0) displayIds = ids
-    return displayIds
+    return ids
       .map(id => externalNamings.value.find(x => x.id === id))
       .filter((n): n is ExternalNaming => n != null)
       .map(n => ({

@@ -39,14 +39,14 @@
 | 2 | BRIEF-029 | Общий комментарий выше, чем секционные | Low | A | **done** | `60ef870` |
 | 3 | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария | Medium | A | **done** | `60ef870` |
 | 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **done** | `69cd593` |
-| 5 | BRIEF-033 | Восстановить scroll после возврата из ceo-reselect | Medium | C | **pending** | — |
+| 5 | BRIEF-033 | Після повернення з ceo-reselect відновлювати scroll | Medium | C | **done** | `c7198e7` |
 | 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **done** | `9b135e8` |
 | 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **done** | `ff31929` |
 | 8 | BRIEF-036 | Имена заказчика недоступны для re-select (External Naming) | **High** | B | **done** | `b45bbbc` |
-| 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **partial** | — |
-| 10 | BRIEF-038 | Модалка подтверждения перед «Погодити» CEO | **High** | C | **pending** | — |
+| 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **in_progress** | — |
+| 10 | BRIEF-038 | Confirmation modal перед затвердженням CEO | **High** | C | **done** | `c7198e7` |
 
-**Итого:** 7 done · 1 partial · 3 pending
+**Итого:** 9 done · 1 in_progress
 
 ---
 
@@ -92,6 +92,7 @@ Acceptance: секция «Как проверить» в doc
 | 2026-07-20 | Figma №7 (BRIEF-035) | PO concept card selectable on ceo-reselect; save + return to review | Viktor prod QA |
 | 2026-07-20 | Figma №8 (BRIEF-036) | PO external naming selectable on ceo-reselect | Viktor prod QA |
 | 2026-07-20 | Figma №6 (BRIEF-034) | PO concept preview in right slider on ceo-reselect | Viktor prod QA |
+| 2026-07-21 | BRIEF-033, BRIEF-038 | Scroll restore after ceo-reselect; approve confirmation modals (standard + warning) | Viktor prod QA |
 
 ---
 
@@ -101,30 +102,33 @@ Acceptance: секция «Как проверить» в doc
 
 **Текущее состояние (partial infra, bug open):**
 
-- При submit с `newConceptBrief` Slack: «CEO-ревью не потрібне» ([`buildNewBriefsApprovalMessage`](../../packages/worker/src/utils/slack.ts)).
-- UI: CEO с ролью `cpo_ceo` при `status === 'submitted'` всё равно попадает в `SUPERVISOR_REVIEW` ([`resolveBrandBriefReviewPhase.ts`](../../packages/constructor/src/domain/reviewPhase/resolveBrandBriefReviewPhase.ts)) — **нет gate**.
+- При submit с `newConceptBrief`/`newNamingBrief`/`internalNamingFeedback` Slack пишет «Бриф містить нові замовлення. CEO-ревью не потрібне» ([`buildNewBriefsApprovalMessage`](../../packages/worker/src/utils/slack.ts):747; условие — [`brandHasNewBriefs`](../../packages/worker/src/utils/brand-export.ts):12).
+- UI: CEO с ролью `cpo_ceo` при `status === 'submitted'` всё равно попадает в `SUPERVISOR_REVIEW` ([`resolveBrandBriefReviewPhase.ts`](../../packages/constructor/src/domain/reviewPhase/resolveBrandBriefReviewPhase.ts):46) — **нет gate**. Бэкенд и фронт расходятся: бэк уже знает, что ревью не нужно, фронт этого не учитывает.
 
-**Ключевые файлы:**
+### Точки неоднозначности для Opus (product-решения)
 
-- [`resolveBrandBriefReviewPhase.ts`](../../packages/constructor/src/domain/reviewPhase/resolveBrandBriefReviewPhase.ts)
-- [`useBrandBriefReviewPhase.ts`](../../packages/constructor/src/composables/useBrandBriefReviewPhase.ts)
-- [`BriefReviewView.vue`](../../packages/constructor/src/views/wizard/BriefReviewView.vue)
-- [`ReviewUnifiedView.vue`](../../packages/constructor/src/components/constructor/review/ReviewUnifiedView.vue)
+1. **Сигнал «в работе».** `submitted + brandHasNewBriefs` = заказ в работе. Что именно триггерит «готово»: очистка `newConceptBrief` + проставленный `concept.selectedId`? отдельный статус? Нужно свериться с worker-flow (что делает команда, чтобы вернуть бриф на ревью).
+2. **Что видит CEO пока в работе.** read-only placeholder «В роботі, очікує виконання» / redirect на список / баннер без approve+revise? В любом случае — скрыть `SupervisorActionsFooter` (approve/revise).
+3. **Частичный случай.** Только internalNamingFeedback (без нового концепта) — нужен ли gate или ревью допустимо? Уточнить.
 
-**Направление fix (уточнить на planning-сессии Opus):**
+### Направление fix
 
-- Новая phase или флаг: `submitted` + `hasNewBrief` → для CEO read-only placeholder / redirect / «В роботі» вместо full review.
-- Согласовать с PO flow: кнопка «Відправити в роботу» уже есть ([`hasNewBrief`](../../packages/constructor/src/views/wizard/BriefReviewView.vue)).
+- Разделить `brandHasNewBriefs` в shared util (переиспользовать логику worker на фронте) → `hasNewBrief` во [`BriefReviewView`](../../packages/constructor/src/views/wizard/BriefReviewView.vue):140 уже близок.
+- Новая phase `SUPERVISOR_AWAITING_WORK` **или** флаг в resolver: `isSupervisor && status==='submitted' && hasNewBrief` → отдельный read-only экран.
+- `ReviewUnifiedView`/`BriefReviewView` — рендер placeholder, скрыть footer approve/revise.
+- Unit-тесты на `resolveBrandBriefReviewPhase` (submitted + hasNewBrief + isSupervisor → новая phase).
 
-**Модель:** планирование **Opus 4.8** · реализация **Composer**
+**Ключевые файлы:** `resolveBrandBriefReviewPhase.ts`, `BrandBriefReviewPhase.ts`, `useBrandBriefReviewPhase.ts`, `BriefReviewView.vue`, `ReviewUnifiedView.vue`, `tests/unit/domain/resolveBrandBriefReviewPhase.test.ts`.
+
+**Модель:** планирование **Opus 4.8** (сигнал «готово» + UX placeholder — product-логика) · реализация **Composer 2.5**
 
 **Как проверить:**
 
-1. PO создаёт бриф с «Новий концепт (бриф)», submit «В роботу».
-2. CEO открывает тот же brand — **не** видит полный review с approve/revise.
-3. После появления концепта в библиотеке и привязки к брифу — CEO видит обычный review.
+1. PO создаёт бриф с «Новий концепт (бриф)», submit «Відправити в роботу».
+2. CEO открывает тот же brand — **не** видит полный review с approve/revise, видит placeholder «В роботі».
+3. После появления концепта в библиотеке и привязки к брифу (сигнал по п.1 Opus) — CEO видит обычный review с approve/revise.
 
-**Статус:** pending
+**Статус:** pending (ждёт planning-решения по сигналу «готово»)
 
 ---
 
@@ -221,13 +225,31 @@ Acceptance: секция «Как проверить» в doc
 
 **Figma:** вернувшись с `/ceo-reselect/*` на step 8, CEO остаётся на той же позиции scroll, что до «Змінити».
 
-**Корень:** [`AlternativeConceptView.vue`](../../packages/constructor/src/views/alternative-selection/AlternativeConceptView.vue) / [`AlternativeExternalNamingView.vue`](../../packages/constructor/src/views/alternative-selection/AlternativeExternalNamingView.vue) — `goBack()` / save → `router.push` без scroll restore.
+### Диагностика (цепочка кода)
 
-**Fix:** сохранять `scrollTop` review container в sessionStorage/pinia перед уходом; restore в `BriefReviewView` onMounted / onActivated.
+- Скролл-контейнер step-8 review = `.review-unified-view__scroll` (`overflow-y-auto`, [`ReviewUnifiedView.vue`](../../packages/constructor/src/components/constructor/review/ReviewUnifiedView.vue):372). Именно у этого элемента `scrollTop`, не у `window`.
+- Уход: [`startCeoReselectBySection`](../../packages/constructor/src/views/wizard/BriefReviewView.vue):176 → `router.push('/ceo-reselect/...')`.
+- Возврат: save/goBack в [`AlternativeConceptView.vue`](../../packages/constructor/src/views/alternative-selection/AlternativeConceptView.vue) / [`AlternativeExternalNamingView.vue`](../../packages/constructor/src/views/alternative-selection/AlternativeExternalNamingView.vue) → `router.push` на brand review. Контейнер пересоздаётся (не `keep-alive`) → `scrollTop` = 0.
 
-**Модель:** **Composer**
+### Fix (реализация)
 
-**Статус:** pending
+1. Добавить `ref` на `.review-unified-view__scroll` в `ReviewUnifiedView` + `defineExpose({ getScrollTop, setScrollTop })` (или прокинуть событие/prop).
+2. Перед `startCeoReselectBySection` сохранять `scrollTop` в sessionStorage по ключу `review-scroll:{brandId}` (не pinia — переживает F5, дёшево).
+3. В `BriefReviewView` после возврата (`onMounted` при phase `SUPERVISOR_REVIEW` + брифинг-данные загружены) — `nextTick` → восстановить `scrollTop`, затем очистить ключ.
+4. Восстанавливать только когда предыдущий маршрут был `ceo-reselect` (через `router` guard / `from.meta.ceoReselect`), чтобы обычный вход давал scroll top.
+
+**Файлы:** `ReviewUnifiedView.vue` (ref + expose), `BriefReviewView.vue` (save/restore), опц. новый `useReviewScrollMemory.ts` composable.
+
+**Как проверить:**
+
+1. CEO (`cpo_ceo`) → длинный бриф, проскроллить до Internal Naming → «Змінити вибір».
+2. Save или «Назад» → вернуться на review → позиция scroll = там же (Internal Naming виден), не наверху.
+3. Свежий заход на review (не из reselect) → scroll top.
+4. F5 на review → scroll top (ключ не восстанавливается вне reselect-возврата).
+
+**Модель:** **Composer 2.5**
+
+**Статус:** done (prod QA OK)
 
 ---
 
@@ -317,32 +339,127 @@ Acceptance: секция «Как проверить» в doc
 
 ## BRIEF-037 — Dual view: PO vs CEO на review (High)
 
-**Figma:** на step 8 всегда различать «Вибір замовника» и «Вибір CEO»; не подменять колонку заказчика CEO-выбором.
+**Оригинал Figma (№9, «Зауваження»):** «Після перевибору Concept та External Naming, в секції External Naming початковий вибір замовника замінюється вибором CEO. При цьому залишається лейбл "Вибір замовника"».
+**Рішення (Figma):** «Зберігати та відображати окремо вибір замовника і вибір СЕО.»
 
-**Текущее (partial infra):**
+### Диагностика (цепочка кода)
 
-- [`ReviewChoiceGroup.vue`](../../packages/constructor/src/components/constructor/review/ReviewChoiceGroup.vue) + [`useSupervisorApplyVariants.ts`](../../packages/constructor/src/composables/useSupervisorApplyVariants.ts) — dual layout когда `isCeoChoiceAnAlternative`.
-- [`ceoExternalItemsForReview`](../../packages/constructor/src/composables/useSupervisorApplyVariants.ts): фильтр дубликатов может скрывать CEO column; edge case «CEO выбрал subset PO» — проверить по Figma.
+**Данные:**
+- PO-выбор: `stepData.externalNaming.selectedIds` (источник — [`selectedExternalNamings`](../../packages/constructor/src/views/wizard/BriefReviewView.vue) → prop `items`).
+- CEO-выбор: `brandCeoSelections.externalNaming` (источник — [`ceoExternalItemsForReview`](../../packages/constructor/src/composables/useSupervisorApplyVariants.ts) → prop `ceo-items`).
+- [`saveCeoSelections`](../../packages/constructor/src/stores/constructor/useSupervisorReview.ts) пишет **только** в `brandCeoSelections`, `stepData` **не трогает** → PO-выбор физически сохраняется (перезаписи store нет в текущем коде).
 
-**Fix:** пройти матрицу кейсов (same / partial overlap / full replace / new brief); unit-тесты на projections.
+**Рендер:** [`ReviewExternalNamingsList.vue`](../../packages/constructor/src/components/constructor/review/ReviewExternalNamingsList.vue) `showDual = ceoItems.length > 0 && !ceoApplied`. Два **вертикальных** блока через [`ReviewChoiceGroup`](../../packages/constructor/src/components/constructor/review/ReviewChoiceGroup.vue) (`flex-col`, не grid): слот `po` = «Вибір замовника», слот `ceo` = «Вибір CEO» (сверху вниз, не в ряд как карточки Concept).
 
-**Модель:** планирование **Opus 4.8** · реализация **Composer**
+**Найденный дефект (исправлен):**
 
-**Статус:** partial
+- **Фильтр-дедуп урезал CEO-список.** В `ceoExternalItemsForReview` отбрасывались ID, совпадающие с PO (`ids.filter(id => !poIdSet.has(id))`. При частичном пересечении (PO `[A,B,C]`, CEO `[A,B,D]`) в блоке CEO показывался только `[D]` вместо `[A,B,D]`.
+
+**Product-решение (кейс 2 — CEO согласился с PO):** один блок «Вибір замовника» (single layout), без дублирования одинаковых списков — `isSupervisorChoiceAnAlternative` = false → dual не показываем.
+
+### Fix (реализация)
+
+- `ceoExternalItemsForReview` — **убран** фильтр `!poIdSet.has(id)`; возвращается полный CEO-набор.
+- Unit-тесты: [`useSupervisorApplyVariants.test.ts`](../../packages/constructor/tests/unit/composables/useSupervisorApplyVariants.test.ts) — overlap, full replace, subset, agree-with-PO.
+
+**Файлы:** `useSupervisorApplyVariants.ts`, `tests/unit/composables/useSupervisorApplyVariants.test.ts`.
+
+### Как проверить (prod QA)
+
+**Базовый URL:** `https://brand-constructor-app.pages.dev/constructor/brand/{brandId}`  
+**Роль:** `cpo_ceo` (CEO / supervisor).
+
+#### Готовые брифы на prod (не нужно создавать с нуля)
+
+| Бриф | ID | Зачем | Что уже в данных |
+|------|-----|-------|------------------|
+| **New Brand #23** | `brand_a20e8acbdd8b4fcf` | **Главный тест BRIEF-037** | PO external: **Chancewood**; CEO external: **Joymus** (разные). CEO concept тоже отличается от PO. |
+| **New Brand #11** | `brand_99f60e3b872e4fa9` | Регрессия «CEO не менял» | PO: **TestEcho**; `ceo_selections` пуст — только один блок «Вибір замовника». |
+| **New Brand #1** | `brand_87f560b858654a43` | Регрессия dual + approve warning | PO: **TestEcho**; CEO external: **WinRide** (другой). |
+| **New Brand #13** | `brand_1ffc50c0a75845a5` | BRIEF-031 (не этот фикс) | new concept brief in progress — не использовать для 037. |
+
+#### Сценарий A — главный (Brand #23, уже сохранён dual)
+
+1. Открыть `…/constructor/brand/brand_a20e8acbdd8b4fcf` под CEO.
+2. Проскроллить до секции **External Naming**.
+3. **Ожидание:**
+   - Сверху подпись **«Вибір замовника»** → bullet **Chancewood (Chancewood.com)**.
+   - Ниже подпись **«Вибір CEO»** → bullet **Joymus (Joymus.com)**.
+   - **Не должно быть:** один список с Joymus под лейблом «Вибір замовника».
+4. Секция **Concept** — тоже dual (две карточки в ряд): PO-концепт слева, CEO-концепт справа.
+
+#### Сценарий B — overlap (если пересохранить на #23 или другом submitted-брифе)
+
+1. CEO → review → External Naming → **«Змінити вибір»**.
+2. В гриде: оставить 1–2 имени из PO-блока «Вибір замовника», снять одно, добавить другое из «Доступні неймінги» (итого 3 имени, часть совпадает с PO).
+3. **«Зберегти»** → вернуться на review.
+4. **Ожидание:** блок PO = **все** исходные PO-имена (не изменились); блок CEO = **все 3** выбранных CEO-имени, включая те, что совпали с PO (не только «новые»).
+
+#### Сценарий C — CEO согласился с PO (Brand #11)
+
+1. Открыть `brand_99f60e3b872e4fa9`.
+2. External Naming → «Змінити вибір» → выбрать **ровно** TestEcho (как у PO) → «Зберегти».
+3. **Ожидание:** один блок **«Вибір замовника»** с TestEcho; блока «Вибір CEO» **нет**.
+
+#### Сценарий D — полная замена CEO-набором
+
+1. Любой submitted-бриф с 3 PO-именами → ceo-reselect external → выбрать **3 других** имени (ни одного из PO) → save.
+2. **Ожидание:** dual; PO = старые 3; CEO = новые 3.
+
+#### Регрессии (не сломать другие флоу)
+
+| Что проверить | Бриф / действие | Ожидание |
+|---------------|-----------------|----------|
+| BRIEF-033 scroll | Длинный бриф, scroll до Internal Naming → «Змінити» concept → save/back | Scroll на том же месте |
+| BRIEF-038 approve standard | Brand #11, CEO не менял naming → «Затвердити» | Modal «Затвердити бриф?», кнопки в ряд |
+| BRIEF-038 approve warning | Brand #23 или #1 → «Затвердити» | Warning modal, кнопки столбиком |
+| BRIEF-036 PO names selectable | ceo-reselect external | PO-имена в верхнем блоке кликабельны |
+| PO returned view | Бриф в `needs_revision` под PO | «Застосувати варіант CEO» по external naming работает |
+| DevTools | Ctrl+F `review-external-list--dual-view` | Класс есть только при dual |
+
+**Модель:** **Composer 2.5**
+
+**Статус:** in_progress (ждёт prod QA)
 
 ---
 
 ## BRIEF-038 — Confirm modal перед Approve (High)
 
-**Figma:** кнопка «Погодити» → confirmation modal → PATCH approved.
+**Figma №10 (High).** Зауваження: «CEO може затвердити бриф без додаткового підтвердження, навіть якщо залишав коментарі або пропонував інші варіанти.»  
+Рішення: «Додати confirmation modal перед затвердженням брифу.»  
+Коментар Figma: для стандартного сценарію — Confirmation modal; якщо CEO змінив Concept / External Naming / Internal Naming — warning-модалка з можливістю повернути на доопрацювання або продовжити затвердження.
 
-**Текущее:** [`ReviewUnifiedView.vue`](../../packages/constructor/src/components/constructor/review/ReviewUnifiedView.vue) `@approve` → сразу `status-change approved`. [`ConfirmationModal`](../../packages/constructor/src/components/ui/ConfirmationModal.vue) уже используется в [`BriefReviewView.vue`](../../packages/constructor/src/views/wizard/BriefReviewView.vue) для PO apply flows.
+**Figma nodes:** [2929:11846](https://www.figma.com/design/aCe1cUDNaA7Tmcn9Mmvv1w/Brand-Builder?node-id=2929-11846) (standard) · [2929:12425](https://www.figma.com/design/aCe1cUDNaA7Tmcn9Mmvv1w/Brand-Builder?node-id=2929-12425) (warning)
 
-**Fix:** `showApproveConfirm` ref + modal (title/body из Figma) перед `handleStatusChange('approved')`.
+### Реализация
 
-**Модель:** **Composer**
+- [`BriefReviewView.vue`](../../packages/constructor/src/views/wizard/BriefReviewView.vue) — перехват `handleStatusChange('approved')` → модалка; `executeStatusChange` только после confirm.
+- [`ConfirmationModal.vue`](../../packages/constructor/src/components/ui/ConfirmationModal.vue) — prop `actionsLayout: 'row' | 'stack'` (default `row`); warning approve использует `stack`.
+- PO modals (Modal 1/2) и wizard modals **без изменений** — default `row`.
 
-**Статус:** pending
+**Тексты (standard, Figma 2929:11846):**
+- title: «Затвердити бриф?»
+- body: «Після затвердження буде запущено наступні етапи роботи над брендом та надіслано повідомлення в командні канали.»
+- кнопки в **ряд**: «Скасувати» | «Затвердити»
+
+**Тексты (warning, Figma 2929:12425):**
+- title: «Ви внесли зміни до брифу»
+- body: «Ви змінили вибір концепту або неймінгу. За потреби поверніть бриф на доопрацювання перед затвердженням.»
+- кнопки **столбиком**: «Повернути на доопрацювання» (сверху) · «Затвердити бриф» (снизу)
+
+### Как проверить
+
+1. CEO (`cpo_ceo`) → review (`submitted`) → **не менял** concept/naming → «Затвердити» → standard modal, body про «наступні етапи… командні канали», кнопки **в ряд**.
+2. «Скасувати» → остаёмся на review, статус не меняется.
+3. «Затвердити» в модалке → approved → `/constructor/success`.
+4. CEO **сменил** concept или naming через «Змінити вибір» → «Затвердити» → warning modal «Ви внесли зміни до брифу», кнопки **столбиком**.
+5. «Повернути на доопрацювання» в warning → needs_revision flow (нужен комментарий CEO).
+6. «Затвердити бриф» в warning → approved.
+7. Регрессия: PO Modal 1/2 и wizard delete/switch modals — layout **в ряд**, тексты без изменений.
+
+**Модель:** **Composer 2.5**
+
+**Статус:** done (prod QA OK)
 
 ---
 
