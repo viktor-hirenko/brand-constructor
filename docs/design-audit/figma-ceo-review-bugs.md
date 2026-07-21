@@ -43,10 +43,10 @@
 | 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **done** | `9b135e8` |
 | 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **done** | `ff31929` |
 | 8 | BRIEF-036 | Имена заказчика недоступны для re-select (External Naming) | **High** | B | **done** | `b45bbbc` |
-| 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **in_progress** | — |
+| 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **done** | `d8e4ecf` |
 | 10 | BRIEF-038 | Confirmation modal перед затвердженням CEO | **High** | C | **done** | `c7198e7` |
 
-**Итого:** 9 done · 1 in_progress
+**Итого:** 10 done · 0 in_progress · 1 pending (BRIEF-031)
 
 ---
 
@@ -93,6 +93,7 @@ Acceptance: секция «Как проверить» в doc
 | 2026-07-20 | Figma №8 (BRIEF-036) | PO external naming selectable on ceo-reselect | Viktor prod QA |
 | 2026-07-20 | Figma №6 (BRIEF-034) | PO concept preview in right slider on ceo-reselect | Viktor prod QA |
 | 2026-07-21 | BRIEF-033, BRIEF-038 | Scroll restore after ceo-reselect; approve confirmation modals (standard + warning) | Viktor prod QA |
+| 2026-07-21 | BRIEF-037 | Full CEO external naming list in dual review view (no PO dedup filter) | Viktor prod QA |
 
 ---
 
@@ -419,7 +420,7 @@ Acceptance: секция «Как проверить» в doc
 
 **Модель:** **Composer 2.5**
 
-**Статус:** in_progress (ждёт prod QA)
+**Статус:** done (prod QA OK, commit `d8e4ecf`)
 
 ---
 
@@ -476,16 +477,16 @@ Acceptance: секция «Как проверить» в doc
 ## QA checklist (весь пул)
 
 - [ ] BRIEF-031 — CEO blocked / placeholder при new concept brief in progress
-- [ ] BRIEF-028 — section comment max-height + inner scroll
-- [ ] BRIEF-029 — general comment same height as section fields
-- [ ] BRIEF-028b — no inner «Коментар CEO» label in general block
-- [ ] BRIEF-032 — all empty CEO fields highlighted on failed revise
-- [ ] BRIEF-033 — scroll restored after ceo-reselect cancel/save
-- [ ] BRIEF-034 — PO concept preview on click in reselect
-- [ ] BRIEF-035 — CEO can confirm PO concept choice
-- [ ] BRIEF-036 — CEO can re-select PO external naming picks
-- [ ] BRIEF-037 — review shows PO and CEO columns correctly (all overlap cases)
-- [ ] BRIEF-038 — approve confirmation modal
+- [x] BRIEF-028 — section comment max-height + inner scroll
+- [x] BRIEF-029 — general comment same height as section fields
+- [x] BRIEF-028b — no inner «Коментар CEO» label in general block
+- [x] BRIEF-032 — all empty CEO fields highlighted on failed revise
+- [x] BRIEF-033 — scroll restored after ceo-reselect cancel/save
+- [x] BRIEF-034 — PO concept preview on click in reselect
+- [x] BRIEF-035 — CEO can confirm PO concept choice
+- [x] BRIEF-036 — CEO can re-select PO external naming picks
+- [x] BRIEF-037 — review shows PO and CEO lists correctly (overlap cases)
+- [x] BRIEF-038 — approve confirmation modal
 
 ---
 
