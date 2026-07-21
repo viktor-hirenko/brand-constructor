@@ -61,6 +61,7 @@ const {
   isAlternativeSelection,
   isRevisionResponse,
   isSupervisorReview,
+  isSupervisorAwaitingTeam,
   isAuthorReturned,
   isApprovedPhase,
   isReviewShell,
@@ -99,7 +100,9 @@ const shellFullWidth = computed(
   () => isFullWidth.value && !isAlternativeSelection.value && !isRevisionResponse.value
 )
 
-const showRightPane = computed(() => !shellFullWidth.value)
+const showRightPane = computed(
+  () => !shellFullWidth.value && !isSupervisorAwaitingTeam.value
+)
 
 const concepts = computed(() => librariesStore.concepts)
 

@@ -58,7 +58,7 @@ interface SectionApplyFlags {
 
 interface ReviewUnifiedViewProps {
   // Mode + role state
-  reviewMode: 'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'approved'
+  reviewMode: 'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'po-in-work' | 'approved'
   isPoReturnedView: boolean
   isPoOwner: boolean
   ceoFrozenView: boolean
@@ -215,6 +215,14 @@ const reviewHeaderInfoOverride = computed(() => {
       title: 'Бриф на розгляді',
       description: 'Бриф відправлено CEO на погодження. Очікуйте на відповідь.',
       iconVariant: 'check' as const,
+    }
+  }
+  if (props.reviewMode === 'po-in-work') {
+    return {
+      title: 'Бриф у роботі',
+      description:
+        'Команди отримали замовлення у Slack. Коли концепт з’явиться в бібліотеці — оберіть його та натисніть «На погодження CEO».',
+      iconVariant: 'warning' as const,
     }
   }
   if (props.reviewMode === 'approved') {
@@ -661,15 +669,19 @@ defineExpose({
           v-else-if="!ceoFrozenView && reviewMode !== 'po-submitted'"
           :loading="statusActionLoading || isSaving"
           :submit-label="
-            isPoReturnedView
-              ? 'На погодження CEO'
-              : hasNewBrief
-                ? 'Відправити в роботу'
+            reviewMode === 'po-in-work'
+              ? hasNewBrief
+                ? 'Зберегти'
                 : 'На погодження CEO'
+              : isPoReturnedView
+                ? 'На погодження CEO'
+                : hasNewBrief
+                  ? 'Відправити в роботу'
+                  : 'На погодження CEO'
           "
           :submit-disabled="submitBlocked"
           :show-submit="reviewMode !== 'approved'"
-          :show-back="!isPoReturnedView && reviewMode !== 'approved'"
+          :show-back="!isPoReturnedView && reviewMode !== 'approved' && reviewMode !== 'po-in-work'"
           :show-share="showShareButton"
           :show-pdf="showPdfButton"
           :share-copied="shareSuccess"

@@ -27,6 +27,18 @@ export const BRAND_BRIEF_REVIEW_PHASE = {
   SUPERVISOR_REVIEW: 'supervisor-review',
 
   /**
+   * Supervisor opened a direct link to a brief still being fulfilled by teams
+   * (`submitted` + pending new concept/naming orders). Gate screen only — no review.
+   */
+  SUPERVISOR_AWAITING_TEAM: 'supervisor-awaiting-team',
+
+  /**
+   * PO submitted the brief with outstanding new-brief orders; teams are working.
+   * PO can edit concept/naming via draft-edit routes until ready for CEO.
+   */
+  AUTHOR_IN_WORK: 'author-in-work',
+
+  /**
    * Supervisor has navigated into the dedicated `/ceo-reselect/*` sub-routes
    * to pick alternative concepts or namings.
    */

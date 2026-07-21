@@ -5,6 +5,7 @@ import {
   type RouteRecordRaw,
 } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { brandHasNewBriefs } from '@brand-constructor/shared'
 import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
 import type { Brand } from '@brand-constructor/shared/types'
@@ -51,7 +52,14 @@ function draftEditGuard(to: RouteLocationNormalized) {
   if (auth.isCeo) {
     return { path: `/constructor/brand/${id}` }
   }
-  if (store.brandStatus !== 'draft') {
+  const inWorkWithTeam =
+    store.brandStatus === 'submitted' &&
+    brandHasNewBriefs({
+      newConceptBrief: store.stepData?.concept?.newConceptBrief ?? null,
+      newNamingBrief: store.stepData?.externalNaming?.newNamingBrief ?? null,
+      stepData: store.stepData,
+    })
+  if (store.brandStatus !== 'draft' && !inWorkWithTeam) {
     return { path: `/constructor/brand/${id}` }
   }
   return true

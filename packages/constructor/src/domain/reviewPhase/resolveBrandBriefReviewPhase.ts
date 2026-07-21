@@ -5,6 +5,8 @@ export interface ResolveBriefReviewPhaseParams {
   status: string
   /** True when the current user has the `cpo_ceo` role. */
   isSupervisor: boolean
+  /** True when the brief still has outstanding new concept/naming orders. */
+  hasNewBriefs: boolean
   /** `route.meta.ceoReselect === true` — active on `/ceo-reselect/*` sub-routes. */
   routeIsCeoReselect: boolean
   /** `route.meta.poEdit === true` — active on `/po-edit/*` sub-routes. */
@@ -26,6 +28,7 @@ export interface ResolveBriefReviewPhaseParams {
 export function resolveBrandBriefReviewPhase({
   status,
   isSupervisor,
+  hasNewBriefs,
   routeIsCeoReselect,
   routeIsPoEdit,
   routeIsDraftEdit,
@@ -44,11 +47,20 @@ export function resolveBrandBriefReviewPhase({
 
   if (status === 'approved') return BRAND_BRIEF_REVIEW_PHASE.APPROVED
 
+  if (isSupervisor && status === 'submitted' && hasNewBriefs) {
+    return BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
+  }
+
   if (isSupervisor && (status === 'submitted' || status === 'needs_revision')) {
     return BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_REVIEW
   }
 
   if (status === 'needs_revision') return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_RETURNED
+
+  if (status === 'submitted' && hasNewBriefs) {
+    return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK
+  }
+
   if (status === 'submitted') return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_SUBMITTED
 
   return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_DRAFT

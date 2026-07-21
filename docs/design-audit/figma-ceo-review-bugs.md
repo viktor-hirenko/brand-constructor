@@ -14,13 +14,13 @@
 
 **Правило: один баг = одна сессия.** AI не коммитит и не переходит к следующему багу без вашего OK после prod QA.
 
-| Шаг | AI (Agent) | Вы |
-|-----|------------|-----|
-| 1 | Fix **одного** бага + unit-тесты; tracker → `in_progress` | — |
-| 2 | — | Deploy на prod → QA по «Как проверить» |
-| 3 | — | «OK, коммить» или «доработай» |
-| 4 | Commit (только по вашей команде); tracker → `done` + hash; Progress log | — |
-| 5 | Следующий баг — только после commit предыдущего | — |
+| Шаг | AI (Agent)                                                              | Вы                                     |
+| --- | ----------------------------------------------------------------------- | -------------------------------------- |
+| 1   | Fix **одного** бага + unit-тесты; tracker → `in_progress`               | —                                      |
+| 2   | —                                                                       | Deploy на prod → QA по «Как проверить» |
+| 3   | —                                                                       | «OK, коммить» или «доработай»          |
+| 4   | Commit (только по вашей команде); tracker → `done` + hash; Progress log | —                                      |
+| 5   | Следующий баг — только после commit предыдущего                         | —                                      |
 
 **Статусы:** `pending` → `in_progress` → `done` | `partial` | `blocked` | `wontfix`
 
@@ -32,21 +32,21 @@
 
 ## Сводная таблица прогресса
 
-| # | Figma | Баг (текст из макета) | Приоритет | Батч | Статус | Коммит |
-|---|-------|------------------------|-----------|------|--------|--------|
-| — | *(без №)* | CEO має доступ до брифу, у якому ще не обрано концепт/неймінг, а замовлено новий | **High** | C | **blocked** | — |
-| 1 | **№1** | Блок коментаря CEO необмежено розтягується по висоті під довжину тексту | Medium | A | **done** | `4ce8625` |
-| 2 | BRIEF-029 | Общий комментарий выше, чем секционные | Low | A | **done** | `60ef870` |
-| 3 | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария | Medium | A | **done** | `60ef870` |
-| 4 | BRIEF-032 | Error state на **всех** полях комментариев при «Повернути» без текста | Medium | A | **done** | `69cd593` |
-| 5 | BRIEF-033 | Після повернення з ceo-reselect відновлювати scroll | Medium | C | **done** | `c7198e7` |
-| 6 | BRIEF-034 | Просмотр оригинального концепта заказчика на ceo-reselect | Medium | B | **done** | `9b135e8` |
-| 7 | BRIEF-035 | CEO может пере-выбрать концепт заказчика | **High** | B | **done** | `ff31929` |
-| 8 | BRIEF-036 | Имена заказчика недоступны для re-select (External Naming) | **High** | B | **done** | `b45bbbc` |
-| 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **done** | `d8e4ecf` |
-| 10 | BRIEF-038 | Confirmation modal перед затвердженням CEO | **High** | C | **done** | `c7198e7` |
+| #   | Figma      | Баг (текст из макета)                                                            | Приоритет | Батч | Статус      | Коммит    |
+| --- | ---------- | -------------------------------------------------------------------------------- | --------- | ---- | ----------- | --------- |
+| —   | _(без №)_  | CEO має доступ до брифу, у якому ще не обрано концепт/неймінг, а замовлено новий | **High**  | C    | **blocked** | —         |
+| 1   | **№1**     | Блок коментаря CEO необмежено розтягується по висоті під довжину тексту          | Medium    | A    | **done**    | `4ce8625` |
+| 2   | BRIEF-029  | Общий комментарий выше, чем секционные                                           | Low       | A    | **done**    | `60ef870` |
+| 3   | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария                   | Medium    | A    | **done**    | `60ef870` |
+| 4   | BRIEF-032  | Error state на **всех** полях комментариев при «Повернути» без текста            | Medium    | A    | **done**    | `69cd593` |
+| 5   | BRIEF-033  | Після повернення з ceo-reselect відновлювати scroll                              | Medium    | C    | **done**    | `c7198e7` |
+| 6   | BRIEF-034  | Просмотр оригинального концепта заказчика на ceo-reselect                        | Medium    | B    | **done**    | `9b135e8` |
+| 7   | BRIEF-035  | CEO может пере-выбрать концепт заказчика                                         | **High**  | B    | **done**    | `ff31929` |
+| 8   | BRIEF-036  | Имена заказчика недоступны для re-select (External Naming)                       | **High**  | B    | **done**    | `b45bbbc` |
+| 9   | BRIEF-037  | Review: не перезаписывать выбор заказчика выбором CEO                            | **High**  | B    | **done**    | `d8e4ecf` |
+| 10  | BRIEF-038  | Confirmation modal перед затвердженням CEO                                       | **High**  | C    | **done**    | `c7198e7` |
 
-**Итого:** 10 done · 1 blocked (BRIEF-031 — ждёт ответов дизайнера по флоу)
+**Итого:** 11 done · 0 blocked
 
 ---
 
@@ -54,11 +54,11 @@
 
 Используйте **дорогую модель (Opus 4.8 thinking)** точечно — ~30% квоты беречь под **Variant 3**.
 
-| Батч | Баги | Планирование (1 сессия на батч) | Реализация (Agent) | Когда Opus |
-|------|------|----------------------------------|--------------------|------------|
-| **A** — UI комментариев | 028, 029, 028b, 032 | **Composer / Auto** — достаточно Figma + этот doc | **Composer 2.5 / Auto** | Не нужен |
-| **B** — CEO reselect + dual view | 034, 035, 036, 037 | **Composer** для 034, 035, 036; **Opus** для 037 (edge cases) | **Composer**; 037 — Opus если 2+ итерации | 037 product/display logic |
-| **C** — Workflow / gates | 031, 033, 038 | **Opus** для 031 (product gate); **Composer** для 033, 038 | **Composer**; 031 — Opus | 031 обязательно |
+| Батч                             | Баги                | Планирование (1 сессия на батч)                               | Реализация (Agent)                        | Когда Opus                |
+| -------------------------------- | ------------------- | ------------------------------------------------------------- | ----------------------------------------- | ------------------------- |
+| **A** — UI комментариев          | 028, 029, 028b, 032 | **Composer / Auto** — достаточно Figma + этот doc             | **Composer 2.5 / Auto**                   | Не нужен                  |
+| **B** — CEO reselect + dual view | 034, 035, 036, 037  | **Composer** для 034, 035, 036; **Opus** для 037 (edge cases) | **Composer**; 037 — Opus если 2+ итерации | 037 product/display logic |
+| **C** — Workflow / gates         | 031, 033, 038       | **Opus** для 031 (product gate); **Composer** для 033, 038    | **Composer**; 031 — Opus                  | 031 обязательно           |
 
 **Шаблон prompt для сессии исправления одного бага:**
 
@@ -73,33 +73,34 @@ Acceptance: секция «Как проверить» в doc
 
 ## Рекомендуемый порядок работ
 
-| Шаг | Батч | Баги | Почему |
-|-----|------|------|--------|
-| 1 | **A** | 028, 028b, 029, 032 | Один файл `SectionCommentBlock.vue`, быстрый видимый результат на step 8 |
-| 2 | **B** | 035 → 036 → 034 → 037 | Одна зона `ceo-reselect/*` + `useSupervisorApplyVariants`; HIGH сначала |
-| 3 | **C** | 038 → 033 → 031 | Approve modal и scroll — локально; 031 — gate, лучше после стабильного reselect |
+| Шаг | Батч  | Баги                  | Почему                                                                          |
+| --- | ----- | --------------------- | ------------------------------------------------------------------------------- |
+| 1   | **A** | 028, 028b, 029, 032   | Один файл `SectionCommentBlock.vue`, быстрый видимый результат на step 8        |
+| 2   | **B** | 035 → 036 → 034 → 037 | Одна зона `ceo-reselect/*` + `useSupervisorApplyVariants`; HIGH сначала         |
+| 3   | **C** | 038 → 033 → 031       | Approve modal и scroll — локально; 031 — gate, лучше после стабильного reselect |
 
 ---
 
 ## Progress log
 
-| Дата | Баг | Действие | Кто проверил |
-|------|-----|----------|--------------|
-| 2026-07-01 | — | Создан tracker; аудит кода — все NEW, инфра ceo-reselect есть, фиксов нет | AI audit |
-| 2026-07-01 | Figma №1 (BRIEF-028) | Cap + internal scroll для секционных и general CEO comments; unit-тесты | Viktor prod QA |
-| 2026-07-01 | BRIEF-028b, BRIEF-029 | General label removed; taller general field (6–12 lines) | Viktor prod QA |
-| 2026-07-20 | Figma №4 (BRIEF-032) | Highlight all empty CEO comment fields on failed needs_revision; unit-тесты | Viktor prod QA |
-| 2026-07-20 | Figma №7 (BRIEF-035) | PO concept card selectable on ceo-reselect; save + return to review | Viktor prod QA |
-| 2026-07-20 | Figma №8 (BRIEF-036) | PO external naming selectable on ceo-reselect | Viktor prod QA |
-| 2026-07-20 | Figma №6 (BRIEF-034) | PO concept preview in right slider on ceo-reselect | Viktor prod QA |
-| 2026-07-21 | BRIEF-033, BRIEF-038 | Scroll restore after ceo-reselect; approve confirmation modals (standard + warning) | Viktor prod QA |
-| 2026-07-21 | BRIEF-037 | Full CEO external naming list in dual review view (no PO dedup filter) | Viktor prod QA |
+| Дата       | Баг                   | Действие                                                                            | Кто проверил   |
+| ---------- | --------------------- | ----------------------------------------------------------------------------------- | -------------- |
+| 2026-07-01 | —                     | Создан tracker; аудит кода — все NEW, инфра ceo-reselect есть, фиксов нет           | AI audit       |
+| 2026-07-01 | Figma №1 (BRIEF-028)  | Cap + internal scroll для секционных и general CEO comments; unit-тесты             | Viktor prod QA |
+| 2026-07-01 | BRIEF-028b, BRIEF-029 | General label removed; taller general field (6–12 lines)                            | Viktor prod QA |
+| 2026-07-20 | Figma №4 (BRIEF-032)  | Highlight all empty CEO comment fields on failed needs_revision; unit-тесты         | Viktor prod QA |
+| 2026-07-20 | Figma №7 (BRIEF-035)  | PO concept card selectable on ceo-reselect; save + return to review                 | Viktor prod QA |
+| 2026-07-20 | Figma №8 (BRIEF-036)  | PO external naming selectable on ceo-reselect                                       | Viktor prod QA |
+| 2026-07-20 | Figma №6 (BRIEF-034)  | PO concept preview in right slider on ceo-reselect                                  | Viktor prod QA |
+| 2026-07-21 | BRIEF-033, BRIEF-038  | Scroll restore after ceo-reselect; approve confirmation modals (standard + warning) | Viktor prod QA |
+| 2026-07-21 | BRIEF-037             | Full CEO external naming list in dual review view (no PO dedup filter)              | Viktor prod QA |
 
 ---
 
 ## BRIEF-031 — CEO видит бриф до готовности нового концепта (High)
 
 **Figma (верхняя строка таблицы, без №):**
+
 - Що не так: «CEO має доступ до брифу, у якому ще не обрано концепт/неймінг, а замовлено новий».
 - Як треба: «Якщо Product замовив новий Concept або Naming, бриф має спочатку перейти в роботу відповідній команді. CEO має бачити бриф лише після того, як усі обов'язкові дані вже готові та заповнені».
 
@@ -381,6 +382,7 @@ PO «+ Новий концепт» → «Відправити в роботу» 
 ### Диагностика (цепочка кода)
 
 **Данные:**
+
 - PO-выбор: `stepData.externalNaming.selectedIds` (источник — [`selectedExternalNamings`](../../packages/constructor/src/views/wizard/BriefReviewView.vue) → prop `items`).
 - CEO-выбор: `brandCeoSelections.externalNaming` (источник — [`ceoExternalItemsForReview`](../../packages/constructor/src/composables/useSupervisorApplyVariants.ts) → prop `ceo-items`).
 - [`saveCeoSelections`](../../packages/constructor/src/stores/constructor/useSupervisorReview.ts) пишет **только** в `brandCeoSelections`, `stepData` **не трогает** → PO-выбор физически сохраняется (перезаписи store нет в текущем коде).
@@ -407,12 +409,12 @@ PO «+ Новий концепт» → «Відправити в роботу» 
 
 #### Готовые брифы на prod (не нужно создавать с нуля)
 
-| Бриф | ID | Зачем | Что уже в данных |
-|------|-----|-------|------------------|
-| **New Brand #23** | `brand_a20e8acbdd8b4fcf` | **Главный тест BRIEF-037** | PO external: **Chancewood**; CEO external: **Joymus** (разные). CEO concept тоже отличается от PO. |
-| **New Brand #11** | `brand_99f60e3b872e4fa9` | Регрессия «CEO не менял» | PO: **TestEcho**; `ceo_selections` пуст — только один блок «Вибір замовника». |
-| **New Brand #1** | `brand_87f560b858654a43` | Регрессия dual + approve warning | PO: **TestEcho**; CEO external: **WinRide** (другой). |
-| **New Brand #13** | `brand_1ffc50c0a75845a5` | BRIEF-031 (не этот фикс) | new concept brief in progress — не использовать для 037. |
+| Бриф              | ID                       | Зачем                            | Что уже в данных                                                                                   |
+| ----------------- | ------------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **New Brand #23** | `brand_a20e8acbdd8b4fcf` | **Главный тест BRIEF-037**       | PO external: **Chancewood**; CEO external: **Joymus** (разные). CEO concept тоже отличается от PO. |
+| **New Brand #11** | `brand_99f60e3b872e4fa9` | Регрессия «CEO не менял»         | PO: **TestEcho**; `ceo_selections` пуст — только один блок «Вибір замовника».                      |
+| **New Brand #1**  | `brand_87f560b858654a43` | Регрессия dual + approve warning | PO: **TestEcho**; CEO external: **WinRide** (другой).                                              |
+| **New Brand #13** | `brand_1ffc50c0a75845a5` | BRIEF-031 (не этот фикс)         | new concept brief in progress — не использовать для 037.                                           |
 
 #### Сценарий A — главный (Brand #23, уже сохранён dual)
 
@@ -444,14 +446,14 @@ PO «+ Новий концепт» → «Відправити в роботу» 
 
 #### Регрессии (не сломать другие флоу)
 
-| Что проверить | Бриф / действие | Ожидание |
-|---------------|-----------------|----------|
-| BRIEF-033 scroll | Длинный бриф, scroll до Internal Naming → «Змінити» concept → save/back | Scroll на том же месте |
-| BRIEF-038 approve standard | Brand #11, CEO не менял naming → «Затвердити» | Modal «Затвердити бриф?», кнопки в ряд |
-| BRIEF-038 approve warning | Brand #23 или #1 → «Затвердити» | Warning modal, кнопки столбиком |
-| BRIEF-036 PO names selectable | ceo-reselect external | PO-имена в верхнем блоке кликабельны |
-| PO returned view | Бриф в `needs_revision` под PO | «Застосувати варіант CEO» по external naming работает |
-| DevTools | Ctrl+F `review-external-list--dual-view` | Класс есть только при dual |
+| Что проверить                 | Бриф / действие                                                         | Ожидание                                              |
+| ----------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
+| BRIEF-033 scroll              | Длинный бриф, scroll до Internal Naming → «Змінити» concept → save/back | Scroll на том же месте                                |
+| BRIEF-038 approve standard    | Brand #11, CEO не менял naming → «Затвердити»                           | Modal «Затвердити бриф?», кнопки в ряд                |
+| BRIEF-038 approve warning     | Brand #23 или #1 → «Затвердити»                                         | Warning modal, кнопки столбиком                       |
+| BRIEF-036 PO names selectable | ceo-reselect external                                                   | PO-имена в верхнем блоке кликабельны                  |
+| PO returned view              | Бриф в `needs_revision` под PO                                          | «Застосувати варіант CEO» по external naming работает |
+| DevTools                      | Ctrl+F `review-external-list--dual-view`                                | Класс есть только при dual                            |
 
 **Модель:** **Composer 2.5**
 
@@ -474,11 +476,13 @@ PO «+ Новий концепт» → «Відправити в роботу» 
 - PO modals (Modal 1/2) и wizard modals **без изменений** — default `row`.
 
 **Тексты (standard, Figma 2929:11846):**
+
 - title: «Затвердити бриф?»
 - body: «Після затвердження буде запущено наступні етапи роботи над брендом та надіслано повідомлення в командні канали.»
 - кнопки в **ряд**: «Скасувати» | «Затвердити»
 
 **Тексты (warning, Figma 2929:12425):**
+
 - title: «Ви внесли зміни до брифу»
 - body: «Ви змінили вибір концепту або неймінгу. За потреби поверніть бриф на доопрацювання перед затвердженням.»
 - кнопки **столбиком**: «Повернути на доопрацювання» (сверху) · «Затвердити бриф» (снизу)
@@ -511,7 +515,7 @@ PO «+ Новий концепт» → «Відправити в роботу» 
 
 ## QA checklist (весь пул)
 
-- [ ] BRIEF-031 — CEO blocked / placeholder при new concept brief in progress
+- [x] BRIEF-031 — CEO не видит бриф «в роботі»; PO может доработать и отправить CEO
 - [x] BRIEF-028 — section comment max-height + inner scroll
 - [x] BRIEF-029 — general comment same height as section fields
 - [x] BRIEF-028b — no inner «Коментар CEO» label in general block

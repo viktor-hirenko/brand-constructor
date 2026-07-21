@@ -1,3 +1,4 @@
+import { brandHasNewBriefsFromRow } from '@brand-constructor/shared'
 import type { Env } from '../types'
 import type { BrandRow } from './brands'
 import type { BrandNotificationData } from './slack'
@@ -10,8 +11,7 @@ import {
 } from './jira'
 
 export function brandHasNewBriefs(brand: BrandRow): boolean {
-  if (brand.new_concept_brief != null || brand.new_naming_brief != null) return true
-  return Boolean(parseInternalNamingFeedback(brand))
+  return brandHasNewBriefsFromRow(brand)
 }
 
 export function parseJiraBrandContext(brand: BrandRow): JiraBrandContext {

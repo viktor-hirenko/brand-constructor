@@ -5,6 +5,7 @@ import { BRAND_BRIEF_REVIEW_PHASE } from '@/domain/reviewPhase/BrandBriefReviewP
 const base = {
   status: 'draft',
   isSupervisor: false,
+  hasNewBriefs: false,
   routeIsCeoReselect: false,
   routeIsPoEdit: false,
   routeIsDraftEdit: false,
@@ -31,8 +32,6 @@ describe('resolveBrandBriefReviewPhase', () => {
   })
 
   it('draft-edit takes precedence over the step-8 draft review phase', () => {
-    // Same status/role as a plain draft review, but the draft-edit meta flag
-    // must win so the edit-flow layout + preview machinery activates.
     const plain = resolveBrandBriefReviewPhase(base)
     expect(plain).toBe(BRAND_BRIEF_REVIEW_PHASE.AUTHOR_DRAFT)
     expect(
@@ -46,14 +45,36 @@ describe('resolveBrandBriefReviewPhase', () => {
     ).toBe(BRAND_BRIEF_REVIEW_PHASE.WIZARD)
   })
 
-  it('resolves supervisor review for a submitted brief', () => {
+  it('resolves supervisor review for a submitted brief ready for CEO', () => {
     expect(
       resolveBrandBriefReviewPhase({
         ...base,
         status: 'submitted',
         isSupervisor: true,
+        hasNewBriefs: false,
       })
     ).toBe(BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_REVIEW)
+  })
+
+  it('resolves supervisor awaiting team when submitted brief has new orders', () => {
+    expect(
+      resolveBrandBriefReviewPhase({
+        ...base,
+        status: 'submitted',
+        isSupervisor: true,
+        hasNewBriefs: true,
+      })
+    ).toBe(BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM)
+  })
+
+  it('resolves author in work for PO on submitted brief with new orders', () => {
+    expect(
+      resolveBrandBriefReviewPhase({
+        ...base,
+        status: 'submitted',
+        hasNewBriefs: true,
+      })
+    ).toBe(BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK)
   })
 
   it('resolves author-returned for a needs_revision brief viewed by the author', () => {

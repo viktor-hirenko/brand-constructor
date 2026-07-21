@@ -1,4 +1,4 @@
-import { BRAND_BRIEF_STATUS, ROLE_LABELS } from '@brand-constructor/shared'
+import { BRAND_BRIEF_STATUS, ROLE_LABELS, brandHasNewBriefsFromBrand } from '@brand-constructor/shared'
 import type { BrandListItem } from '@brand-constructor/shared'
 import {
   BRAND_WAITING_LATE_DAYS,
@@ -112,6 +112,23 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
       }
 
     case BRAND_BRIEF_STATUS.SUBMITTED: {
+      if (brandHasNewBriefsFromBrand(brand)) {
+        const waitingLine = formatWaitingLine(since, { showRelative: true })
+        const days = since.iso ? daysInStatus(since.iso) : 0
+        return {
+          reviewLine: 'In work with team',
+          waitingLine,
+          waitingTone: since.iso ? waitingToneFromDays(days) : 'normal',
+          reviewTitle:
+            'Teams received the new concept/naming order in Slack. Waiting for Product Owner to pick from the library and send to CEO.',
+          waitingTitle: since.iso
+            ? `In work since ${formatDate(since.iso)}`
+            : null,
+          waitingSince: since.iso,
+          isApproxDate: since.isApprox,
+        }
+      }
+
       const reviewLine = `Awaiting approval${resubmitSuffix(brand)}`
       const waitingLine = formatWaitingLine(since, { showRelative: true })
       const days = since.iso ? daysInStatus(since.iso) : 0

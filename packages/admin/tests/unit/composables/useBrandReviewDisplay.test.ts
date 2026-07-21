@@ -79,11 +79,24 @@ describe('getBrandReviewDisplay', () => {
     expect(d.waitingSince).toBeNull()
   })
 
-  it('submitted shows awaiting approval with resubmit badge', () => {
+  it('submitted with new brief orders shows in work with team', () => {
     const d = getBrandReviewDisplay(
       baseBrand({
         status: BRAND_BRIEF_STATUS.SUBMITTED,
         submittedAt: '2026-05-20T10:00:00.000Z',
+        newConceptBrief: { isNewGeo: true } as never,
+      })
+    )
+    expect(d.reviewLine).toBe('In work with team')
+    expect(d.reviewTitle).toContain('Teams received')
+  })
+
+  it('submitted shows awaiting approval with resubmit badge', () => {
+    const submittedAt = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+    const d = getBrandReviewDisplay(
+      baseBrand({
+        status: BRAND_BRIEF_STATUS.SUBMITTED,
+        submittedAt,
         submitCount: 2,
         submittedByName: 'PO User',
       })
@@ -92,9 +105,9 @@ describe('getBrandReviewDisplay', () => {
     expect(d.reviewTitle).toContain('CPO/CEO')
     expect(d.reviewTitle).toContain('PO User')
     expect(d.waitingLine).toContain('·')
-    expect(daysInStatus('2026-05-20T10:00:00.000Z', NOW)).toBeGreaterThanOrEqual(3)
+    expect(daysInStatus(submittedAt)).toBeGreaterThanOrEqual(3)
     expect(d.waitingTone).toBe('warn')
-    expect(formatRelativeUk('2026-05-20T10:00:00.000Z', NOW)).toMatch(/\d+d/)
+    expect(formatRelativeUk(submittedAt)).toMatch(/\d+d/)
   })
 
   it('needs revision shows awaiting PO, not approver in cell', () => {

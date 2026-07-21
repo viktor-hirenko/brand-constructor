@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { brandHasNewBriefs } from '@brand-constructor/shared'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { BRAND_BRIEF_REVIEW_PHASE } from '@/domain/reviewPhase/BrandBriefReviewPhase'
@@ -23,10 +24,19 @@ export function useBrandBriefReviewPhase() {
   const store = useConstructorStore()
   const authStore = useAuthStore()
 
+  const hasNewBriefs = computed(() =>
+    brandHasNewBriefs({
+      newConceptBrief: store.stepData?.concept?.newConceptBrief ?? null,
+      newNamingBrief: store.stepData?.externalNaming?.newNamingBrief ?? null,
+      stepData: store.stepData,
+    })
+  )
+
   const reviewPhase = computed(() =>
     resolveBrandBriefReviewPhase({
       status: store.brandStatus ?? 'draft',
       isSupervisor: authStore.isCeo,
+      hasNewBriefs: hasNewBriefs.value,
       routeIsCeoReselect: route.meta.ceoReselect === true,
       routeIsPoEdit: route.meta.poEdit === true,
       routeIsDraftEdit: route.meta.draftEdit === true,
@@ -48,6 +58,14 @@ export function useBrandBriefReviewPhase() {
     () => reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_REVIEW
   )
 
+  const isSupervisorAwaitingTeam = computed(
+    () => reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
+  )
+
+  const isAuthorInWork = computed(
+    () => reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK
+  )
+
   const isAuthorReturned = computed(
     () => reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.AUTHOR_RETURNED
   )
@@ -64,7 +82,9 @@ export function useBrandBriefReviewPhase() {
    * Equivalent to the former `isReviewShell` flag in `BriefShellView.vue`.
    */
   const isReviewShell = computed(
-    () => reviewPhase.value !== BRAND_BRIEF_REVIEW_PHASE.WIZARD
+    () =>
+      reviewPhase.value !== BRAND_BRIEF_REVIEW_PHASE.WIZARD &&
+      reviewPhase.value !== BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
   )
 
   /**
@@ -73,6 +93,7 @@ export function useBrandBriefReviewPhase() {
    */
   const layoutMode = computed<LayoutMode>(() => {
     const phase = reviewPhase.value
+    if (phase === BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM) return 'wizard'
     if (
       phase === BRAND_BRIEF_REVIEW_PHASE.ALTERNATIVE_SELECTION ||
       phase === BRAND_BRIEF_REVIEW_PHASE.REVISION_RESPONSE
@@ -85,9 +106,12 @@ export function useBrandBriefReviewPhase() {
 
   return {
     reviewPhase,
+    hasNewBriefs,
     isAlternativeSelection,
     isRevisionResponse,
     isSupervisorReview,
+    isSupervisorAwaitingTeam,
+    isAuthorInWork,
     isAuthorReturned,
     isApprovedPhase,
     isReviewShell,

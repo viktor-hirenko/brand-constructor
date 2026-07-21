@@ -61,7 +61,12 @@ status.patch('/:id/status', async c => {
   const currentStatus = existing.status as BrandStatus
   const allowedTransitions = STATUS_TRANSITIONS[currentStatus] ?? []
 
-  if (!allowedTransitions.includes(targetStatus)) {
+  const isReadyForCeoResubmit =
+    targetStatus === BRAND_BRIEF_STATUS.SUBMITTED &&
+    currentStatus === BRAND_BRIEF_STATUS.SUBMITTED &&
+    !brandHasNewBriefs(existing)
+
+  if (!allowedTransitions.includes(targetStatus) && !isReadyForCeoResubmit) {
     return c.json(
       {
         success: false,
@@ -74,6 +79,18 @@ status.patch('/:id/status', async c => {
   if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
     if (existing.created_by !== user.id) {
       return c.json({ success: false, error: 'Only the brand owner can submit for review' }, 403)
+    }
+    if (
+      currentStatus === BRAND_BRIEF_STATUS.SUBMITTED &&
+      brandHasNewBriefs(existing)
+    ) {
+      return c.json(
+        {
+          success: false,
+          error: 'Brief is still in work with teams — complete library selections before CEO review',
+        },
+        400
+      )
     }
   }
 
@@ -200,8 +217,8 @@ status.patch('/:id/status', async c => {
                 ])
             )
           } else {
-            const isResubmit = currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
-            const message = isResubmit
+            const isNeedsRevisionResubmit = currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
+            const message = isNeedsRevisionResubmit
               ? buildResubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
               : buildSubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
             c.executionCtx.waitUntil(sendSlackMessage(c.env.SLACK_BOT_TOKEN, message))

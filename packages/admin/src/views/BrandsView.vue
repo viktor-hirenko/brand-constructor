@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { BrandListItem } from '@brand-constructor/shared'
+import {
+  brandHasNewBriefsFromBrand,
+  BRAND_BRIEF_STATUS,
+  USER_ROLES,
+} from '@brand-constructor/shared'
 import { useApiList, apiDelete } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
@@ -15,6 +20,7 @@ import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryM
 
 const authStore = useAuthStore()
 const canDeleteBrand = computed(() => authStore.user?.role === 'admin')
+const isCeoUser = computed(() => authStore.user?.role === USER_ROLES.CPO_CEO)
 
 const {
   data: brands,
@@ -43,6 +49,14 @@ const { sortedData, sortField, sortDirection, toggleSort, setSort } = useTableSo
   'createdAt',
   'desc',
   brandsSortValue
+)
+
+const displayBrands = computed(() =>
+  sortedData.value.filter(brand => {
+    if (!isCeoUser.value) return true
+    if (brand.status !== BRAND_BRIEF_STATUS.SUBMITTED) return true
+    return !brandHasNewBriefsFromBrand(brand)
+  })
 )
 
 function applyDefaultSortForTab(tab: string) {
@@ -190,7 +204,7 @@ async function confirmDeleteBrand() {
 
     <div v-if="loading" class="brands-view__loading">Loading...</div>
 
-    <div v-else-if="brands.length === 0" class="brands-view__empty">
+    <div v-else-if="displayBrands.length === 0" class="brands-view__empty">
       No brands{{ activeTab !== 'all' ? ' with this status' : '' }} found.
     </div>
 
@@ -247,7 +261,7 @@ async function confirmDeleteBrand() {
         </thead>
         <tbody>
           <tr
-            v-for="brand in sortedData"
+            v-for="brand in displayBrands"
             :key="brand.id"
             class="brands-view__row"
             @click="openBrand(brand)"

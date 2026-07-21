@@ -20,7 +20,9 @@ import {
   type ComponentTypeInfo,
 } from '@/composables/usePrintBrand'
 import ReviewUnifiedView from '@/components/constructor/review/ReviewUnifiedView.vue'
+import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
+import { brandHasNewBriefs } from '@brand-constructor/shared'
 import {
   useBrandBriefReviewPhase,
   BRAND_BRIEF_REVIEW_PHASE,
@@ -74,11 +76,12 @@ const ceoFrozenView = computed(
  * `ReviewUnifiedView`'s `:review-mode` prop.
  */
 const reviewMode = computed<
-  'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'approved'
+  'ceo' | 'po-draft' | 'po-returned' | 'po-submitted' | 'po-in-work' | 'approved'
 >(() => {
   switch (reviewPhase.value) {
     case BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_REVIEW: return 'ceo'
     case BRAND_BRIEF_REVIEW_PHASE.AUTHOR_RETURNED:   return 'po-returned'
+    case BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK:     return 'po-in-work'
     case BRAND_BRIEF_REVIEW_PHASE.AUTHOR_SUBMITTED:  return 'po-submitted'
     case BRAND_BRIEF_REVIEW_PHASE.APPROVED:          return 'approved'
     default:                                          return 'po-draft'
@@ -149,13 +152,17 @@ const reviewUnifiedViewRef = ref<InstanceType<typeof ReviewUnifiedView> | null>(
 const showApproveConfirm = ref(false)
 const approveConfirmMode = ref<'standard' | 'warning'>('standard')
 
-const hasNewBrief = computed(() => {
-  return (
-    store.stepData?.concept?.newConceptBrief != null ||
-    store.stepData?.externalNaming?.newNamingBrief != null ||
-    store.stepData?.internalNaming?.newNamingFeedback != null
-  )
-})
+const hasNewBrief = computed(() =>
+  brandHasNewBriefs({
+    newConceptBrief: store.stepData?.concept?.newConceptBrief ?? null,
+    newNamingBrief: store.stepData?.externalNaming?.newNamingBrief ?? null,
+    stepData: store.stepData,
+  })
+)
+
+const isSupervisorGate = computed(
+  () => reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
+)
 
 // Share hidden — not in v2 PRD; teams get brief via Slack/constructor link.
 const showShareButton = computed(() => false)
@@ -280,10 +287,13 @@ function editSection(step: number, sectionKey: string) {
       return
     }
   }
-  // Draft concept edit → dedicated cascade flow (concept → external naming).
-  // The edit session is begun inside DraftConceptEditView so it survives the
-  // brand-shell reload that happens when entering from the wizard step-8 review.
-  if (sectionKey === 'concept' && !isCeoView.value && brandStatus.value === 'draft' && bid) {
+  // Draft or in-work concept edit → dedicated cascade flow (concept → external naming).
+  if (
+    sectionKey === 'concept' &&
+    !isCeoView.value &&
+    (brandStatus.value === 'draft' || reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK) &&
+    bid
+  ) {
     router.push(`/constructor/brand/${bid}/draft-edit/concept`)
     return
   }
@@ -336,6 +346,19 @@ async function handleShare() {
 }
 
 async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_revision') {
+  if (
+    newStatus === 'submitted' &&
+    reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK &&
+    hasNewBrief.value
+  ) {
+    statusActionError.value = null
+    const saved = await store.saveBrand()
+    if (!saved && store.saveError) {
+      statusActionError.value = store.saveError
+    }
+    return
+  }
+
   if (newStatus === 'needs_revision') {
     const validation = comments.validateNeedsRevision()
     if (!validation.ok) {
@@ -509,7 +532,9 @@ async function handlePrintBrand() {
 </script>
 
 <template>
+  <SupervisorBriefGateView v-if="isSupervisorGate" />
   <ReviewUnifiedView
+    v-else
     ref="reviewUnifiedViewRef"
     :review-mode="reviewMode"
     :is-po-returned-view="isPoReturnedView"
