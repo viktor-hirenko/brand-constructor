@@ -20,7 +20,6 @@ import {
   type ComponentTypeInfo,
 } from '@/composables/usePrintBrand'
 import ReviewUnifiedView from '@/components/constructor/review/ReviewUnifiedView.vue'
-import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import { brandHasNewBriefs } from '@brand-constructor/shared'
 import {
@@ -158,10 +157,6 @@ const hasNewBrief = computed(() =>
     newNamingBrief: store.stepData?.externalNaming?.newNamingBrief ?? null,
     stepData: store.stepData,
   })
-)
-
-const isSupervisorGate = computed(
-  () => reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
 )
 
 // Share hidden — not in v2 PRD; teams get brief via Slack/constructor link.
@@ -532,9 +527,7 @@ async function handlePrintBrand() {
 </script>
 
 <template>
-  <SupervisorBriefGateView v-if="isSupervisorGate" />
   <ReviewUnifiedView
-    v-else
     ref="reviewUnifiedViewRef"
     :review-mode="reviewMode"
     :is-po-returned-view="isPoReturnedView"

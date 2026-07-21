@@ -34,6 +34,7 @@ import {
 import {
   VISUAL_COMPONENT_PREVIEW_KEY,
 } from '@/composables/visualComponentPreviewContext'
+import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
@@ -100,9 +101,7 @@ const shellFullWidth = computed(
   () => isFullWidth.value && !isAlternativeSelection.value && !isRevisionResponse.value
 )
 
-const showRightPane = computed(
-  () => !shellFullWidth.value && !isSupervisorAwaitingTeam.value
-)
+const showRightPane = computed(() => !shellFullWidth.value)
 
 const concepts = computed(() => librariesStore.concepts)
 
@@ -570,7 +569,11 @@ watch(currentStep, step => {
 </script>
 
 <template>
-  <div class="constructor-layout h-[100dvh] bg-background flex items-center justify-center overflow-hidden">
+  <SupervisorBriefGateView v-if="isSupervisorAwaitingTeam" />
+  <div
+    v-else
+    class="constructor-layout h-[100dvh] bg-background flex items-center justify-center overflow-hidden"
+  >
     <ConstructorDualPaneShell
       :layout-mode="layoutMode"
       :full-width="shellFullWidth"
