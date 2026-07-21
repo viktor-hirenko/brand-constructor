@@ -34,7 +34,7 @@
 
 | # | Figma | Баг (текст из макета) | Приоритет | Батч | Статус | Коммит |
 |---|-------|------------------------|-----------|------|--------|--------|
-| — | *(без №)* | CEO має доступ до брифу, у якому ще не обрано концепт/неймінг, а замовлено новий | **High** | C | **pending** | — |
+| — | *(без №)* | CEO має доступ до брифу, у якому ще не обрано концепт/неймінг, а замовлено новий | **High** | C | **blocked** | — |
 | 1 | **№1** | Блок коментаря CEO необмежено розтягується по висоті під довжину тексту | Medium | A | **done** | `4ce8625` |
 | 2 | BRIEF-029 | Общий комментарий выше, чем секционные | Low | A | **done** | `60ef870` |
 | 3 | BRIEF-028b | Убрать лейбл «Коментар CEO» внутри textarea общего комментария | Medium | A | **done** | `60ef870` |
@@ -46,7 +46,7 @@
 | 9 | BRIEF-037 | Review: не перезаписывать выбор заказчика выбором CEO | **High** | B | **done** | `d8e4ecf` |
 | 10 | BRIEF-038 | Confirmation modal перед затвердженням CEO | **High** | C | **done** | `c7198e7` |
 
-**Итого:** 10 done · 0 in_progress · 1 pending (BRIEF-031)
+**Итого:** 10 done · 1 blocked (BRIEF-031 — ждёт ответов дизайнера по флоу)
 
 ---
 
@@ -99,37 +99,72 @@ Acceptance: секция «Как проверить» в doc
 
 ## BRIEF-031 — CEO видит бриф до готовности нового концепта (High)
 
-**Figma:** CEO не должен видеть полный бриф на review, пока команда не выполнила заказ «новий концепт» (brief в работе).
+**Figma (верхняя строка таблицы, без №):**
+- Що не так: «CEO має доступ до брифу, у якому ще не обрано концепт/неймінг, а замовлено новий».
+- Як треба: «Якщо Product замовив новий Concept або Naming, бриф має спочатку перейти в роботу відповідній команді. CEO має бачити бриф лише після того, як усі обов'язкові дані вже готові та заповнені».
 
-**Текущее состояние (partial infra, bug open):**
+### Как устроено сейчас (по коду)
 
-- При submit с `newConceptBrief`/`newNamingBrief`/`internalNamingFeedback` Slack пишет «Бриф містить нові замовлення. CEO-ревью не потрібне» ([`buildNewBriefsApprovalMessage`](../../packages/worker/src/utils/slack.ts):747; условие — [`brandHasNewBriefs`](../../packages/worker/src/utils/brand-export.ts):12).
-- UI: CEO с ролью `cpo_ceo` при `status === 'submitted'` всё равно попадает в `SUPERVISOR_REVIEW` ([`resolveBrandBriefReviewPhase.ts`](../../packages/constructor/src/domain/reviewPhase/resolveBrandBriefReviewPhase.ts):46) — **нет gate**. Бэкенд и фронт расходятся: бэк уже знает, что ревью не нужно, фронт этого не учитывает.
+```
+PO «+ Новий концепт» → «Відправити в роботу» → status = submitted
+  → Slack Strategy/Design/PR «Нове замовлення»
+  → Slack approvals «CEO-ревью не потрібне»
+  → PO видит success «В роботі» (это ЯРЛЫК, не статус)
+  → PO больше не может редактировать (po-submitted read-only)
+  → CEO по status=submitted попадает в полный SUPERVISOR_REVIEW с approve/revise  ← БАГ
+  → команда кладёт концепт в библиотеку, но НЕТ привязки к брифу и НЕТ возврата к CEO
+```
 
-### Точки неоднозначности для Opus (product-решения)
+### Проверка статусов (п.6 запроса) — КЛЮЧЕВОЕ
 
-1. **Сигнал «в работе».** `submitted + brandHasNewBriefs` = заказ в работе. Что именно триггерит «готово»: очистка `newConceptBrief` + проставленный `concept.selectedId`? отдельный статус? Нужно свериться с worker-flow (что делает команда, чтобы вернуть бриф на ревью).
-2. **Что видит CEO пока в работе.** read-only placeholder «В роботі, очікує виконання» / redirect на список / баннер без approve+revise? В любом случае — скрыть `SupervisorActionsFooter` (approve/revise).
-3. **Частичный случай.** Только internalNamingFeedback (без нового концепта) — нужен ли gate или ревью допустимо? Уточнить.
+Статусов всего 4 ([`statuses.ts`](../../packages/shared/src/constants/statuses.ts)): `draft → submitted → needs_revision | approved`.
+**Отдельного статуса «в работе / ждёт команду» НЕТ.** «В роботі» у PO — это текст на success-экране ([`BrandSuccessView.vue`](../../packages/constructor/src/views/BrandSuccessView.vue):63), выводимый по `hasNewBriefs`; в базе всё равно `submitted`. Поэтому CEO не отличает «готовый бриф» от «заказ в работе».
 
-### Направление fix
+### Дыры в продукте (нет ни в дизайне, ни в коде)
 
-- Разделить `brandHasNewBriefs` в shared util (переиспользовать логику worker на фронте) → `hasNewBrief` во [`BriefReviewView`](../../packages/constructor/src/views/wizard/BriefReviewView.vue):140 уже близок.
-- Новая phase `SUPERVISOR_AWAITING_WORK` **или** флаг в resolver: `isSupervisor && status==='submitted' && hasNewBrief` → отдельный read-only экран.
-- `ReviewUnifiedView`/`BriefReviewView` — рендер placeholder, скрыть footer approve/revise.
-- Unit-тесты на `resolveBrandBriefReviewPhase` (submitted + hasNewBrief + isSupervisor → новая phase).
+- нет статуса «в работе»;
+- нет механизма «команда сделала → концепт привязан к брифу»;
+- не определено, кто дорабатывает бриф после команды (PO / admin / авто);
+- нет повторной отправки брифа к CEO + нет Slack «готов до review»;
+- нет блокировки экрана CEO (сам баг).
 
-**Ключевые файлы:** `resolveBrandBriefReviewPhase.ts`, `BrandBriefReviewPhase.ts`, `useBrandBriefReviewPhase.ts`, `BriefReviewView.vue`, `ReviewUnifiedView.vue`, `tests/unit/domain/resolveBrandBriefReviewPhase.test.ts`.
+Реализована только первая половина (PO → Slack команде). Вторая половина (команда → бриф → CEO) отсутствует.
 
-**Модель:** планирование **Opus 4.8** (сигнал «готово» + UX placeholder — product-логика) · реализация **Composer 2.5**
+### Два уровня решения
 
-**Как проверить:**
+**Вариант A — MVP (только требование Figma):** CEO при `submitted && brandHasNewBriefs` видит read-only заглушку «Бриф у роботі команди», без approve/revise. Статус не трогаем. Возврат к CEO — пока вручную (PO пересобирает). Быстро, но не закрывает «кто возвращает бриф».
 
-1. PO создаёт бриф с «Новий концепт (бриф)», submit «Відправити в роботу».
-2. CEO открывает тот же brand — **не** видит полный review с approve/revise, видит placeholder «В роботі».
-3. После появления концепта в библиотеке и привязки к брифу (сигнал по п.1 Opus) — CEO видит обычный review с approve/revise.
+**Вариант B — полный флоу:** новый статус `in_work`/`awaiting_team`; PO-заказ → этот статус (не submitted); команда сделала → PO/admin выбирает концепт из библиотеки → `submitted` → Slack CEO. Правильно, но нужен статус + миграция + правки админки/уведомлений + product-решение «кто дорабатывает».
 
-**Статус:** pending (ждёт planning-решения по сигналу «готово»)
+### Вопросы дизайнеру (ждут ответа перед реализацией)
+
+1. Что видит CEO у брифа «в работе»? Не открывает / экран-заглушка? Есть макет?
+2. Кто доводит бриф до готовности после работы команды: PO / admin / авто?
+3. Может ли PO редактировать бриф после отправки в работу (сейчас — нет)?
+4. Нужен ли отдельный статус «В роботі» и как он в списке брендов (admin)?
+5. Нужно ли Slack-уведомление CEO, когда бриф готов к review?
+6. Та же логика для нового external naming и нового internal naming?
+
+**Выход от дизайнера:** схема 4–5 шагов (PO → команда → доработка → CEO) + макет экрана CEO «бриф ещё не готов».
+
+### Направление fix (после ответов)
+
+- Вынести `brandHasNewBriefs` в shared util, использовать на фронте (в [`BriefReviewView`](../../packages/constructor/src/views/wizard/BriefReviewView.vue):152 уже есть `hasNewBrief`).
+- A: флаг в [`resolveBrandBriefReviewPhase.ts`](../../packages/constructor/src/domain/reviewPhase/resolveBrandBriefReviewPhase.ts) `isSupervisor && submitted && hasNewBrief` → новая read-only phase; скрыть `SupervisorActionsFooter`.
+- B: новый статус в [`statuses.ts`](../../packages/shared/src/constants/statuses.ts) + серверные transitions + админка + уведомления.
+- Unit-тесты на resolver.
+
+**Ключевые файлы:** `resolveBrandBriefReviewPhase.ts`, `BrandBriefReviewPhase.ts`, `useBrandBriefReviewPhase.ts`, `BriefReviewView.vue`, `ReviewUnifiedView.vue`, (B) `statuses.ts` + worker transitions.
+
+**Модель:** документ готов без Opus. Opus — только если выбран Вариант B (новый статус, много связей). Реализация — **Composer 2.5**.
+
+**Как проверить (после fix):**
+
+1. PO создаёт бриф с «Новий концепт (бриф)», «Відправити в роботу».
+2. CEO открывает тот же brand (`brand_1ffc50c0a75845a5`, New Brand #13) — **не** видит approve/revise, видит заглушку «в роботі».
+3. (B) После доработки/выбора концепта из библиотеки → CEO видит обычный review.
+
+**Статус:** blocked (ждёт ответов дизайнера по флоу возврата к CEO; см. вопросы выше)
 
 ---
 
