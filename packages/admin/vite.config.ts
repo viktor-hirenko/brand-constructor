@@ -16,6 +16,16 @@ export default defineConfig({
         target: 'http://localhost:8787',
         changeOrigin: true,
       },
+      // Unified single-origin dev (Variant 3): the admin dev server is the one
+      // origin. `/wizard/*` (HTTP + HMR websocket) is forwarded to the
+      // constructor dev server, which is configured with `base: '/wizard/'`.
+      // Everything the browser sees lives on http://localhost:5173, so the
+      // auth cookie is shared between admin and wizard exactly like production.
+      '/wizard': {
+        target: 'http://localhost:5174',
+        changeOrigin: false,
+        ws: true,
+      },
     },
   },
   css: {

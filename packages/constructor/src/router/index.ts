@@ -337,7 +337,11 @@ const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  // `import.meta.env.BASE_URL` === Vite `base` ('/wizard/' on the unified
+  // single-origin deploy, '/' in isolated builds). Keeps every router-relative
+  // path (e.g. '/constructor/step/1') correctly prefixed without touching
+  // route definitions.
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
 

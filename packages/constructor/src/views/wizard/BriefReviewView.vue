@@ -317,7 +317,9 @@ async function handleShare() {
     if (!saved) return
   }
 
-  const shareUrl = `${window.location.origin}/constructor/brand/${store.brandId}`
+  // `BASE_URL` ('/wizard/' on unified deploy, '/' standalone) keeps the shared
+  // deep link valid under the single-origin path prefix.
+  const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL}constructor/brand/${store.brandId}`
 
   try {
     await navigator.clipboard.writeText(shareUrl)
