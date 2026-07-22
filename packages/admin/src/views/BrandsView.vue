@@ -4,8 +4,10 @@ import type { BrandListItem } from '@brand-constructor/shared'
 import {
   brandHasNewBriefsFromBrand,
   BRAND_BRIEF_STATUS,
+  BRAND_BRIEF_CREATOR_ROLES,
   USER_ROLES,
 } from '@brand-constructor/shared'
+import { openBrandInWizard, createBrandInWizard } from '@/utils/wizardLink'
 import { useApiList, apiDelete } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
@@ -21,6 +23,11 @@ import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryM
 const authStore = useAuthStore()
 const canDeleteBrand = computed(() => authStore.user?.role === 'admin')
 const isCeoUser = computed(() => authStore.user?.role === USER_ROLES.CPO_CEO)
+// Only brand-brief creators (Product Owner) can start a new brand.
+const canCreateBrand = computed(() => {
+  const role = authStore.user?.role
+  return role ? (BRAND_BRIEF_CREATOR_ROLES as readonly string[]).includes(role) : false
+})
 
 const {
   data: brands,
@@ -116,16 +123,8 @@ watch(activeTab, (tab) => {
   loadBrands()
 })
 
-const constructorBaseUrl = computed(() => {
-  const url = import.meta.env.VITE_CONSTRUCTOR_URL
-  return url || ''
-})
-
 function openBrand(brand: BrandListItem) {
-  const base = constructorBaseUrl.value
-  if (base) {
-    window.open(`${base}/constructor/brand/${brand.id}`, '_blank')
-  }
+  openBrandInWizard(brand.id)
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -188,6 +187,13 @@ async function confirmDeleteBrand() {
   <div class="brands-view">
     <div class="brands-view__header">
       <span class="brands-view__count">{{ total }} brand{{ total === 1 ? '' : 's' }}</span>
+      <BaseButton
+        v-if="canCreateBrand"
+        class="brands-view__create"
+        @click="createBrandInWizard()"
+      >
+        Create Brand
+      </BaseButton>
     </div>
 
     <div class="brands-view__tabs">
@@ -389,7 +395,7 @@ async function confirmDeleteBrand() {
 .brands-view {
   &__header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: $spacing-3;
     margin-bottom: $spacing-6;
   }
@@ -397,6 +403,10 @@ async function confirmDeleteBrand() {
   &__count {
     font-size: $font-size-sm;
     color: $color-text-secondary;
+  }
+
+  &__create {
+    margin-left: auto;
   }
 
   &__tabs {

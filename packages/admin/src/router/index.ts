@@ -21,8 +21,10 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue'),
     },
     {
+      // Variant 3 — Brands is the single entry point after login for every role
+      // (backend filters the list per role; the sidebar shows Brands to all).
       path: '/',
-      redirect: '/concepts',
+      redirect: '/brands',
     },
     {
       path: '/concepts',
@@ -92,9 +94,9 @@ router.beforeEach(async to => {
     await authStore.fetchCurrentUser()
   }
 
-  // Already authenticated → redirect away from login page
+  // Already authenticated → redirect away from login page to the Brands home
   if (to.name === 'login') {
-    if (authStore.isAuthenticated) return { name: 'concepts' }
+    if (authStore.isAuthenticated) return { name: 'brands' }
     return true
   }
 
@@ -106,7 +108,7 @@ router.beforeEach(async to => {
   const requiredRoles = getRequiredRoles(to.matched)
   const userRole = authStore.user?.role
   if (requiredRoles && (!userRole || !requiredRoles.includes(userRole))) {
-    return { name: 'concepts' }
+    return { name: 'brands' }
   }
 
   return true
