@@ -1,5 +1,8 @@
 node_modules/
 dist/
+# Generated unified single-origin static tree (Variant 3). The proxy Function
+# under deploy/unified/functions IS tracked; only the built public/ is ignored.
+deploy/unified/public/
 storybook-static/
 .turbo/
 .wrangler/
