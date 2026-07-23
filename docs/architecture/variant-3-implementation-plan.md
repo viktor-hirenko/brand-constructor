@@ -48,7 +48,10 @@ wizard. «Единый SPA» — улучшение UX, не обязатель�
   Файл: [packages/worker/src/routes/auth.ts](packages/worker/src/routes/auth.ts).
   → Единый вход возможен **только под одним origin**. `COOKIE_DOMAIN` в коде нет.
 - **iframe cross-origin для wizard нежизнеспособен** (`SameSite=Lax` +
-  блокировка third-party cookies Safari/Chrome). Вариант с iframe — **отклонён**.
+  блокировка third-party cookies Safari/Chrome). Cross-origin iframe — **отклонён**.
+  ВАЖНО: реализованный embed (см. §12) — это **same-origin** iframe (`/wizard/*`
+  на том же origin, что и admin), где cookie отправляется как first-party. Это
+  другой кейс, чем отклонённый cross-origin.
 - CSRF: HMAC `X-CSRF-Token`, только на мутациях
   ([packages/worker/src/middleware/csrf.ts](packages/worker/src/middleware/csrf.ts)).
 - CORS allowlist: два origin в
@@ -296,8 +299,9 @@ flowchart LR
 
 ## 9. Anti-patterns (что явно НЕ делать)
 
-- **Не** встраивать wizard через cross-origin iframe (cookie `SameSite=Lax` не
-  переживёт third-party контекст).
+- **Не** встраивать wizard через **cross-origin** iframe (cookie `SameSite=Lax`
+  не переживёт third-party контекст). Same-origin iframe (§12) — допустим и
+  используется: cookie остаётся first-party.
 - **Не** переводить cookie на `SameSite=None` ради iframe без явной
   security-необходимости.
 - **Не** сливать Tailwind wizard и SCSS admin в один DOM без изоляции Preflight
@@ -337,3 +341,77 @@ flowchart LR
 
 Эти вопросы блокируют только Этап 3 (деплой); Этапы 1–2 можно начинать сразу
 после «ок» на план.
+
+---
+
+## 12. Реализовано: Wizard как вкладка внутри Admin (same-origin iframe embed)
+
+Продуктовое требование уточнено: Wizard должен открываться **внутри** контент-
+области Admin (сайдбар остаётся видимым), а не полностраничным переходом на
+`/wizard/`. Реализовано поверх ядра (подход A) через **same-origin iframe**.
+
+### 12.1 Почему iframe (обоснование кодом, не гипотезы)
+- `X-Frame-Options: DENY` стоит только на ответах worker (`/api/*`) —
+  [packages/worker/src/index.ts](packages/worker/src/index.ts). HTML-оболочка
+  `/wizard/` отдаётся Cloudflare Pages без XFO/`frame-ancestors`, поэтому
+  same-origin фрейминг не блокируется. `_headers` в репо отсутствует, unified
+  [_middleware.ts](deploy/unified/functions/_middleware.ts) заголовков не
+  добавляет.
+- Frame-busting/`window.top` в коде нет (grep — 0 совпадений). В `index.html`
+  admin/constructor нет CSP/XFO meta.
+- [useViewportScale.ts](packages/constructor/src/composables/useViewportScale.ts)
+  считает scale от `window.innerWidth/Height` + слушает `resize`; внутри iframe
+  `window` — окно iframe, resize приходит при изменении размера iframe → визард
+  корректно вписывается в узкую контент-область.
+- Same-origin → HttpOnly cookie уходит как first-party; авторизация в iframe
+  работает без релогина. Tailwind Preflight визарда изолирован в документе
+  iframe → **ноль конфликтов** с SCSS admin. Бизнес-логика визарда не меняется.
+
+### 12.2 Флоу
+```mermaid
+flowchart LR
+  Brands["/brands (Admin)"] -->|"Open brand"| WB["/workspace/brand/:id"]
+  Brands -->|"Create Brand"| WN["/workspace/new"]
+  WB --> Frame["WizardWorkspaceView<br/>iframe src=/wizard/constructor/brand/:id"]
+  WN --> Frame2["WizardWorkspaceView<br/>iframe src=/wizard/"]
+  Frame -. "postMessage: ready/done/auth-required" .- Brands
+```
+
+### 12.3 Изменённые/добавленные файлы
+- Admin:
+  - [WizardWorkspaceView.vue](packages/admin/src/views/WizardWorkspaceView.vue)
+    — iframe на всю контент-область, загрузчик, слушатель `message`
+    (origin-check + `source==='brand-wizard'`).
+  - [router/index.ts](packages/admin/src/router/index.ts) — маршруты
+    `workspace-brand` (`/workspace/brand/:id`) и `workspace-new`
+    (`/workspace/new`).
+  - [App.vue](packages/admin/src/App.vue) — модификатор
+    `app-layout__content--flush` (без padding/scroll) для `/workspace/*`.
+  - [BrandsView.vue](packages/admin/src/views/BrandsView.vue) — open/create →
+    `router.push` в `/workspace/*` (вместо `window.open`/`location.assign`).
+  - [wizardLink.ts](packages/admin/src/utils/wizardLink.ts) —
+    `buildWizardIframeSrc()` + переходы через router; legacy cross-origin
+    (`VITE_CONSTRUCTOR_URL`) по-прежнему открывает новый таб.
+  - [AppHeader.vue](packages/admin/src/components/ui/AppHeader.vue) — заголовок
+    раздела + кнопка «← Brands» на `/workspace/*`.
+  - [AppSidebar.vue](packages/admin/src/components/ui/AppSidebar.vue) —
+    подсветка Brands активной, пока открыт `/workspace/*`.
+- Wizard:
+  - [useEmbedBridge.ts](packages/constructor/src/composables/useEmbedBridge.ts)
+    — postMessage `ready`/`done`/`auth-required`; **no-op** вне iframe
+    (`window.parent === window.self`) → standalone-деплой не затронут.
+  - [main.ts](packages/constructor/src/main.ts) — `setupEmbedBridge(router)`
+    после `router.isReady()`.
+
+### 12.4 Единственный edge-case (закрыт дизайном)
+Google Sign-In в iframe нестабилен. Но при встроенном флоу пользователь уже
+залогинен в admin (cookie shared) → визард резолвится авторизованным и `/login`
+внутри iframe не показывается. Если cookie протухла в середине сессии, guard
+визарда шлёт `auth-required` → admin делает top-level reload → логин
+показывается на верхнем уровне, а не в iframe.
+
+### 12.5 Граница гарантии
+- Локально работает уже сейчас (admin vite проксирует `/wizard` → dev-сервер
+  визарда; см. [admin/vite.config.ts](packages/admin/vite.config.ts)).
+- Прод-встраивание требует единого origin (Этап 3, unified-деплой) — единая
+  cookie возможна только под одним origin.

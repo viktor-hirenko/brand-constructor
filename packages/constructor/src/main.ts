@@ -3,6 +3,7 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { useAuthStore } from './stores/auth';
+import { setupEmbedBridge } from './composables/useEmbedBridge';
 import './styles/app.css';
 
 // Older versions of this SPA persisted the auth payload (user + JWT) under
@@ -38,5 +39,8 @@ void (async () => {
   await authStore.fetchCurrentUser();
   app.use(router);
   await router.isReady();
+  // Variant 3: wire the Admin<->Wizard postMessage bridge. No-op when the
+  // Wizard is not embedded in an iframe (standalone / legacy deploy).
+  setupEmbedBridge(router);
   app.mount('#app');
 })();

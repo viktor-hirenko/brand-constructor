@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
 
 const emit = defineEmits<{
@@ -7,6 +7,7 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const router = useRouter()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
@@ -18,9 +19,19 @@ const pageTitle = computed(() => {
     'component-variants': 'Component Variants',
     components: 'UI Components Library',
     users: 'User Management',
+    'workspace-brand': 'Brand Wizard',
+    'workspace-new': 'New Brand',
   }
   return titles[route.name as string] || 'Brand Constructor'
 })
+
+// On the embedded Wizard routes, show a "back to Brands" affordance since the
+// Wizard fills the content area and has no Admin breadcrumb of its own.
+const isWorkspace = computed(() => route.path.startsWith('/workspace'))
+
+function goToBrands() {
+  router.push({ name: 'brands' })
+}
 </script>
 
 <template>
@@ -29,6 +40,14 @@ const pageTitle = computed(() => {
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />
+    </button>
+    <button
+      v-if="isWorkspace"
+      class="app-header__back"
+      type="button"
+      @click="goToBrands"
+    >
+      &larr; Brands
     </button>
     <h1 class="app-header__title">{{ pageTitle }}</h1>
   </header>
@@ -73,6 +92,24 @@ const pageTitle = computed(() => {
     background-color: $color-text;
     border-radius: 2px;
     transition: background-color $transition-fast;
+  }
+
+  &__back {
+    flex-shrink: 0;
+    padding: $spacing-2 $spacing-3;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-primary;
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: $color-bg;
+      border-color: $color-primary;
+    }
   }
 
   &__title {

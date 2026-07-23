@@ -62,6 +62,19 @@ const router = createRouter({
       component: () => import('@/views/BrandsView.vue'),
     },
     {
+      // Variant 3 — Wizard embedded as a tab. These render WizardWorkspaceView
+      // (a same-origin iframe on `/wizard/*`) inside the Admin layout, keeping
+      // the sidebar visible. Auth is covered by the default guard below.
+      path: '/workspace/brand/:id',
+      name: 'workspace-brand',
+      component: () => import('@/views/WizardWorkspaceView.vue'),
+    },
+    {
+      path: '/workspace/new',
+      name: 'workspace-new',
+      component: () => import('@/views/WizardWorkspaceView.vue'),
+    },
+    {
       path: '/users',
       name: 'users',
       component: () => import('@/views/UsersView.vue'),

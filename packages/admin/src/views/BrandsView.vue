@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import type { BrandListItem } from '@brand-constructor/shared'
 import {
   brandHasNewBriefsFromBrand,
@@ -20,6 +21,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryModal.vue'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const canDeleteBrand = computed(() => authStore.user?.role === 'admin')
 const isCeoUser = computed(() => authStore.user?.role === USER_ROLES.CPO_CEO)
@@ -124,7 +126,7 @@ watch(activeTab, (tab) => {
 })
 
 function openBrand(brand: BrandListItem) {
-  openBrandInWizard(brand.id)
+  openBrandInWizard(router, brand.id)
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -190,7 +192,7 @@ async function confirmDeleteBrand() {
       <BaseButton
         v-if="canCreateBrand"
         class="brands-view__create"
-        @click="createBrandInWizard()"
+        @click="createBrandInWizard(router)"
       >
         Create Brand
       </BaseButton>

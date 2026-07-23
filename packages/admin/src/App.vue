@@ -7,6 +7,9 @@ import AppHeader from '@/components/ui/AppHeader.vue'
 const route = useRoute()
 
 const isLoginPage = computed(() => route.name === 'login')
+// The embedded Wizard (WizardWorkspaceView) fills the content area edge-to-edge,
+// so the default content padding/scroll is dropped for `/workspace/*` routes.
+const isFlushContent = computed(() => route.path.startsWith('/workspace'))
 const isSidebarOpen = ref(false)
 
 function toggleSidebar() {
@@ -32,7 +35,7 @@ function closeSidebar() {
       <AppSidebar :is-open="isSidebarOpen" @close="closeSidebar" />
       <div class="app-layout__main">
         <AppHeader @toggle-sidebar="toggleSidebar" />
-        <main class="app-layout__content">
+        <main class="app-layout__content" :class="{ 'app-layout__content--flush': isFlushContent }">
           <RouterView />
         </main>
       </div>
@@ -89,6 +92,17 @@ function closeSidebar() {
 
     @include mobile {
       padding: $spacing-4;
+    }
+
+    // Edge-to-edge mode for the embedded Wizard iframe: no padding, no scroll
+    // (the iframe manages its own scaling/scrolling and fills the area).
+    &--flush {
+      padding: 0;
+      overflow: hidden;
+
+      @include mobile {
+        padding: 0;
+      }
     }
   }
 }

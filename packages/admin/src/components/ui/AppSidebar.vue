@@ -41,6 +41,11 @@ const visibleItems = computed(() =>
 )
 
 function isActive(path: string): boolean {
+  // The embedded Wizard lives under `/workspace/*` but is opened from Brands,
+  // so keep the Brands item highlighted while the Wizard tab is active.
+  if (path === '/brands') {
+    return route.path.startsWith('/brands') || route.path.startsWith('/workspace')
+  }
   return route.path.startsWith(path)
 }
 
