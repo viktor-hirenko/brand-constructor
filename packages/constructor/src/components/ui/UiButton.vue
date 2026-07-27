@@ -27,7 +27,7 @@ const emit = defineEmits<{
 const isDisabled = computed(() => props.disabled || props.loading)
 
 const buttonClass = computed(() => [
-  'ui-button inline-flex items-center justify-center rounded-[8px] p-3 text-[16px] font-medium leading-6 tracking-[-0.3125px]',
+  'ui-button inline-flex items-center justify-center rounded-[8px] p-3 text-[1rem] font-medium leading-6 tracking-[-0.3125px]',
   props.block ? 'flex-1' : '',
   props.variant === 'primary'
     ? 'bg-[#030213] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40'

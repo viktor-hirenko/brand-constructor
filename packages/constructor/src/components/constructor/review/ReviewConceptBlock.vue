@@ -93,8 +93,8 @@ const singlePoLabel = 'Вибір Замовника'
         <SunIcon v-else class="size-5" />
       </div>
       <div class="flex-1 min-w-0 flex flex-col gap-1">
-        <p class="text-[14px] font-medium leading-4 text-[#5B5B62]">Mode</p>
-        <p class="text-[16px] leading-6 tracking-[-0.1504px] text-[#1A1A1A]">
+        <p class="text-[0.875rem] font-medium leading-4 text-[#5B5B62]">Mode</p>
+        <p class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#1A1A1A]">
           {{ modeLabel }}
         </p>
       </div>
@@ -123,7 +123,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">
+            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">
               {{ concept.name }}
             </p>
           </div>
@@ -141,7 +141,7 @@ const singlePoLabel = 'Вибір Замовника'
           class="review-concept-block__card review-concept-block__card--brief relative w-full aspect-square rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
-          <p class="text-[14px] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
+          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
             Бриф нового концепту
           </p>
           <button
@@ -155,11 +155,11 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62] w-full"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-[#5B5B62] w-full"
         >
           {{ conceptName }}
         </div>
-        <div v-else class="review-concept-block__empty text-[14px] text-[#5B5B62] italic">
+        <div v-else class="review-concept-block__empty text-[0.875rem] text-[#5B5B62] italic">
           Концепт не обрано
         </div>
       </template>
@@ -180,7 +180,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">
+            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">
               {{ ceoConcept.name }}
             </p>
           </div>
@@ -198,7 +198,7 @@ const singlePoLabel = 'Вибір Замовника'
       <template #applied>
         <div
           v-if="concept && previewUrl"
-          class="review-concept-block__card relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
+          class="review-concept-block__card relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-muted"
         >
           <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
           <div
@@ -206,7 +206,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
+            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
           </div>
           <button
             v-if="concept"
@@ -220,7 +220,7 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62]"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-[#5B5B62]"
         >
           {{ conceptName }}
         </div>
@@ -229,7 +229,7 @@ const singlePoLabel = 'Вибір Замовника'
       <template #single>
         <div
           v-if="concept && previewUrl"
-          class="review-concept-block__card relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-muted"
+          class="review-concept-block__card relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-muted"
         >
           <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
           <div
@@ -237,7 +237,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[16px] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
+            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
           </div>
           <button
             v-if="concept"
@@ -251,10 +251,10 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="isNewConcept"
-          class="review-concept-block__card review-concept-block__card--brief relative w-[230px] h-[230px] rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
+          class="review-concept-block__card review-concept-block__card--brief relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
-          <p class="text-[14px] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
+          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
             Бриф нового концепту
           </p>
           <button
@@ -268,11 +268,11 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[14px] text-[#5B5B62]"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-[#5B5B62]"
         >
           {{ conceptName }}
         </div>
-        <div v-else class="review-concept-block__empty text-[14px] text-[#5B5B62] italic">
+        <div v-else class="review-concept-block__empty text-[0.875rem] text-[#5B5B62] italic">
           Концепт не обрано
         </div>
       </template>

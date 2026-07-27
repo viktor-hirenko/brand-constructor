@@ -7,9 +7,21 @@ import PrPackagePreviewPopup from '@/components/constructor/preview/PrPackagePre
 import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
+import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
+import { isEmbedded } from '@/composables/useEmbedMode'
 
 const store = useConstructorStore()
 const librariesStore = useLibrariesStore()
+
+// On narrow embedded panels the concept gallery drawer spans the full width
+// (same rationale as the shell preview drawer); wide/standalone keeps 58%.
+const { isNarrowEmbed } = useNarrowEmbed()
+
+// The backdrop's `rounded-[14px]` matches the standalone card's own corner
+// radius (`SHELL_BASE_CLASS`). The embedded shell is a square, edge-to-edge
+// panel (`shellBaseClass(embed)` drops the radius entirely) — rounding the
+// backdrop there just shows stray rounded corners against a square panel.
+const embedded = isEmbedded()
 
 const overlayConcept = computed(() => {
   const id = store.conceptPreviewConceptId
@@ -45,14 +57,16 @@ function handleRequestEdit() {
   <Transition name="concept-backdrop">
     <div
       v-if="store.conceptPreviewOpen && overlayConcept"
-      class="absolute inset-0 z-[28] bg-black/50 rounded-[14px]"
+      class="absolute inset-0 z-[28] bg-black/50"
+      :class="embedded ? '' : 'rounded-[14px]'"
       @click="store.closeConceptPreview()"
     />
   </Transition>
   <Transition name="concept-panel">
     <div
       v-if="store.conceptPreviewOpen && overlayConcept"
-      class="absolute right-0 top-0 h-full w-[58%] z-[29] overflow-hidden"
+      class="absolute right-0 top-0 h-full z-[29] overflow-hidden"
+      :class="isNarrowEmbed ? 'w-full' : 'w-[58%]'"
     >
       <ConceptPreviewPopup :concept="overlayConcept" />
     </div>

@@ -50,7 +50,7 @@ const showFooter = computed(() => !props.readonly || props.showEditAction)
         <div
           class="flex items-center justify-between h-[73px] px-6 border-b border-black/10 shrink-0"
         >
-          <h2 class="text-xl font-semibold leading-[28px] tracking-[-0.45px] text-[#0a0a0a]">
+          <h2 class="text-xl font-semibold leading-[1.75rem] tracking-[-0.45px] text-[#0a0a0a]">
             {{ title }}
           </h2>
           <button

@@ -28,10 +28,10 @@
       />
     </svg>
     <div class="concept-cascade-banner__content flex flex-col gap-1">
-      <p class="concept-cascade-banner__title text-[16px] font-medium leading-6 text-[#030213]">
+      <p class="concept-cascade-banner__title text-[1rem] font-medium leading-6 text-[#030213]">
         Необхідно обрати External Naming
       </p>
-      <p class="concept-cascade-banner__body text-[14px] leading-5 text-[#717182]">
+      <p class="concept-cascade-banner__body text-[0.875rem] leading-5 text-[#717182]">
         Попередній вибір більше не відповідає новому концепту.
       </p>
     </div>

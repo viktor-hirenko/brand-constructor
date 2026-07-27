@@ -55,7 +55,7 @@ const layoutModifier = computed(() => {
     >
       <template #applied>
         <ul class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ poValue }}</span>
           </li>
@@ -67,7 +67,7 @@ const layoutModifier = computed(() => {
           v-if="isNewBrief"
           class="review-internal-block__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нової Internal Naming</span>
           </div>
@@ -81,7 +81,7 @@ const layoutModifier = computed(() => {
           </button>
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ poValue }}</span>
           </li>
@@ -90,7 +90,7 @@ const layoutModifier = computed(() => {
 
       <template #ceo>
         <ul class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ ceoName }}</span>
           </li>
@@ -102,7 +102,7 @@ const layoutModifier = computed(() => {
           v-if="isNewBrief"
           class="review-internal-block__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нової Internal Naming</span>
           </div>
@@ -116,7 +116,7 @@ const layoutModifier = computed(() => {
           </button>
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ poValue }}</span>
           </li>

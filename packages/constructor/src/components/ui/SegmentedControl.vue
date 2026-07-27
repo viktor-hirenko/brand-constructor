@@ -28,7 +28,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
       v-for="option in options"
       :key="option.value"
       type="button"
-      class="segmented-control__segment rounded-[6px] py-1.5 px-2 text-[14px] font-normal leading-4 tracking-[-0.3125px] transition-[background-color,color,box-shadow] duration-200"
+      class="segmented-control__segment rounded-[6px] py-1.5 px-2 text-[0.875rem] font-normal leading-4 tracking-[-0.3125px] transition-[background-color,color,box-shadow] duration-200"
       :class="
         modelValue === option.value
           ? 'bg-white text-[#030213] shadow-lg'

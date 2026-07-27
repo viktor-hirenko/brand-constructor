@@ -7,16 +7,16 @@ import {
 } from '@/constants/iphoneVisualPreview'
 
 const frameStyle = computed(() => ({
-  width: `${IPHONE_FRAME.widthPx}px`,
-  height: `${IPHONE_FRAME.heightPx}px`,
+  width: `${IPHONE_FRAME.widthRem}rem`,
+  height: `${IPHONE_FRAME.heightRem}rem`,
 }))
 
 const viewportStyle = computed(() => ({
-  width: `${IPHONE_VIEWPORT.widthPx}px`,
-  height: `${IPHONE_VIEWPORT.heightPx}px`,
-  left: `${IPHONE_VIEWPORT.leftPx}px`,
-  top: `${IPHONE_VIEWPORT.topPx}px`,
-  borderRadius: `${IPHONE_VIEWPORT.borderRadiusPx}px`,
+  width: `${IPHONE_VIEWPORT.widthRem}rem`,
+  height: `${IPHONE_VIEWPORT.heightRem}rem`,
+  left: `${IPHONE_VIEWPORT.leftRem}rem`,
+  top: `${IPHONE_VIEWPORT.topRem}rem`,
+  borderRadius: `${IPHONE_VIEWPORT.borderRadiusRem}rem`,
 }))
 </script>
 

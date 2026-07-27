@@ -209,7 +209,7 @@ async function toggle() {
     <button
       ref="triggerRef"
       type="button"
-      class="w-full px-4 py-3 bg-input border border-black/10 rounded-[10px] text-left flex items-center justify-between min-h-[50px] transition-all hover:border-black/20"
+      class="w-full px-4 py-3 bg-input border border-black/10 rounded-[0.625rem] text-left flex items-center justify-between min-h-[3.125rem] transition-all hover:border-black/20"
       :class="isOpen ? 'ring-2 ring-primary/20' : ''"
       @click="toggle"
     >

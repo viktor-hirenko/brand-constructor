@@ -16,7 +16,7 @@ withDefaults(defineProps<Props>(), { count: 6 })
 
 <template>
   <div
-    class="external-naming-grid-skeleton grid grid-cols-3 gap-2 max-w-[506px]"
+    class="external-naming-grid-skeleton grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"
     aria-hidden="true"
   >
     <div

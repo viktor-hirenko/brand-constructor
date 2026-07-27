@@ -57,13 +57,13 @@ const showResolveIcon = computed(
   >
     <div class="ceo-comment-card__body flex flex-col gap-1">
       <p
-        class="ceo-comment-card__label text-[14px] font-medium leading-4 tracking-[-0.1504px]"
+        class="ceo-comment-card__label text-[0.875rem] font-medium leading-4 tracking-[-0.1504px]"
         :style="{ color: CEO_COMMENT_LABEL_COLOR }"
       >
         Коментар CEO
       </p>
       <p
-        class="ceo-comment-card__value whitespace-pre-line text-[16px] font-normal leading-6 tracking-[-0.1504px]"
+        class="ceo-comment-card__value whitespace-pre-line text-[1rem] font-normal leading-6 tracking-[-0.1504px]"
         :style="{ color: CEO_COMMENT_VALUE_COLOR }"
       >
         {{ value }}

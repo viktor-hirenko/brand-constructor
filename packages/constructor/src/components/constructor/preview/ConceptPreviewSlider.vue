@@ -10,6 +10,16 @@ import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import MaximizeIcon from '@/components/icons/MaximizeIcon.vue'
 import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
+import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
+import { isEmbedded } from '@/composables/useEmbedMode'
+
+// The `rounded-[24px]` canvas is a "photo frame" that makes sense for the
+// standalone card (which itself has a rounded shell). Inside the Admin the
+// shell is an edge-to-edge square panel, so a floating rounded rectangle
+// with padding around it reads as a stray card-in-a-card — drop the radius
+// (and the blurred backdrop layer inherits the square clip for free, since
+// it's clipped by this same container).
+const embedded = isEmbedded()
 
 const props = withDefaults(
   defineProps<{
@@ -197,6 +207,21 @@ function onFgLoaded() {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Adaptive cover/contain — see useAdaptiveImageFit for the rationale. Separate
+// instances for the inline canvas and the expanded (Teleport) modal since they
+// have independent container sizes.
+const { containerRef: sliderCanvasRef, recordAspect: recordSlideAspect, fitModeFor: slideFitFor } =
+  useAdaptiveImageFit()
+const bgFit = computed(() => slideFitFor(bgUrl.value))
+const fgFit = computed(() => slideFitFor(fgUrl.value))
+
+const {
+  containerRef: expandedCanvasRef,
+  recordAspect: recordExpandedAspect,
+  fitModeFor: expandedFitFor,
+} = useAdaptiveImageFit()
+const expandedFit = computed(() => expandedFitFor(currentSlideUrl.value))
+
 function closeExpanded() {
   showExpanded.value = false
 }
@@ -223,7 +248,8 @@ onUnmounted(() => {
     <template v-if="!concept">
       <div class="shrink-0 h-[56px]" aria-hidden="true" />
       <div
-        class="flex-1 min-h-0 flex flex-col items-center justify-center text-center text-muted-foreground rounded-[24px] border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb]"
+        class="flex-1 min-h-0 flex flex-col items-center justify-center text-center text-muted-foreground border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb]"
+        :class="embedded ? '' : 'rounded-[24px]'"
       >
         <ImagePlaceholderIcon class="size-10 mb-6 text-[#c8c8c8]" />
         <p class="text-base leading-6 tracking-[-0.3125px] text-[#717182] max-w-[200px]">
@@ -263,22 +289,47 @@ onUnmounted(() => {
       </div>
 
       <!-- Slider canvas -->
-      <div class="relative flex-1 min-h-0 rounded-[24px] overflow-hidden bg-muted/30">
-        <!-- Crossfade: background layer — currently visible image, always fully opaque -->
+      <div
+        ref="sliderCanvasRef"
+        class="relative flex-1 min-h-0 overflow-hidden bg-muted/30"
+        :class="embedded ? '' : 'rounded-[24px]'"
+      >
+        <!-- Crossfade: background layer — currently visible image, always fully opaque.
+             When the canvas aspect ratio drifts too far from the slide's own (a
+             wide-but-short viewport), plain `cover` would crop text off the slide.
+             `bgFit`/`fgFit` detect that and switch to `contain`; the blurred
+             duplicate behind it fills the letterbox instead of a flat colour. -->
+        <img
+          v-if="bgUrl && bgFit === 'contain'"
+          :src="asset(bgUrl)"
+          alt=""
+          aria-hidden="true"
+          class="absolute inset-0 w-full h-full scale-110 object-cover blur-2xl brightness-[0.7]"
+        />
         <img
           v-if="bgUrl"
           :src="asset(bgUrl)"
           :alt="concept.name"
-          class="absolute inset-0 w-full h-full object-cover"
+          class="absolute inset-0 w-full h-full"
+          :class="bgFit === 'contain' ? 'object-contain' : 'object-cover'"
+          @load="e => recordSlideAspect(bgUrl, e)"
         />
         <!-- Crossfade: foreground layer — incoming image, invisible until decoded then fades in -->
+        <img
+          v-if="fgUrl && fgFit === 'contain'"
+          :src="asset(fgUrl)"
+          alt=""
+          aria-hidden="true"
+          class="absolute inset-0 w-full h-full scale-110 object-cover blur-2xl brightness-[0.7] transition-opacity duration-300"
+          :class="fgReady ? 'opacity-100' : 'opacity-0'"
+        />
         <img
           v-if="fgUrl"
           :src="asset(fgUrl)"
           :alt="concept.name"
-          class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
-          :class="fgReady ? 'opacity-100' : 'opacity-0'"
-          @load="onFgLoaded"
+          class="absolute inset-0 w-full h-full transition-opacity duration-300"
+          :class="[fgFit === 'contain' ? 'object-contain' : 'object-cover', fgReady ? 'opacity-100' : 'opacity-0']"
+          @load="e => { recordSlideAspect(fgUrl, e); onFgLoaded() }"
         />
         <div
           v-if="!bgUrl && !fgUrl"
@@ -350,7 +401,8 @@ onUnmounted(() => {
         @click="closeExpanded"
       >
         <div
-          class="relative w-[1400px] max-w-[calc(100vw-40px)] h-[860px] max-h-[calc(100vh-40px)] rounded-[24px] overflow-hidden shadow-2xl"
+          ref="expandedCanvasRef"
+          class="relative w-[1400px] max-w-[calc(100vw-40px)] h-[860px] max-h-[calc(100vh-40px)] rounded-[24px] overflow-hidden shadow-2xl bg-black"
           role="dialog"
           aria-modal="true"
           aria-label="Розгорнуте превʼю"
@@ -367,7 +419,9 @@ onUnmounted(() => {
           <img
             :src="asset(currentSlideUrl)"
             :alt="concept.name"
-            class="relative z-0 h-full w-full object-cover"
+            class="relative z-0 h-full w-full"
+            :class="expandedFit === 'contain' ? 'object-contain' : 'object-cover'"
+            @load="e => recordExpandedAspect(currentSlideUrl, e)"
           />
         </div>
       </div>

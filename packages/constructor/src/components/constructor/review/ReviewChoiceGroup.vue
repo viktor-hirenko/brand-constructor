@@ -48,7 +48,7 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
         choiceGap,
       ]"
     >
-      <p class="review-choice-group__label text-[14px] font-medium leading-4 text-[#5B5B62]">
+      <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
         {{ appliedLabel }}
       </p>
       <slot name="applied" />
@@ -59,7 +59,7 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
       <div
         :class="[
           dualGrid
-            ? 'review-choice-group__choice review-choice-group__choice--dual grid grid-cols-2 gap-3 max-w-[506px]'
+            ? 'review-choice-group__choice review-choice-group__choice--dual grid grid-cols-2 gap-3 max-w-[31.625rem]'
             : ['review-choice-group__choice review-choice-group__choice--dual flex flex-col', dualOuterGap],
         ]"
       >
@@ -69,7 +69,7 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
             columnInnerGap,
           ]"
         >
-          <p class="review-choice-group__label text-[14px] font-medium leading-4 text-[#5B5B62]">
+          <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
             {{ poLabel }}
           </p>
           <slot name="po" />
@@ -80,7 +80,7 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
             columnInnerGap,
           ]"
         >
-          <p class="review-choice-group__label text-[14px] font-medium leading-4 text-[#5B5B62]">
+          <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
             {{ ceoLabel }}
           </p>
           <slot name="ceo" />
@@ -99,7 +99,7 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
         choiceGap,
       ]"
     >
-      <p class="review-choice-group__label text-[14px] font-medium leading-4 text-[#5B5B62]">
+      <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
         {{ poLabel }}
       </p>
       <slot name="single" />

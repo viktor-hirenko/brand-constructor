@@ -17,7 +17,7 @@ export const CEO_COMMENT_RESOLVE_BUTTON_HOVER_CLASS =
   'border-[rgba(0,0,0,0.1)] bg-[#ededed] hover:bg-[#e4e4e4]'
 
 export const CEO_COMMENT_RESOLVE_BUTTON_LABEL_CLASS =
-  'px-1 text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#373737]'
+  'px-1 text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737]'
 
 /** Secondary outline action (e.g. «Застосувати варіант CEO»). */
 export const REVIEW_SECONDARY_ACTION_BUTTON_CLASS = [
@@ -41,4 +41,4 @@ export const REVIEW_APPLY_VARIANT_BUTTON_CLASS = [
  * Figma node 1979:1069.
  */
 export const REVIEW_APPLY_VARIANT_LABEL_CLASS =
-  'px-2 text-[16px] font-medium leading-6 tracking-[-0.3125px] text-[#0a0a0a] whitespace-nowrap'
+  'px-2 text-[1rem] font-medium leading-6 tracking-[-0.3125px] text-[#0a0a0a] whitespace-nowrap'

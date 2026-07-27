@@ -21,7 +21,7 @@ const emit = defineEmits<{
       <MegaphoneIcon class="size-5 text-[#5B5B62]" />
     </div>
     <div class="review-pr-package-block__content flex-1 min-w-0 flex items-center justify-between gap-4">
-      <p class="review-pr-package-block__title text-[16px] leading-6 tracking-[-0.1504px] text-[#1A1A1A]">
+      <p class="review-pr-package-block__title text-[1rem] leading-6 tracking-[-0.1504px] text-[#1A1A1A]">
         {{ title }}
       </p>
       <button

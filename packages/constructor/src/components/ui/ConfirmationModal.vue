@@ -46,7 +46,7 @@ const titleId = 'confirmation-modal-title'
         <div class="confirmation-modal__header flex items-center gap-5 p-6">
           <h2
             :id="titleId"
-            class="confirmation-modal__title flex-1 text-[20px] font-medium leading-6 tracking-[0.0703px] text-[#0a0a0a]"
+            class="confirmation-modal__title flex-1 text-[1.25rem] font-medium leading-6 tracking-[0.0703px] text-[#0a0a0a]"
           >
             {{ title }}
           </h2>
@@ -64,7 +64,7 @@ const titleId = 'confirmation-modal-title'
 
         <div class="confirmation-modal__body flex flex-col gap-6 p-6">
           <p
-            class="confirmation-modal__text whitespace-pre-line text-[16px] font-normal leading-6 tracking-[-0.3125px] text-[#717182]"
+            class="confirmation-modal__text whitespace-pre-line text-[1rem] font-normal leading-6 tracking-[-0.3125px] text-[#717182]"
           >
             {{ body }}
           </p>

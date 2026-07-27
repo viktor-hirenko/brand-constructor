@@ -68,7 +68,7 @@ function formatPrice(price: number | null | undefined): string {
 <template>
   <div
     v-if="visibleNamings.length > 0"
-    class="external-naming-grid grid grid-cols-3 gap-2 max-w-[506px]"
+    class="external-naming-grid grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"
   >
     <div
       v-for="naming in visibleNamings"
@@ -89,20 +89,20 @@ function formatPrice(price: number | null | undefined): string {
       >
         <div class="external-naming-grid__card-heading flex flex-col gap-1 w-full">
           <p
-            class="external-naming-grid__card-name text-[20px] font-medium leading-6 text-[#1a1a1a] w-full break-words truncate"
+            class="external-naming-grid__card-name text-[1.25rem] font-medium leading-6 text-[#1a1a1a] w-full break-words truncate"
           >
             {{ naming.name }}
           </p>
           <p
             v-if="naming.domain"
-            class="external-naming-grid__card-domain text-[12px] font-normal leading-4 text-[#4b4b58] w-full truncate"
+            class="external-naming-grid__card-domain text-[0.75rem] font-normal leading-4 text-[#4b4b58] w-full truncate"
           >
             ({{ naming.domain }})
           </p>
         </div>
         <p
           v-if="naming.price !== null && naming.price !== undefined"
-          class="external-naming-grid__card-price text-[16px] font-medium leading-6 text-[#1a1a1a] w-full"
+          class="external-naming-grid__card-price text-[1rem] font-medium leading-6 text-[#1a1a1a] w-full"
         >
           {{ formatPrice(naming.price) }}
         </p>
@@ -113,7 +113,7 @@ function formatPrice(price: number | null | undefined): string {
         class="external-naming-grid__badge external-naming-grid__badge--available backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[8px] bg-[#d4fde5]"
       >
         <span
-          class="text-[12px] font-medium leading-4 tracking-[-0.3125px] text-[#006929] whitespace-nowrap"
+          class="text-[0.75rem] font-medium leading-4 tracking-[-0.3125px] text-[#006929] whitespace-nowrap"
         >
           Available
         </span>
@@ -123,7 +123,7 @@ function formatPrice(price: number | null | undefined): string {
         class="external-naming-grid__badge external-naming-grid__badge--sold backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[100px] bg-[#fdd4d4]"
       >
         <span
-          class="text-[12px] font-medium leading-4 tracking-[-0.3125px] text-[#9e0101] whitespace-nowrap"
+          class="text-[0.75rem] font-medium leading-4 tracking-[-0.3125px] text-[#9e0101] whitespace-nowrap"
         >
           Sold
         </span>

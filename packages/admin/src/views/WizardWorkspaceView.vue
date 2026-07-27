@@ -11,32 +11,70 @@
 // requests, so the Wizard resolves the current user with no extra login. The
 // only cross-frame contract is `postMessage` (see useEmbedBridge in the
 // constructor package): `ready`, `done`, `auth-required`.
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { buildWizardIframeSrc } from '@/utils/wizardLink'
+
+interface WizardNavigatedPayload {
+  brandId?: string | null
+  step?: number | null
+  path?: string
+}
 
 interface WizardBridgeMessage {
   source?: string
-  type?: 'ready' | 'done' | 'auth-required'
+  type?: 'ready' | 'done' | 'auth-required' | 'navigated'
   payload?: unknown
 }
 
 const route = useRoute()
+const router = useRouter()
 const isLoading = ref(true)
 
-// New-brand flow lands on the Wizard entry ('/'); an existing brand opens its
-// review/continue route. `id` is validated by the route param.
-const iframeSrc = computed(() => {
+// The iframe `src` is computed ONCE at mount and then frozen. Live in-iframe
+// navigation is mirrored into the Admin URL (see the `navigated` handler) so a
+// full-page reload (F5) reconstructs the correct starting route — but that URL
+// sync must NOT recompute this src, or the still-running Wizard would reload
+// mid-flow. Genuine brand switches always pass through the Brands list, which
+// destroys and re-creates this component, so a fresh mount recomputes here.
+function buildInitialSrc(): string {
   if (route.name === 'workspace-brand') {
     const id = route.params.id as string
+    const stepRaw = route.query.step
+    const step = typeof stepRaw === 'string' ? Number.parseInt(stepRaw, 10) : Number.NaN
+    // Steps 1-7 = draft continuation; step 8 / no step = final review page.
+    if (Number.isFinite(step) && step >= 1 && step < 8) {
+      return buildWizardIframeSrc(`/constructor/step/${step}?brand=${id}`)
+    }
     return buildWizardIframeSrc(`/constructor/brand/${id}`)
   }
   return buildWizardIframeSrc('/')
-})
+}
 
-// Re-mount the iframe when the target brand changes so the Wizard cold-starts
-// on the correct route (rather than relying on in-iframe SPA navigation).
-const iframeKey = computed(() => String(route.params.id ?? 'new'))
+const iframeSrc = ref(buildInitialSrc())
+
+// Stable key for the iframe's lifetime. The old per-id key forced a remount on
+// the new -> brand URL transition; we now want that transition (our own sync
+// replace) to leave the mounted iframe untouched.
+const iframeKey = 'wizard-frame'
+
+function syncAdminUrl(payload: WizardNavigatedPayload) {
+  const brandId = payload.brandId
+  if (!brandId) return
+
+  const step = typeof payload.step === 'number' ? payload.step : null
+  const query = step && step >= 1 && step < 8 ? { step: String(step) } : {}
+
+  // Skip when the Admin URL already matches — avoids redundant navigations
+  // (vue-router rejects duplicates) and any postMessage <-> replace loop.
+  const sameBrand = route.name === 'workspace-brand' && route.params.id === brandId
+  const sameStep = String(route.query.step ?? '') === String((query as { step?: string }).step ?? '')
+  if (sameBrand && sameStep) return
+
+  // `replace` (not `push`) so the reload-restore URL doesn't pollute history.
+  // The frozen `iframeSrc`/`iframeKey` mean this does not disturb the iframe.
+  void router.replace({ name: 'workspace-brand', params: { id: brandId }, query })
+}
 
 function handleMessage(event: MessageEvent<WizardBridgeMessage>) {
   // Same-origin only. Ignore anything from another origin or another sender.
@@ -58,6 +96,11 @@ function handleMessage(event: MessageEvent<WizardBridgeMessage>) {
       // Brand saved/submitted. The Wizard shows its own success screen inside
       // the iframe; the user returns via the header "Brands" button. No
       // forced navigation here to keep the existing Wizard flow intact.
+      break
+    case 'navigated':
+      // Mirror the Wizard's current brand + step into the Admin URL so F5
+      // restores the same place. Does not touch the running iframe.
+      syncAdminUrl((data.payload ?? {}) as WizardNavigatedPayload)
       break
   }
 }

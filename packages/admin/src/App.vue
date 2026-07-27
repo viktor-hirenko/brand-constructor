@@ -56,7 +56,7 @@ function closeSidebar() {
   &__overlay {
     display: none;
 
-    @include mobile-tablet {
+    @include sidebar-collapsed {
       display: block;
       position: fixed;
       inset: 0;
@@ -70,7 +70,7 @@ function closeSidebar() {
 
   &--sidebar-open {
     .app-layout__overlay {
-      @include mobile-tablet {
+      @include sidebar-collapsed {
         opacity: 1;
         pointer-events: auto;
       }

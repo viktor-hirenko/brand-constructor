@@ -8,7 +8,7 @@ export const STATUS_PILL_BADGE_LABEL_CLASS =
   'status-pill-badge__label text-xs font-medium leading-4 tracking-[-0.3125px] whitespace-nowrap'
 
 export const STATUS_PILL_BADGE_ICON_CLASS =
-  'status-pill-badge__icon flex size-4 shrink-0 items-center justify-center rounded-full bg-[#DCA100] text-[9px] font-bold leading-none text-white'
+  'status-pill-badge__icon flex size-4 shrink-0 items-center justify-center rounded-full bg-[#DCA100] text-[0.5625rem] font-bold leading-none text-white'
 
 export type StatusPillLeading = 'none' | 'attention'
 

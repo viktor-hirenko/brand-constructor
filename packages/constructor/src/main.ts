@@ -4,6 +4,7 @@ import App from './App.vue';
 import router from './router';
 import { useAuthStore } from './stores/auth';
 import { setupEmbedBridge } from './composables/useEmbedBridge';
+import { applyEmbedRootFlag } from './composables/useEmbedMode';
 import './styles/app.css';
 
 // Older versions of this SPA persisted the auth payload (user + JWT) under
@@ -18,6 +19,11 @@ try {
   // localStorage may be unavailable in iframes / SSR / private mode quirks —
   // a missing item is exactly the state we want, so swallow silently.
 }
+
+// Variant 3: flag the document root as embedded BEFORE mount so the fluid
+// root font-size (see `html.wizard-embed` in app.css) applies on first paint
+// and the Wizard fills the Admin panel without a scale-flash. No-op standalone.
+applyEmbedRootFlag();
 
 const app = createApp(App);
 

@@ -123,7 +123,7 @@ function handleClick() {
 
         <div class="concept-card__footer absolute bottom-0 left-0 right-0 z-[3] p-4">
           <h3
-            class="concept-card__title line-clamp-2 truncate text-[16px] font-medium leading-6 tracking-[-0.4492px] text-white"
+            class="concept-card__title line-clamp-2 truncate text-[1rem] font-medium leading-6 tracking-[-0.4492px] text-white"
           >
             {{ concept.name }}
           </h3>

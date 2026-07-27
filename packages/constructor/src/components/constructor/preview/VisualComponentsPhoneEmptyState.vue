@@ -20,7 +20,7 @@ const message = computed(() =>
 )
 
 const screenRadiusStyle = computed(() => ({
-  borderRadius: `${IPHONE_VIEWPORT.borderRadiusPx}px`,
+  borderRadius: `${IPHONE_VIEWPORT.borderRadiusRem}rem`,
 }))
 </script>
 

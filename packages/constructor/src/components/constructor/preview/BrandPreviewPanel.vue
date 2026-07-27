@@ -29,7 +29,7 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
         class="text-lg font-medium tracking-[-0.45px] text-foreground inline-flex items-center gap-2"
       >
         <SparklesIcon class="size-6 shrink-0 text-[#5B5B62]" />
-        <span class="text-[20px]">Превʼю</span>
+        <span class="text-[1.25rem]">Превʼю</span>
       </h2>
     </header>
 
@@ -44,7 +44,10 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
     </div>
 
     <!-- Normal: dual iPhone — main view + sidebar view. -->
-    <div v-else class="flex items-start justify-center gap-[40px] flex-1 min-h-0">
+    <div
+      v-else
+      class="brand-preview-panel__dual-phones flex items-start justify-center gap-[2.5rem] flex-1 min-h-0"
+    >
       <div class="flex flex-col items-center">
         <VisualComponentsIphoneFrame>
           <div class="relative w-full h-full overflow-hidden">

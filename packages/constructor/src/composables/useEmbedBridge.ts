@@ -6,9 +6,18 @@ import type { Router } from 'vue-router';
 // Wizard runs standalone (its own tab / legacy deploy) `isEmbedded()` is false
 // and every function here is a no-op, so behaviour is identical to today.
 
+interface NavigatedPayload {
+  /** Brand id if the current route is bound to one (draft step or review). */
+  brandId: string | null;
+  /** Wizard step (1-8) from route meta, if any. */
+  step: number | null;
+  /** Full wizard-relative path (diagnostic; parent keys off brandId/step). */
+  path: string;
+}
+
 interface EmbedMessage {
   source: 'brand-wizard';
-  type: 'ready' | 'done' | 'auth-required';
+  type: 'ready' | 'done' | 'auth-required' | 'navigated';
   payload?: unknown;
 }
 
@@ -50,6 +59,20 @@ export function setupEmbedBridge(router: Router): void {
     // Brand saved/submitted -> let the parent know (used for list refresh).
     if (to.name === 'brand-success') {
       post('done');
+    }
+
+    // Route -> parent URL sync so a full-page reload (F5) restores the same
+    // brand + step. The parent (WizardWorkspaceView) writes this into the
+    // Admin URL; the mounted iframe is not disturbed. `brandId` lives in the
+    // route params (brand-view) or the `brand` query (draft step routes).
+    const brandId =
+      (typeof to.params.id === 'string' && to.params.id ? to.params.id : null) ??
+      (typeof to.query.brand === 'string' && to.query.brand ? to.query.brand : null);
+    if (brandId) {
+      const metaStep = to.meta.step;
+      const step = typeof metaStep === 'number' ? metaStep : null;
+      const payload: NavigatedPayload = { brandId, step, path: to.fullPath };
+      post('navigated', payload);
     }
   });
 }

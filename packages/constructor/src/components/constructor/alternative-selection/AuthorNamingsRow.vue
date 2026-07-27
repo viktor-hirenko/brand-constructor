@@ -68,13 +68,13 @@ function handleSelectAll() {
 <template>
   <div class="author-namings-row flex flex-col gap-3">
     <div class="author-namings-row__header flex items-center justify-between gap-3">
-      <p class="author-namings-row__label text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+      <p class="author-namings-row__label text-[1rem] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
         Вибір замовника
       </p>
       <button
         v-if="selectable && namings.length > 0 && !allSelected"
         type="button"
-        class="author-namings-row__select-all text-[14px] font-medium leading-5 text-[#030213] underline underline-offset-2 hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+        class="author-namings-row__select-all text-[0.875rem] font-medium leading-5 text-[#030213] underline underline-offset-2 hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
         :disabled="disabled || isAtLimit"
         @click="handleSelectAll"
       >
@@ -101,19 +101,19 @@ function handleSelectAll() {
         @click="handleToggle(n.id)"
       >
         <div class="flex flex-col gap-1 w-full">
-          <p class="text-[20px] font-medium leading-6 text-[#1a1a1a] break-words w-full">
+          <p class="text-[1.25rem] font-medium leading-6 text-[#1a1a1a] break-words w-full">
             {{ n.name }}
           </p>
           <p
             v-if="n.domain"
-            class="text-[12px] font-normal leading-4 text-[#4b4b58] truncate w-full"
+            class="text-[0.75rem] font-normal leading-4 text-[#4b4b58] truncate w-full"
           >
             ({{ n.domain }})
           </p>
         </div>
         <p
           v-if="formatPrice(n.price)"
-          class="text-[16px] font-medium leading-6 text-[#1a1a1a] w-full"
+          class="text-[1rem] font-medium leading-6 text-[#1a1a1a] w-full"
         >
           {{ formatPrice(n.price) }}
         </p>
@@ -128,7 +128,7 @@ function handleSelectAll() {
     </div>
     <p
       v-else
-      class="author-namings-row__empty text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
+      class="author-namings-row__empty text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] italic"
     >
       Назви не обрано
     </p>

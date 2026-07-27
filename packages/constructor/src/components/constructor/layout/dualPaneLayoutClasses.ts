@@ -8,6 +8,22 @@ export type LayoutMode = 'wizard' | 'edit' | 'review'
 export const SHELL_BASE_CLASS =
   'relative shrink-0 w-[1440px] h-[900px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex'
 
+/**
+ * Outer shell wrapper class.
+ *
+ * Standalone: fixed 1440×900 card (scaled to the viewport via CSS transform).
+ * Embedded (Admin iframe): fills the panel edge-to-edge (no fixed size, no
+ * card chrome) while the fluid root font-size (`html.wizard-embed`) reflows
+ * the rem-based content to fit. Columns are already `%`, so width fills; height
+ * fills via flex; footer stays pinned.
+ */
+export function shellBaseClass(embed = false): string {
+  if (embed) {
+    return 'relative w-full h-full bg-card overflow-hidden flex'
+  }
+  return SHELL_BASE_CLASS
+}
+
 /** Scroll track styling — see global `.left-pane-scroll`. */
 export const LEFT_PANE_SCROLL_TRACK_CLASS = 'left-pane-scroll'
 

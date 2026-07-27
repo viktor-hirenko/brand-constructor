@@ -53,14 +53,14 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ item.name }}</span>
             <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
           </li>
         </ul>
-        <p v-else class="review-external-list__empty text-[14px] text-[#5B5B62] italic">
+        <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
           Назву не обрано
         </p>
       </template>
@@ -70,7 +70,7 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ item.name }}</span>
@@ -81,7 +81,7 @@ const layoutModifier = computed(() => {
           v-else-if="isNewBrief"
           class="review-external-list__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нового External Naming</span>
           </div>
@@ -94,7 +94,7 @@ const layoutModifier = computed(() => {
             Переглянути
           </button>
         </div>
-        <p v-else class="review-external-list__empty text-[14px] text-[#5B5B62] italic">
+        <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
           Назву не обрано
         </p>
       </template>
@@ -104,7 +104,7 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in ceoItems"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ item.name }}</span>
@@ -118,7 +118,7 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">{{ item.name }}</span>
@@ -129,7 +129,7 @@ const layoutModifier = computed(() => {
           v-else-if="isNewBrief"
           class="review-external-list__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[16px] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нового External Naming</span>
           </div>
@@ -142,7 +142,7 @@ const layoutModifier = computed(() => {
             Переглянути
           </button>
         </div>
-        <p v-else class="review-external-list__empty text-[14px] text-[#5B5B62] italic">
+        <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
           Назву не обрано
         </p>
       </template>

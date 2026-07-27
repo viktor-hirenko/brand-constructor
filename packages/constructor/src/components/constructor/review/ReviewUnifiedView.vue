@@ -619,7 +619,7 @@ defineExpose({
             </div>
             <div class="rounded-lg bg-[rgba(217,217,217,0.2)] p-4">
               <p
-                class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line"
+                class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line"
               >
                 {{ getSectionCeoCommentValue('general') }}
               </p>

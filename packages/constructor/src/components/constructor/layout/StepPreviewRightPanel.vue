@@ -215,7 +215,7 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
         />
         <div class="flex items-center gap-2 shrink-0">
           <SparklesIcon class="size-6" />
-          <span class="text-[20px] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>
+          <span class="text-[1.25rem] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>
         </div>
         <div class="flex flex-col items-center justify-center flex-1">
           <VisualComponentsIphoneFrame>
@@ -273,7 +273,7 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
                   v-if="hasSidebarSelected"
                   type="button"
                   class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                  :style="{ right: '8px', top: '42px', zIndex: 35 }"
+                  :style="{ right: '0.5rem', top: '2.625rem', zIndex: 35 }"
                   :disabled="sidebarTransitionLocked"
                   :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
                   @click="emit('toggle-sidebar')"

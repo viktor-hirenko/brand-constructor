@@ -80,7 +80,7 @@ watch(
     <div class="step-comment-field__header flex items-center gap-2 h-6">
       <ChatBubbleIcon class="step-comment-field__icon text-[#5B5B62]" />
       <span
-        class="step-comment-field__label text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5b5b62]"
+        class="step-comment-field__label text-[0.875rem] font-medium leading-4 tracking-[-0.1504px] text-[#5b5b62]"
       >
         {{ label }}
         <span v-if="required" class="text-red-500">*</span>
@@ -95,7 +95,7 @@ watch(
       :value="modelValue"
       :rows="rows"
       :placeholder="placeholder"
-      class="step-comment-field__textarea w-full px-4 py-4 bg-[rgba(197,197,200,0.2)] border-2 border-transparent rounded-[8px] resize-none text-[16px] leading-6 tracking-[-0.1504px] text-[#3d3d3d] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:border-[#c8c7cc] transition-colors overflow-hidden"
+      class="step-comment-field__textarea w-full px-4 py-4 bg-[rgba(197,197,200,0.2)] border-2 border-transparent rounded-[8px] resize-none text-[1rem] leading-6 tracking-[-0.1504px] text-[#3d3d3d] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:border-[#c8c7cc] transition-colors overflow-hidden"
       @input="onInput"
     />
 

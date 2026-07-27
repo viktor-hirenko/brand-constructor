@@ -190,10 +190,10 @@ defineExpose({ isVisible })
       v-if="hasAuthorComment"
       class="section-comment__po flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
     >
-      <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
+      <p class="text-[0.875rem] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар замовника
       </p>
-      <p class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
+      <p class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
         {{ authorComment }}
       </p>
     </div>
@@ -212,7 +212,7 @@ defineExpose({ isVisible })
         @click="openEditor"
       >
         <PlusIcon class="size-4 shrink-0 text-[#373737]" />
-        <span class="text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#373737]">
+        <span class="text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737]">
           {{ emptyLabel }}
         </span>
       </button>
@@ -228,7 +228,7 @@ defineExpose({ isVisible })
       >
         <span
           v-if="!alwaysExpanded"
-          class="section-comment__ceo-editor-label block text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62] mb-1"
+          class="section-comment__ceo-editor-label block text-[0.875rem] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62] mb-1"
         >
           Коментар CEO
         </span>
@@ -237,7 +237,7 @@ defineExpose({ isVisible })
           :value="draft"
           rows="1"
           :placeholder="placeholder"
-          class="section-comment__ceo-textarea block w-full resize-none bg-transparent border-0 p-0 text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:ring-0"
+          class="section-comment__ceo-textarea block w-full resize-none bg-transparent border-0 p-0 text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:ring-0"
           @input="onInput"
           @blur="onBlur"
         />
@@ -264,10 +264,10 @@ defineExpose({ isVisible })
       v-else-if="hasSupervisorComment"
       class="section-comment__ceo-readonly flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
     >
-      <p class="text-[14px] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
+      <p class="text-[0.875rem] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
         Коментар CEO
       </p>
-      <p class="text-[16px] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
+      <p class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
         {{ supervisorComment }}
       </p>
     </div>

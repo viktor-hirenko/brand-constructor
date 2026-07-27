@@ -15,13 +15,13 @@
 
 /** Primary action button (brand-colored background). */
 export const BRIEF_BTN_PRIMARY =
-  'h-[50px] px-6 bg-primary text-primary-foreground rounded-[10px] ' +
+  'h-[3.125rem] px-6 bg-primary text-primary-foreground rounded-[0.625rem] ' +
   'disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all ' +
   'text-base font-medium'
 
 /** Secondary / ghost button (transparent with hairline border). */
 export const BRIEF_BTN_SECONDARY =
-  'h-[50px] px-6 border border-black/10 text-foreground rounded-[10px] ' +
+  'h-[3.125rem] px-6 border border-black/10 text-foreground rounded-[0.625rem] ' +
   'hover:bg-black/[0.02] transition-all text-base font-medium'
 
 /**
@@ -29,7 +29,7 @@ export const BRIEF_BTN_SECONDARY =
  * similar high-contrast CTA slots).
  */
 export const BRIEF_BTN_PRIMARY_DARK =
-  'h-[50px] px-6 bg-[#030213] text-white rounded-[10px] ' +
+  'h-[3.125rem] px-6 bg-[#030213] text-white rounded-[0.625rem] ' +
   'hover:opacity-90 transition-all text-base font-medium flex items-center gap-2'
 
 // ─── Footer wrapper ───────────────────────────────────────────────────────────

@@ -33,7 +33,7 @@ function isSelected(id: string): boolean {
 </script>
 
 <template>
-  <div class="concept-grid grid grid-cols-3 gap-2 max-w-[506px]">
+  <div class="concept-grid grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]">
     <ConceptCard
       v-for="concept in concepts"
       :key="concept.id"

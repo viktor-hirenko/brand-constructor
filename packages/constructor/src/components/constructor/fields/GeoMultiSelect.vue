@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
   <div ref="containerRef" class="relative">
     <!-- Trigger area -->
     <div
-      class="w-full px-3 py-2.5 bg-input border border-black/10 rounded-[10px] flex items-center gap-2 flex-wrap min-h-[50px] cursor-text transition-all"
+      class="w-full px-3 py-2.5 bg-input border border-black/10 rounded-[0.625rem] flex items-center gap-2 flex-wrap min-h-[3.125rem] cursor-text transition-all"
       :class="isOpen ? 'ring-2 ring-primary/20' : ''"
       @click="openDropdown(); searchInputRef?.focus()"
     >

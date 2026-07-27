@@ -17,3 +17,38 @@
   --color-error: #ef4444;
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
+
+/*
+ * Variant 3 — embedded (Admin iframe) fluid scale.
+ *
+ * Standalone keeps the fixed 1440×900 card + CSS transform scale. When embedded,
+ * `applyEmbedRootFlag()` adds `.wizard-embed` to <html>, and we drive a single
+ * knob — the root font-size — from the iframe viewport. Tailwind v4's spacing
+ * and text scales are rem-based, so the whole UI scales with the root.
+ *
+ * The iframe fills the Admin panel, so `vw`/`vh` map to the panel size:
+ *   - 1.1111vw  = 16 / 1440 * 100  → width-driven scale  (16px at 1440px wide)
+ *   - 1.7778vh  = 16 /  900 * 100  → height-driven scale (16px at 900px tall)
+ * `min()` picks the limiting dimension so content fits BOTH width and height
+ * (no letterbox, no vertical clip). `clamp()` bounds the density (tunable).
+ */
+html.wizard-embed {
+  font-size: clamp(11px, min(1.1111vw, 1.7778vh), 18px);
+}
+
+/* Review dual-phone row: below ~560px two iPhone frames + gutter + pane padding
+   no longer fit side-by-side — stack vertically (embed-only, drawer/mobile).
+   `justify-content: flex-start` is required here: the row's original Tailwind
+   class is `justify-center`, which centered it horizontally in row mode. Once
+   flex-direction flips to column, `justify-content` re-targets the (now
+   vertical) main axis — with overflowing content, `center` clips evenly above
+   AND below the scroll container, and the top half becomes unreachable by
+   scrolling (classic flex "centered overflow" trap). Anchoring to flex-start
+   keeps all overflow below the fold, where the panel's own scroll can reach it. */
+@media (max-width: 560px) {
+  html.wizard-embed .brand-preview-panel__dual-phones {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+}

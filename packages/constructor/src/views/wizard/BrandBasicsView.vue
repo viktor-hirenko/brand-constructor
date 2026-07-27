@@ -77,7 +77,7 @@ const comment = computed({
         v-model="linkedProduct"
         type="text"
         placeholder="Thor, Alpa..."
-        class="w-full px-4 py-3 bg-input border border-black/10 rounded-[10px] outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base placeholder:text-foreground/50"
+        class="w-full px-4 py-3 bg-input border border-black/10 rounded-[0.625rem] outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base placeholder:text-foreground/50"
       />
     </div>
 

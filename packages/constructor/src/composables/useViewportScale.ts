@@ -13,6 +13,12 @@ interface UseViewportScaleOptions {
   padding?: number
   minViewportWidth?: number
   allowUpscale?: boolean
+  /**
+   * When true, the shell is not scaled (scale stays 1) and no resize listener
+   * is attached. Used in embedded mode, where fluid root-font sizing replaces
+   * the CSS transform scale (see `html.wizard-embed` in app.css).
+   */
+  disabled?: boolean
 }
 
 export function useViewportScale(options: UseViewportScaleOptions) {
@@ -22,6 +28,7 @@ export function useViewportScale(options: UseViewportScaleOptions) {
     padding = DESIGN_SHELL_VIEWPORT_GUTTER,
     minViewportWidth = baseWidth,
     allowUpscale = false,
+    disabled = false,
   } = options
   const scale = ref(1)
 
@@ -34,11 +41,13 @@ export function useViewportScale(options: UseViewportScaleOptions) {
   }
 
   onMounted(() => {
+    if (disabled) return
     compute()
     window.addEventListener('resize', compute, { passive: true })
   })
 
   onBeforeUnmount(() => {
+    if (disabled) return
     window.removeEventListener('resize', compute)
   })
 

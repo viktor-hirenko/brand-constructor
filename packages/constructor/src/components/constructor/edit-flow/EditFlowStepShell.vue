@@ -57,7 +57,7 @@ const emit = defineEmits<{
           </h1>
           <p
             v-if="subtitle"
-            class="edit-flow-step-shell__subtitle text-[16px] leading-6 tracking-[-0.3125px] text-[#717182]"
+            class="edit-flow-step-shell__subtitle text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182]"
           >
             {{ subtitle }}
           </p>

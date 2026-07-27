@@ -83,7 +83,7 @@ const titleTruncates = computed(() => {
       >
         <h3
           :class="[
-            'review-section__title text-[18px] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]',
+            'review-section__title text-[1.125rem] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]',
             needsChoice || titleTruncates ? 'min-w-0 truncate' : '',
           ]"
         >
@@ -95,7 +95,7 @@ const titleTruncates = computed(() => {
       <button
         v-if="editStep != null"
         type="button"
-        class="review-section__edit-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
+        class="review-section__edit-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
         @click="onEditClick"
       >
         <PencilIcon class="size-4 shrink-0 text-[#373737]" />
@@ -104,7 +104,7 @@ const titleTruncates = computed(() => {
       <button
         v-else-if="changeChoice"
         type="button"
-        class="review-section__change-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[14px] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
+        class="review-section__change-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
         @click="emit('change')"
       >
         <RefreshIcon class="size-4 shrink-0 text-[#373737]" />

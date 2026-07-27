@@ -89,6 +89,7 @@ async function handleLogout() {
     <div class="sidebar__footer">
       <div v-if="authStore.user" class="sidebar__user">
         <span class="sidebar__user-name">{{ authStore.user.name }}</span>
+        <span class="sidebar__user-email" :title="authStore.user.email">{{ authStore.user.email }}</span>
         <span class="sidebar__user-role">{{ authStore.user.role }}</span>
         <button v-if="isProductionMode" class="sidebar__logout" @click="handleLogout">
           Sign out
@@ -112,7 +113,7 @@ async function handleLogout() {
   flex-shrink: 0;
   overflow-y: auto;
 
-  @include mobile-tablet {
+  @include sidebar-collapsed {
     position: fixed;
     left: 0;
     top: 0;
@@ -124,7 +125,7 @@ async function handleLogout() {
   }
 
   &--open {
-    @include mobile-tablet {
+    @include sidebar-collapsed {
       transform: translateX(0);
     }
   }
@@ -157,7 +158,7 @@ async function handleLogout() {
       color: $color-text-inverse;
     }
 
-    @include mobile-tablet {
+    @include sidebar-collapsed {
       display: block;
     }
   }
@@ -191,7 +192,7 @@ async function handleLogout() {
       background-color: $color-bg-sidebar-active;
     }
 
-    @include mobile-tablet {
+    @include sidebar-collapsed {
       padding: $spacing-4 $spacing-6;
       font-size: $font-size-base;
     }
@@ -217,6 +218,16 @@ async function handleLogout() {
   &__user-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
+  }
+
+  &__user-email {
+    display: block;
+    min-width: 0;
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__user-role {

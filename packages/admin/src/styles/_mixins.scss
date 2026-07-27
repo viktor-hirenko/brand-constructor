@@ -37,3 +37,8 @@
 @mixin desktop {
   @include mq($bp-lg) { @content; }
 }
+
+// Sidebar off-canvas range: everything below $bp-sidebar (1280px).
+@mixin sidebar-collapsed {
+  @include mq(null, $bp-sidebar) { @content; }
+}

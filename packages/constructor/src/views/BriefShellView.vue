@@ -19,6 +19,7 @@ import {
   BRIEF_FOOTER_ACTIONS,
 } from '@/constants/brandBriefShellTokens'
 import { useViewportScale } from '@/composables/useViewportScale'
+import { isEmbedded } from '@/composables/useEmbedMode'
 import { useBrandBriefReviewPhase, BRAND_BRIEF_REVIEW_PHASE } from '@/composables/useBrandBriefReviewPhase'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
@@ -47,10 +48,15 @@ const store = useConstructorStore()
 const authStore = useAuthStore()
 const librariesStore = useLibrariesStore()
 
+// Embedded (Admin iframe): fluid root-font scaling replaces the CSS transform
+// scale, so the shell fills the panel. Standalone keeps the fixed-card scale.
+const embedded = isEmbedded()
+
 const { scale: shellScale } = useViewportScale({
   baseWidth: DESIGN_SHELL_WIDTH,
   baseHeight: DESIGN_SHELL_HEIGHT,
   minViewportWidth: DESIGN_SHELL_MIN_VIEWPORT_WIDTH,
+  disabled: embedded,
 })
 
 /**
@@ -572,13 +578,15 @@ watch(currentStep, step => {
   <SupervisorBriefGateView v-if="isSupervisorAwaitingTeam" />
   <div
     v-else
-    class="constructor-layout h-[100dvh] bg-background flex items-center justify-center overflow-hidden"
+    class="constructor-layout h-[100dvh] bg-background flex overflow-hidden"
+    :class="embedded ? '' : 'items-center justify-center'"
   >
     <ConstructorDualPaneShell
       :layout-mode="layoutMode"
       :full-width="shellFullWidth"
       :show-right="showRightPane"
       :scale="shellScale"
+      :embed="embedded"
       :review-shell="isReviewShell"
       :wizard-step="currentStep"
     >
@@ -716,7 +724,7 @@ watch(currentStep, step => {
                 class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px] flex flex-col items-center justify-center gap-6"
               >
                 <ImagePlaceholderFilledIcon class="size-10 text-[#c8c8c8]" />
-                <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] text-center w-[200px]">
+                <p class="text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] text-center w-[200px]">
                   Оберіть концепт зліва, щоб переглянути прев'ю.
                 </p>
               </div>

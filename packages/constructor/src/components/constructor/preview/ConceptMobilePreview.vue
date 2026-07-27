@@ -34,7 +34,7 @@ const mobileSrc = computed(() => {
 
 <template>
   <div class="flex flex-col gap-6 h-full">
-    <h3 class="py-2 text-[24px] font-medium tracking-[-0.4492px] leading-8 text-[#0a0a0a] shrink-0">
+    <h3 class="py-2 text-[1.5rem] font-medium tracking-[-0.4492px] leading-8 text-[#0a0a0a] shrink-0">
       Обраний концепт
     </h3>
 
@@ -43,7 +43,7 @@ const mobileSrc = computed(() => {
       class="flex-1 flex flex-col items-center justify-center rounded-[24px] border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb] p-8 text-center min-h-[400px]"
     >
       <ImagePlaceholderIcon class="size-10 mb-6 text-[#c8c8c8]" />
-      <p class="text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] max-w-[280px]">
+      <p class="text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] max-w-[280px]">
         {{ emptyMessage }}
       </p>
     </div>

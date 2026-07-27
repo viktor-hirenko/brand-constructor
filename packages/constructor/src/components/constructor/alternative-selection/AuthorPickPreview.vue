@@ -38,7 +38,7 @@ function handleClick() {
 
 <template>
   <div class="author-pick-preview flex flex-col gap-3">
-    <p class="author-pick-preview__label text-[16px] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+    <p class="author-pick-preview__label text-[1rem] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
       Вибір замовника
     </p>
     <div v-if="concept && previewUrl" class="author-pick-preview__card w-[162px] shrink-0">
@@ -55,7 +55,7 @@ function handleClick() {
     </div>
     <p
       v-else
-      class="author-pick-preview__empty text-[16px] leading-6 tracking-[-0.3125px] text-[#717182] italic"
+      class="author-pick-preview__empty text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] italic"
     >
       Концепт не обрано
     </p>

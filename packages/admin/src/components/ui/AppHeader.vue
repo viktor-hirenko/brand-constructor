@@ -80,7 +80,7 @@ function goToBrands() {
     padding: $spacing-1;
     flex-shrink: 0;
 
-    @include mobile-tablet {
+    @include sidebar-collapsed {
       display: flex;
     }
   }

@@ -83,3 +83,7 @@ $z-toast: 70;
 $bp-sm:  480px;
 $bp-md:  768px;
 $bp-lg: 960px;
+// Breakpoint below which the Admin sidebar collapses to an off-canvas burger.
+// Kept separate from $bp-lg so raising it doesn't shift the `tablet` range
+// (which drives grid columns e.g. in PrPackagesView).
+$bp-sidebar: 1280px;

@@ -25,7 +25,7 @@ function handleClick(naming: InternalNaming) {
 <template>
   <div
     v-if="namings.length > 0"
-    class="internal-naming-grid grid grid-cols-3 gap-2 max-w-[506px]"
+    class="internal-naming-grid grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"
   >
     <div
       v-for="naming in namings"
@@ -41,7 +41,7 @@ function handleClick(naming: InternalNaming) {
       @click="handleClick(naming)"
     >
       <p
-        class="internal-naming-grid__card-name text-[20px] font-medium leading-6 text-center text-[#1a1a1a] tracking-[-0.1504px] break-words w-full"
+        class="internal-naming-grid__card-name text-[1.25rem] font-medium leading-6 text-center text-[#1a1a1a] tracking-[-0.1504px] break-words w-full"
       >
         {{ naming.name }}
       </p>

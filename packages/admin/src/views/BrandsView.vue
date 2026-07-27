@@ -126,7 +126,9 @@ watch(activeTab, (tab) => {
 })
 
 function openBrand(brand: BrandListItem) {
-  openBrandInWizard(router, brand.id)
+  // Reopen a draft at its last saved step; other statuses open the review page.
+  const step = brand.status === BRAND_BRIEF_STATUS.DRAFT ? brand.currentStep : undefined
+  openBrandInWizard(router, brand.id, step)
 }
 
 function formatDate(dateStr: string | null | undefined): string {

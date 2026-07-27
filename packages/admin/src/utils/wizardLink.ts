@@ -27,13 +27,32 @@ export function buildWizardIframeSrc(path: string): string {
   return `/wizard${clean}`
 }
 
-/** Open an existing brand in the Wizard (review / continue). */
-export function openBrandInWizard(router: Router, brandId: string): void {
+/**
+ * Open an existing brand in the Wizard (review / continue).
+ *
+ * `step` is the brand's last saved wizard step. For a draft still in progress
+ * (steps 1-7) we reopen exactly there — parity with the F5 route-restore, so
+ * opening from the Brands list lands where a reload would. Non-drafts (and
+ * step 8) fall through to the brand review page.
+ */
+export function openBrandInWizard(
+  router: Router,
+  brandId: string,
+  step?: number | null
+): void {
+  const atStep = typeof step === 'number' && step >= 1 && step < 8
   if (legacyBase) {
-    window.open(`${legacyBase}/constructor/brand/${brandId}`, '_blank')
+    const path = atStep
+      ? `/constructor/step/${step}?brand=${brandId}`
+      : `/constructor/brand/${brandId}`
+    window.open(`${legacyBase}${path}`, '_blank')
     return
   }
-  router.push({ name: 'workspace-brand', params: { id: brandId } })
+  router.push({
+    name: 'workspace-brand',
+    params: { id: brandId },
+    query: atStep ? { step: String(step) } : {},
+  })
 }
 
 /** Start a new brand brief — lands on the Wizard entry (Product Owner flow). */
