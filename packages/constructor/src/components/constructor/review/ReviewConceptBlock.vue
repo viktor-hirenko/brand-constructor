@@ -10,6 +10,8 @@ import FileIcon from '@/components/icons/FileIcon.vue'
 import MoonIcon from '@/components/icons/MoonIcon.vue'
 import SunIcon from '@/components/icons/SunIcon.vue'
 
+// Concept cards: 230×230px → 14.375rem @16 design base (fluid in embed).
+
 interface ReviewConceptBlockProps {
   concept: Concept | null
   /** When set, shows side-by-side PO vs CEO picks (CEO finalize review). */

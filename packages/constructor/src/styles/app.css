@@ -31,6 +31,7 @@
  *   - 1.7778vh  = 16 /  900 * 100  → height-driven scale (16px at 900px tall)
  * `min()` picks the limiting dimension so content fits BOTH width and height
  * (no letterbox, no vertical clip). `clamp()` bounds the density (tunable).
+ * Design reference: 16px root at 1440×900; clamp bounds 11px–18px.
  */
 html.wizard-embed {
   font-size: clamp(11px, min(1.1111vw, 1.7778vh), 18px);

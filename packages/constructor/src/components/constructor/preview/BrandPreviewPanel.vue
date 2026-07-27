@@ -44,6 +44,7 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
     </div>
 
     <!-- Normal: dual iPhone — main view + sidebar view. -->
+    <!-- Dual phones gap 40px → 2.5rem @16. -->
     <div
       v-else
       class="brand-preview-panel__dual-phones flex items-start justify-center gap-[2.5rem] flex-1 min-h-0"

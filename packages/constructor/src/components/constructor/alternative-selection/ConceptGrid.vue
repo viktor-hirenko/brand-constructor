@@ -33,6 +33,7 @@ function isSelected(id: string): boolean {
 </script>
 
 <template>
+  <!-- Card min width 144px → 9rem @16; auto-fill adds columns on wide panels. -->
   <div class="concept-grid grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]">
     <ConceptCard
       v-for="concept in concepts"

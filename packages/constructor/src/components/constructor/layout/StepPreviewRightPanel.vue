@@ -269,6 +269,7 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
                     />
                   </div>
                 </Transition>
+                <!-- Sidebar toggle: 8px right, 42px top → 0.5rem / 2.625rem @16. -->
                 <button
                   v-if="hasSidebarSelected"
                   type="button"

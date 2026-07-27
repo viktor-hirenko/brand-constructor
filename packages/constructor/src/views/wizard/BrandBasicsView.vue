@@ -73,6 +73,7 @@ const comment = computed({
         <FileIcon class="size-4 text-muted-foreground" />
         <span class="font-medium text-base">Звʼязок з іншим продуктом (якщо є)</span>
       </label>
+      <!-- Input: radius 10px → 0.625rem @16. -->
       <input
         v-model="linkedProduct"
         type="text"

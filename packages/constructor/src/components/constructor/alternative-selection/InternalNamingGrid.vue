@@ -23,6 +23,7 @@ function handleClick(naming: InternalNaming) {
 </script>
 
 <template>
+  <!-- Card min width 144px → 9rem @16; auto-fill adds columns on wide panels. -->
   <div
     v-if="namings.length > 0"
     class="internal-naming-grid grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"

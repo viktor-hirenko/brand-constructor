@@ -205,7 +205,7 @@ async function toggle() {
 
 <template>
   <div ref="containerRef" class="relative">
-    <!-- Trigger button -->
+    <!-- Trigger: min-height 50px, radius 10px → 3.125rem / 0.625rem @16. -->
     <button
       ref="triggerRef"
       type="button"

@@ -54,7 +54,7 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
       <slot name="applied" />
     </div>
 
-    <!-- Dual: PO + CEO (+ optional actions) -->
+    <!-- Dual: PO + CEO (+ optional actions). Max width 506px → 31.625rem @16. -->
     <template v-else-if="layout === 'dual'">
       <div
         :class="[
