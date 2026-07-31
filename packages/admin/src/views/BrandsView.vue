@@ -462,13 +462,10 @@ async function confirmDeleteBrand() {
 
   &__table {
     width: 100%;
+    min-width: 1100px;
     border-collapse: separate;
     border-spacing: 0;
     background-color: $color-bg-white;
-
-    @include mobile {
-      min-width: 1100px;
-    }
 
     th,
     td {
@@ -476,6 +473,7 @@ async function confirmDeleteBrand() {
       text-align: left;
       border-bottom: 1px solid $color-border;
       vertical-align: middle;
+      white-space: nowrap;
     }
 
     tr:last-child td {
@@ -529,7 +527,6 @@ async function confirmDeleteBrand() {
 
   &__author-cell {
     min-width: 120px;
-    white-space: nowrap;
   }
 
   &__author-name {
@@ -555,12 +552,10 @@ async function confirmDeleteBrand() {
 
   &__review-cell {
     min-width: 120px;
-    max-width: 180px;
   }
 
   &__waiting-cell {
     min-width: 110px;
-    max-width: 150px;
 
     &--warn .brands-view__cell-line {
       color: #b45309;
@@ -574,11 +569,6 @@ async function confirmDeleteBrand() {
   }
 
   &__cell-line {
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.4;
     cursor: default;
 
     &--muted {
@@ -606,7 +596,6 @@ async function confirmDeleteBrand() {
   }
 
   &__actions {
-    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: $spacing-2;
