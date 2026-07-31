@@ -10,6 +10,13 @@ export interface JWTPayload {
   role: string
   iat: number
   exp: number
+  /**
+   * Session start time. Constant across the sliding refreshes that rotate
+   * `iat`/`exp`, so it anchors both the absolute session cap and the CSRF
+   * token (see `utils/session.ts`). Optional because tokens minted before
+   * rolling sessions existed do not carry it.
+   */
+  sid?: number
 }
 
 function base64UrlEncode(str: string): string {

@@ -1,16 +1,20 @@
 import { Hono } from 'hono'
-import { setCookie, deleteCookie } from 'hono/cookie'
+import { deleteCookie } from 'hono/cookie'
 import type { Context } from 'hono'
 import type { Env, Variables } from '../types'
-import { createJWT } from '../utils/jwt'
 import { createCsrfToken } from '../utils/csrf'
-import { authMiddleware, AUTH_COOKIE_NAME } from '../middleware/auth'
+import { authMiddleware } from '../middleware/auth'
+import {
+  AUTH_COOKIE_NAME,
+  SESSION_ABSOLUTE_SEC,
+  SESSION_IDLE_SEC,
+  authCookieOptions,
+  mintSessionCookie,
+} from '../utils/session'
 import { corporateEmailDenialMessage, isCorporateEmailAllowed } from '../utils/email-access'
 import { logAuthLoginAttempt } from '../utils/auth-login-log'
 
 const authRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
-
-const TOKEN_LIFETIME_SEC = 24 * 60 * 60
 
 interface GoogleTokenInfo {
   email: string
@@ -22,21 +26,6 @@ interface GoogleTokenInfo {
   sub: string
 }
 
-// Shared cookie attributes for login (set) and logout (clear). `Secure` is
-// disabled in development so the cookie still flows over plain HTTP from
-// `vite dev` → `wrangler dev`; this is the ONLY behavioural difference
-// driven by the ENVIRONMENT flag — cookie auth is the single auth path
-// everywhere.
-function authCookieOptions(c: Context<{ Bindings: Env; Variables: Variables }>) {
-  const isDev = c.env.ENVIRONMENT === 'development'
-  return {
-    path: '/',
-    httpOnly: true,
-    secure: !isDev,
-    sameSite: 'Lax' as const,
-  }
-}
-
 interface AuthUserRow {
   id: string
   email: string
@@ -44,37 +33,26 @@ interface AuthUserRow {
   role: string
 }
 
+/**
+ * Start a brand-new session: mint the auth cookie and hand the SPA its
+ * matching CSRF token. Session lifetime policy (idle window, absolute cap,
+ * sliding refresh) lives in `utils/session.ts`.
+ */
 async function issueAuthSession(
   c: Context<{ Bindings: Env; Variables: Variables }>,
   user: AuthUserRow,
   displayName?: string
 ) {
   const name = displayName ?? user.name
-  const now = Math.floor(Date.now() / 1000)
-  const token = await createJWT(
-    {
-      sub: user.id,
-      email: user.email,
-      name,
-      role: user.role,
-      iat: now,
-      exp: now + TOKEN_LIFETIME_SEC,
-    },
-    c.env.JWT_SECRET
-  )
-
-  setCookie(c, AUTH_COOKIE_NAME, token, {
-    ...authCookieOptions(c),
-    maxAge: TOKEN_LIFETIME_SEC,
-  })
-
-  const csrfToken = await createCsrfToken({ sub: user.id, iat: now }, c.env.JWT_SECRET)
+  const { sid } = await mintSessionCookie(c, { ...user, name })
+  const csrfToken = await createCsrfToken({ sub: user.id, sid }, c.env.JWT_SECRET)
 
   return c.json({
     success: true,
     data: {
       user: { id: user.id, email: user.email, name, role: user.role },
       csrfToken,
+      session: { idleSeconds: SESSION_IDLE_SEC, absoluteSeconds: SESSION_ABSOLUTE_SEC },
     },
   })
 }
@@ -229,9 +207,16 @@ authRoutes.post('/google', async c => {
 // in index.ts (so /google and /logout remain public).
 authRoutes.get('/me', authMiddleware, async c => {
   const user = c.get('user')
-  const jwtIat = c.get('jwtIat') ?? Math.floor(Date.now() / 1000)
-  const csrfToken = await createCsrfToken({ sub: user.id, iat: jwtIat }, c.env.JWT_SECRET)
-  return c.json({ success: true, data: { user, csrfToken } })
+  const sid = c.get('sessionAnchor') ?? Math.floor(Date.now() / 1000)
+  const csrfToken = await createCsrfToken({ sub: user.id, sid }, c.env.JWT_SECRET)
+  return c.json({
+    success: true,
+    data: {
+      user,
+      csrfToken,
+      session: { idleSeconds: SESSION_IDLE_SEC, absoluteSeconds: SESSION_ABSOLUTE_SEC },
+    },
+  })
 })
 
 authRoutes.post('/logout', c => {

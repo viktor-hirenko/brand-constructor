@@ -51,9 +51,11 @@ export type Variables = {
   // OAuth flow as production); kept as a discriminated value so middleware
   // and CSRF can assert the auth context explicitly.
   authMethod: 'cookie'
-  // JWT `iat` of the auth cookie used for this request — re-used by
-  // csrfMiddleware to deterministically derive the expected X-CSRF-Token
-  // without any per-session state. Undefined for requests that have not yet
+  // Session start time (`sid`) of the auth cookie used for this request —
+  // re-used by csrfMiddleware to deterministically derive the expected
+  // X-CSRF-Token without any per-session state. Stable across the sliding
+  // refreshes that rotate the token's `iat`, so a refresh never invalidates
+  // the CSRF token the SPA holds. Undefined for requests that have not yet
   // passed authMiddleware.
-  jwtIat?: number
+  sessionAnchor?: number
 }

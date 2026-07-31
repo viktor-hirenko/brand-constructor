@@ -14,6 +14,8 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { buildWizardIframeSrc } from '@/utils/wizardLink'
+import { useAuthStore } from '@/stores/auth'
+import { handleSessionExpired } from '@/utils/sessionExpiry'
 
 interface WizardNavigatedPayload {
   brandId?: string | null
@@ -29,7 +31,11 @@ interface WizardBridgeMessage {
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const isLoading = ref(true)
+// Set while we hand the user over to the top-level login, so the dying iframe
+// is hidden instead of flashing the Wizard's interstitial.
+const isSessionEnding = ref(false)
 
 // The iframe `src` is computed ONCE at mount and then frozen. Live in-iframe
 // navigation is mirrored into the Admin URL (see the `navigated` handler) so a
@@ -87,10 +93,17 @@ function handleMessage(event: MessageEvent<WizardBridgeMessage>) {
       isLoading.value = false
       break
     case 'auth-required':
-      // Cookie expired mid-session. Google Sign-In does not render reliably
-      // inside an iframe, so break out to a top-level reload — the Admin's own
-      // router guard then routes to the (top-level) login page.
-      window.location.reload()
+      // The Wizard found no valid session. Sign-in cannot happen in the frame
+      // (Google Sign-In is unsupported there, and a login card inside the Admin
+      // shell reads as a broken page), so break out to the top-level login.
+      //
+      // A bare `reload()` used to be enough only by accident — it relied on the
+      // Admin guard re-running after boot. Going straight to /login is
+      // deterministic and carries the return path, so the user lands back on
+      // this brand and step after signing in.
+      isSessionEnding.value = true
+      authStore.clearSession()
+      handleSessionExpired({ redirect: route.fullPath })
       break
     case 'done':
       // Brand saved/submitted. The Wizard shows its own success screen inside
@@ -122,11 +135,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="wizard-workspace">
-    <div v-if="isLoading" class="wizard-workspace__loading">
+    <div v-if="isLoading || isSessionEnding" class="wizard-workspace__loading">
       <span class="wizard-workspace__spinner" />
-      <span>Loading wizard…</span>
+      <span>{{ isSessionEnding ? 'Session expired — redirecting to sign in…' : 'Loading wizard…' }}</span>
     </div>
     <iframe
+      v-show="!isSessionEnding"
       :key="iframeKey"
       :src="iframeSrc"
       class="wizard-workspace__frame"

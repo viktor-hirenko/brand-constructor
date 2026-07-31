@@ -62,14 +62,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Drop every trace of the session from memory without calling the server.
+   *
+   * Used when the session is already gone (401 from any endpoint, or a
+   * sign-out broadcast from the Admin shell): there is nothing to revoke, and
+   * the UI must stop rendering as authenticated immediately.
+   */
+  function clearSession(): void {
+    user.value = null;
+    csrfToken.value = null;
+  }
+
   async function logout(): Promise<void> {
     // Clear local auth state BEFORE the network call so that any synchronous
     // router navigation triggered afterwards sees `isAuthenticated === false`.
     // There is no Sign-out UI in the constructor SPA today, but the two
     // auth stores are kept symmetric on purpose so a future Sign-out button
     // here cannot re-introduce the router-guard race fixed in the admin SPA.
-    user.value = null;
-    csrfToken.value = null;
+    clearSession();
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
       await fetch(`${apiBase}/api/auth/logout`, {
@@ -78,8 +89,8 @@ export const useAuthStore = defineStore('auth', () => {
       });
     } catch {
       // Network failure — local state is already cleared so the UI logs
-      // out immediately. The HttpOnly cookie will eventually expire on
-      // its own (24h TTL); user can also re-login to overwrite it.
+      // out immediately. The HttpOnly cookie expires on its own once the
+      // idle window elapses; a re-login also overwrites it.
     }
   }
 
@@ -125,6 +136,7 @@ export const useAuthStore = defineStore('auth', () => {
     canStartNewBrandBrief,
     loginWithGoogle,
     logout,
+    clearSession,
     fetchCurrentUser,
   };
 });

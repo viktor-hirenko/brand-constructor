@@ -5,7 +5,7 @@ import { createCsrfToken, timingSafeEqual } from '../utils/csrf'
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 // CSRF middleware. Runs AFTER authMiddleware so `user`, `authMethod` and
-// `jwtIat` are already populated on the context. Safe methods
+// `sessionAnchor` are already populated on the context. Safe methods
 // (GET/HEAD/OPTIONS) are skipped — they have no body and no side effects.
 // Every other request must carry a valid X-CSRF-Token header derived from
 // the auth cookie (see utils/csrf.ts for the derivation rationale).
@@ -20,8 +20,8 @@ export const csrfMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
     }
 
     const user = c.get('user')
-    const jwtIat = c.get('jwtIat')
-    if (!user || jwtIat === undefined) {
+    const anchor = c.get('sessionAnchor')
+    if (!user || anchor === undefined) {
       return c.json({ success: false, error: 'CSRF: missing user context' }, 403)
     }
 
@@ -30,7 +30,7 @@ export const csrfMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
       return c.json({ success: false, error: 'CSRF: missing X-CSRF-Token header' }, 403)
     }
 
-    const expected = await createCsrfToken({ sub: user.id, iat: jwtIat }, c.env.JWT_SECRET)
+    const expected = await createCsrfToken({ sub: user.id, sid: anchor }, c.env.JWT_SECRET)
     if (!timingSafeEqual(provided, expected)) {
       return c.json({ success: false, error: 'CSRF: token mismatch' }, 403)
     }

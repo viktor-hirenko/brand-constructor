@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, UserRole } from '@brand-constructor/shared'
 import { ADMIN_ROLES, LIBRARY_WRITE_PERMISSIONS } from '@brand-constructor/shared'
+import { broadcastLogout, onRemoteLogout } from '@/utils/authBroadcast'
+import { handleSessionExpired } from '@/utils/sessionExpiry'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -48,14 +50,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Drop every trace of the session from memory without calling the server.
+   *
+   * Used when the session is already gone (401 from any endpoint, or a
+   * sign-out in another tab): there is nothing to revoke, and the UI must stop
+   * rendering as authenticated immediately.
+   */
+  function clearSession(): void {
+    user.value = null
+    csrfToken.value = null
+  }
+
   async function logout(): Promise<void> {
     // Clear local auth state BEFORE the network call so that any synchronous
     // router navigation triggered by the caller sees `isAuthenticated === false`.
     // If we waited for the fetch to resolve first, the beforeEach guard
     // would race with the user-facing redirect and could bounce the user
     // back into the app on Sign-out.
-    user.value = null
-    csrfToken.value = null
+    clearSession()
+    // Other tabs (and the embedded Wizard iframe) hold their own in-memory
+    // user; tell them to drop it now rather than on their next navigation.
+    broadcastLogout()
     try {
       const apiBase = import.meta.env.VITE_API_URL || ''
       await fetch(`${apiBase}/api/auth/logout`, {
@@ -96,6 +112,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Signed out in another tab -> follow it. Registered once, when the store is
+  // first instantiated at boot.
+  onRemoteLogout(() => {
+    clearSession()
+    handleSessionExpired({ reason: 'signed_out' })
+  })
+
   return {
     user,
     csrfToken,
@@ -107,6 +130,7 @@ export const useAuthStore = defineStore('auth', () => {
     canWriteLibrary,
     loginWithGoogle,
     logout,
+    clearSession,
     fetchCurrentUser,
   }
 })

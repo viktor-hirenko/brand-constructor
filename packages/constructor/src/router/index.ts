@@ -10,6 +10,8 @@ import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
 import type { Brand } from '@brand-constructor/shared/types'
 import { resolveColdStartNavigation } from '@/router/coldStartNavigation'
+import { isEmbedded } from '@/composables/useEmbedMode'
+import { postAuthRequired } from '@/composables/useEmbedBridge'
 import { applyBrandToStore, buildStepDataFromBrand, clampWizardStep, wizardStepLocation } from '@/utils/brandHydration'
 
 function ceoReselectGuard(to: RouteLocationNormalized) {
@@ -383,6 +385,16 @@ router.beforeEach(async to => {
   // `await fetchCurrentUser()` in main.ts.
   if (!authStore.initialized) {
     await authStore.fetchCurrentUser()
+  }
+
+  // Embedded in the Admin: nothing may render without a session, not even the
+  // public landing page — the Admin shell around us is already telling the user
+  // they are signed in. Hand off to the parent so it can break out to the
+  // top-level login, and park on `login` (which renders a neutral interstitial
+  // in embed mode) until it does.
+  if (isEmbedded() && !authStore.isAuthenticated) {
+    postAuthRequired()
+    return to.name === 'login' ? true : { name: 'login', query: { redirect: to.fullPath } }
   }
 
   if (to.name === 'login') {

@@ -1,4 +1,5 @@
 import type { Router } from 'vue-router';
+import { isEmbedded } from './useEmbedMode';
 
 // Variant 3 — cross-frame bridge for when the Wizard runs embedded inside the
 // Admin (as a same-origin iframe in WizardWorkspaceView). This is strictly
@@ -21,16 +22,6 @@ interface EmbedMessage {
   payload?: unknown;
 }
 
-/** True only when this document is rendered inside a parent frame. */
-function isEmbedded(): boolean {
-  try {
-    return window.parent !== window.self;
-  } catch {
-    // Cross-origin parent access throws — treat as embedded to be safe.
-    return true;
-  }
-}
-
 function post(type: EmbedMessage['type'], payload?: unknown): void {
   const message: EmbedMessage = { source: 'brand-wizard', type, payload };
   // Target the exact same origin: the Admin embeds the Wizard same-origin, so
@@ -39,19 +30,33 @@ function post(type: EmbedMessage['type'], payload?: unknown): void {
 }
 
 /**
- * Wire the Wizard -> Admin messages. Call once after the router is ready.
- * No-op when not embedded.
+ * Ask the Admin to break out of the iframe and take the user to the top-level
+ * login page.
+ *
+ * Sign-in must never happen inside the frame: Google Sign-In is not supported
+ * in an iframe, and a login card rendered inside the Admin shell reads as a
+ * broken page. Safe to call repeatedly — the parent de-duplicates.
  */
-export function setupEmbedBridge(router: Router): void {
+export function postAuthRequired(): void {
   if (!isEmbedded()) return;
+  post('auth-required');
+}
 
-  // Signal the parent that the Wizard SPA is live (clears the Admin loader).
-  post('ready');
+/**
+ * Register the router-driven half of the bridge.
+ *
+ * MUST be called BEFORE `app.use(router)`. Vue Router runs the initial
+ * navigation synchronously from `router.install()`, and that is exactly the
+ * navigation that redirects to `login` when the cookie is already dead on
+ * load. Registering `afterEach` after `router.isReady()` would miss it, and
+ * the Wizard would silently render its login screen inside the Admin shell
+ * instead of asking the parent to break out.
+ */
+export function registerEmbedRouterHooks(router: Router): void {
+  if (!isEmbedded()) return;
 
   router.afterEach(to => {
     // Cookie expired / not authenticated -> the guard sends us to `login`.
-    // Google Sign-In does not render reliably inside an iframe, so ask the
-    // parent to break out to a top-level reload instead of showing GSI here.
     if (to.name === 'login') {
       post('auth-required');
       return;
@@ -75,4 +80,14 @@ export function setupEmbedBridge(router: Router): void {
       post('navigated', payload);
     }
   });
+}
+
+/**
+ * Signal the parent that the Wizard SPA is live (clears the Admin loader).
+ * Call after `app.mount()` so the loader hides only once there is something
+ * painted behind it.
+ */
+export function postEmbedReady(): void {
+  if (!isEmbedded()) return;
+  post('ready');
 }

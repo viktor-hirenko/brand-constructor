@@ -2,10 +2,18 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { isEmbedded } from '@/composables/useEmbedMode';
+import { postAuthRequired } from '@/composables/useEmbedBridge';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+
+// Embedded in the Admin iframe, this view must never offer sign-in: Google
+// Sign-In is unsupported in an iframe, and a login card inside the Admin shell
+// looks like a broken page. We render a neutral interstitial and ask the parent
+// to take the user to the top-level login instead.
+const embedded = isEmbedded();
 
 const error = ref<string | null>(null);
 const isLoading = ref(false);
@@ -63,6 +71,13 @@ onMounted(() => {
     return;
   }
 
+  if (embedded) {
+    // Re-assert the break-out request. The router hook already posted it, but
+    // reaching this view at all means the hand-off has not happened yet.
+    postAuthRequired();
+    return;
+  }
+
   scriptEl = document.createElement('script');
   scriptEl.src = 'https://accounts.google.com/gsi/client';
   scriptEl.async = true;
@@ -80,7 +95,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="login">
+  <div v-if="embedded" class="login login--embedded">
+    <div class="login__interstitial">
+      <span class="login__spinner" />
+      <p class="login__subtitle">Сесія завершилась. Перенаправляємо на вхід…</p>
+    </div>
+  </div>
+
+  <div v-else class="login">
     <div class="login__card">
       <div class="login__logo">
         <span class="login__logo-icon">◈</span>
@@ -175,6 +197,28 @@ onUnmounted(() => {
     color: $color-text-muted;
     max-width: 260px;
     line-height: $line-height-normal;
+  }
+
+  &__interstitial {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-4;
+    text-align: center;
+  }
+
+  &__spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid $color-border;
+    border-top-color: $color-primary;
+    border-radius: 50%;
+    animation: login-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

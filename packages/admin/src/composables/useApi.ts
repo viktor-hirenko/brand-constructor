@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { handleSessionExpired } from '@/utils/sessionExpiry'
 import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-constructor/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -57,6 +58,20 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const json = await response.json()
 
   if (!response.ok) {
+    // The session died under us (idle window elapsed, absolute cap reached, or
+    // a sign-out elsewhere). Without this the store keeps its in-memory user,
+    // the shell keeps rendering as authenticated, and the failure surfaces as
+    // a stray "Unauthorized" toast — the router guard only re-checks on
+    // navigation, so a user standing still would never be told.
+    if (response.status === 401) {
+      try {
+        useAuthStore().clearSession()
+      } catch {
+        // Pinia not active (request fired outside a component) — the redirect
+        // below still tears the page down.
+      }
+      handleSessionExpired()
+    }
     const errorData = json as ApiErrorResponse
     throw new Error(errorData.error || `HTTP ${response.status}`)
   }

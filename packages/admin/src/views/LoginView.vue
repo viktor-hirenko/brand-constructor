@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import type { SessionEndReason } from '@/utils/sessionExpiry'
 
 const router = useRouter()
 const route = useRoute()
@@ -9,6 +10,15 @@ const authStore = useAuthStore()
 
 const error = ref<string | null>(null)
 const isLoading = ref(false)
+
+// Landing here after a session ended is not the same as opening the app cold —
+// say why, otherwise a bare sign-in button reads as the app having broken.
+const sessionNotice = computed<string | null>(() => {
+  const reason = route.query.reason as SessionEndReason | undefined
+  if (reason === 'expired') return 'Your session has expired. Please sign in again to continue.'
+  if (reason === 'signed_out') return 'You signed out in another tab.'
+  return null
+})
 
 declare global {
   interface Window {
@@ -85,6 +95,7 @@ onUnmounted(() => {
       <p class="login-card__subtitle">Admin Panel — sign in to continue</p>
 
       <div class="login-card__body">
+        <p v-if="sessionNotice" class="login-card__notice">{{ sessionNotice }}</p>
         <p v-if="error" class="login-card__error">{{ error }}</p>
 
         <div v-if="isLoading" class="login-card__loading">
@@ -166,6 +177,17 @@ onUnmounted(() => {
     border-radius: $radius-md;
     font-size: $font-size-sm;
     color: $color-danger;
+    text-align: left;
+  }
+
+  &__notice {
+    width: 100%;
+    padding: $spacing-3 $spacing-4;
+    background-color: #f0f5ff;
+    border: 1px solid #adc6ff;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
     text-align: left;
   }
 

@@ -3,7 +3,7 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { useAuthStore } from './stores/auth';
-import { setupEmbedBridge } from './composables/useEmbedBridge';
+import { postEmbedReady, registerEmbedRouterHooks } from './composables/useEmbedBridge';
 import { applyEmbedRootFlag } from './composables/useEmbedMode';
 import './styles/app.css';
 
@@ -43,10 +43,19 @@ app.use(createPinia());
 void (async () => {
   const authStore = useAuthStore();
   await authStore.fetchCurrentUser();
-  app.use(router);
-  await router.isReady();
+
   // Variant 3: wire the Admin<->Wizard postMessage bridge. No-op when the
   // Wizard is not embedded in an iframe (standalone / legacy deploy).
-  setupEmbedBridge(router);
+  //
+  // Router hooks are registered BEFORE `app.use(router)` on purpose: the
+  // initial navigation starts inside `router.install()`, and when the cookie
+  // is already dead on load that navigation is the one redirecting to `login`.
+  // Registering afterwards would miss it and leave a login card rendered
+  // inside the Admin shell.
+  registerEmbedRouterHooks(router);
+
+  app.use(router);
+  await router.isReady();
   app.mount('#app');
+  postEmbedReady();
 })();
