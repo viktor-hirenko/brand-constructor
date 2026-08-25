@@ -34,6 +34,18 @@ const props = withDefaults(defineProps<Props>(), {
   boxHeightRem: PREVIEW_PHONE_BOX.heightRem,
 })
 
+/**
+ * The overlay slot gets the multiplier because the sidebar is the one piece of
+ * content whose geometry is not "full width, height from the file": its pinned
+ * strips are measured in design px and have to be scaled like the canvas itself.
+ */
+defineSlots<{
+  top?: () => unknown
+  body?: () => unknown
+  bottom?: () => unknown
+  overlay?: (props: { unitRem: number }) => unknown
+}>()
+
 const unitRem = computed(() => resolveCanvasUnitRem(props.boxWidthRem, props.boxHeightRem))
 
 function toRem(designPx: number): string {
@@ -95,7 +107,7 @@ const chassisStyle = computed(() => ({
         v-if="$slots.overlay"
         class="phone-preview-canvas__overlay absolute inset-0 overflow-hidden pointer-events-none"
       >
-        <slot name="overlay" />
+        <slot name="overlay" :unit-rem="unitRem" />
       </div>
     </div>
   </div>

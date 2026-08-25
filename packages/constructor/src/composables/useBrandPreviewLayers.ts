@@ -24,56 +24,6 @@ export interface PreviewComposition {
   overlay: PreviewSlice | null
 }
 
-export interface ComponentSlot {
-  left: string
-  top: string
-  width: string
-  height: string
-  zIndex: number
-}
-
-export interface PreviewLayer {
-  typeId: string
-  url: string
-  slot: ComponentSlot
-}
-
-/*
- * DEPRECATED — everything from here to `isSidebarTypeId` is the pre-UXUI-2554
- * coordinate model, kept alive for step 8 only (`BrandPreviewPanel.vue`). It
- * dies with phase 5, when step 8 moves onto `PhonePreviewCanvas`. Do not wire
- * new callers into it.
- *
- * Slot geometry is expressed in `rem` (design px ÷ 16) so the layered preview
- * scales with the fluid root font in embedded mode.
- */
-
-/** Visible iPhone status bar strip above full-height sidebar screenshots. */
-const PHONE_STATUS_BAR_INSET_REM = 2.125 // 34px
-
-const SIDEBAR_BASE_SLOT: ComponentSlot = {
-  left: '0rem',
-  top: '0rem',
-  width: '18.046875rem', // 288.75px
-  height: '38.390625rem', // 614.25px
-  zIndex: 30,
-}
-
-/** Sidebar variants that start at the top of the screen (no status-bar inset). */
-const SIDEBAR_VARIANTS_WITHOUT_STATUS_BAR_INSET = new Set([
-  'Type 3',
-  'cvr_3b35e684ab1e4d2b',
-])
-
-const COMPONENT_SLOTS: Record<string, ComponentSlot> = {
-  ct_header: { left: '0rem', top: '2.109375rem', width: '18.140625rem', height: '3rem', zIndex: 20 },
-  ct_banners: { left: '0.75rem', top: '5.109375rem', width: '17.390625rem', height: '9rem', zIndex: 19 },
-  ct_thumbnails: { left: '0.75rem', top: '24.65625rem', width: '16.875rem', height: '7.875rem', zIndex: 18 },
-  ct_tabbar: { left: '0rem', top: '34.828125rem', width: '18.09375rem', height: '3.5625rem', zIndex: 17 },
-  ct_sidebar: SIDEBAR_BASE_SLOT,
-  ct_theme: { left: '0rem', top: '0rem', width: '18.046875rem', height: '38.390625rem', zIndex: 5 },
-}
-
 function isSidebarTypeId(typeId: string): boolean {
   return typeId.includes('sidebar')
 }
@@ -85,8 +35,6 @@ interface UseBrandPreviewLayersResult {
   buildComposition: (includeOverlay?: boolean) => PreviewComposition
   getOverlaySlice: () => PreviewSlice | null
   buildOverlaySliceForVariant: (typeId: string, variantId: string) => PreviewSlice | null
-  /** @deprecated Step 8 only until phase 5 of UXUI-2554. */
-  buildLayers: (hideSidebar: boolean) => PreviewLayer[]
   hasSelections: ComputedRef<boolean>
   hasSidebarSelected: ComputedRef<boolean>
 }
@@ -95,8 +43,8 @@ interface UseBrandPreviewLayersResult {
  * Encapsulates loading visual-component variants and turning the active
  * `selections` map from the constructor store into a phone-screen composition.
  *
- * Reused by BriefShellView (step 7 right panel) and BrandPreviewPanel
- * (CEO finalize right column, still on the deprecated coordinate path).
+ * Reused by BriefShellView (step 7 right panel) and BrandPreviewPanel (step 8
+ * review right column) — one composition feeding one renderer on both screens.
  */
 export function useBrandPreviewLayers(): UseBrandPreviewLayersResult {
   const store = useConstructorStore()
@@ -206,45 +154,6 @@ export function useBrandPreviewLayers(): UseBrandPreviewLayersResult {
     return { typeId, url }
   }
 
-  // ─── Deprecated coordinate path (step 8 only, removed in phase 5) ──────────
-
-  function sidebarUsesStatusBarInset(typeId: string, variantId: string): boolean {
-    if (SIDEBAR_VARIANTS_WITHOUT_STATUS_BAR_INSET.has(variantId)) return false
-
-    const variant = variantsCache.value[typeId]?.find(v => v.id === variantId)
-    if (variant && SIDEBAR_VARIANTS_WITHOUT_STATUS_BAR_INSET.has(variant.name)) return false
-
-    return true
-  }
-
-  function resolveSidebarSlot(typeId: string): ComponentSlot {
-    const variantId = store.stepData?.visualComponents?.selections?.[typeId]
-    if (!variantId || !sidebarUsesStatusBarInset(typeId, variantId)) {
-      return { ...SIDEBAR_BASE_SLOT }
-    }
-
-    return { ...SIDEBAR_BASE_SLOT, top: `${PHONE_STATUS_BAR_INSET_REM}rem` }
-  }
-
-  function buildLayers(hideSidebar: boolean): PreviewLayer[] {
-    const selections = store.stepData?.visualComponents?.selections ?? {}
-    const layers: PreviewLayer[] = []
-
-    for (const typeId of Object.keys(selections)) {
-      if (isSidebarTypeId(typeId) && hideSidebar) continue
-
-      const url = getPreviewUrl(typeId)
-      if (!url) continue
-
-      const slot = isSidebarTypeId(typeId) ? resolveSidebarSlot(typeId) : COMPONENT_SLOTS[typeId]
-      if (!slot) continue
-
-      layers.push({ typeId, url, slot })
-    }
-
-    return layers.sort((a, b) => a.slot.zIndex - b.slot.zIndex)
-  }
-
   return {
     variantsCache,
     loadVariants,
@@ -252,7 +161,6 @@ export function useBrandPreviewLayers(): UseBrandPreviewLayersResult {
     buildComposition,
     getOverlaySlice,
     buildOverlaySliceForVariant,
-    buildLayers,
     hasSelections,
     hasSidebarSelected,
   }

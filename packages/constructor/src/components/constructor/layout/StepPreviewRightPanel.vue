@@ -27,6 +27,7 @@ import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewComposition, PreviewSlice } from '@/composables/useBrandPreviewLayers'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
 import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCanvas.vue'
+import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
 import VisualComponentsPhoneEmptyState from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
@@ -229,7 +230,6 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
                 <VisualComponentsPhoneEmptyState
                   v-if="!hasStep9Selections"
                   :variant="step7EmptyVariant"
-                  tone="on-dark"
                 />
                 <template v-else>
                   <PhonePreviewSlice
@@ -244,7 +244,7 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
                 <PhonePreviewSlice :slice="step7Composition.bottom" />
               </template>
 
-              <template #overlay>
+              <template #overlay="{ unitRem }">
                 <Transition
                   name="sidebar-slide"
                   :css="step9SidebarSlideAnimated"
@@ -258,7 +258,7 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
                     :key="step7OverlaySlice.url"
                     class="absolute inset-0 overflow-hidden"
                   >
-                    <PhonePreviewSlice :slice="step7OverlaySlice" />
+                    <PhonePreviewSidebar :slice="step7OverlaySlice" :unit-rem="unitRem" />
                   </div>
                 </Transition>
               </template>
