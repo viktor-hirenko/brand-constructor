@@ -47,3 +47,11 @@ Thumbs.db
 # Local-only docs: plans, progress logs (never push)
 /docs/local/
 
+# Agent-facing docs: rules and session state, local only (never push)
+/AGENTS.md
+/docs/STATE.md
+
+# Local scratch dumps
+/.tmp/
+/packages/worker/.tmp/
+

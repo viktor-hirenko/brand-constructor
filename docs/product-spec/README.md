@@ -77,7 +77,11 @@
 
 | Файл | Опис |
 |---|---|
-| [../PROJECT-DOCS.md](../PROJECT-DOCS.md) | Технічна документація проєкту (архітектура, API, БД, деплой) |
-| [../IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md) | План реалізації з фазами та changelog |
-| [../FUTURE-WORK.md](../FUTURE-WORK.md) | Що відкладено і чому |
+| [../../AGENTS.md](../../AGENTS.md) | Правила роботи над репозиторієм, межі рішень, граблі |
+| [../STATE.md](../STATE.md) | Поточний стан: що зроблено, що відкрито, що далі |
+| [../architecture/variant-3-implementation-plan.md](../architecture/variant-3-implementation-plan.md) | Чинна архітектура (єдиний origin, admin + wizard) |
+| [../IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md) | Знімок плану на 2026-02-24 — історія |
+| [../FUTURE-WORK.md](../FUTURE-WORK.md) | Що відкладено і чому — застаріло |
 | [../TASK-REQUIREMENTS.md](../TASK-REQUIREMENTS.md) | Вимоги до задачі (раніше зібрані) |
+
+> `PROJECT-DOCS.md` видалено з репозиторію коммітом `e518325` як застарілий.

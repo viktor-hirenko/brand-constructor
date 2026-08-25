@@ -40,19 +40,15 @@ get_design_context(nodeId: "X:Y", fileKey: "aCe1cUDNaA7Tmcn9Mmvv1w")
 
 ## Design System Notes
 
-### Colors (из макета)
-- Primary: TBD (определить при разработке Step 1)
-- Background: TBD
-- Text: TBD
+Секция не заполнялась и осталась на уровне «TBD» с начала проекта, при том что
+все девять шагов реализованы и в проде. Источник истины по цветам, типографике
+и отступам — **код**: `packages/constructor/src/styles/` (Tailwind v4) и
+`packages/admin/src/styles/` (SCSS). Заполнять эту секцию задним числом смысла
+нет; если понадобится дизайн-токен-слой — это отдельная задача.
 
-### Typography
-- Font family: TBD
-- Heading sizes: TBD
-- Body text: TBD
-
-### Spacing
-- Grid: TBD
-- Gaps: TBD
+Node ID в таблице выше проставлены только для Landing и Visual Components;
+остальные помечены `TBD` и так и не были заполнены. Реальные node id, с которыми
+велась работа, перечислены в трекерах багов и в постмортеме.
 
 ## Files in This Directory
 
@@ -60,5 +56,9 @@ get_design_context(nodeId: "X:Y", fileKey: "aCe1cUDNaA7Tmcn9Mmvv1w")
 - `screens-product-owner-flow.md` - описание 13 экранов Product Owner Flow
 - `screens-visual-components.md` - описание 7 состояний Visual Components
 - `figma-discrepancies.md` - расхождения макета с PRD v2
-- `figma-visual-components-bugs.md` - progress tracker: 8 багов Visual Components (node 2837-4389)
-- `figma-ceo-review-bugs.md` - progress tracker: 11 багов CEO Review (node 2925-9240) ← **текущий фокус**
+- `figma-visual-components-bugs.md` - progress tracker: 8 багов Visual Components (node 2837-4389), пул закрыт
+- `figma-ceo-review-bugs.md` - progress tracker: 11 багов CEO Review (node 2925-9240), 10 закрыто, BRIEF-031 частично
+- `uxui-2553-postmortem.md` - разбор отменённой задачи «Переглянути контейнер»: две отклонённые архитектуры и почему
+
+Текущий фокус здесь **не указывается** — он живёт в [`../STATE.md`](../STATE.md),
+чтобы не расходиться с реальностью.

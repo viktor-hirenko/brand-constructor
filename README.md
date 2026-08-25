@@ -76,14 +76,23 @@ pnpm deploy:all                 # все одразу
 
 ## Documentation
 
-| Документ | Для кого |
-|---|---|
-| **[docs/security/CLOUDFLARE-HARDENING.md](./docs/security/CLOUDFLARE-HARDENING.md)** | Security review — P0/P1/P2 Cloudflare-side checklist |
-| **[docs/product-spec/](./docs/product-spec/)** | Продукт — PRD v1/v2, бізнес-вимоги, success metrics (source-of-truth, не оновлюється) |
-| **[docs/design-audit/](./docs/design-audit/)** | Дизайн — Figma screen mapping |
-| **[docs/TASK-REQUIREMENTS.md](./docs/TASK-REQUIREMENTS.md)** | Контекст — оригінальна Jira-задача |
-| **[docs/IMPLEMENTATION-PLAN.md](./docs/IMPLEMENTATION-PLAN.md)** | Історія — snapshot плану на 2026-02-24 |
-| **[docs/FUTURE-WORK.md](./docs/FUTURE-WORK.md)** | Roadmap (частково застарілий — Phase 2 виконана) |
+Починати звідси, у цьому порядку:
+
+1. **[AGENTS.md](./AGENTS.md)** — правила роботи, межі рішень, граблі. Постійне.
+2. **[docs/STATE.md](./docs/STATE.md)** — де ми зараз, що відкрито, що далі. Змінне.
+
+| Документ | Для кого | Статус |
+|---|---|---|
+| **[docs/architecture/variant-3-implementation-plan.md](./docs/architecture/variant-3-implementation-plan.md)** | Чинна архітектура — єдиний origin, admin `/`, wizard `/wizard/*` | Живий |
+| **[docs/design-audit/](./docs/design-audit/)** | Дизайн — Figma mapping і трекери багів з прийманням | Живий |
+| **[docs/security/CLOUDFLARE-HARDENING.md](./docs/security/CLOUDFLARE-HARDENING.md)** | Security review — P0/P1/P2 Cloudflare-side checklist | Живий |
+| **[docs/product-spec/](./docs/product-spec/)** | Продукт — PRD v1/v2, бізнес-вимоги, success metrics | Source of truth, не оновлюється |
+| **[docs/TASK-REQUIREMENTS.md](./docs/TASK-REQUIREMENTS.md)** | Контекст — оригінальна Jira-задача | Історія |
+| **[docs/IMPLEMENTATION-PLAN.md](./docs/IMPLEMENTATION-PLAN.md)** | Snapshot плану на 2026-02-24 | Історія, **не джерело істини** |
+| **[docs/FUTURE-WORK.md](./docs/FUTURE-WORK.md)** | Roadmap станом на Фазу 1 | Застарілий, **не джерело істини** |
+| **[docs/FLOW-AND-NOTIFICATIONS-ANALYSIS.md](./docs/FLOW-AND-NOTIFICATIONS-ANALYSIS.md)** | Аналіз флоу і комунікацій, 2026-03-19 | Історія |
+
+`docs/local/` і `docs/audits/` — поза git (`.gitignore`), там лише чернетки.
 
 ---
 

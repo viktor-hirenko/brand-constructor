@@ -13,7 +13,7 @@
 | 5 | «Переглянути» vs «Редагувати» | Low | **done** |
 | 6 | Дубль «Закрити» в модалке | Medium | **done** |
 | 7 | Empty state при delegate | Medium | **done** |
-| 8 | Concept → reset External Naming | High | pending ← следующий |
+| 8 | Concept → reset External Naming | High | **done** (`e5504ba`) |
 
 ---
 
@@ -209,6 +209,21 @@
 
 **Scope:** cross-step workflow.
 
+**Реализация (done):**
+
+- Коммит: `e5504ba` — draft-edit cascade routes, `ConceptCascadeBanner`, `captureCascadeSnapshot` в [`useInlineSectionEdit.ts`](../../packages/constructor/src/stores/constructor/useInlineSectionEdit.ts).
+- Views: [`DraftConceptEditView.vue`](../../packages/constructor/src/views/draft-edit/DraftConceptEditView.vue), [`DraftExternalNamingEditView.vue`](../../packages/constructor/src/views/draft-edit/DraftExternalNamingEditView.vue).
+- Phase/routing: [`resolveBrandBriefReviewPhase.ts`](../../packages/constructor/src/domain/reviewPhase/resolveBrandBriefReviewPhase.ts), [`coldStartNavigation.ts`](../../packages/constructor/src/router/coldStartNavigation.ts).
+- Тесты: [`inlineSectionEdit.test.ts`](../../packages/constructor/tests/unit/stores/constructor/inlineSectionEdit.test.ts), [`resolveBrandBriefReviewPhase.test.ts`](../../packages/constructor/tests/unit/domain/reviewPhase/resolveBrandBriefReviewPhase.test.ts).
+
+**Как проверить:**
+
+1. PO draft → Concept «Редагувати» → сменить concept → «Далі».
+2. External Naming сброшен, жёлтый banner cascade.
+3. Выбор новых имён → возврат на review.
+
+**Статус:** done.
+
 ---
 
 ## Рекомендуемый порядок работ
@@ -245,4 +260,4 @@
 6. Delegate toggle — один iPhone при delegate, два при выборе компонентов — **done (Bug 7)**
 7. Brief readonly modal — один способ закрытия (× / backdrop / Esc), без footer «Закрити» — **done (Bug 6)**
 8. Review — «Переглянути» визуально слабее «Редагувати» — **done (Bug 5)**
-9. Смена concept → external naming сброшен, redirect на step 3 — **pending (Bug 8)**
+9. Смена concept → external naming сброшен, redirect на step 3 — **done (Bug 8, `e5504ba`)**

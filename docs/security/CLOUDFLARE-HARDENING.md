@@ -5,9 +5,11 @@
 > be closed by a code change in this repo. Each item is the "definition of
 > done" the review can use for sign-off.
 >
-> Code-level findings F-01 through F-29 are tracked separately in
-> `docs/audits/enterprise-audit-brand-constructor.md`. The items below are
-> the **runtime / platform** complement to that file.
+> Code-level findings F-01 through F-29 were tracked in a separate audit file
+> that is **not present in this repository** (`docs/audits/` is gitignored, and
+> no such file exists on disk either). Treat the F-01…F-29 references below as
+> pointers to the external review document, not to a repo path. The items in
+> this file are the **runtime / platform** complement to that review.
 
 ---
 
