@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
+import { assetFallbackPlugin, readAssetFallbackEnv } from '@brand-constructor/shared/dev';
 
 // Base path strategy (Variant 3 — unified single-origin Admin + Wizard):
 //   - Default ('/wizard/'): dev server + the unified build, where the wizard
@@ -13,28 +14,41 @@ import { resolve } from 'path';
 // absolute in-app links.
 const base = process.env.WIZARD_STANDALONE === 'true' ? '/' : '/wizard/';
 
-export default defineConfig({
-  base,
-  plugins: [tailwindcss(), vue()],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-    },
-  },
-  server: {
-    port: 5174,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8787',
-        changeOrigin: true,
+const WORKER_ORIGIN = 'http://localhost:8787';
+
+export default defineConfig(({ mode }) => {
+  // VITE_USE_PROD_ASSETS / VITE_PROD_API_ORIGIN from `.env.development` turn on
+  // the dev-only fallback that serves `/api/assets/*` from production when the
+  // local R2 bucket has no such object.
+  const assetFallback = readAssetFallbackEnv(loadEnv(mode, __dirname, 'VITE_'));
+
+  return {
+    base,
+    plugins: [
+      tailwindcss(),
+      vue(),
+      assetFallbackPlugin({ ...assetFallback, workerOrigin: WORKER_ORIGIN }),
+    ],
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, './src'),
       },
     },
-  },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@use "@/styles/variables" as *;\n`,
+    server: {
+      port: 5174,
+      proxy: {
+        '/api': {
+          target: WORKER_ORIGIN,
+          changeOrigin: true,
+        },
       },
     },
-  },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@use "@/styles/variables" as *;\n`,
+        },
+      },
+    },
+  };
 });

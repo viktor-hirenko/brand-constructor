@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
-    "./constants": "./src/constants/index.ts"
+    "./constants": "./src/constants/index.ts",
+    "./dev": "./src/dev/assetFallback.mjs"
   },
   "scripts": {
     "type-check": "tsc --noEmit",

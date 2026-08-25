@@ -23,6 +23,7 @@
     "deploy:all": "turbo run build && pnpm deploy:worker:production && cd packages/admin && npx wrangler pages deploy dist --project-name brand-constructor && cd ../.. && WIZARD_STANDALONE=true pnpm build:constructor && cd packages/constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
     "db:migrate": "pnpm --filter @brand-constructor/worker db:migrate",
     "db:seed": "pnpm --filter @brand-constructor/worker db:seed",
+    "db:seed:components": "pnpm --filter @brand-constructor/worker db:seed:components",
     "slack:cleanup": "node scripts/cleanup-slack-bot-messages.mjs",
     "slack:cleanup:dry": "DRY_RUN=true node scripts/cleanup-slack-bot-messages.mjs",
     "icons:audit": "node scripts/audit-icons.mjs",

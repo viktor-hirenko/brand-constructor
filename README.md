@@ -46,6 +46,37 @@ pnpm dev          # admin :5173 + constructor :5174 + worker :8787
 і `VITE_*` у `.env`-файли admin / constructor (див. `packages/worker/wrangler.toml`
 та Cloudflare secrets у dashboard).
 
+### Локальні дані для QA
+
+Порожня локальна база не дає перевірити візард: на кроці 7 немає з чого вибирати.
+Схема і бібліотека компонентів наливаються двома командами:
+
+```bash
+pnpm db:migrate              # схема
+pnpm db:seed                 # користувачі + шість типів компонентів
+pnpm db:seed:components      # 14 варіантів компонентів (як у проді)
+```
+
+Перевірка: `14`.
+
+```bash
+cd packages/worker && npx wrangler d1 execute brand-constructor-db --env production --local \
+  --command "SELECT COUNT(*) FROM component_variants WHERE status='active'"
+```
+
+Самі картинки лежать у продовому R2, локальний бакет порожній. Щоб зображення
+відкривалися, у `.env.development` обох SPA потрібні:
+
+```bash
+VITE_USE_PROD_ASSETS=true
+VITE_PROD_API_ORIGIN=https://brand-constructor-api-production.upstars-landings.workers.dev
+```
+
+Dev-сервер тоді питає `/api/assets/*` спочатку в локального воркера, а якщо
+об'єкта немає — у проді (це публічний GET, без авторизації). Вимкнути —
+`VITE_USE_PROD_ASSETS=false`: тоді працюють лише локально завантажені файли.
+Реалізація — `packages/shared/src/dev/assetFallback.mjs`.
+
 ### Окремі команди
 
 ```bash
