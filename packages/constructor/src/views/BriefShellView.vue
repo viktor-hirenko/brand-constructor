@@ -5,7 +5,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { apiGet } from '@/composables/useApi'
 import { useLibrariesStore } from '@/stores/libraries'
-import { useBrandPreviewLayers, type PreviewLayer } from '@/composables/useBrandPreviewLayers'
+import { useBrandPreviewLayers, type PreviewSlice } from '@/composables/useBrandPreviewLayers'
 import {
   DESIGN_SHELL_HEIGHT,
   DESIGN_SHELL_MIN_VIEWPORT_WIDTH,
@@ -450,21 +450,23 @@ watch(
 
 const {
   loadVariants: loadStep9Variants,
-  buildBaseLayers,
-  getSidebarLayer,
-  buildSidebarLayerForVariant,
+  buildComposition,
+  getOverlaySlice,
+  buildOverlaySliceForVariant,
   hasSelections: hasStep9Selections,
   hasSidebarSelected,
 } = useBrandPreviewLayers()
 
 const step9SidebarVisible = ref(true)
 const step9SidebarSlideAnimated = ref(false)
-const pinnedSidebarLayer = ref<PreviewLayer | null>(null)
+const pinnedSidebarSlice = ref<PreviewSlice | null>(null)
 const sidebarHiddenCalloutVisible = ref(false)
 let sidebarHiddenCalloutTimer: ReturnType<typeof setTimeout> | null = null
 
-const step9BaseLayers = computed(() => buildBaseLayers())
-const step9SidebarLayer = computed(() => getSidebarLayer() ?? pinnedSidebarLayer.value)
+// Overlay is driven separately so it can outlive the selection during the
+// slide-out animation (see `pinnedSidebarSlice`).
+const step7Composition = computed(() => buildComposition(false))
+const step7OverlaySlice = computed(() => getOverlaySlice() ?? pinnedSidebarSlice.value)
 
 function setSidebarPreviewVisible(visible: boolean, animate: boolean) {
   step9SidebarSlideAnimated.value = animate
@@ -494,7 +496,7 @@ function restoreSidebarPreview() {
 }
 
 function clearPinnedSidebarLayer() {
-  pinnedSidebarLayer.value = null
+  pinnedSidebarSlice.value = null
 }
 
 function toggleSidebarPreview() {
@@ -524,9 +526,9 @@ watch(
     if (prevSidebarKey && !sidebarKey) {
       const prevVariantId = prevSelections.value[prevSidebarKey]
       if (prevVariantId && step9SidebarVisible.value) {
-        const pinned = buildSidebarLayerForVariant(prevSidebarKey, prevVariantId)
+        const pinned = buildOverlaySliceForVariant(prevSidebarKey, prevVariantId)
         if (pinned) {
-          pinnedSidebarLayer.value = pinned
+          pinnedSidebarSlice.value = pinned
           setSidebarPreviewVisible(false, true)
         } else {
           clearPinnedSidebarLayer()
@@ -743,8 +745,8 @@ watch(currentStep, step => {
           :concept-preview-for-slider="conceptPreviewForSlider"
           :is-concept-slider-final-selected="isConceptSliderFinalSelected"
           :selected-concept="selectedConcept"
-          :step9-base-layers="step9BaseLayers"
-          :step9-sidebar-layer="step9SidebarLayer"
+          :step7-composition="step7Composition"
+          :step7-overlay-slice="step7OverlaySlice"
           :has-step9-selections="hasStep9Selections"
           :has-sidebar-selected="hasSidebarSelected"
           :step9-sidebar-visible="step9SidebarVisible"

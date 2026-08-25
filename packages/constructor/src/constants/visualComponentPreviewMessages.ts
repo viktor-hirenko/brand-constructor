@@ -10,4 +10,4 @@ export const DELEGATED_VISUAL_COMPONENTS_PREVIEW_MESSAGE =
 
 /** Empty state on step 7 when no component is selected yet. */
 export const PICK_VISUAL_COMPONENTS_PREVIEW_MESSAGE =
-  'Оберіть компоненти щоб побачити превʼю'
+  'Оберіть компоненти, щоб побачити превʼю'

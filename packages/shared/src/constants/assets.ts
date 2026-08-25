@@ -34,15 +34,6 @@ export const MAX_FILE_SIZES = {
   webp: 10 * 1024 * 1024, // 10MB
 } as const
 
-/**
- * Aspect ratios per UI component type, derived from prototype measurements:
- * Header:     387x64  → 6.05:1
- * Banners:    273x144 → 1.9:1
- * Thumbnails: 270x126 → 2.14:1
- * Tabbar:     289x57  → 5.07:1
- * Sidebar:    289x614 → 0.47:1
- * Theme:      no image validation
- */
 export interface ComponentTypeAspectConfig {
   aspect_ratio: number
   min_width: number
@@ -50,16 +41,40 @@ export interface ComponentTypeAspectConfig {
 }
 
 /**
- * Aspect ratios derived from Figma prototype measurements.
- * Reference sizes: Header 387×64, Banners 273×144, Thumbnails 270×126, Tabbar 289×57, Sidebar 289×614.
+ * Aspect ratios of the preview slices, taken from the UXUI-2554 Figma export
+ * sizes. Every slice is authored at the full 360 px width of the phone canvas,
+ * so the ratio is 360 / slice height:
+ *
+ *   Header      360×64   → 5.625
+ *   Banners     360×208  → 1.7308
+ *   Thumbnails  360×388  → 0.9278
+ *   Tabbar      360×56 or 360×68 → not fixed, see below
+ *   Sidebar     360×1033 → 0.3485
+ *   Theme       no image
+ *
+ * Values are kept to four decimals rather than two, because the ±1% tolerance
+ * in `validateAsset` is narrow for the tall slices: rounding the sidebar to
+ * 0.35 leaves only ~0.002 of headroom on a 0.0035 budget.
+ *
+ * The tabbar deliberately has no ratio. Its height depends on the variant:
+ * Component A and D are 360×56, while Component B carries a raised "+ Deposit"
+ * button that overhangs the bar by 12 px and exports at 360×68. A single ratio
+ * would reject a legitimate asset, and a guard someone has to switch off by
+ * hand every other upload is worse than no guard. The structural renderer does
+ * not care — it takes the slice's own height either way.
+ *
+ * These replace the pre-2554 numbers (Header 387×64, Banners 273×144,
+ * Thumbnails 270×126, Tabbar 289×57, Sidebar 289×614), which were measured off
+ * the old 289 px-wide coordinate mock-up and no longer describe any asset.
+ *
  * Set aspect_ratio to 0 to disable ratio validation for a component type.
  */
 export const COMPONENT_TYPE_ASPECT_RATIOS: Record<string, ComponentTypeAspectConfig> = {
-  ct_header: { aspect_ratio: 6.05, min_width: 100, min_height: 20 },
-  ct_banners: { aspect_ratio: 1.9, min_width: 100, min_height: 50 },
-  ct_thumbnails: { aspect_ratio: 2.14, min_width: 100, min_height: 50 },
-  ct_tabbar: { aspect_ratio: 5.07, min_width: 100, min_height: 20 },
-  ct_sidebar: { aspect_ratio: 0.47, min_width: 100, min_height: 100 },
+  ct_header: { aspect_ratio: 5.625, min_width: 100, min_height: 20 },
+  ct_banners: { aspect_ratio: 1.7308, min_width: 100, min_height: 50 },
+  ct_thumbnails: { aspect_ratio: 0.9278, min_width: 100, min_height: 50 },
+  ct_tabbar: { aspect_ratio: 0, min_width: 100, min_height: 20 },
+  ct_sidebar: { aspect_ratio: 0.3485, min_width: 100, min_height: 100 },
 }
 
 /**

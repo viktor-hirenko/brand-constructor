@@ -24,10 +24,11 @@ import FileIcon from '@/components/icons/FileIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import type { Concept } from '@brand-constructor/shared/types'
-import type { PreviewLayer } from '@/composables/useBrandPreviewLayers'
+import type { PreviewComposition, PreviewSlice } from '@/composables/useBrandPreviewLayers'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
+import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCanvas.vue'
+import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
-import VisualComponentsIphoneFrame from '@/components/constructor/preview/VisualComponentsIphoneFrame.vue'
 import VisualComponentsPhoneEmptyState from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import type { VisualComponentsPhoneEmptyVariant } from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import {
@@ -47,8 +48,8 @@ interface Props {
   conceptPreviewForSlider: Concept | null
   isConceptSliderFinalSelected: boolean
   selectedConcept: Concept | null
-  step9BaseLayers: PreviewLayer[]
-  step9SidebarLayer: PreviewLayer | null
+  step7Composition: PreviewComposition
+  step7OverlaySlice: PreviewSlice | null
   hasStep9Selections: boolean
   hasSidebarSelected: boolean
   step9SidebarVisible: boolean
@@ -205,7 +206,7 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
       />
     </template>
 
-    <!-- Step 7 Preview: iPhone with layered Visual Components -->
+    <!-- Step 7 Preview: iPhone screen assembled from Visual Components slices -->
     <template v-else-if="currentStep === 7">
       <div :class="['relative flex flex-col h-full', MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS]">
         <PreviewPanelToast
@@ -218,30 +219,32 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
           <span class="text-[1.25rem] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>
         </div>
         <div class="flex flex-col items-center justify-center flex-1">
-          <VisualComponentsIphoneFrame>
-            <VisualComponentsPhoneEmptyState
-              v-if="!hasStep9Selections"
-              :variant="step7EmptyVariant"
-            />
-            <div v-else class="relative w-full h-full overflow-hidden">
-                <div
-                  v-for="layer in step9BaseLayers"
-                  :key="layer.typeId"
-                  class="absolute"
-                  :style="{
-                    left: layer.slot.left,
-                    top: layer.slot.top,
-                    width: layer.slot.width,
-                    height: layer.slot.height,
-                    zIndex: layer.slot.zIndex,
-                  }"
-                >
-                  <img
-                    :src="layer.url"
-                    :alt="layer.typeId"
-                    class="w-full h-full object-cover object-top"
+          <div class="relative">
+            <PhonePreviewCanvas>
+              <template v-if="step7Composition.top" #top>
+                <PhonePreviewSlice :slice="step7Composition.top" />
+              </template>
+
+              <template #body>
+                <VisualComponentsPhoneEmptyState
+                  v-if="!hasStep9Selections"
+                  :variant="step7EmptyVariant"
+                  tone="on-dark"
+                />
+                <template v-else>
+                  <PhonePreviewSlice
+                    v-for="slice in step7Composition.body"
+                    :key="slice.typeId"
+                    :slice="slice"
                   />
-                </div>
+                </template>
+              </template>
+
+              <template v-if="step7Composition.bottom" #bottom>
+                <PhonePreviewSlice :slice="step7Composition.bottom" />
+              </template>
+
+              <template #overlay>
                 <Transition
                   name="sidebar-slide"
                   :css="step9SidebarSlideAnimated"
@@ -251,39 +254,30 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
                   @after-leave="handleSidebarAfterLeave"
                 >
                   <div
-                    v-if="step9SidebarLayer && step9SidebarVisible"
-                    :key="step9SidebarLayer.url"
-                    class="absolute"
-                    :style="{
-                      left: step9SidebarLayer.slot.left,
-                      top: step9SidebarLayer.slot.top,
-                      width: step9SidebarLayer.slot.width,
-                      height: step9SidebarLayer.slot.height,
-                      zIndex: step9SidebarLayer.slot.zIndex,
-                    }"
+                    v-if="step7OverlaySlice && step9SidebarVisible"
+                    :key="step7OverlaySlice.url"
+                    class="absolute inset-0 overflow-hidden"
                   >
-                    <img
-                      :src="step9SidebarLayer.url"
-                      :alt="step9SidebarLayer.typeId"
-                      class="w-full h-full object-cover object-top"
-                    />
+                    <PhonePreviewSlice :slice="step7OverlaySlice" />
                   </div>
                 </Transition>
-                <!-- Sidebar toggle: 8px right, 42px top → 0.5rem / 2.625rem @16. -->
-                <button
-                  v-if="hasSidebarSelected"
-                  type="button"
-                  class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                  :style="{ right: '0.5rem', top: '2.625rem', zIndex: 35 }"
-                  :disabled="sidebarTransitionLocked"
-                  :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
-                  @click="emit('toggle-sidebar')"
-                >
-                  <CloseIcon v-if="step9SidebarVisible" class="size-4 text-white" />
-                  <ColumnsLayoutIcon v-else class="size-4 text-white" />
-                </button>
-            </div>
-          </VisualComponentsIphoneFrame>
+              </template>
+            </PhonePreviewCanvas>
+
+            <!-- Sidebar toggle: 8px right, 42px top → 0.5rem / 2.625rem @16. -->
+            <button
+              v-if="hasSidebarSelected"
+              type="button"
+              class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              :style="{ right: '0.5rem', top: '2.625rem', zIndex: 35 }"
+              :disabled="sidebarTransitionLocked"
+              :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
+              @click="emit('toggle-sidebar')"
+            >
+              <CloseIcon v-if="step9SidebarVisible" class="size-4 text-white" />
+              <ColumnsLayoutIcon v-else class="size-4 text-white" />
+            </button>
+          </div>
         </div>
       </div>
     </template>
