@@ -32,14 +32,21 @@ export const PREVIEW_CANVAS = {
  * the corners problem: near the canvas's top edge the aperture is narrower than
  * the canvas, so a full-width screen layer painted dark squares over the frame.
  *
- * The chassis overflows the canvas — side buttons and drop shadow stick out —
- * hence the negative offsets, and hence the canvas must not clip its overflow.
- * Content is unaffected: it starts at y=62, well inside the aperture.
+ * The chassis overflows the canvas — side buttons stick out — hence the negative
+ * offsets, and hence the canvas must not clip its overflow. Content is
+ * unaffected: it starts at y=62, well inside the aperture.
+ *
+ * The `.webp` is the Figma export with the backdrop cut away: the Bezel
+ * component carries a #2B2B2B rectangle behind the device, so *every* export of
+ * it is opaque and the phone arrived sitting on a dark plate. The cut is exact
+ * rather than eyeballed — the transparent source image inside the component
+ * gives the device silhouette, and everything outside it is dropped. Re-exporting
+ * from Figma will bring the plate back; see the task document for the procedure.
  *
  * Public assets must respect the app `base` (`/wizard/` unified, `/` standalone).
  */
 export const PREVIEW_CHASSIS = {
-  src: `${import.meta.env.BASE_URL}assets/phone-chassis.png`,
+  src: `${import.meta.env.BASE_URL}assets/phone-chassis.webp`,
   leftPx: -21.492538452148438,
   topPx: -20.597015380859375,
   widthPx: 402.9850769042969,
