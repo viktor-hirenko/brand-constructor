@@ -347,7 +347,7 @@ onMounted(loadComponentTypes)
                 class="relative w-full pl-1 pr-6 py-1 rounded-2xl border transition-colors text-left group"
                 :class="
                   selections[type.id] === variant.id
-                    ? 'border-[#030213] bg-[rgba(3,2,19,0.05)]'
+                    ? 'border-[#030213] bg-transparent'
                     : 'border-transparent hover:bg-[#f3f3f5]'
                 "
                 @click="selectVariant(type.id, variant.id)"
