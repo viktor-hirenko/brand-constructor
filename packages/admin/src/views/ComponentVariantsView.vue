@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared'
 import { COMPONENT_TYPE_ASPECT_RATIOS, parseAspectRatio } from '@brand-constructor/shared'
-import { apiGet, apiPost, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi'
+import { apiGet, apiPost, apiPut, apiDelete, apiUpload, getAssetUrl } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
@@ -50,6 +50,35 @@ function openVariantLightbox(thumbnailUrl: string, name: string) {
 const deleteTarget = ref<{ id: string; name: string } | null>(null)
 const deleting = ref(false)
 
+const renamingId = ref<string | null>(null)
+const renameValue = ref('')
+const renaming = ref(false)
+
+function startRename(v: { id: string; name: string }) {
+  renamingId.value = v.id
+  renameValue.value = v.name
+}
+
+function cancelRename() {
+  renamingId.value = null
+  renameValue.value = ''
+}
+
+async function confirmRename() {
+  if (!renamingId.value || !renameValue.value.trim()) return
+  renaming.value = true
+  try {
+    await apiPut(`/api/components/variants/${renamingId.value}`, {
+      name: renameValue.value.trim(),
+    })
+    renamingId.value = null
+    renameValue.value = ''
+    await fetchVariants()
+  } finally {
+    renaming.value = false
+  }
+}
+
 const uploadingIds = ref<Set<string>>(new Set())
 const uploadInputRefs = ref<Map<string, HTMLInputElement>>(new Map())
 
@@ -94,7 +123,8 @@ const pollingPaused = computed(
     showCreateModal.value ||
     lightboxUrl.value !== null ||
     deleteTarget.value !== null ||
-    uploadingIds.value.size > 0
+    uploadingIds.value.size > 0 ||
+    renamingId.value !== null
 )
 useListPolling(() => fetchVariants({ silent: true }), { paused: pollingPaused })
 
@@ -250,7 +280,25 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
 
         <div class="variant-card__body">
           <div class="variant-card__header-row">
-            <h4 class="variant-card__name">{{ v.name }}</h4>
+            <template v-if="renamingId === v.id">
+              <BaseInput v-model="renameValue" class="variant-card__rename-input" />
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :loading="renaming"
+                :disabled="!renameValue.trim()"
+                @click="confirmRename"
+              >
+                Save
+              </BaseButton>
+              <BaseButton variant="ghost" size="sm" @click="cancelRename">Cancel</BaseButton>
+            </template>
+            <template v-else>
+              <h4 class="variant-card__name">{{ v.name }}</h4>
+              <BaseButton v-if="canWrite" variant="ghost" size="sm" @click="startRename(v)">
+                Rename
+              </BaseButton>
+            </template>
           </div>
           <div class="variant-card__meta">
             <span class="variant-card__author">by {{ v.author_name }}</span>
@@ -460,6 +508,11 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     justify-content: space-between;
     gap: $spacing-2;
     margin-bottom: $spacing-1;
+  }
+
+  &__rename-input {
+    flex: 1;
+    min-width: 0;
   }
 
   &__name {
