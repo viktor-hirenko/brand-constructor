@@ -2,14 +2,22 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useVisualComponentPreviewContext } from '@/composables/visualComponentPreviewContext'
-import { getAssetUrl, apiGet } from '@/composables/useApi'
+import { apiGet } from '@/composables/useApi'
 import type { ComponentType, ComponentVariant } from '@brand-constructor/shared/types'
+import {
+  buildDisplayVariants,
+  findVariantConflicts,
+  typeHasConflict,
+  variantIncompatibilityCaption,
+  type CompatibilityContext,
+  type DisplayVariant,
+} from '@/utils/visualComponentVariants'
 import VisualComponentsAccordionSkeleton from '@/components/constructor/skeletons/VisualComponentsAccordionSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
 import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
-import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
+import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 
@@ -21,19 +29,6 @@ const SIDEBAR_TYPE_ID = 'ct_sidebar'
 const openAccordionId = ref<string | null>(null)
 const showDelegateModal = ref(false)
 
-interface ComponentTypeWithEmoji extends ComponentType {
-  emoji: string
-}
-
-const COMPONENT_EMOJIS: Record<string, string> = {
-  Header: '🎯',
-  Banners: '🎨',
-  Thumbnails: '🖼️',
-  Tabbar: '📱',
-  Sidebar: '📋',
-  Theme: '🎭',
-}
-
 const DISPLAY_ORDER: Record<string, number> = {
   ct_header: 1,
   ct_banners: 2,
@@ -43,14 +38,13 @@ const DISPLAY_ORDER: Record<string, number> = {
   ct_theme: 6,
 }
 
-const FALLBACK_TYPES: ComponentTypeWithEmoji[] = [
+const FALLBACK_TYPES: ComponentType[] = [
   {
     id: 'ct_header',
     name: 'Header',
     description: 'Top header with logo and navigation',
     sort_order: 1,
     created_at: '',
-    emoji: '🎯',
   },
   {
     id: 'ct_banners',
@@ -58,7 +52,6 @@ const FALLBACK_TYPES: ComponentTypeWithEmoji[] = [
     description: 'Promotional banners displayed on the main page',
     sort_order: 2,
     created_at: '',
-    emoji: '🎨',
   },
   {
     id: 'ct_thumbnails',
@@ -66,7 +59,6 @@ const FALLBACK_TYPES: ComponentTypeWithEmoji[] = [
     description: 'Game and category thumbnail cards',
     sort_order: 3,
     created_at: '',
-    emoji: '🖼️',
   },
   {
     id: 'ct_tabbar',
@@ -74,7 +66,6 @@ const FALLBACK_TYPES: ComponentTypeWithEmoji[] = [
     description: 'Bottom navigation tab bar',
     sort_order: 4,
     created_at: '',
-    emoji: '📱',
   },
   {
     id: 'ct_sidebar',
@@ -82,18 +73,10 @@ const FALLBACK_TYPES: ComponentTypeWithEmoji[] = [
     description: 'Side navigation panel',
     sort_order: 5,
     created_at: '',
-    emoji: '📋',
   },
 ]
 
-const INCOMPATIBLE_PAIRS: Array<{
-  typeIdA: string
-  variantNumA: number
-  typeIdB: string
-  variantNumB: number
-}> = [{ typeIdA: 'ct_header', variantNumA: 3, typeIdB: 'ct_tabbar', variantNumB: 2 }]
-
-const componentTypes = ref<ComponentTypeWithEmoji[]>([])
+const componentTypes = ref<ComponentType[]>([])
 const variantsByType = ref<Record<string, ComponentVariant[]>>({})
 const isLoadingTypes = ref(false)
 const loadingVariants = ref<Record<string, boolean>>({})
@@ -108,51 +91,26 @@ const comment = computed({
 
 const hasAnySelection = computed(() => Object.keys(selections.value).length > 0)
 
-function getVariantNumber(typeId: string, variantId: string): number | null {
-  const variant = variantsByType.value[typeId]?.find(v => v.id === variantId)
-  return variant?.variant_number ?? null
-}
-
-const conflicts = computed(() => {
-  const result: Array<{
-    typeAName: string
-    variantAName: string
-    typeBName: string
-    variantBName: string
-    typeA: string
-    variantA: string
-    typeB: string
-    variantB: string
-  }> = []
-  const sel = selections.value
-
-  for (const rule of INCOMPATIBLE_PAIRS) {
-    const selA = sel[rule.typeIdA]
-    const selB = sel[rule.typeIdB]
-    if (!selA || !selB) continue
-
-    const numA = getVariantNumber(rule.typeIdA, selA)
-    const numB = getVariantNumber(rule.typeIdB, selB)
-    if (numA === rule.variantNumA && numB === rule.variantNumB) {
-      const typeA = componentTypes.value.find(t => t.id === rule.typeIdA)
-      const typeB = componentTypes.value.find(t => t.id === rule.typeIdB)
-      const varA = variantsByType.value[rule.typeIdA]?.find(v => v.id === selA)
-      const varB = variantsByType.value[rule.typeIdB]?.find(v => v.id === selB)
-
-      result.push({
-        typeAName: typeA?.name || '',
-        variantAName: varA?.name || '',
-        typeBName: typeB?.name || '',
-        variantBName: varB?.name || '',
-        typeA: rule.typeIdA,
-        variantA: selA,
-        typeB: rule.typeIdB,
-        variantB: selB,
-      })
-    }
+/**
+ * Variants as the accordion shows them: a grey letter tile and a `Type C` label,
+ * numbered by display order. The database still calls them `Type 1 … Type 4`;
+ * see `visualComponentVariants.ts` for why the letters are derived here.
+ */
+const displayByType = computed<Record<string, DisplayVariant[]>>(() => {
+  const result: Record<string, DisplayVariant[]> = {}
+  for (const [typeId, variants] of Object.entries(variantsByType.value)) {
+    result[typeId] = buildDisplayVariants(variants)
   }
   return result
 })
+
+const compatibilityContext = computed<CompatibilityContext>(() => ({
+  displayByType: displayByType.value,
+  selections: selections.value,
+  typeNames: Object.fromEntries(componentTypes.value.map(type => [type.id, type.name])),
+}))
+
+const conflicts = computed(() => findVariantConflicts(compatibilityContext.value))
 
 const hasConflicts = computed(() => conflicts.value.length > 0)
 
@@ -161,21 +119,33 @@ watch(
   newConflicts => {
     store.setComponentConflicts(
       newConflicts.map(c => ({
-        typeA: c.typeA,
-        variantA: c.variantA,
-        typeB: c.typeB,
-        variantB: c.variantB,
+        typeA: c.typeIdA,
+        variantA: c.variantIdA,
+        typeB: c.typeIdB,
+        variantB: c.variantIdB,
       }))
     )
   },
   { immediate: true }
 )
 
-function getSelectedVariantName(typeId: string): string | null {
+function getVariantDisplay(typeId: string, variantId: string): DisplayVariant | null {
+  return displayByType.value[typeId]?.find(v => v.id === variantId) ?? null
+}
+
+/** Label for the badge chip next to the type name, `null` while nothing is picked. */
+function getSelectedVariantLabel(typeId: string): string | null {
   const variantId = selections.value[typeId]
   if (!variantId) return null
-  const variant = variantsByType.value[typeId]?.find(v => v.id === variantId)
-  return variant?.name || null
+  return getVariantDisplay(typeId, variantId)?.label ?? null
+}
+
+function isTypeInConflict(typeId: string): boolean {
+  return typeHasConflict(conflicts.value, typeId)
+}
+
+function getIncompatibilityCaption(typeId: string, variantId: string): string | null {
+  return variantIncompatibilityCaption(compatibilityContext.value, typeId, variantId)
 }
 
 function toggleAccordion(typeId: string) {
@@ -221,15 +191,6 @@ function cancelDelegate() {
   showDelegateModal.value = false
 }
 
-function getThumbnailUrl(variant: ComponentVariant): string {
-  if (variant.thumbnail_url) {
-    return variant.thumbnail_url.startsWith('http')
-      ? variant.thumbnail_url
-      : getAssetUrl(variant.thumbnail_url)
-  }
-  return ''
-}
-
 async function loadComponentTypes() {
   isLoadingTypes.value = true
   try {
@@ -237,10 +198,6 @@ async function loadComponentTypes() {
     if (types && types.length > 0) {
       componentTypes.value = types
         .filter(t => t.id !== 'ct_theme')
-        .map(t => ({
-          ...t,
-          emoji: COMPONENT_EMOJIS[t.name] || '📦',
-        }))
         .sort((a, b) => (DISPLAY_ORDER[a.id] ?? 99) - (DISPLAY_ORDER[b.id] ?? 99))
       await Promise.all(types.map(type => loadVariantsForType(type.id)))
       isLoadingTypes.value = false
@@ -349,26 +306,23 @@ onMounted(loadComponentTypes)
           class="w-full px-4 py-3 bg-[#f3f3f5] flex items-center justify-between hover:bg-[#ececf0] transition-colors"
           @click="toggleAccordion(type.id)"
         >
-          <div class="flex items-center gap-3">
-            <span class="text-xl leading-7">{{ type.emoji }}</span>
+          <div class="flex items-center gap-2">
             <span class="text-base font-medium text-foreground tracking-[-0.31px]">{{
               type.name
             }}</span>
+            <!-- Badge chip with the picked variant; amber while the pair conflicts -->
             <span
-              v-if="getSelectedVariantName(type.id)"
-              class="text-sm font-medium text-muted-foreground tracking-[-0.15px]"
-            >
-              • {{ getSelectedVariantName(type.id) }}
-            </span>
-            <!-- Conflict indicator on the type header -->
-            <AlertTriangleIcon
-              v-if="
-                selections[type.id] &&
-                hasConflicts &&
-                conflicts.some(c => c.typeAName === type.name || c.typeBName === type.name)
+              v-if="getSelectedVariantLabel(type.id)"
+              class="flex items-center rounded-full py-1 text-xs font-medium leading-4"
+              :class="
+                isTypeInConflict(type.id)
+                  ? 'gap-1 pl-1 pr-2 bg-[#ffee9c] text-[#ab6400]'
+                  : 'px-2 bg-[#ededee] text-[#393947]'
               "
-              class="size-5 text-[#d97706]"
-            />
+            >
+              <InfoCircleFilledIcon v-if="isTypeInConflict(type.id)" class="size-4 shrink-0" />
+              {{ getSelectedVariantLabel(type.id) }}
+            </span>
           </div>
           <ChevronDownIcon
             class="size-5 text-foreground transition-transform duration-200"
@@ -398,32 +352,29 @@ onMounted(loadComponentTypes)
                 @click="selectVariant(type.id, variant.id)"
               >
                 <div class="flex items-center gap-3">
-                  <div class="w-16 h-16 rounded-lg overflow-hidden bg-[#ececf0] flex-shrink-0">
-                    <img
-                      v-if="getThumbnailUrl(variant)"
-                      :src="getThumbnailUrl(variant)"
-                      :alt="variant.name"
-                      class="w-full h-full object-cover object-top"
-                      loading="lazy"
-                    />
-                    <div
-                      v-else
-                      class="w-full h-full flex items-center justify-center text-muted-foreground"
+                  <!-- Letter tile: the design dropped the 64×64 thumbnail picture -->
+                  <div
+                    class="w-16 h-16 rounded-xl bg-[#ededee] flex-shrink-0 flex items-center justify-center"
+                  >
+                    <span class="text-2xl leading-8 text-[#95959d]">{{
+                      getVariantDisplay(type.id, variant.id)?.letter
+                    }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <span class="block text-sm font-medium text-foreground tracking-[-0.15px]">{{
+                      getVariantDisplay(type.id, variant.id)?.label
+                    }}</span>
+                    <span
+                      v-if="getIncompatibilityCaption(type.id, variant.id)"
+                      class="mt-1 block text-sm text-[#6f6f7d] tracking-[-0.15px]"
                     >
-                      <ImagePlaceholderIcon class="size-6 opacity-30" />
-                    </div>
+                      {{ getIncompatibilityCaption(type.id, variant.id) }}
+                    </span>
                   </div>
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                      <span class="text-sm font-medium text-foreground tracking-[-0.15px]">{{
-                        variant.name
-                      }}</span>
-                      <CheckIcon
-                        v-if="selections[type.id] === variant.id"
-                        class="size-5 text-foreground"
-                      />
-                    </div>
-                  </div>
+                  <CheckIcon
+                    v-if="selections[type.id] === variant.id"
+                    class="size-5 shrink-0 text-foreground"
+                  />
                 </div>
               </button>
 
@@ -467,9 +418,9 @@ onMounted(loadComponentTypes)
           :key="idx"
           class="text-base text-foreground/80 tracking-[-0.31px] leading-6"
         >
-          <span class="font-bold">{{ conflict.typeAName }} {{ conflict.variantAName }}</span>
+          <span class="font-bold">{{ conflict.titleA }}</span>
           і
-          <span class="font-bold">{{ conflict.typeBName }} {{ conflict.variantBName }}</span>
+          <span class="font-bold">{{ conflict.titleB }}</span>
           конфліктують між собою. Змініть один із варіантів, щоб продовжити.
         </p>
       </div>

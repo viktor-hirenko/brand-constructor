@@ -3,8 +3,11 @@
  * Pixel-matched skeleton for the Visual Components accordion list.
  *
  * Mirrors the collapsed-row geometry (border + rounded-10 + px-4 py-3 header
- * with emoji circle + name placeholder + chevron) so the swap between skeleton
+ * with name placeholder + badge chip + chevron) so the swap between skeleton
  * and the real accordion list does not cause CLS on the PO wizard Step 7.
+ *
+ * Row content is 24 px tall — the type name (text-base/leading-6) and the badge
+ * chip (py-1 + leading-4) are both that height in `VisualComponentsView`.
  */
 interface Props {
   /** Number of skeleton rows (default 5 — Header / Banners / Thumbnails / Tabbar / Sidebar;
@@ -23,9 +26,9 @@ withDefaults(defineProps<Props>(), { count: 5 })
       class="visual-components-accordion-skeleton__row border border-black/10 rounded-[10px] overflow-hidden"
     >
       <div class="w-full px-4 py-3 bg-[#f3f3f5] flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="size-7 rounded-full bg-muted animate-pulse" />
-          <div class="h-5 w-[120px] rounded bg-muted animate-pulse" />
+        <div class="flex items-center gap-2">
+          <div class="h-6 w-[110px] rounded bg-muted animate-pulse" />
+          <div class="h-6 w-[62px] rounded-full bg-muted animate-pulse" />
         </div>
         <div class="size-5 rounded bg-muted animate-pulse" />
       </div>
