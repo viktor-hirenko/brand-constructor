@@ -338,16 +338,17 @@ onMounted(loadComponentTypes)
           @after-leave="onAccordionAfterLeave"
         >
           <div v-if="openAccordionId === type.id" class="bg-white overflow-hidden">
+            <div class="border-t border-[#ededee]" />
             <div class="p-3 space-y-2">
               <!-- Variant Items -->
               <button
                 v-for="variant in variantsByType[type.id] || []"
                 :key="variant.id"
-                class="relative w-full p-3 rounded-[10px] border transition-all text-left group"
+                class="relative w-full pl-1 pr-6 py-1 rounded-2xl border transition-colors text-left group"
                 :class="
                   selections[type.id] === variant.id
                     ? 'border-[#030213] bg-[rgba(3,2,19,0.05)]'
-                    : 'border-black/10 hover:border-primary/50 hover:bg-primary/5'
+                    : 'border-transparent hover:bg-[#f3f3f5]'
                 "
                 @click="selectVariant(type.id, variant.id)"
               >
@@ -418,9 +419,9 @@ onMounted(loadComponentTypes)
           :key="idx"
           class="text-base text-foreground/80 tracking-[-0.31px] leading-6"
         >
-          <span class="font-bold">{{ conflict.titleA }}</span>
+          <span class="text-[#ab6400]">{{ conflict.titleA }}</span>
           і
-          <span class="font-bold">{{ conflict.titleB }}</span>
+          <span class="text-[#ab6400]">{{ conflict.titleB }}</span>
           конфліктують між собою. Змініть один із варіантів, щоб продовжити.
         </p>
       </div>
