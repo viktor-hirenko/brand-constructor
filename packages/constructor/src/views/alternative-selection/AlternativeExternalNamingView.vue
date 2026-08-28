@@ -14,6 +14,7 @@ import AuthorNamingsRowSkeleton from '@/components/constructor/skeletons/AuthorN
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import UiDivider from '@/components/ui/UiDivider.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS,
@@ -219,7 +220,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
       <template v-if="showSkeleton">
         <AuthorNamingsRowSkeleton v-if="!isChainedFromConcept" />
 
-        <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+        <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
 
         <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
           <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
@@ -249,7 +250,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           />
         </template>
 
-        <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+        <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
 
         <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
           <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>

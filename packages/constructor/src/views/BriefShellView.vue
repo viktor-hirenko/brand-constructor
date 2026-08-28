@@ -33,6 +33,7 @@ import {
   VISUAL_COMPONENT_PREVIEW_KEY,
 } from '@/composables/visualComponentPreviewContext'
 import UiButton from '@/components/ui/UiButton.vue'
+import UiStepHeader from '@/components/ui/UiStepHeader.vue'
 import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
@@ -591,32 +592,16 @@ watch(currentStep, step => {
       :wizard-step="currentStep"
     >
       <template #left-header>
-        <div
+        <UiStepHeader
           v-if="!isReviewShell"
           :class="currentStep === 8 ? 'shrink-0' : ''"
-          class="constructor-layout__wizard-header"
-        >
-          <h1 class="constructor-layout__wizard-title text-2xl font-medium text-foreground tracking-[0.07px] mb-2">
-            {{ stepTitle }}
-          </h1>
-          <p class="constructor-layout__wizard-subtitle text-base text-muted-foreground tracking-[-0.31px] mb-6">
-            {{ stepSubtitle }}
-          </p>
-
-          <div class="constructor-layout__wizard-progress mb-8">
-            <div class="constructor-layout__wizard-progress-label mb-2">
-              <span class="text-sm text-muted-foreground tracking-[-0.15px]">
-                Крок {{ currentStep }} з {{ totalSteps }}
-              </span>
-            </div>
-            <div class="constructor-layout__wizard-progress-track h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                class="constructor-layout__wizard-progress-bar h-full bg-primary rounded-full transition-all duration-300"
-                :style="{ width: `${progressPercent}%` }"
-              />
-            </div>
-          </div>
-        </div>
+          class="constructor-layout__wizard-header mb-8"
+          :title="stepTitle"
+          :description="stepSubtitle"
+          :current-step="currentStep"
+          :total-steps="totalSteps"
+          :progress-percent="progressPercent"
+        />
       </template>
 
       <RouterView />

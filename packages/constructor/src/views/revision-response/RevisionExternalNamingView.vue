@@ -13,6 +13,7 @@ import StepCommentField from '@/components/constructor/fields/StepCommentField.v
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import UiDivider from '@/components/ui/UiDivider.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_DIVIDER_CLASS,
@@ -214,7 +215,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         </div>
       </div>
 
-      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+      <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
 
       <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
         <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>
@@ -267,7 +268,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         </div>
       </div>
 
-      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+      <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
 
       <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
         <EditFlowSectionLabel>Інші назви для обраного концепту</EditFlowSectionLabel>

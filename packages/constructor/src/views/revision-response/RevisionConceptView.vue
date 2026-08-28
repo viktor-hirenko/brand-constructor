@@ -11,6 +11,7 @@ import StepCommentField from '@/components/constructor/fields/StepCommentField.v
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import UiDivider from '@/components/ui/UiDivider.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
@@ -327,7 +328,7 @@ async function goDali() {
       </div>
     </div>
 
-    <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+    <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
 
     <!-- Other / available concepts grid -->
     <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">

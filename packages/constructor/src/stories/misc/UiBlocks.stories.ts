@@ -14,6 +14,9 @@ import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue';
 import StatusPillBadge from '@/components/ui/StatusPillBadge.vue';
 import BrandBriefStatusBadge from '@/components/constructor/review/BrandBriefStatusBadge.vue';
 import UnresolvedDot from '@/components/ui/UnresolvedDot.vue';
+import UiStepHeader from '@/components/ui/UiStepHeader.vue';
+import UiProgressBar from '@/components/ui/UiProgressBar.vue';
+import UiDivider from '@/components/ui/UiDivider.vue';
 
 /**
  * Miscellaneous UI building blocks that don't warrant
@@ -327,6 +330,80 @@ export const UnresolvedDotExample: StoryObj = {
     components: { UnresolvedDot },
     template:
       '<div class="flex items-center gap-2 text-sm text-[#0a0a0a]"><span>Brand Basics</span><UnresolvedDot /></div>',
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+// ─── Step header, progress bar, divider — Figma 3984:8226 / 3889:2849 / 3446:5230 ──
+
+export const StepHeaderFull: StoryObj = {
+  name: 'UiStepHeader / Title + badge + description + progress + alert',
+  render: () => ({
+    components: { UiStepHeader, BrandBriefStatusBadge },
+    template: `
+      <UiStepHeader
+        title="Зовнішній неймінг"
+        description="Оберіть до трьох доменних імен для бренду."
+        :current-step="3"
+        :total-steps="8"
+        :progress-percent="38"
+      >
+        <template #badge><BrandBriefStatusBadge status="submitted" /></template>
+        <template #alert>
+          <div class="rounded-[16px] border border-[#EDEDED] bg-white px-6 py-6 text-sm text-ink-700">
+            Слот алерта. UiAlert приїжджає у фазі 5.
+          </div>
+        </template>
+      </UiStepHeader>
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const StepHeaderPlain: StoryObj = {
+  name: 'UiStepHeader / Title + description only (edit flow)',
+  render: () => ({
+    components: { UiStepHeader },
+    template: `
+      <UiStepHeader
+        title="Оберіть інший концепт"
+        description="Замовник запропонував концепт, який вам не підійшов."
+      />
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const ProgressBarSteps: StoryObj = {
+  name: 'UiProgressBar / Steps 1, 4 and 8',
+  render: () => ({
+    components: { UiProgressBar },
+    template: `
+      <div class="flex flex-col gap-6">
+        <UiProgressBar :percent="13" label="Крок 1 з 8" />
+        <UiProgressBar :percent="50" label="Крок 4 з 8" />
+        <UiProgressBar :percent="100" label="Крок 8 з 8" />
+        <UiProgressBar :percent="50" />
+      </div>
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const DividerOrientations: StoryObj = {
+  name: 'UiDivider / Horizontal and vertical',
+  render: () => ({
+    components: { UiDivider },
+    template: `
+      <div class="flex flex-col gap-6">
+        <UiDivider />
+        <div class="flex h-10 items-center gap-4 text-sm text-ink-700">
+          <span>Ліворуч</span>
+          <UiDivider orientation="vertical" />
+          <span>Праворуч</span>
+        </div>
+      </div>
+    `,
   }),
   parameters: { cardWidth: 520 },
 };

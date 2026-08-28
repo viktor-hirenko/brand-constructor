@@ -14,6 +14,7 @@ import AuthorPickPreviewSkeleton from '@/components/constructor/skeletons/Author
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import UiDivider from '@/components/ui/UiDivider.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS,
@@ -213,7 +214,7 @@ async function confirmConceptSelection() {
         @select="handleSelectPoConcept"
       />
 
-      <hr :class="EDIT_FLOW_DIVIDER_CLASS" />
+      <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
 
       <!-- Available concepts — theme toggle right-aligned next to the section
            label, mirroring RevisionConceptView layout (Figma 2201-6968). -->

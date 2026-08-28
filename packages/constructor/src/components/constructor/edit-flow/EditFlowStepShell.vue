@@ -4,6 +4,7 @@ import {
   LEFT_PANE_SCROLL_INNER_CLASS,
   LEFT_PANE_SCROLL_TRACK_CLASS,
 } from '@/components/constructor/layout/dualPaneLayoutClasses'
+import UiStepHeader from '@/components/ui/UiStepHeader.vue'
 
 /**
  * Shared chrome for CEO re-select and PO edit step screens — outer flex column,
@@ -49,19 +50,11 @@ const emit = defineEmits<{
           LEFT_PANE_SCROLL_INNER_CLASS,
         ]"
       >
-        <div>
-          <h1
-            class="edit-flow-step-shell__title text-2xl font-medium leading-8 tracking-[0.0703px] text-[#0a0a0a] mb-2"
-          >
-            {{ title }}
-          </h1>
-          <p
-            v-if="subtitle"
-            class="edit-flow-step-shell__subtitle text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182]"
-          >
-            {{ subtitle }}
-          </p>
-        </div>
+        <UiStepHeader
+          class="edit-flow-step-shell__header"
+          :title="title"
+          :description="subtitle"
+        />
 
         <div v-if="loading" class="flex items-center justify-center py-16">
           <div

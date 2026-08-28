@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BrandBriefStatusBadge from '@/components/constructor/review/BrandBriefStatusBadge.vue'
+import UiStepHeader from '@/components/ui/UiStepHeader.vue'
 import CheckBadgeIcon from '@/components/icons/CheckBadgeIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 
@@ -100,56 +101,43 @@ const showProgress = computed(
 </script>
 
 <template>
-  <header class="review-header space-y-6">
-    <div class="review-header__heading space-y-2">
-      <div class="review-header__title-row flex items-center gap-3 flex-wrap">
-        <h1 class="review-header__title text-3xl font-medium tracking-[-0.6px] text-foreground">{{ title }}</h1>
-        <BrandBriefStatusBadge
-          v-if="showStatusBadge"
-          class="review-header__badge shrink-0"
-          :status="status"
-        />
-      </div>
-      <p
-        v-if="subtitle"
-        class="review-header__subtitle text-base text-muted-foreground tracking-[-0.31px]"
-      >
-        {{ subtitle }}
-      </p>
-    </div>
-
-    <div v-if="showProgress" class="review-header__progress space-y-2">
-      <div class="review-header__progress-label text-sm text-muted-foreground tracking-[-0.15px]">
-        Крок {{ currentStep }} з {{ totalSteps }}
-      </div>
-      <div class="review-header__progress-track h-2 rounded-full bg-black/10 overflow-hidden">
-        <div
-          class="review-header__progress-bar h-full rounded-full bg-foreground transition-all duration-300"
-          :style="{ width: `${progressPercent}%` }"
-        />
-      </div>
-    </div>
-
-    <div
-      v-if="displayInfo"
-      class="review-header__info rounded-[16px] border border-[#EDEDED] bg-white px-6 py-6"
+  <header class="review-header">
+    <UiStepHeader
+      :title="title"
+      :description="subtitle"
+      :current-step="showProgress ? currentStep : undefined"
+      :total-steps="showProgress ? totalSteps : undefined"
+      :progress-percent="showProgress ? progressPercent : undefined"
     >
-      <div class="review-header__info-header flex items-start gap-3 mb-2">
-        <InfoCircleFilledIcon
-          v-if="displayInfo.iconVariant === 'warning'"
-          class="review-header__info-icon review-header__info-icon--warning size-6 shrink-0 text-[#DCA100]"
-        />
-        <CheckBadgeIcon
-          v-else
-          class="review-header__info-icon review-header__info-icon--check size-6 shrink-0 text-foreground/80"
-        />
-        <h3 class="review-header__info-title text-lg font-medium tracking-[-0.45px] text-foreground">
-          {{ displayInfo.title }}
-        </h3>
-      </div>
-      <p class="review-header__info-description text-sm text-muted-foreground leading-5 pl-9">
-        {{ displayInfo.description }}
-      </p>
-    </div>
+      <template v-if="showStatusBadge" #badge>
+        <BrandBriefStatusBadge class="review-header__badge shrink-0" :status="status" />
+      </template>
+
+      <!--
+        The kit's Alert slot. `UiAlert` lands in phase 5; until then the review
+        shell's own info block rides through the slot unchanged, so phase 3
+        moves no pixel inside it.
+      -->
+      <template v-if="displayInfo" #alert>
+        <div class="review-header__info rounded-[16px] border border-[#EDEDED] bg-white px-6 py-6">
+          <div class="review-header__info-header flex items-start gap-3 mb-2">
+            <InfoCircleFilledIcon
+              v-if="displayInfo.iconVariant === 'warning'"
+              class="review-header__info-icon review-header__info-icon--warning size-6 shrink-0 text-[#DCA100]"
+            />
+            <CheckBadgeIcon
+              v-else
+              class="review-header__info-icon review-header__info-icon--check size-6 shrink-0 text-foreground/80"
+            />
+            <h3 class="review-header__info-title text-lg font-medium tracking-[-0.45px] text-foreground">
+              {{ displayInfo.title }}
+            </h3>
+          </div>
+          <p class="review-header__info-description text-sm text-muted-foreground leading-5 pl-9">
+            {{ displayInfo.description }}
+          </p>
+        </div>
+      </template>
+    </UiStepHeader>
   </header>
 </template>

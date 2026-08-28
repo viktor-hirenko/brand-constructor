@@ -12,8 +12,13 @@ export const EDIT_FLOW_BODY_OFFSET_CLASS = 'flex flex-col pt-2'
 
 export const EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS = 'flex flex-col gap-6'
 
-export const EDIT_FLOW_DIVIDER_CLASS =
-  'edit-flow-divider my-10 shrink-0 border-0 border-t border-solid border-black/10'
+/**
+ * Spacing and the full-bleed hook only — the rule itself is `UiDivider`
+ * (Figma `3446:5229`), which is why the colour left this string in DP-15258
+ * phase 3. `edit-flow-divider` stays: `EditFlowStepShell` reaches for it with
+ * `:deep()` to pull the line out of the 48px inset.
+ */
+export const EDIT_FLOW_DIVIDER_CLASS = 'edit-flow-divider my-10'
 
 /** 24px from section label row (e.g. «Доступні концепти» + theme) to cards/grid. */
 export const EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS = 'gap-6'
