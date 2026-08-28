@@ -16,6 +16,14 @@
 
 // ─── Buttons ──────────────────────────────────────────────────────────────────
 // Footer / shell buttons: 50px height → 3.125rem, 10px radius → 0.625rem.
+//
+// DP-15258 phase 1 moved the last five call sites (the wizard footer in
+// `BriefShellView.vue`) onto `UiButton` with the kit recipe — 48px and radius 8,
+// which is what Figma `3333:5860` specifies and what the edit-flow footer already
+// rendered. The three BUTTON constants below therefore have zero call sites and
+// are kept only so that phase 4 (one footer component for all four shells) is the
+// commit that deletes them, per the agreed phase split. The two FOOTER constants
+// are still live in `BriefShellView.vue`.
 
 /** Primary action button (brand-colored background). 50px × 10px radius @16. */
 export const BRIEF_BTN_PRIMARY =

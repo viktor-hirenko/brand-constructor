@@ -12,9 +12,6 @@ import {
   DESIGN_SHELL_WIDTH,
 } from '@/constants/layoutShell'
 import {
-  BRIEF_BTN_PRIMARY,
-  BRIEF_BTN_SECONDARY,
-  BRIEF_BTN_PRIMARY_DARK,
   BRIEF_FOOTER_BAR,
   BRIEF_FOOTER_ACTIONS,
 } from '@/constants/brandBriefShellTokens'
@@ -35,6 +32,7 @@ import {
 import {
   VISUAL_COMPONENT_PREVIEW_KEY,
 } from '@/composables/visualComponentPreviewContext'
+import UiButton from '@/components/ui/UiButton.vue'
 import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
@@ -631,22 +629,28 @@ watch(currentStep, step => {
         >
           <div v-if="store.editingSection" class="constructor-layout__footer-actions flex flex-col gap-2">
             <div :class="BRIEF_FOOTER_ACTIONS">
-              <button
-                :class="BRIEF_BTN_SECONDARY"
-                class="constructor-layout__footer-button constructor-layout__footer-button--secondary disabled:opacity-50 disabled:cursor-not-allowed"
+              <UiButton
+                kit
+                variant="secondary"
+                size="L"
+                class="constructor-layout__footer-button constructor-layout__footer-button--secondary"
                 :disabled="store.isSaving"
                 @click="handleCancelSectionEdit"
               >
                 Скасувати
-              </button>
-              <button
-                :disabled="!store.isCurrentStepValid || store.isSaving"
-                :class="BRIEF_BTN_PRIMARY"
+              </UiButton>
+              <UiButton
+                kit
+                variant="primary"
+                size="L"
                 class="constructor-layout__footer-button constructor-layout__footer-button--primary"
+                :disabled="!store.isCurrentStepValid"
+                :loading="store.isSaving"
+                loading-label="Збереження…"
                 @click="handleSaveSectionEdit"
               >
-                {{ store.isSaving ? 'Збереження…' : 'Зберегти' }}
-              </button>
+                Зберегти
+              </UiButton>
             </div>
             <p v-if="store.saveError" class="text-sm text-red-600">
               {{ store.saveError }}
@@ -654,34 +658,42 @@ watch(currentStep, step => {
           </div>
 
           <div v-else-if="store.returnToStep" :class="BRIEF_FOOTER_ACTIONS" class="constructor-layout__footer-actions">
-            <button
-              :class="BRIEF_BTN_PRIMARY_DARK"
+            <UiButton
+              kit
+              variant="primary"
+              size="L"
               class="constructor-layout__footer-button constructor-layout__footer-button--primary"
               @click="handleReturnToPreview"
             >
-              <CornerUpLeftIcon class="size-4" />
+              <template #icon-left="{ iconClass }">
+                <CornerUpLeftIcon :class="iconClass" />
+              </template>
               Повернутись
-            </button>
+            </UiButton>
           </div>
 
           <div v-else :class="BRIEF_FOOTER_ACTIONS" class="constructor-layout__footer-actions">
-            <button
+            <UiButton
               v-if="!isFirstStep"
-              :class="BRIEF_BTN_SECONDARY"
+              kit
+              variant="secondary"
+              size="L"
               class="constructor-layout__footer-button constructor-layout__footer-button--secondary"
               @click="goBack"
             >
               Назад
-            </button>
-            <button
+            </UiButton>
+            <UiButton
               v-if="!isLastStep"
-              :disabled="!store.isCurrentStepValid"
-              :class="BRIEF_BTN_PRIMARY"
+              kit
+              variant="primary"
+              size="L"
               class="constructor-layout__footer-button constructor-layout__footer-button--primary"
+              :disabled="!store.isCurrentStepValid"
               @click="goNext"
             >
               Далі
-            </button>
+            </UiButton>
           </div>
         </div>
       </template>

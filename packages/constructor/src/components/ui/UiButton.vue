@@ -1,8 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
+import {
+  resolveUiButtonClasses,
+  type UiButtonSize,
+  type UiButtonVariant,
+} from '@/components/ui/uiButton'
 
+/**
+ * Button primitive. Kit matrix lives in `uiButton.ts` — Figma `3333:5860`.
+ *
+ * `kit` is off by default so that the four call sites still on the pre-kit look
+ * (`ConfirmationModal`, `BriefModalShell`, `MarketingPackageView`,
+ * `VisualComponentsView`) render exactly what they rendered before DP-15258.
+ * They switch over in phases 4, 6 and 10; the flag goes away with the last one.
+ */
 interface UiButtonProps {
-  variant?: 'primary' | 'secondary'
+  /** Kit Style. `neutral` and `ghost` only exist in the kit recipe. */
+  variant?: UiButtonVariant
+  /** Kit Size: S-32 / M-40 / L-48. Only read when `kit` is set. */
+  size?: UiButtonSize
+  /** Render the Figma `3333:5860` recipe instead of the pre-kit one. */
+  kit?: boolean
   loading?: boolean
   loadingLabel?: string
   disabled?: boolean
@@ -13,6 +31,8 @@ interface UiButtonProps {
 
 const props = withDefaults(defineProps<UiButtonProps>(), {
   variant: 'primary',
+  size: 'L',
+  kit: false,
   loading: false,
   loadingLabel: 'Зачекайте…',
   disabled: false,
@@ -24,25 +44,43 @@ const emit = defineEmits<{
   click: [event: MouseEvent]
 }>()
 
+const slots = useSlots()
+
 const isDisabled = computed(() => props.disabled || props.loading)
 
-const buttonClass = computed(() => [
-  'ui-button inline-flex items-center justify-center rounded-[8px] p-3 text-[1rem] font-medium leading-6 tracking-[-0.3125px]',
-  props.block ? 'flex-1' : '',
-  props.variant === 'primary'
-    ? 'bg-[#030213] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40'
-    : 'border border-black/10 bg-white text-[#0a0a0a] transition-colors hover:bg-black/[0.02] disabled:opacity-40',
-])
+const hasIconLeft = computed(() => Boolean(slots['icon-left']))
+const hasIconRight = computed(() => Boolean(slots['icon-right']))
+
+const classes = computed(() =>
+  resolveUiButtonClasses({
+    variant: props.variant,
+    size: props.size,
+    kit: props.kit,
+    block: props.block,
+    hasIcon: hasIconLeft.value || hasIconRight.value,
+  }),
+)
+
+/** Mirrors the kit's `Icon left` / `Icon right` frames. */
+const ICON_BOX_CLASS = 'inline-flex shrink-0 items-center justify-center'
 </script>
 
 <template>
   <button
     :type="type"
-    :class="buttonClass"
+    :class="classes.root"
     :disabled="isDisabled"
     @click="emit('click', $event)"
   >
-    <template v-if="loading">{{ loadingLabel }}</template>
-    <slot v-else />
+    <span v-if="hasIconLeft" :class="ICON_BOX_CLASS">
+      <slot name="icon-left" :icon-class="classes.icon" />
+    </span>
+    <span :class="classes.label">
+      <template v-if="loading">{{ loadingLabel }}</template>
+      <slot v-else />
+    </span>
+    <span v-if="hasIconRight" :class="ICON_BOX_CLASS">
+      <slot name="icon-right" :icon-class="classes.icon" />
+    </span>
   </button>
 </template>

@@ -7,6 +7,7 @@ import ReviewInternalNamingBlock from '@/components/constructor/review/ReviewInt
 import ApplyCeoVariantButton from '@/components/constructor/review/ApplyCeoVariantButton.vue';
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue';
 import UiButton from '@/components/ui/UiButton.vue';
+import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue';
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue';
@@ -131,6 +132,44 @@ export const UiButtonVariants: StoryObj = {
     `,
   }),
   parameters: { cardWidth: 520 },
+};
+
+/**
+ * The kit matrix — Figma 3333:5860. Four styles x three sizes; Hovered is a
+ * pointer state and Disabled is the last column. Storybook is not acceptance
+ * (AGENTS section 2.4 wants prod) — this is the reference sheet for the next
+ * phases, which move the remaining call sites onto this recipe.
+ */
+export const UiButtonKitMatrix: StoryObj = {
+  name: 'UiButton / Kit matrix (3333:5860)',
+  render: () => ({
+    components: { UiButton, CornerUpLeftIcon },
+    setup() {
+      return {
+        onClick: fn(),
+        variants: ['primary', 'secondary', 'neutral', 'ghost'] as const,
+        sizes: ['L', 'M', 'S'] as const,
+      };
+    },
+    template: `
+      <div class="flex flex-col gap-6">
+        <div v-for="variant in variants" :key="variant" class="flex flex-col gap-2">
+          <p class="text-sm/4 font-medium text-ink-700">{{ variant }}</p>
+          <div v-for="size in sizes" :key="size" class="flex items-center gap-3">
+            <UiButton kit :variant="variant" :size="size" @click="onClick">Label</UiButton>
+            <UiButton kit :variant="variant" :size="size" disabled>Disabled</UiButton>
+            <UiButton kit :variant="variant" :size="size" @click="onClick">
+              <template #icon-left="{ iconClass }">
+                <CornerUpLeftIcon :class="iconClass" />
+              </template>
+              Icon
+            </UiButton>
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  parameters: { cardWidth: 640 },
 };
 
 // ─── ConfirmationModal ─────────────────────────────────────────────────────

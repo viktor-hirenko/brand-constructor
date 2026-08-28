@@ -16,6 +16,72 @@
   --color-accent-foreground: #18181b;
   --color-error: #ef4444;
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /*
+   * ── DP-15258 UI Kit colour vocabulary — Figma 3261:906 (canvas "Components")
+   *
+   * ADDITIVE. The 13 declarations above are untouched on purpose: phase 1 must
+   * not move a single pixel. The 7 of them that diverge from the kit are
+   * switched in phase 2, alone, in a commit with nothing else in it.
+   *
+   * Named by ROLE, not by component. Tailwind v4 mints one utility per @theme
+   * key, so mirroring Figma's component-scoped names (`button/primary/bg/hovered`)
+   * would print dozens of dead classes like `bg-button-primary-bg-hovered`. The
+   * component-to-role binding lives in the `.vue` / `ui*.ts` files instead.
+   *
+   * COLOUR ONLY — no `--spacing-*`, `--radius-*` or `--text-*` layer. Tailwind's
+   * own scales already match the kit byte for byte: `--radius-lg` 0.5rem = 8,
+   * `--radius-xl` 0.75rem = 12, `--radius-2xl` 1rem = 16, `--spacing` 0.25rem
+   * steps to 4/8/12/16/24, `text-base` 16/24, `text-2xl` 24/32. The kit's two
+   * outliers are reached with v4 line-height modifiers: `text-sm/4` (14/16) and
+   * `text-lg/6` (18/24). Verify with:
+   *   grep -nE -- '--(radius-(lg|xl|2xl))|--spacing:|--text-(sm|base|2xl)' \
+   *     node_modules/.pnpm/tailwindcss@4.2.1/node_modules/tailwindcss/theme.css
+   *
+   * NEVER declare a length here in `px`. The embed scale below drives every
+   * `rem` in the tree from one root font-size; a `px` token silently opts out
+   * of it and nothing fails. Guarded by tests/unit/styles/themeTokens.test.ts.
+   */
+
+  /* Kit neutrals, darkest to lightest. #ffffff stays `text-white` / --color-card. */
+  --color-ink-900: #1f1f2e;
+  --color-ink-800: #393947;
+  --color-ink-700: #6f6f7d;
+  --color-ink-600: #95959d;
+  --color-ink-500: #cacace;
+  --color-ink-400: #dfdfe2;
+  --color-ink-300: #ededee;
+  --color-ink-200: #f3f3f5;
+
+  /* Kit accent hover. The accent itself is already --color-primary #030213. */
+  --color-primary-hover: #2d2d39;
+
+  /* Kit semantic tones: content / bg / border / surface. */
+  --color-green-content: #218358;
+  --color-green-bg: #d6f1df;
+  --color-green-border: #8eceaa;
+  --color-green-surface: #f4fbf6;
+
+  --color-amber-content: #ab6400;
+  --color-amber-bg: #ffee9c;
+  --color-amber-border: #e9c162;
+  --color-amber-surface: #fefbe9;
+
+  --color-red-content: #ce2c31;
+  --color-red-bg: #ffdbdc;
+  --color-red-border: #f4a9aa;
+  --color-red-surface: #fff7f7;
+
+  --color-blue-content: #3a5bc7;
+  --color-blue-bg: #e1e9ff;
+  --color-blue-border: #abbdf9;
+  --color-blue-surface: #f7f9ff;
+
+  /* Purple ships with content + bg only — that is all the kit defines for it.
+     Its border/surface are open question 8 and are decided in phase 7, not
+     invented here (AGENTS section 7: no number without a source). */
+  --color-purple-content: #8145b5;
+  --color-purple-bg: #f2e2fc;
 }
 
 /*
