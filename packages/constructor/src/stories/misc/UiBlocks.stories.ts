@@ -9,7 +9,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal.vue';
 import UiButton from '@/components/ui/UiButton.vue';
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
-import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue';
+import UiFooter from '@/components/ui/UiFooter.vue';
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue';
 import StatusPillBadge from '@/components/ui/StatusPillBadge.vue';
 import BrandBriefStatusBadge from '@/components/constructor/review/BrandBriefStatusBadge.vue';
@@ -258,41 +258,54 @@ export const SegmentedControlExample: StoryObj = {
   parameters: { cardWidth: 520 },
 };
 
-// ─── EditFlowFooter ────────────────────────────────────────────────────────
+// ─── UiFooter ──────────────────────────────────────────────────────────────
 
-export const EditFlowFooterDefault: StoryObj = {
-  name: 'EditFlowFooter / Default',
+export const UiFooterBar: StoryObj = {
+  name: 'UiFooter / Bar',
   render: () => ({
-    components: { EditFlowFooter },
+    components: { UiFooter },
     setup() {
       return { onCancel: fn(), onPrimary: fn() };
     },
-    template: '<EditFlowFooter @cancel="onCancel" @primary="onPrimary" />',
+    template: '<UiFooter @cancel="onCancel" @primary="onPrimary" />',
   }),
   parameters: { cardWidth: 520 },
 };
 
-export const EditFlowFooterDisabled: StoryObj = {
-  name: 'EditFlowFooter / Primary Disabled',
+export const UiFooterBarDisabled: StoryObj = {
+  name: 'UiFooter / Bar, primary disabled',
   render: () => ({
-    components: { EditFlowFooter },
+    components: { UiFooter },
     setup() {
       return { onCancel: fn(), onPrimary: fn() };
     },
     template:
-      '<EditFlowFooter primary-label="Зберегти" :primary-disabled="true" @cancel="onCancel" @primary="onPrimary" />',
+      '<UiFooter primary-label="Зберегти" :primary-disabled="true" @cancel="onCancel" @primary="onPrimary" />',
   }),
   parameters: { cardWidth: 520 },
 };
 
-export const EditFlowFooterLoading: StoryObj = {
-  name: 'EditFlowFooter / Loading',
+export const UiFooterBarLoading: StoryObj = {
+  name: 'UiFooter / Bar, loading',
   render: () => ({
-    components: { EditFlowFooter },
+    components: { UiFooter },
     setup() {
       return { onCancel: fn(), onPrimary: fn() };
     },
-    template: '<EditFlowFooter :loading="true" @cancel="onCancel" @primary="onPrimary" />',
+    template: '<UiFooter :loading="true" @cancel="onCancel" @primary="onPrimary" />',
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const UiFooterStack: StoryObj = {
+  name: 'UiFooter / Stack (review actions)',
+  render: () => ({
+    components: { UiFooter },
+    setup() {
+      return { onCancel: fn(), onPrimary: fn() };
+    },
+    template:
+      '<UiFooter layout="stack" primary-label="На погодження CEO" cancel-label="Назад" @cancel="onCancel" @primary="onPrimary" />',
   }),
   parameters: { cardWidth: 520 },
 };

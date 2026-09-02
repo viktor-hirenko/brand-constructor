@@ -10,7 +10,7 @@ import type { ExternalNaming } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
-import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
@@ -295,7 +295,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     </p>
 
     <template #footer>
-      <EditFlowFooter
+      <UiFooter
         :cancel-label="isChained ? 'Назад' : 'Скасувати'"
         primary-label="Зберегти"
         :primary-disabled="primaryDisabled"

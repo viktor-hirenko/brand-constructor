@@ -11,7 +11,7 @@ import ConceptGrid from '@/components/constructor/alternative-selection/ConceptG
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import AuthorPickPreview from '@/components/constructor/alternative-selection/AuthorPickPreview.vue'
 import AuthorPickPreviewSkeleton from '@/components/constructor/skeletons/AuthorPickPreviewSkeleton.vue'
-import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
@@ -250,7 +250,7 @@ async function confirmConceptSelection() {
     </div>
 
     <template #footer>
-      <EditFlowFooter
+      <UiFooter
         cancel-label="Скасувати"
         primary-label="Далі"
         :primary-disabled="primaryDisabled"

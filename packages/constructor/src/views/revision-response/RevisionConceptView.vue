@@ -8,7 +8,7 @@ import ConceptGrid from '@/components/constructor/alternative-selection/ConceptG
 import ConceptCard from '@/components/constructor/alternative-selection/ConceptCard.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
-import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
@@ -361,7 +361,7 @@ async function goDali() {
     </div>
 
     <template #footer>
-      <EditFlowFooter
+      <UiFooter
         cancel-label="Скасувати"
         primary-label="Далі"
         :primary-disabled="primaryDisabled"

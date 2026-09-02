@@ -3,7 +3,19 @@ import CheckIcon from '@/components/icons/CheckIcon.vue'
 import DownloadIcon from '@/components/icons/DownloadIcon.vue'
 import LoaderIcon from '@/components/icons/LoaderIcon.vue'
 import ShareIcon from '@/components/icons/ShareIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 
+/**
+ * Author (PO) review actions — the stack shape of the kit footer,
+ * Figma `4463:9161`.
+ *
+ * This is the one footer that is not a cancel + primary pair, so it fills
+ * `UiFooter`'s default slot with its own buttons instead of using the preset.
+ * Share and PDF have no counterpart in the mockup at all — they are mapped onto
+ * the nearest kit styles (`neutral` and `primary`) so that the column stays one
+ * geometry: L-48, radius 8, 8 apart.
+ */
 interface AuthorActionsFooterProps {
   loading?: boolean
   /** Primary submit label (depends on new brief vs standard submit). */
@@ -52,47 +64,65 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div :class="['po-actions-footer space-y-3', loading ? 'po-actions-footer--loading' : '']">
-    <button
+  <UiFooter
+    layout="stack"
+    :class="['po-actions-footer', loading ? 'po-actions-footer--loading' : '']"
+  >
+    <UiButton
       v-if="showSubmit"
-      type="button"
-      class="po-actions-footer__submit w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-      :disabled="loading || submitDisabled"
+      kit
+      size="L"
+      variant="primary"
+      class="po-actions-footer__submit"
+      :disabled="submitDisabled"
+      :loading="loading"
+      loading-label="Відправляємо…"
       @click="emit('submit')"
     >
-      <span>{{ loading ? 'Відправляємо…' : submitLabel }}</span>
-    </button>
+      {{ submitLabel }}
+    </UiButton>
 
-    <button
+    <UiButton
       v-if="showBack"
-      type="button"
-      class="po-actions-footer__back w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02]"
+      kit
+      size="L"
+      variant="secondary"
+      class="po-actions-footer__back"
       @click="emit('back')"
     >
       Назад
-    </button>
+    </UiButton>
 
-    <button
+    <UiButton
       v-if="showShare"
-      type="button"
-      class="po-actions-footer__share w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#f3f3f5] text-foreground rounded-xl hover:bg-[#ececf0] transition-colors text-base font-medium disabled:opacity-50"
+      kit
+      size="L"
+      variant="neutral"
+      class="po-actions-footer__share"
       @click="emit('share')"
     >
-      <CheckIcon v-if="shareCopied" class="size-5 text-green-600" />
-      <ShareIcon v-else class="size-5" />
+      <template #icon-left="{ iconClass }">
+        <CheckIcon v-if="shareCopied" :class="[iconClass, 'text-green-600']" />
+        <ShareIcon v-else :class="iconClass" />
+      </template>
       {{ shareCopied ? 'Скопійовано!' : 'Share' }}
-    </button>
+    </UiButton>
 
-    <button
+    <UiButton
       v-if="showPdf"
-      type="button"
-      class="po-actions-footer__pdf w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-      :disabled="pdfLoading"
+      kit
+      size="L"
+      variant="primary"
+      class="po-actions-footer__pdf"
+      :loading="pdfLoading"
+      loading-label="Генерація PDF…"
       @click="emit('pdf')"
     >
-      <DownloadIcon v-if="!pdfLoading" class="size-4" />
-      <LoaderIcon v-else class="size-4 animate-spin" />
-      {{ pdfLoading ? 'Генерація PDF…' : 'Завантажити PDF' }}
-    </button>
-  </div>
+      <template #icon-left="{ iconClass }">
+        <DownloadIcon v-if="!pdfLoading" :class="iconClass" />
+        <LoaderIcon v-else :class="[iconClass, 'animate-spin']" />
+      </template>
+      Завантажити PDF
+    </UiButton>
+  </UiFooter>
 </template>

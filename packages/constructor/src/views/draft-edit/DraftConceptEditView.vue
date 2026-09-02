@@ -12,7 +12,7 @@ import ConceptGrid from '@/components/constructor/alternative-selection/ConceptG
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
-import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
@@ -25,7 +25,7 @@ import {
  *
  * Opened from the *draft* final review when the Author re-picks a concept.
  * Mirrors the po-edit / ceo-reselect edit-flow pattern (wide layout,
- * EditFlowFooter «Скасувати / Далі») but without the CEO-suggestion blocks.
+ * UiFooter «Скасувати / Далі») but without the CEO-suggestion blocks.
  *
  * Cascade: when the concept actually changes AND the brief already had
  * external-naming picks, «Далі» clears external and chains to the dedicated
@@ -191,7 +191,7 @@ async function goDali() {
     </div>
 
     <template #footer>
-      <EditFlowFooter
+      <UiFooter
         cancel-label="Скасувати"
         primary-label="Далі"
         :primary-disabled="primaryDisabled"

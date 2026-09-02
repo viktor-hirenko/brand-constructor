@@ -2,7 +2,18 @@
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 import RefreshIcon from '@/components/icons/RefreshIcon.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 
+/**
+ * Supervisor (CEO) review actions — the stack shape of the kit footer,
+ * Figma `4378:16948`: primary on top, secondary below, note under both.
+ *
+ * Approve maps onto the footer's primary action and revise onto its cancel one,
+ * so this file carries no button markup — only the two icons and the warning.
+ * The warning keeps its current 16/24 amber rendering; the mockup draws it red
+ * 14/16 with a 16px icon, which is written up in the task document rather than
+ * changed here, because it is an alert, not footer geometry.
+ */
 interface SupervisorActionsFooterProps {
   loading?: boolean
   /** Validation message ("Додайте хоча б один коментар…"). When set the revise button is highlighted. */
@@ -27,42 +38,39 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
+  <UiFooter
+    layout="stack"
     :class="[
-      'ceo-actions-footer space-y-3',
+      'ceo-actions-footer',
       loading ? 'ceo-actions-footer--loading' : '',
       warning ? 'ceo-actions-footer--has-warning' : '',
     ]"
+    :show-primary="showApprove"
+    primary-label="Затвердити"
+    loading-label="Зачекайте..."
+    :loading="loading"
+    :show-cancel="showRevise"
+    cancel-label="Повернути на доопрацювання"
+    @primary="emit('approve')"
+    @cancel="emit('revise')"
   >
-    <button
-      v-if="showApprove"
-      type="button"
-      class="ceo-actions-footer__approve w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-[#030213] text-white text-base font-medium hover:opacity-90 transition-all disabled:opacity-50"
-      :disabled="loading"
-      @click="emit('approve')"
-    >
-      <CheckIcon class="size-5 shrink-0 text-white" />
-      <span>{{ loading ? 'Зачекайте...' : 'Затвердити' }}</span>
-    </button>
+    <template #primary-icon="{ iconClass }">
+      <CheckIcon :class="iconClass" />
+    </template>
 
-    <button
-      v-if="showRevise"
-      type="button"
-      class="ceo-actions-footer__revise w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl border border-black/10 text-base font-medium text-foreground transition-all hover:bg-black/[0.02] disabled:opacity-50"
-      :disabled="loading"
-      @click="emit('revise')"
-    >
-      <RefreshIcon class="size-5 shrink-0 text-[#0A0A0A]" />
-      <span>Повернути на доопрацювання</span>
-    </button>
+    <template #cancel-icon="{ iconClass }">
+      <RefreshIcon :class="iconClass" />
+    </template>
 
-    <p
-      v-if="warning"
-      class="ceo-actions-footer__warning flex items-center justify-center gap-2 text-[1rem] font-normal leading-6 tracking-[-0.312px] text-[rgba(10,10,10,0.80)]"
-      role="alert"
-    >
-      <InfoCircleFilledIcon class="size-5 shrink-0 text-[#DCA100]" />
-      <span>{{ warning }}</span>
-    </p>
-  </div>
+    <template #note>
+      <p
+        v-if="warning"
+        class="ceo-actions-footer__warning flex items-center justify-center gap-2 text-[1rem] font-normal leading-6 tracking-[-0.312px] text-[rgba(10,10,10,0.80)]"
+        role="alert"
+      >
+        <InfoCircleFilledIcon class="size-5 shrink-0 text-[#DCA100]" />
+        <span>{{ warning }}</span>
+      </p>
+    </template>
+  </UiFooter>
 </template>

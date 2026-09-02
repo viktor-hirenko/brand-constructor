@@ -8,7 +8,7 @@ import ExternalNamingGrid from '@/components/constructor/alternative-selection/E
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import ConceptCascadeBanner from '@/components/constructor/edit-flow/ConceptCascadeBanner.vue'
-import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
@@ -157,7 +157,7 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
     </div>
 
     <template #footer>
-      <EditFlowFooter
+      <UiFooter
         cancel-label="Назад"
         primary-label="Зберегти"
         :primary-disabled="primaryDisabled"

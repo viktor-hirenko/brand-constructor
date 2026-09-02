@@ -11,10 +11,6 @@ import {
   DESIGN_SHELL_MIN_VIEWPORT_WIDTH,
   DESIGN_SHELL_WIDTH,
 } from '@/constants/layoutShell'
-import {
-  BRIEF_FOOTER_BAR,
-  BRIEF_FOOTER_ACTIONS,
-} from '@/constants/brandBriefShellTokens'
 import { useViewportScale } from '@/composables/useViewportScale'
 import { isEmbedded } from '@/composables/useEmbedMode'
 import { useBrandBriefReviewPhase, BRAND_BRIEF_REVIEW_PHASE } from '@/composables/useBrandBriefReviewPhase'
@@ -32,7 +28,7 @@ import {
 import {
   VISUAL_COMPONENT_PREVIEW_KEY,
 } from '@/composables/visualComponentPreviewContext'
-import UiButton from '@/components/ui/UiButton.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 import UiStepHeader from '@/components/ui/UiStepHeader.vue'
 import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
@@ -607,80 +603,48 @@ watch(currentStep, step => {
       <RouterView />
 
       <template #left-footer>
-        <div
-          v-if="!isViewMode && !isReviewShell"
-          class="constructor-layout__wizard-footer"
-          :class="BRIEF_FOOTER_BAR"
-        >
-          <div v-if="store.editingSection" class="constructor-layout__footer-actions flex flex-col gap-2">
-            <div :class="BRIEF_FOOTER_ACTIONS">
-              <UiButton
-                kit
-                variant="secondary"
-                size="L"
-                class="constructor-layout__footer-button constructor-layout__footer-button--secondary"
-                :disabled="store.isSaving"
-                @click="handleCancelSectionEdit"
-              >
-                Скасувати
-              </UiButton>
-              <UiButton
-                kit
-                variant="primary"
-                size="L"
-                class="constructor-layout__footer-button constructor-layout__footer-button--primary"
-                :disabled="!store.isCurrentStepValid"
-                :loading="store.isSaving"
-                loading-label="Збереження…"
-                @click="handleSaveSectionEdit"
-              >
-                Зберегти
-              </UiButton>
-            </div>
-            <p v-if="store.saveError" class="text-sm text-red-600">
-              {{ store.saveError }}
-            </p>
-          </div>
+        <template v-if="!isViewMode && !isReviewShell">
+          <UiFooter
+            v-if="store.editingSection"
+            class="constructor-layout__wizard-footer"
+            cancel-label="Скасувати"
+            primary-label="Зберегти"
+            :primary-disabled="!store.isCurrentStepValid"
+            :loading="store.isSaving"
+            @cancel="handleCancelSectionEdit"
+            @primary="handleSaveSectionEdit"
+          >
+            <template #note>
+              <p v-if="store.saveError" class="text-sm text-red-600">
+                {{ store.saveError }}
+              </p>
+            </template>
+          </UiFooter>
 
-          <div v-else-if="store.returnToStep" :class="BRIEF_FOOTER_ACTIONS" class="constructor-layout__footer-actions">
-            <UiButton
-              kit
-              variant="primary"
-              size="L"
-              class="constructor-layout__footer-button constructor-layout__footer-button--primary"
-              @click="handleReturnToPreview"
-            >
-              <template #icon-left="{ iconClass }">
-                <CornerUpLeftIcon :class="iconClass" />
-              </template>
-              Повернутись
-            </UiButton>
-          </div>
+          <UiFooter
+            v-else-if="store.returnToStep"
+            class="constructor-layout__wizard-footer"
+            :show-cancel="false"
+            primary-label="Повернутись"
+            @primary="handleReturnToPreview"
+          >
+            <template #primary-icon="{ iconClass }">
+              <CornerUpLeftIcon :class="iconClass" />
+            </template>
+          </UiFooter>
 
-          <div v-else :class="BRIEF_FOOTER_ACTIONS" class="constructor-layout__footer-actions">
-            <UiButton
-              v-if="!isFirstStep"
-              kit
-              variant="secondary"
-              size="L"
-              class="constructor-layout__footer-button constructor-layout__footer-button--secondary"
-              @click="goBack"
-            >
-              Назад
-            </UiButton>
-            <UiButton
-              v-if="!isLastStep"
-              kit
-              variant="primary"
-              size="L"
-              class="constructor-layout__footer-button constructor-layout__footer-button--primary"
-              :disabled="!store.isCurrentStepValid"
-              @click="goNext"
-            >
-              Далі
-            </UiButton>
-          </div>
-        </div>
+          <UiFooter
+            v-else
+            class="constructor-layout__wizard-footer"
+            :show-cancel="!isFirstStep"
+            cancel-label="Назад"
+            :show-primary="!isLastStep"
+            primary-label="Далі"
+            :primary-disabled="!store.isCurrentStepValid"
+            @cancel="goBack"
+            @primary="goNext"
+          />
+        </template>
       </template>
 
       <template #right>

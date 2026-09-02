@@ -11,7 +11,7 @@ import ExternalNamingGrid from '@/components/constructor/alternative-selection/E
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import AuthorNamingsRow from '@/components/constructor/alternative-selection/AuthorNamingsRow.vue'
 import AuthorNamingsRowSkeleton from '@/components/constructor/skeletons/AuthorNamingsRowSkeleton.vue'
-import EditFlowFooter from '@/components/constructor/edit-flow/EditFlowFooter.vue'
+import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
@@ -282,7 +282,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     </div>
 
     <template #footer>
-      <EditFlowFooter
+      <UiFooter
         :cancel-label="cancelLabel"
         primary-label="Зберегти"
         :primary-disabled="primaryDisabled"
