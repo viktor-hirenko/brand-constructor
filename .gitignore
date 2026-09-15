@@ -55,3 +55,8 @@ Thumbs.db
 /.tmp/
 /packages/worker/.tmp/
 
+
+# Мусор оркестратора claude-flow — не код проекта
+.claude-flow/
+.swarm/
+ruvector.db
