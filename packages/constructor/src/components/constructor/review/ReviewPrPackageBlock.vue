@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import EyeIcon from '@/components/icons/EyeIcon.vue'
 import MegaphoneIcon from '@/components/icons/MegaphoneIcon.vue'
-import { REVIEW_PREVIEW_LINK_BUTTON_CLASS } from './reviewActionClasses'
+import UiLink from '@/components/ui/UiLink.vue'
 
 interface ReviewPrPackageBlockProps {
   /** Package title (e.g. "Media Reputation"). */
@@ -24,14 +24,10 @@ const emit = defineEmits<{
       <p class="review-pr-package-block__title text-[1rem] leading-6 tracking-[-0.1504px] text-[#1A1A1A]">
         {{ title }}
       </p>
-      <button
-        type="button"
-        :class="['review-pr-package-block__view-button', REVIEW_PREVIEW_LINK_BUTTON_CLASS]"
-        @click="emit('view')"
-      >
-        <EyeIcon />
+      <UiLink class="review-pr-package-block__view-button" @click="emit('view')">
+        <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
         Переглянути
-      </button>
+      </UiLink>
     </div>
   </div>
 </template>

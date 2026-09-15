@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
-import { REVIEW_PREVIEW_LINK_BUTTON_CLASS } from './reviewActionClasses'
+import UiLink from '@/components/ui/UiLink.vue'
 
 interface ExternalNamingItem {
   id: string
@@ -85,14 +85,10 @@ const layoutModifier = computed(() => {
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нового External Naming</span>
           </div>
-          <button
-            type="button"
-            :class="REVIEW_PREVIEW_LINK_BUTTON_CLASS"
-            @click="emit('previewBrief')"
-          >
-            <EyeIcon />
+          <UiLink @click="emit('previewBrief')">
+            <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
             Переглянути
-          </button>
+          </UiLink>
         </div>
         <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
           Назву не обрано
@@ -133,14 +129,10 @@ const layoutModifier = computed(() => {
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нового External Naming</span>
           </div>
-          <button
-            type="button"
-            :class="REVIEW_PREVIEW_LINK_BUTTON_CLASS"
-            @click="emit('previewBrief')"
-          >
-            <EyeIcon />
+          <UiLink @click="emit('previewBrief')">
+            <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
             Переглянути
-          </button>
+          </UiLink>
         </div>
         <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
           Назву не обрано

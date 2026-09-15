@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
-import { REVIEW_PREVIEW_LINK_BUTTON_CLASS } from './reviewActionClasses'
+import UiLink from '@/components/ui/UiLink.vue'
 
 interface ReviewInternalNamingBlockProps {
   poValue: string
@@ -71,14 +71,10 @@ const layoutModifier = computed(() => {
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нової Internal Naming</span>
           </div>
-          <button
-            type="button"
-            :class="REVIEW_PREVIEW_LINK_BUTTON_CLASS"
-            @click="emit('previewBrief')"
-          >
-            <EyeIcon />
+          <UiLink @click="emit('previewBrief')">
+            <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
             Переглянути
-          </button>
+          </UiLink>
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
           <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
@@ -106,14 +102,10 @@ const layoutModifier = computed(() => {
             <span class="text-[#5B5B62]">•</span>
             <span class="text-[#1A1A1A]">Бриф нової Internal Naming</span>
           </div>
-          <button
-            type="button"
-            :class="REVIEW_PREVIEW_LINK_BUTTON_CLASS"
-            @click="emit('previewBrief')"
-          >
-            <EyeIcon />
+          <UiLink @click="emit('previewBrief')">
+            <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
             Переглянути
-          </button>
+          </UiLink>
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
           <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
