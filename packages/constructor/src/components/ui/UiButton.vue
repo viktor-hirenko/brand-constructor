@@ -9,10 +9,13 @@ import {
 /**
  * Button primitive. Kit matrix lives in `uiButton.ts` — Figma `3333:5860`.
  *
- * `kit` is off by default so that the four call sites still on the pre-kit look
- * (`ConfirmationModal`, `BriefModalShell`, `MarketingPackageView`,
- * `VisualComponentsView`) render exactly what they rendered before DP-15258.
- * They switch over in phases 4, 6 and 10; the flag goes away with the last one.
+ * `kit` is off by default because four modal shells used to render the pre-kit
+ * look. **Phase 6 moved the last of them over: as of 2026-09-15 every call site
+ * in the tree passes `kit`, and the default branch has no consumers.** The prop
+ * and `UI_BUTTON_LEGACY_*` are removed by phase 10, which converts the raw
+ * `<button>`s of the review screens — same arrangement phase 1 used for the
+ * `BRIEF_BTN_*` constants it left for phase 4. Verify with:
+ *   grep -rn '<UiButton' --include='*.vue' packages/constructor/src
  */
 interface UiButtonProps {
   /** Kit Style. `neutral` and `ghost` only exist in the kit recipe. */

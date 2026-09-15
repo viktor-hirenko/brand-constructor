@@ -19,6 +19,7 @@ import UiProgressBar from '@/components/ui/UiProgressBar.vue';
 import UiDivider from '@/components/ui/UiDivider.vue';
 import UiAlert from '@/components/ui/UiAlert.vue';
 import UiAsyncState from '@/components/ui/UiAsyncState.vue';
+import UiModal from '@/components/ui/UiModal.vue';
 
 /**
  * Miscellaneous UI building blocks that don't warrant
@@ -475,4 +476,48 @@ export const AsyncStateFailure: StoryObj = {
     `,
   }),
   parameters: { cardWidth: 520 },
+};
+
+// ─── UiModal ───────────────────────────────────────────────────────────────
+// The one modal shell (DP-15258 phase 6). A story is the only way to look at a
+// modal without walking the wizard to the step that opens it.
+
+export const ModalWithFooter: StoryObj = {
+  name: 'UiModal / Form modal with footer',
+  render: () => ({
+    components: { UiModal, UiButton },
+    setup: () => ({ onClose: fn() }),
+    template: `
+      <UiModal title="Замовити новий концепт" size="lg" @close="onClose">
+        <div class="flex flex-col gap-4">
+          <p class="text-base text-ink-700">
+            Тіло модалки прокручується саме, коли вміст вищий за 85% екрана.
+          </p>
+          <div v-for="n in 12" :key="n" class="rounded-lg bg-ink-200 p-4 text-sm/4 text-ink-800">
+            Рядок форми {{ n }}
+          </div>
+        </div>
+        <template #footer>
+          <UiButton kit size="L" variant="secondary">Скасувати</UiButton>
+          <UiButton kit size="L" variant="primary">Зберегти</UiButton>
+        </template>
+      </UiModal>
+    `,
+  }),
+};
+
+export const ModalWithoutFooter: StoryObj = {
+  name: 'UiModal / Detail modal, no footer',
+  render: () => ({
+    components: { UiModal, UiButton },
+    setup: () => ({ onClose: fn() }),
+    template: `
+      <UiModal title="PR Boost" size="md" @close="onClose">
+        <div class="flex flex-col gap-6">
+          <p class="text-base text-ink-700">Опис пакета одним абзацом.</p>
+          <UiButton kit size="L" variant="primary" block>Обрати пакет</UiButton>
+        </div>
+      </UiModal>
+    `,
+  }),
 };

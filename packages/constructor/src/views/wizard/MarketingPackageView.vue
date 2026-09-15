@@ -17,6 +17,7 @@ import StarIcon from '@/components/icons/StarIcon.vue'
 import TrophyIcon from '@/components/icons/TrophyIcon.vue'
 import ZapIcon from '@/components/icons/ZapIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
+import UiModal from '@/components/ui/UiModal.vue'
 import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
@@ -236,90 +237,74 @@ onMounted(loadPackages)
     <!-- Коментар -->
     <StepCommentField v-model="comment" />
 
-    <!-- Detail Overlay -->
-    <Teleport to="body">
-      <div v-if="detailPackage" class="fixed inset-0 z-50 flex items-center justify-center p-6">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDetail" />
-        <div
-          class="relative bg-white rounded-[16px] shadow-2xl max-w-[600px] w-full max-h-[90vh] overflow-y-auto p-8"
-        >
-          <button
-            class="absolute top-4 right-4 size-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-            @click="closeDetail"
-          >
-            <CloseIcon class="size-4" />
-          </button>
+    <!-- Detail Overlay — the wizard modal shell, same as the confirmations -->
+    <UiModal v-if="detailPackage" size="md" @close="closeDetail">
+      <template #title>
+        {{ detailPackage.name }}
+        <SelectionPillBadge v-if="isDetailPackageSelected" label="Обраний пакет" />
+      </template>
 
-          <div class="flex flex-wrap items-center gap-3 mb-2 pr-10">
-            <h2 class="text-2xl font-medium text-foreground tracking-[0.07px]">
-              {{ detailPackage.name }}
-            </h2>
-            <SelectionPillBadge
-              v-if="isDetailPackageSelected"
-              label="Обраний пакет"
-            />
-          </div>
-          <p class="text-muted-foreground text-base tracking-[-0.31px] mb-6">
-            {{ detailPackage.description }}
-          </p>
+      <div class="marketing-package-detail flex flex-col gap-6">
+        <p class="text-muted-foreground text-base tracking-[-0.31px]">
+          {{ detailPackage.description }}
+        </p>
 
-          <div class="flex flex-col gap-4">
-            <div v-if="detailPackage.timeline" class="p-4 bg-[#f3f3f5] rounded-[10px]">
-              <p class="text-xs text-muted-foreground mb-1">Строки впровадження</p>
-              <p class="text-sm font-medium">{{ detailPackage.timeline }}</p>
-            </div>
-
-            <div v-if="detailPackage.goals" class="p-4 bg-[#f3f3f5] rounded-[10px]">
-              <p class="text-xs text-muted-foreground mb-1">Цілі</p>
-              <p class="text-sm whitespace-pre-line">{{ detailPackage.goals }}</p>
-            </div>
-
-            <div v-if="detailPackage.requirements" class="p-4 bg-[#f3f3f5] rounded-[10px]">
-              <p class="text-xs text-muted-foreground mb-1">Вимоги</p>
-              <p class="text-sm whitespace-pre-line">{{ detailPackage.requirements }}</p>
-            </div>
-
-            <div v-if="detailPackage.teams_involved" class="p-4 bg-[#f3f3f5] rounded-[10px]">
-              <p class="text-xs text-muted-foreground mb-1">Задіяні команди</p>
-              <p class="text-sm whitespace-pre-line">{{ detailPackage.teams_involved }}</p>
-            </div>
-
-            <div v-if="detailPackage.expenses" class="p-4 bg-[#f3f3f5] rounded-[10px]">
-              <p class="text-xs text-muted-foreground mb-1">Витрати</p>
-              <p class="text-sm whitespace-pre-line">{{ detailPackage.expenses }}</p>
-            </div>
-
-            <div class="p-4 bg-[#f3f3f5] rounded-[10px]">
-              <p class="text-xs text-muted-foreground mb-2">Компоненти пакету</p>
-              <ul class="flex flex-col gap-2">
-                <li
-                  v-for="(feature, idx) in parseFeatures(detailPackage.components_list)"
-                  :key="idx"
-                  class="flex items-center gap-2 text-sm"
-                >
-                  <CheckIcon
-                    v-if="feature.included"
-                    class="size-3 text-primary shrink-0"
-                  />
-                  <CloseIcon
-                    v-else
-                    class="size-3 text-muted-foreground shrink-0"
-                  />
-                  <span :class="feature.included ? 'text-foreground' : 'text-muted-foreground'">
-                    {{ feature.name }}
-                  </span>
-                </li>
-              </ul>
-            </div>
+        <div class="flex flex-col gap-4">
+          <div v-if="detailPackage.timeline" class="p-4 bg-[#f3f3f5] rounded-[10px]">
+            <p class="text-xs text-muted-foreground mb-1">Строки впровадження</p>
+            <p class="text-sm font-medium">{{ detailPackage.timeline }}</p>
           </div>
 
-          <div v-if="!isDetailPackageSelected" class="mt-6">
-            <UiButton variant="primary" block @click="selectFromDetail">
-              Обрати пакет
-            </UiButton>
+          <div v-if="detailPackage.goals" class="p-4 bg-[#f3f3f5] rounded-[10px]">
+            <p class="text-xs text-muted-foreground mb-1">Цілі</p>
+            <p class="text-sm whitespace-pre-line">{{ detailPackage.goals }}</p>
+          </div>
+
+          <div v-if="detailPackage.requirements" class="p-4 bg-[#f3f3f5] rounded-[10px]">
+            <p class="text-xs text-muted-foreground mb-1">Вимоги</p>
+            <p class="text-sm whitespace-pre-line">{{ detailPackage.requirements }}</p>
+          </div>
+
+          <div v-if="detailPackage.teams_involved" class="p-4 bg-[#f3f3f5] rounded-[10px]">
+            <p class="text-xs text-muted-foreground mb-1">Задіяні команди</p>
+            <p class="text-sm whitespace-pre-line">{{ detailPackage.teams_involved }}</p>
+          </div>
+
+          <div v-if="detailPackage.expenses" class="p-4 bg-[#f3f3f5] rounded-[10px]">
+            <p class="text-xs text-muted-foreground mb-1">Витрати</p>
+            <p class="text-sm whitespace-pre-line">{{ detailPackage.expenses }}</p>
+          </div>
+
+          <div class="p-4 bg-[#f3f3f5] rounded-[10px]">
+            <p class="text-xs text-muted-foreground mb-2">Компоненти пакету</p>
+            <ul class="flex flex-col gap-2">
+              <li
+                v-for="(feature, idx) in parseFeatures(detailPackage.components_list)"
+                :key="idx"
+                class="flex items-center gap-2 text-sm"
+              >
+                <CheckIcon
+                  v-if="feature.included"
+                  class="size-3 text-primary shrink-0"
+                />
+                <CloseIcon
+                  v-else
+                  class="size-3 text-muted-foreground shrink-0"
+                />
+                <span :class="feature.included ? 'text-foreground' : 'text-muted-foreground'">
+                  {{ feature.name }}
+                </span>
+              </li>
+            </ul>
           </div>
         </div>
+
+        <div v-if="!isDetailPackageSelected">
+          <UiButton kit size="L" variant="primary" block @click="selectFromDetail">
+            Обрати пакет
+          </UiButton>
+        </div>
       </div>
-    </Teleport>
+    </UiModal>
   </div>
 </template>

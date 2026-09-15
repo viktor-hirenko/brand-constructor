@@ -19,7 +19,7 @@ import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
 import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
-import UiButton from '@/components/ui/UiButton.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 
 const store = useConstructorStore()
 const previewContext = useVisualComponentPreviewContext()
@@ -430,30 +430,15 @@ onMounted(loadComponentTypes)
     <!-- Comment -->
     <StepCommentField v-model="comment" />
 
-    <!-- Delegate Confirmation Modal -->
-    <Teleport to="body">
-      <div v-if="showDelegateModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="cancelDelegate" />
-        <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
-          <div class="flex justify-center mb-4">
-            <SparklesIcon class="size-10 text-primary" />
-          </div>
-          <h3 class="text-xl font-medium text-foreground tracking-[-0.45px] mb-2">
-            Довірити вибір дизайнерам?
-          </h3>
-          <p class="text-base text-muted-foreground tracking-[-0.31px] mb-6">
-            Усі вибрані компоненти буде скинуто. Компоненти визначить дизайн-команда.
-          </p>
-          <div class="flex w-full items-stretch gap-2">
-            <UiButton variant="secondary" block @click="cancelDelegate">
-              Скасувати
-            </UiButton>
-            <UiButton variant="primary" block @click="confirmDelegate">
-              Довірити
-            </UiButton>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <!-- Delegate Confirmation Modal — the wizard's own confirmation shape -->
+    <ConfirmationModal
+      v-if="showDelegateModal"
+      title="Довірити вибір дизайнерам?"
+      body="Усі вибрані компоненти буде скинуто. Компоненти визначить дизайн-команда."
+      cancel-label="Скасувати"
+      primary-label="Довірити"
+      @cancel="cancelDelegate"
+      @primary="confirmDelegate"
+    />
   </div>
 </template>

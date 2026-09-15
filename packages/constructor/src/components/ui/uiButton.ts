@@ -14,10 +14,11 @@
  *
  * ── Two recipes, on purpose ───────────────────────────────────────────────────
  * `kit: false` (the default) reproduces the pre-kit primary/secondary pair byte
- * for byte. Four call sites still render it — `ConfirmationModal`,
- * `BriefModalShell`, `MarketingPackageView`, `VisualComponentsView` — and DP-15258
- * phase 1 is only allowed to change the wizard footer. They move to the kit
- * recipe in phases 4, 6 and 10, and this branch dies with the last one.
+ * for byte, because four modal shells rendered it and DP-15258 phase 1 was only
+ * allowed to change the wizard footer. **Phase 6 (2026-09-15) converted the last
+ * of those shells — this branch now has zero consumers** and stays only so that
+ * phase 10 can retire it together with the raw `<button>`s of the review
+ * screens. Until then it is dead code with a date on it, not a fallback.
  * `kit: true` is Figma `3333:5860` and nothing else.
  *
  * ── Geometry is rem-only ─────────────────────────────────────────────────────
@@ -97,7 +98,8 @@ export const UI_BUTTON_KIT_DISABLED_CLASS = 'disabled:cursor-not-allowed disable
 
 /**
  * The exact class strings `UiButton.vue` shipped before DP-15258. Pinned in a
- * test so that bringing the kit in cannot restyle the four modals by accident.
+ * test while the four modals still rendered them; kept pinned until phase 10
+ * deletes the branch, so that "dead" and "quietly edited" stay distinguishable.
  * `tracking-[-0.3125px]` is kept deliberately: the kit's letter-spacing is 0,
  * but open question 7 says carry-over screens keep their current rendering,
  * because dropping tracking changes line wrapping everywhere at once.
