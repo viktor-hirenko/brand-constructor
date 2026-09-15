@@ -4,6 +4,29 @@ import type { NewNamingBrief } from '@brand-constructor/shared/types'
 import DatePicker from '@/components/constructor/fields/DatePicker.vue'
 import BriefModalShell from '@/components/constructor/modals/BriefModalShell.vue'
 import YesNoToggle from '@/components/ui/YesNoToggle.vue'
+import UiFieldLabel from '@/components/ui/UiFieldLabel.vue'
+import UiTextField from '@/components/ui/UiTextField.vue'
+import UiTextarea from '@/components/ui/UiTextarea.vue'
+import { UI_FIELD_CONTROL_CLASS, resolveUiFieldSurfaceClasses } from '@/components/ui/uiField'
+
+/**
+ * Phase 11 put every field in this form on the kit Input `3424:2287`.
+ * The drawn brief-order modal `5562:49171` is the reference for the
+ * geometry: each question is Title 24 + gap 8 + a 48-tall field, or 96 when
+ * it is a Type = Area.
+ *
+ * The language picker stays a native `<select>`. The kit's Dropdown
+ * `3446:5801` is the Input surface plus a Popover, and this one has no
+ * search, no grouping and no multi-select — replacing the native control
+ * would cost keyboard and mobile behaviour and buy only the chevron. It
+ * takes the same surface function as every other field, in `bare` mode,
+ * because a `<select>` cannot be a flex container itself.
+ */
+const selectClass = [
+  resolveUiFieldSurfaceClasses({ focusWithin: false, bare: true }),
+  UI_FIELD_CONTROL_CLASS,
+  'cursor-pointer appearance-none',
+].join(' ')
 import { BRIEF_LANGUAGES, BRIEF_DOMAIN_ZONES } from '@/data/brief-constants'
 
 const props = withDefaults(
@@ -88,50 +111,48 @@ const title = computed(() => {
   >
     <fieldset :disabled="readonly" class="brief-form m-0 p-0 border-0 min-w-0 flex flex-col gap-6">
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           1. Чи це нове ГЕО?
-        </label>
+        </UiFieldLabel>
         <YesNoToggle v-model="form.isNewGeo" />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           2. Чи є якась інформація про ГЕО?
-        </label>
-        <textarea
+        </UiFieldLabel>
+        <UiTextarea
           v-model="form.additionalGeoInfo"
-          rows="4"
-          class="w-full p-3 bg-white border border-black/10 rounded-[10px] resize-none text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
+          :rows="4"
           placeholder="Опишіть інформацію про ГЕО..."
         />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           3. Потрібен Brand Research GEO?
-        </label>
+        </UiFieldLabel>
         <YesNoToggle v-model="form.needsGeoResearch" />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
-          4. Інформація по гравцям від команди Трафіку <span class="text-red-500">*</span>
-        </label>
-        <textarea
+        <UiFieldLabel required>
+          4. Інформація по гравцям від команди Трафіку
+        </UiFieldLabel>
+        <UiTextarea
           v-model="form.trafficTeamInfo"
-          rows="3"
-          class="w-full p-3 bg-white border border-black/10 rounded-[10px] resize-none text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
+          :rows="3"
           placeholder="Хто наші користувачі по трафіку"
         />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           5. Яка мова створення назви?
-        </label>
+        </UiFieldLabel>
         <select
           v-model="form.namingLanguage"
-          class="w-full px-3 py-3 bg-white border border-black/10 rounded-[10px] text-base leading-6 tracking-[-0.31px] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all appearance-none cursor-pointer"
+          :class="selectClass"
         >
           <option value="" disabled>Оберіть мову</option>
           <option v-for="lang in BRIEF_LANGUAGES" :key="lang" :value="lang">{{ lang }}</option>
@@ -139,21 +160,20 @@ const title = computed(() => {
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           6. Які слова/приставки хочеться бачити в назві?
-        </label>
-        <textarea
+        </UiFieldLabel>
+        <UiTextarea
           v-model="form.desiredWordsInName"
-          rows="2"
-          class="w-full p-3 bg-white border border-black/10 rounded-[10px] resize-none text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
+          :rows="2"
           placeholder="Наприклад: bet, win, play..."
         />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           7. Які доменні зони можна розглядати?
-        </label>
+        </UiFieldLabel>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="zone in BRIEF_DOMAIN_ZONES"
@@ -173,48 +193,44 @@ const title = computed(() => {
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           8. Яких слів, рішень, знаків хотілося б уникнути в назві?
-        </label>
-        <textarea
+        </UiFieldLabel>
+        <UiTextarea
           v-model="form.wordsToAvoid"
-          rows="2"
-          class="w-full p-3 bg-white border border-black/10 rounded-[10px] resize-none text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
+          :rows="2"
           placeholder="Наприклад: slot, free, magic..."
         />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel>
           9. Бюджет домена в $?
-        </label>
-        <input
-          :value="budgetStr"
+        </UiFieldLabel>
+        <UiTextField
+          :model-value="budgetStr"
           type="number"
           min="0"
           step="100"
-          class="w-full px-3 py-3 bg-white border border-black/10 rounded-[10px] text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
           placeholder="Наприклад: 5000"
           @input="handleBudgetInput"
         />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
-          10. Дедлайн розробки назви <span class="text-red-500">*</span>
-        </label>
+        <UiFieldLabel required>
+          10. Дедлайн розробки назви
+        </UiFieldLabel>
         <DatePicker v-model="form.namingDeadline" :min-date="todayISO" />
       </div>
 
       <div class="flex flex-col gap-3">
-        <label class="text-base font-medium leading-6 tracking-[-0.31px] text-[#0a0a0a]">
+        <UiFieldLabel required>
           11. Опишіть, що вам не підійшло в запропонованих неймінгах
-          <span class="text-red-500">*</span>
-        </label>
-        <textarea
+        </UiFieldLabel>
+        <UiTextarea
           v-model="form.namingFeedback"
-          rows="4"
-          class="w-full p-3 bg-white border border-black/10 rounded-[10px] resize-none text-base leading-6 tracking-[-0.31px] placeholder:text-[rgba(10,10,10,0.5)] focus:outline-none focus:ring-2 focus:ring-[#030213]/20 transition-all"
+          :rows="4"
           placeholder="Ваш відгук про неймінги..."
         />
       </div>

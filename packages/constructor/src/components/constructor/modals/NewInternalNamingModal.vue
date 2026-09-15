@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import BriefModalShell from '@/components/constructor/modals/BriefModalShell.vue'
+import UiFieldLabel from '@/components/ui/UiFieldLabel.vue'
+import UiTextarea from '@/components/ui/UiTextarea.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -46,14 +48,12 @@ const title = computed(() => {
     @edit="emit('edit')"
   >
     <fieldset :disabled="readonly" class="brief-form m-0 p-0 border-0 min-w-0 flex flex-col gap-2">
-      <label class="text-sm font-medium text-[#0a0a0a] tracking-[-0.15px]">
+      <UiFieldLabel required>
         1. Опис, що не підійшло в запропонованих неймінгах
-        <span class="text-red-500">*</span>
-      </label>
-      <textarea
+      </UiFieldLabel>
+      <UiTextarea
         v-model="feedback"
-        rows="5"
-        class="w-full px-4 py-3 bg-[#f3f3f5] border border-transparent rounded-[10px] resize-none text-base tracking-[-0.31px] placeholder:text-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+        :rows="5"
         placeholder="Опишіть, що саме не підійшло та що б ви хотіли бачити..."
       />
     </fieldset>

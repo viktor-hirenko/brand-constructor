@@ -1,9 +1,34 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import SupervisorCommentCard from '@/components/constructor/review/SupervisorCommentCard.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import { isSectionCommentBlockVisible } from '@/utils/sectionCommentBlockVisibility'
-import { computeCappedTextareaLayout, CEO_GENERAL_COMMENT_MAX_HEIGHT_PX, CEO_GENERAL_COMMENT_MIN_HEIGHT_PX, CEO_SECTION_COMMENT_MAX_HEIGHT_PX } from '@/constants/ceoCommentFieldVisual'
+import UiTextarea from '@/components/ui/UiTextarea.vue'
+
+/**
+ * Phase 11 put the CEO editor on the kit Input, Type = Area (`3424:2287`).
+ *
+ * This is the one place in the wizard that carries the kit's **inner Label** —
+ * the `caption/l/medium` 14/16 caption that sits INSIDE the box, above the
+ * value (`3436:4420`). Every other field hides it, exactly as all seven Input
+ * instances on the drawn brief-order modal `5562:49171` do. This editor had
+ * already drawn that exact shape by hand, at #5B5B62 on a
+ * `rgba(197,197,200,0.2)` fill; it now takes `input/description` #6f6f7d on
+ * `input/bg/default` #f3f3f5.
+ *
+ * The line caps moved from `constants/ceoCommentFieldVisual.ts` (deleted) to
+ * `rows` / `max-rows` here, and the arithmetic to `computeTextareaAutosize` in
+ * `uiField.ts`. Same numbers — a section comment caps at 5 lines, the general
+ * comment starts at 6 and caps at 12 — but measured against the live
+ * line-height instead of a hard-coded 24, which is what the embed scale needs.
+ *
+ * The amber highlight is validation, not a kit state: the kit's Input has no
+ * Warning. It keeps its meaning and takes the kit's own `amber/border`
+ * (#e9c162) in place of the hand-written #C97D00.
+ */
+const CEO_SECTION_COMMENT_MAX_ROWS = 5
+const CEO_GENERAL_COMMENT_MIN_ROWS = 6
+const CEO_GENERAL_COMMENT_MAX_ROWS = 12
 
 interface SectionCommentBlockProps {
   /** Section identifier from CEO_COMMENT_SECTIONS (concept, externalNaming, ...). */
@@ -65,25 +90,13 @@ const emit = defineEmits<{
 
 const draft = ref<string>(props.supervisorComment ?? '')
 const isExpanded = ref<boolean>(props.alwaysExpanded || !!(props.supervisorComment ?? '').trim())
-const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const textareaRef = ref<InstanceType<typeof UiTextarea> | null>(null)
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
-function autosize() {
-  const ta = textareaRef.value
-  if (!ta) return
-  ta.style.height = 'auto'
-  const maxHeightPx = props.alwaysExpanded
-    ? CEO_GENERAL_COMMENT_MAX_HEIGHT_PX
-    : CEO_SECTION_COMMENT_MAX_HEIGHT_PX
-  const minHeightPx = props.alwaysExpanded ? CEO_GENERAL_COMMENT_MIN_HEIGHT_PX : undefined
-  const { heightPx, overflowY } = computeCappedTextareaLayout(
-    ta.scrollHeight,
-    maxHeightPx,
-    minHeightPx,
-  )
-  ta.style.height = `${heightPx}px`
-  ta.style.overflowY = overflowY
-}
+const editorRows = computed(() => (props.alwaysExpanded ? CEO_GENERAL_COMMENT_MIN_ROWS : 1))
+const editorMaxRows = computed(() =>
+  props.alwaysExpanded ? CEO_GENERAL_COMMENT_MAX_ROWS : CEO_SECTION_COMMENT_MAX_ROWS
+)
 
 watch(
   () => props.supervisorComment,
@@ -91,7 +104,6 @@ watch(
     const incoming = next ?? ''
     if (incoming !== draft.value) {
       draft.value = incoming
-      nextTick(autosize)
     }
     if (incoming.trim()) isExpanded.value = true
   }
@@ -104,10 +116,6 @@ watch(
   },
   { immediate: true }
 )
-
-watch(isExpanded, expanded => {
-  if (expanded) nextTick(autosize)
-})
 
 function scheduleEmit(value: string) {
   if (flushTimer) clearTimeout(flushTimer)
@@ -129,19 +137,13 @@ function flushNow() {
   }
 }
 
-onMounted(() => {
-  if (isExpanded.value) nextTick(autosize)
-})
-
 onBeforeUnmount(() => {
   flushNow()
 })
 
-function onInput(e: Event) {
-  const value = (e.target as HTMLTextAreaElement).value
+function onInput(value: string) {
   draft.value = value
   scheduleEmit(value)
-  autosize()
 }
 
 function onBlur() {
@@ -155,7 +157,6 @@ function openEditor() {
   isExpanded.value = true
   nextTick(() => {
     textareaRef.value?.focus()
-    autosize()
   })
 }
 
@@ -217,31 +218,20 @@ defineExpose({ isVisible })
         </span>
       </button>
 
-      <label
+      <UiTextarea
         v-else
-        :class="[
-          'section-comment__ceo-editor block w-full rounded-lg border bg-[rgba(197,197,200,0.2)] p-4 transition-colors cursor-text',
-          highlighted && !hasSupervisorComment
-            ? 'border-[#C97D00]'
-            : 'border-transparent focus-within:border-[#c8c7cc]',
-        ]"
-      >
-        <span
-          v-if="!alwaysExpanded"
-          class="section-comment__ceo-editor-label block text-[0.875rem] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62] mb-1"
-        >
-          Коментар CEO
-        </span>
-        <textarea
-          ref="textareaRef"
-          :value="draft"
-          rows="1"
-          :placeholder="placeholder"
-          class="section-comment__ceo-textarea block w-full resize-none bg-transparent border-0 p-0 text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] placeholder:text-[rgba(61,61,61,0.5)] focus:outline-none focus:ring-0"
-          @input="onInput"
-          @blur="onBlur"
-        />
-      </label>
+        ref="textareaRef"
+        class="section-comment__ceo-editor"
+        :class="highlighted && !hasSupervisorComment ? 'border-amber-border!' : ''"
+        :model-value="draft"
+        :label="alwaysExpanded ? '' : 'Коментар CEO'"
+        :rows="editorRows"
+        :max-rows="editorMaxRows"
+        autosize
+        :placeholder="placeholder"
+        @update:model-value="onInput"
+        @blur="onBlur"
+      />
     </template>
 
     <!-- Read-only CEO comment with resolve UI (PO returned-from-CEO view) -->

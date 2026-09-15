@@ -52,6 +52,12 @@
   --color-ink-400: #dfdfe2;
   --color-ink-300: #eaeaeb;
   --color-ink-200: #f3f3f5;
+  /* Added in phase 11. `input/list/item/bg/hovered` on List item `3446:5054`
+     is #f9f9fb — the one kit neutral this scale was missing. It is not a
+     one-off: the same value is `comment/bg/default` on Comment `3439:1309`,
+     which phase 13 needs. Verify:
+       get_variable_defs 3446:5054 → input/list/item/bg/hovered #f9f9fb */
+  --color-ink-100: #f9f9fb;
 
   /* Kit accent hover. The accent itself is already --color-primary #030213. */
   --color-primary-hover: #2d2d39;

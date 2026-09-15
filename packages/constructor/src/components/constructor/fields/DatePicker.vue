@@ -1,9 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue'
 import ChevronRightIcon from '@/components/icons/ChevronRightIcon.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
+import UiPopover from '@/components/ui/UiPopover.vue'
+import { UI_FIELD_ICON_CLASS, resolveUiFieldSurfaceClasses } from '@/components/ui/uiField'
+
+/**
+ * Phase 11 put the trigger and the popover on the kit.
+ *
+ * The trigger is the kit Dropdown, and the kit spells a Dropdown as an Input:
+ * `get_variable_defs 3446:5801` returns the Input tokens verbatim
+ * (`input/bg/default`, `input/border/default`, `input/border/focused`,
+ * `radius/input`) plus the list tokens, and `get_metadata 5562:49232` measures
+ * the field at 48 — the same box as a text field. So it takes
+ * `resolveUiFieldSurfaceClasses` with `focusWithin: false`, because here the
+ * surface IS the focusable control.
+ *
+ * The calendar grid itself is left alone: the kit draws no calendar, and
+ * inventing one would be redesign, not вынос. Recorded in the task document.
+ */
 
 const props = defineProps<{
   minDate?: string
@@ -14,7 +32,10 @@ const model = defineModel<string>({ required: true })
 const isOpen = ref(false)
 const containerRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLButtonElement | null>(null)
-const popoverRef = ref<HTMLElement | null>(null)
+const popoverRef = ref<HTMLElement | ComponentPublicInstance | null>(null)
+const triggerClass = computed(() =>
+  resolveUiFieldSurfaceClasses({ focusWithin: false, focused: isOpen.value })
+)
 const popoverStyle = ref({ top: '0px', left: '0px' })
 
 const MONTH_NAMES = [
@@ -59,12 +80,18 @@ watch(isOpen, open => {
   }
 })
 
+function popoverElement(): HTMLElement | null {
+  const value = popoverRef.value
+  if (!value) return null
+  return value instanceof HTMLElement ? value : (value.$el as HTMLElement)
+}
+
 function handleDocumentPointerDown(event: MouseEvent) {
   if (!isOpen.value) return
   const target = event.target
   if (!(target instanceof Node)) return
   if (containerRef.value?.contains(target)) return
-  if (popoverRef.value?.contains(target)) return
+  if (popoverElement()?.contains(target)) return
   isOpen.value = false
 }
 
@@ -206,18 +233,20 @@ async function toggle() {
 
 <template>
   <div ref="containerRef" class="relative">
-    <!-- Trigger: min-height 50px, radius 10px → 3.125rem / 0.625rem @16. -->
+    <!-- Kit Dropdown trigger = kit Input surface, 48 tall — see the note in <script>. -->
     <button
       ref="triggerRef"
       type="button"
-      class="w-full px-4 py-3 bg-input border border-black/10 rounded-[0.625rem] text-left flex items-center justify-between min-h-[3.125rem] transition-all hover:border-black/20"
-      :class="isOpen ? 'ring-2 ring-primary/20' : ''"
+      :class="[triggerClass, 'justify-between text-left']"
       @click="toggle"
     >
-      <span :class="model ? 'font-medium text-foreground' : 'text-foreground/50'">
+      <span
+        class="min-w-0 flex-1 truncate text-base"
+        :class="model ? 'text-ink-900' : 'text-ink-600'"
+      >
         {{ model ? formatDisplay(model) : 'Виберіть дату' }}
       </span>
-      <CalendarIcon class="size-4 text-muted-foreground shrink-0" />
+      <CalendarIcon :class="UI_FIELD_ICON_CLASS" />
     </button>
 
     <!-- Teleported to body to escape overflow clipping -->
@@ -231,10 +260,10 @@ async function toggle() {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-1"
       >
-        <div
+        <UiPopover
           v-if="isOpen"
           ref="popoverRef"
-          class="fixed z-[10000] bg-card border border-border rounded-lg shadow-lg p-4"
+          class="fixed z-[10000] p-4"
           :style="popoverStyle"
         >
           <!-- Header: month navigation -->
@@ -318,7 +347,7 @@ async function toggle() {
               </tr>
             </tbody>
           </table>
-        </div>
+        </UiPopover>
       </Transition>
     </Teleport>
   </div>

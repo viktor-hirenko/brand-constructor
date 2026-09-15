@@ -73,6 +73,9 @@ const KIT_TOKENS: Record<string, string> = {
   '--color-ink-400': '#dfdfe2',
   '--color-ink-300': '#eaeaeb',
   '--color-ink-200': '#f3f3f5',
+  // Added in phase 11: `input/list/item/bg/hovered` on List item `3446:5054`,
+  // the same value the kit uses for `comment/bg/default` on Comment `3439:1309`.
+  '--color-ink-100': '#f9f9fb',
   '--color-primary-hover': '#2d2d39',
   '--color-green-content': '#218358',
   '--color-green-bg': '#d6f1df',

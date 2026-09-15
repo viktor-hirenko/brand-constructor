@@ -4,13 +4,34 @@ import { GEO_COUNTRIES, type GeoOption } from '@/data/geo-countries';
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue';
 import UiBadge from '@/components/ui/UiBadge.vue'
+import UiListItem from '@/components/ui/UiListItem.vue'
+import UiPopover from '@/components/ui/UiPopover.vue'
+import { UI_POPOVER_HEADER_CLASS } from '@/components/ui/uiListItem'
+import { UI_FIELD_CONTROL_BASE_CLASS, resolveUiFieldSurfaceClasses } from '@/components/ui/uiField'
 
+/**
+ * Phase 11 put this control on the kit.
+ *
+ * The trigger is the kit Input surface (`3424:2287`) in the `fluid` type: the
+ * kit has no multi-value field, and a fixed 48 would clip the second row of
+ * badges, so the box floors at the kit's 48 and grows. Everything painted on it
+ * — fill, border, hover, focus, radius — comes from `resolveUiFieldSurfaceClasses`,
+ * the same function the date trigger and the brief-order form fields call.
+ *
+ * The list below it is the kit Popover `3446:5235` with kit List items
+ * `3446:5054`; the section headers are the kit's own Header slot, which used to
+ * be an uppercase 12/16 caption of our own making.
+ */
 const model = defineModel<string[]>({ required: true });
 
 const isOpen = ref(false);
 const search = ref('');
 const containerRef = ref<HTMLElement | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
+
+const triggerClass = computed(() =>
+  resolveUiFieldSurfaceClasses({ type: 'fluid', focused: isOpen.value })
+)
 
 const popularGeos = computed(() =>
   GEO_COUNTRIES.filter((g) => g.popular),
@@ -81,12 +102,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="containerRef" class="relative">
-    <!-- Trigger: min-height 50px, radius 10px → 3.125rem / 0.625rem @16. -->
-    <div
-      class="w-full px-3 py-2.5 bg-input border border-black/10 rounded-[0.625rem] flex items-center gap-2 flex-wrap min-h-[3.125rem] cursor-text transition-all"
-      :class="isOpen ? 'ring-2 ring-primary/20' : ''"
-      @click="openDropdown(); searchInputRef?.focus()"
-    >
+    <!-- Kit Input surface, Type = fluid — see the note in <script>. -->
+    <div :class="[triggerClass, 'cursor-text']" @click="openDropdown(); searchInputRef?.focus()">
       <!--
         Kit badge `3453:1619`, neutral tone, with the remove control riding the
         kit's own `Icon right` slot. Was a rounded-6 `bg-primary/10` chip at
@@ -110,7 +127,7 @@ onBeforeUnmount(() => {
         v-model="search"
         type="text"
         :placeholder="model.length === 0 ? 'Наприклад: UK, DE, PT' : 'Пошук...'"
-        class="flex-1 min-w-[80px] bg-transparent outline-none text-base placeholder:text-foreground/50"
+        :class="[UI_FIELD_CONTROL_BASE_CLASS, 'w-auto min-w-20 flex-1']"
         @focus="openDropdown"
       />
     </div>
@@ -124,65 +141,50 @@ onBeforeUnmount(() => {
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-1"
     >
-      <div
+      <UiPopover
         v-if="isOpen"
-        class="absolute z-50 top-full left-0 w-full mt-1.5 bg-white border border-black/10 rounded-[10px] shadow-lg max-h-[280px] overflow-y-auto"
+        class="absolute z-50 top-full left-0 w-full mt-1.5 max-h-70 overflow-y-auto"
       >
         <template v-if="hasResults">
           <!-- Popular -->
-          <div v-if="popularFiltered.length" class="p-1.5">
-            <div class="text-xs font-medium text-muted-foreground px-2.5 py-1.5 uppercase tracking-wider">
-              Популярні
-            </div>
-            <button
+          <template v-if="popularFiltered.length">
+            <div :class="UI_POPOVER_HEADER_CLASS">Популярні</div>
+            <UiListItem
               v-for="geo in popularFiltered"
               :key="geo.code"
-              class="w-full text-left px-2.5 py-2 rounded-lg flex items-center justify-between transition-colors"
-              :class="isSelected(geo.code) ? 'bg-primary/5 text-primary' : 'hover:bg-black/[0.03]'"
+              :selected="isSelected(geo.code)"
               @click="toggleGeo(geo.code)"
             >
-              <span class="text-sm">
-                <span class="font-medium">{{ geo.code }}</span>
-                <span class="text-muted-foreground ml-1.5">{{ geo.name }}</span>
-              </span>
-              <CheckIcon
-                v-if="isSelected(geo.code)"
-                class="size-4 text-primary shrink-0"
-              />
-            </button>
-          </div>
-
-          <!-- Divider -->
-          <div v-if="popularFiltered.length && otherFiltered.length" class="border-t border-black/5" />
+              <span class="font-medium">{{ geo.code }}</span>
+              <span class="text-ink-700 ml-1.5">{{ geo.name }}</span>
+              <template v-if="isSelected(geo.code)" #trailing>
+                <CheckIcon class="size-4 shrink-0 text-ink-900" />
+              </template>
+            </UiListItem>
+          </template>
 
           <!-- Other -->
-          <div v-if="otherFiltered.length" class="p-1.5">
-            <div class="text-xs font-medium text-muted-foreground px-2.5 py-1.5 uppercase tracking-wider">
-              Інші
-            </div>
-            <button
+          <template v-if="otherFiltered.length">
+            <div :class="UI_POPOVER_HEADER_CLASS">Інші</div>
+            <UiListItem
               v-for="geo in otherFiltered"
               :key="geo.code"
-              class="w-full text-left px-2.5 py-2 rounded-lg flex items-center justify-between transition-colors"
-              :class="isSelected(geo.code) ? 'bg-primary/5 text-primary' : 'hover:bg-black/[0.03]'"
+              :selected="isSelected(geo.code)"
               @click="toggleGeo(geo.code)"
             >
-              <span class="text-sm">
-                <span class="font-medium">{{ geo.code }}</span>
-                <span class="text-muted-foreground ml-1.5">{{ geo.name }}</span>
-              </span>
-              <CheckIcon
-                v-if="isSelected(geo.code)"
-                class="size-4 text-primary shrink-0"
-              />
-            </button>
-          </div>
+              <span class="font-medium">{{ geo.code }}</span>
+              <span class="text-ink-700 ml-1.5">{{ geo.name }}</span>
+              <template v-if="isSelected(geo.code)" #trailing>
+                <CheckIcon class="size-4 shrink-0 text-ink-900" />
+              </template>
+            </UiListItem>
+          </template>
         </template>
 
-        <div v-else class="p-4 text-center text-sm text-muted-foreground">
+        <p v-else class="p-4 text-center text-sm/4 text-ink-700">
           Нічого не знайдено
-        </div>
-      </div>
+        </p>
+      </UiPopover>
     </Transition>
   </div>
 </template>

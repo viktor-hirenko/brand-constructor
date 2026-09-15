@@ -7,6 +7,9 @@ import GlobeIcon from '@/components/icons/GlobeIcon.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import FileIcon from '@/components/icons/FileIcon.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import UiFieldHint from '@/components/ui/UiFieldHint.vue'
+import UiFieldLabel from '@/components/ui/UiFieldLabel.vue'
+import UiTextField from '@/components/ui/UiTextField.vue'
 
 const store = useConstructorStore()
 
@@ -39,47 +42,45 @@ const comment = computed({
   <div class="flex flex-col gap-6">
     <!-- GEO -->
     <div>
-      <label class="flex items-center gap-2 mb-2">
-        <GlobeIcon class="size-4 text-muted-foreground" />
-        <span class="font-medium text-base">GEO (Географія)</span>
-        <span class="text-error text-sm">*</span>
-      </label>
+      <UiFieldLabel class="mb-2" required>
+        <template #icon="{ iconClass }">
+          <GlobeIcon :class="iconClass" />
+        </template>
+        GEO (Географія)
+      </UiFieldLabel>
       <GeoMultiSelect v-model="geo" @update:model-value="touched.geo = true" />
-      <p v-if="touched.geo && geo.length === 0" class="text-red-500 text-sm mt-1">
+      <UiFieldHint v-if="touched.geo && geo.length === 0" tone="error" class="mt-1">
         Оберіть хоча б одну ГЕО
-      </p>
+      </UiFieldHint>
     </div>
 
     <!-- Launch Date -->
     <div>
-      <label class="flex items-center gap-2 mb-2">
-        <CalendarIcon class="size-4 text-muted-foreground" />
-        <span class="font-medium text-base">Плануєма дата запуску</span>
-        <span class="text-error text-sm">*</span>
-      </label>
+      <UiFieldLabel class="mb-2" required>
+        <template #icon="{ iconClass }">
+          <CalendarIcon :class="iconClass" />
+        </template>
+        Плануєма дата запуску
+      </UiFieldLabel>
       <DatePicker
         v-model="launchDate"
         :min-date="todayISO"
         @update:model-value="touched.launchDate = true"
       />
-      <p v-if="touched.launchDate && !launchDate" class="text-red-500 text-sm mt-1">
+      <UiFieldHint v-if="touched.launchDate && !launchDate" tone="error" class="mt-1">
         Вкажіть дату запуску
-      </p>
+      </UiFieldHint>
     </div>
 
     <!-- Linked Product -->
     <div>
-      <label class="flex items-center gap-2 mb-2">
-        <FileIcon class="size-4 text-muted-foreground" />
-        <span class="font-medium text-base">Звʼязок з іншим продуктом (якщо є)</span>
-      </label>
-      <!-- Input: radius 10px → 0.625rem @16. -->
-      <input
-        v-model="linkedProduct"
-        type="text"
-        placeholder="Thor, Alpa..."
-        class="w-full px-4 py-3 bg-input border border-black/10 rounded-[0.625rem] outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base placeholder:text-foreground/50"
-      />
+      <UiFieldLabel class="mb-2">
+        <template #icon="{ iconClass }">
+          <FileIcon :class="iconClass" />
+        </template>
+        Звʼязок з іншим продуктом (якщо є)
+      </UiFieldLabel>
+      <UiTextField v-model="linkedProduct" placeholder="Thor, Alpa..." />
     </div>
 
     <!-- Comment -->
