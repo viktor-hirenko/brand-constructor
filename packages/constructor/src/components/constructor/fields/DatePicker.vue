@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue'
 import ChevronRightIcon from '@/components/icons/ChevronRightIcon.vue'
+import UiIconButton from '@/components/ui/UiIconButton.vue'
 
 const props = defineProps<{
   minDate?: string
@@ -241,22 +242,35 @@ async function toggle() {
             <div class="text-sm font-medium" aria-live="polite">
               {{ monthLabel }}
             </div>
-            <button
-              type="button"
-              class="absolute left-1 h-7 w-7 inline-flex items-center justify-center rounded-md opacity-50 hover:opacity-100 hover:bg-accent transition-colors"
+            <!-- Kit icon button `3333:5541`, Solid S. These sit on the white
+                 popover, so Solid rather than Glass; the 16 glyph they already
+                 carried is the S size, and the box grows 28 → 32. The kit has
+                 no half-opacity resting state, so the old `opacity-50` idle
+                 goes: Solid is legible at full strength.
+                 The calendar day cells are NOT icon buttons — they belong to
+                 the Input/Dropdown work of phase 11. -->
+            <UiIconButton
+              variant="solid"
+              size="S"
+              class="absolute left-1"
               aria-label="Попередній місяць"
               @click="prevMonth"
             >
-              <ChevronLeftIcon class="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              class="absolute right-1 h-7 w-7 inline-flex items-center justify-center rounded-md opacity-50 hover:opacity-100 hover:bg-accent transition-colors"
+              <template #default="{ iconClass }">
+                <ChevronLeftIcon :class="iconClass" />
+              </template>
+            </UiIconButton>
+            <UiIconButton
+              variant="solid"
+              size="S"
+              class="absolute right-1"
               aria-label="Наступний місяць"
               @click="nextMonth"
             >
-              <ChevronRightIcon class="h-4 w-4" />
-            </button>
+              <template #default="{ iconClass }">
+                <ChevronRightIcon :class="iconClass" />
+              </template>
+            </UiIconButton>
           </div>
 
           <!-- Weekday headers -->

@@ -30,6 +30,7 @@ import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCan
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
+import UiIconButton from '@/components/ui/UiIconButton.vue'
 import VisualComponentsPhoneEmptyState from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import type { VisualComponentsPhoneEmptyVariant } from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import {
@@ -264,19 +265,27 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
               </template>
             </PhonePreviewCanvas>
 
-            <!-- Sidebar toggle: 8px right, 42px top → 0.5rem / 2.625rem @16. -->
-            <button
+            <!-- Sidebar toggle: 8px right, 42px top → 0.5rem / 2.625rem @16.
+                 The inline `right`/`top` stay `rem` — named invariant of this
+                 file in "Железные правила адаптива".
+                 Kit icon button `3333:5541`, Glass S: it floats over the phone
+                 render, which is the glass case, and the 16 glyph it already
+                 carried is the S size. The box grows 28 → 32, the kit's S. -->
+            <UiIconButton
               v-if="hasSidebarSelected"
-              type="button"
-              class="absolute flex items-center justify-center size-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              variant="glass"
+              size="S"
+              class="absolute disabled:pointer-events-none"
               :style="{ right: '0.5rem', top: '2.625rem', zIndex: 35 }"
               :disabled="sidebarTransitionLocked"
               :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
               @click="emit('toggle-sidebar')"
             >
-              <CloseIcon v-if="step9SidebarVisible" class="size-4 text-white" />
-              <ColumnsLayoutIcon v-else class="size-4 text-white" />
-            </button>
+              <template #default="{ iconClass }">
+                <CloseIcon v-if="step9SidebarVisible" :class="iconClass" />
+                <ColumnsLayoutIcon v-else :class="iconClass" />
+              </template>
+            </UiIconButton>
           </div>
         </div>
       </div>

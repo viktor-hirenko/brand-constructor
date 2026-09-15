@@ -11,6 +11,7 @@ import {
 } from './dualPaneLayoutClasses'
 import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
+import UiIconButton from '@/components/ui/UiIconButton.vue'
 
 interface ConstructorDualPaneShellProps {
   layoutMode: LayoutMode
@@ -132,15 +133,21 @@ const rightColumnClass = computed(() =>
           },
         ]"
       >
-        <button
+        <!-- Kit icon button `3333:5541`, Solid L-48. Until now this was a
+             hand-rolled CSS twin of the `ConceptPreviewPopup` cross, value for
+             value; both now render the same component. Position stays here in
+             `rem`: top aligns with the first content header row (pane pt-6/pt-12
+             plus the title line). -->
+        <UiIconButton
           v-if="isDrawerMode"
-          type="button"
-          class="constructor-dual-pane-shell__drawer-close"
+          class="absolute top-[1.375rem] right-6 z-50"
           aria-label="Закрити прев'ю"
           @click="closePreview"
         >
-          <CloseIcon class="size-6 shrink-0" :stroke-width="1.5" />
-        </button>
+          <template #default="{ iconClass }">
+            <CloseIcon :class="iconClass" :stroke-width="1.5" />
+          </template>
+        </UiIconButton>
         <slot name="right" />
       </div>
 
@@ -192,32 +199,6 @@ const rightColumnClass = computed(() =>
 .cdps-drawer-backdrop-enter-from,
 .cdps-drawer-backdrop-leave-to {
   opacity: 0;
-}
-
-.constructor-dual-pane-shell__drawer-close {
-  position: absolute;
-  /* Align with the first content header row (pane pt-6/pt-12 + title line). */
-  top: 1.375rem;
-  right: 1.5rem;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border: none;
-  border-radius: 9999px;
-  background-color: #f9f9fb;
-  color: #141b34;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-.constructor-dual-pane-shell__drawer-close:hover {
-  background-color: #ececf0;
-}
-.constructor-dual-pane-shell__drawer-close:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px #c8c7cc;
 }
 
 .constructor-dual-pane-shell__preview-fab {

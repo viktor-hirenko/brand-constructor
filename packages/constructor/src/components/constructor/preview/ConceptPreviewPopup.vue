@@ -4,6 +4,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useEscapeClose } from '@/composables/useEscapeClose'
 import type { Concept } from '@brand-constructor/shared/types'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
+import UiIconButton from '@/components/ui/UiIconButton.vue'
 
 interface ConceptPreviewPopupProps {
   concept: Concept | null
@@ -34,14 +35,14 @@ useEscapeClose(handleClose)
       >
         {{ concept.name }}
       </h2>
-      <button
-        type="button"
-        class="inline-flex items-center justify-center size-12 shrink-0 rounded-full bg-[#f9f9fb] text-[#141B34] hover:bg-[#ececf0] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8c7cc]"
-        aria-label="Закрити"
-        @click="handleClose"
-      >
-        <CloseIcon class="size-6" :stroke-width="1.5" />
-      </button>
+      <!-- Kit icon button `3333:5541`, Solid L-48. This popup has no `UiModal`
+           header, so the control keeps button chrome rather than the bare 24
+           glyph the kit uses inside a modal header. -->
+      <UiIconButton aria-label="Закрити" @click="handleClose">
+        <template #default="{ iconClass }">
+          <CloseIcon :class="iconClass" :stroke-width="1.5" />
+        </template>
+      </UiIconButton>
     </header>
 
     <div class="flex-1 min-h-0 overflow-hidden">

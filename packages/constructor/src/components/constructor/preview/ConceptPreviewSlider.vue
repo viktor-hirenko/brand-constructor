@@ -10,6 +10,7 @@ import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import MaximizeIcon from '@/components/icons/MaximizeIcon.vue'
 import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
+import UiIconButton from '@/components/ui/UiIconButton.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
 import { isEmbedded } from '@/composables/useEmbedMode'
 
@@ -338,16 +339,20 @@ onUnmounted(() => {
           Немає візуалу для цього концепту.
         </div>
 
-        <!-- Expand (desktop preview) — only on 6th slide (index 5) per Figma -->
-        <button
+        <!-- Expand (desktop preview) — only on 6th slide (index 5) per Figma.
+             Kit icon button `3333:5541`, Glass L-48: the glass style is exactly
+             this case, a control floating over an image. -->
+        <UiIconButton
           v-if="activeIndex === EXPAND_MODAL_SLIDE_INDEX && currentSlideUrl"
-          type="button"
-          class="absolute top-5 right-5 z-20 flex items-center justify-center rounded-full bg-[rgba(68,67,86,0.3)] p-3 backdrop-blur-[10px] text-white transition-colors hover:bg-[rgba(68,67,86,0.5)]"
+          variant="glass"
+          class="absolute top-5 right-5 z-20"
           aria-label="Розгорнути превʼю"
           @click="showExpanded = true"
         >
-          <MaximizeIcon class="size-6 shrink-0" />
-        </button>
+          <template #default="{ iconClass }">
+            <MaximizeIcon :class="iconClass" />
+          </template>
+        </UiIconButton>
 
         <!-- Top-center dots (Figma 1450:19308 — пілюля blur + rgba фон навколо крапок) -->
         <div
@@ -369,26 +374,33 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Side arrows (Figma 1443:18972 / 1443:18975 — blur 10px, p-12, 24×24 іконка, стріла зі штуром) -->
-        <button
-          type="button"
-          class="absolute left-5 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(68,67,86,0.3)] p-3 text-white backdrop-blur-[10px] transition-colors hover:bg-[rgba(68,67,86,0.5)] disabled:cursor-not-allowed disabled:opacity-30"
+        <!-- Side arrows. Kit Preview panel `3717:1817` builds its Navigation row
+             from two Icon buttons, Glass L-48, inset 20 from the preview edges
+             and vertically centred — `left-5` / `right-5` is that 20 in rem.
+             Disabled is the kit's `opacity/50`, not the 30% this used to use. -->
+        <UiIconButton
+          variant="glass"
+          class="absolute left-5 top-1/2 z-10 -translate-y-1/2"
           :disabled="activeIndex <= 0 || slideCount <= 1"
           aria-label="Попередній слайд"
           @click="goPrev"
         >
-          <ArrowLeftIcon class="size-6 shrink-0" />
-        </button>
+          <template #default="{ iconClass }">
+            <ArrowLeftIcon :class="iconClass" />
+          </template>
+        </UiIconButton>
 
-        <button
-          type="button"
-          class="absolute right-5 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(68,67,86,0.3)] p-3 text-white backdrop-blur-[10px] transition-colors hover:bg-[rgba(68,67,86,0.5)] disabled:cursor-not-allowed disabled:opacity-30"
+        <UiIconButton
+          variant="glass"
+          class="absolute right-5 top-1/2 z-10 -translate-y-1/2"
           :disabled="activeIndex >= slideCount - 1 || slideCount <= 1"
           aria-label="Наступний слайд"
           @click="goNext"
         >
-          <ArrowRightIcon class="size-6 shrink-0" />
-        </button>
+          <template #default="{ iconClass }">
+            <ArrowRightIcon :class="iconClass" />
+          </template>
+        </UiIconButton>
       </div>
     </template>
 
@@ -408,14 +420,18 @@ onUnmounted(() => {
           aria-label="Розгорнуте превʼю"
           @click.stop
         >
-          <button
-            type="button"
-            class="pointer-events-auto absolute top-6 right-6 isolate z-20 flex size-12 items-center justify-center rounded-full bg-white text-foreground shadow-lg transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
+          <!-- Kit icon button `3333:5541`, Solid L-48. This one is not the
+               modal-header cross (a bare 24 glyph, `UiModal`): it floats over
+               the image inside the lightbox and needs its own chrome. -->
+          <UiIconButton
+            class="pointer-events-auto absolute top-6 right-6 isolate z-20"
             aria-label="Закрити"
             @click="closeExpanded"
           >
-            <CloseIcon class="size-6 shrink-0" />
-          </button>
+            <template #default="{ iconClass }">
+              <CloseIcon :class="iconClass" />
+            </template>
+          </UiIconButton>
           <img
             :src="asset(currentSlideUrl)"
             :alt="concept.name"
