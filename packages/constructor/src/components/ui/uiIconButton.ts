@@ -68,13 +68,10 @@ export const UI_ICON_BUTTON_SIZE: Record<UiIconButtonSize, { root: string; icon:
 }
 
 /**
- * `button/secondary/border` is #eaeaeb and is written as a hex on purpose.
- * `--color-ink-300` is #ededee, and `docs/STATE.md` "Что дальше" §2 records
- * that the refreshed kit moved this shared neutral to #eaeaeb across the
- * Secondary border, the input border, the accordion, the section card, the
- * alert, the progress bar and the badge. That is one token edit due before
- * phase 11; until it lands, spreading #ededee into new components makes the fix
- * larger. `uiAlert.ts` and `uiBadge.ts` carry the same hex for the same reason.
+ * `button/secondary/border` rides `--color-ink-300` — the DP-15258 token fix
+ * moved that shared neutral from #ededee to the kit's #eaeaeb (`app.css`),
+ * the same value the Secondary border, the input border, the accordion, the
+ * section card, the alert, the progress bar and the badge all use.
  *
  * The Solid shadow is `drop-shadow(0px 8px 4px rgba(0,0,0,0.12))` on Default
  * and Hovered and absent on Disabled — so it is switched off explicitly rather
@@ -86,7 +83,7 @@ export const UI_ICON_BUTTON_SIZE: Record<UiIconButtonSize, { root: string; icon:
  */
 export const UI_ICON_BUTTON_VARIANT: Record<UiIconButtonVariant, string> = {
   solid:
-    'ui-icon-button--solid border border-[#eaeaeb] bg-white text-ink-800 shadow-[0_8px_4px_rgba(0,0,0,0.12)] hover:bg-ink-200 focus-visible:ring-ink-500 disabled:shadow-none',
+    'ui-icon-button--solid border border-ink-300 bg-white text-ink-800 shadow-[0_8px_4px_rgba(0,0,0,0.12)] hover:bg-ink-200 focus-visible:ring-ink-500 disabled:shadow-none',
   glass:
     'ui-icon-button--glass bg-[rgba(57,57,71,0.25)] text-white backdrop-blur-[20px] hover:bg-[rgba(57,57,71,0.5)] focus-visible:ring-white/70',
 }

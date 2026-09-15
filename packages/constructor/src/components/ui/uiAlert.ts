@@ -31,12 +31,11 @@ export const UI_ALERT_ICON_CLASS = 'ui-alert__icon size-6 shrink-0'
 /**
  * Four of the five tones come straight from the kit semantic slots
  * (`border` + `surface` + `content`). `default` has no semantic tone in Figma:
- * it is the neutral card — `#eaeaeb` hairline on white — and that border value
- * is the one hex in this file without a token, because the kit neutral ramp
- * jumps `#ededee` → `#dfdfe2` and the alert sits between them.
+ * it is the neutral card — `alert/border/default` `#eaeaeb`, which is
+ * `--color-ink-300` since the DP-15258 token fix (`app.css`).
  */
 export const UI_ALERT_TONES: Record<UiAlertType, { box: string; icon: string }> = {
-  default: { box: 'ui-alert--default border-[#eaeaeb] bg-white', icon: 'text-ink-900' },
+  default: { box: 'ui-alert--default border-ink-300 bg-white', icon: 'text-ink-900' },
   info: { box: 'ui-alert--info border-blue-border bg-blue-surface', icon: 'text-blue-content' },
   success: { box: 'ui-alert--success border-green-border bg-green-surface', icon: 'text-green-content' },
   warning: { box: 'ui-alert--warning border-amber-border bg-amber-surface', icon: 'text-amber-content' },

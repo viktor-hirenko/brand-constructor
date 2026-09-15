@@ -48,12 +48,13 @@ describe('kit badge — Figma 3453:1619', () => {
     expect(UI_BADGE_TONES.purple).toContain('text-purple-content')
   })
 
-  it('fills neutral with the kit #eaeaeb, never the #ededee of --color-ink-300', () => {
-    // `badge/bg/neutral` is #eaeaeb. The @theme ramp jumps #ededee → #dfdfe2,
-    // and `docs/STATE.md` "Что дальше" §2 forbids spreading #ededee further
-    // while the system-wide token fix is still pending.
-    expect(UI_BADGE_TONES.neutral).toContain('bg-[#eaeaeb]')
-    expect(UI_BADGE_TONES.neutral).not.toContain('ink-300')
+  it('fills neutral with --color-ink-300, now that it equals the kit #eaeaeb', () => {
+    // `badge/bg/neutral` is #eaeaeb. The DP-15258 token fix moved
+    // --color-ink-300 from #ededee to that exact value, so the badge rides the
+    // token instead of carrying a raw hex escape hatch.
+    expect(UI_BADGE_TONES.neutral).toContain('bg-ink-300')
+    expect(UI_BADGE_TONES.neutral).not.toContain('#eaeaeb')
+    expect(UI_BADGE_TONES.neutral).not.toContain('#ededee')
     expect(UI_BADGE_TONES.neutral).toContain('text-ink-800')
   })
 

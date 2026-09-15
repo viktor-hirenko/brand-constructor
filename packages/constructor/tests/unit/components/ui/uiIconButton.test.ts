@@ -75,20 +75,20 @@ describe('kit icon button — Figma 3333:5541', () => {
   })
 
   describe('solid — the kit reuses the Secondary button slots', () => {
-    it('paints white with the #eaeaeb border and #393947 content', () => {
+    it('paints white with the ink-300 border and #393947 content', () => {
       // get_variable_defs on 3333:5541: button/secondary/bg/default #ffffff,
-      // button/secondary/border #eaeaeb, button/secondary/content/default
-      // #393947 (= --color-ink-800).
+      // button/secondary/border #eaeaeb (= --color-ink-300 since the
+      // DP-15258 token fix), button/secondary/content/default #393947
+      // (= --color-ink-800).
       expect(UI_ICON_BUTTON_VARIANT.solid).toContain('bg-white')
-      expect(UI_ICON_BUTTON_VARIANT.solid).toContain('border-[#eaeaeb]')
+      expect(UI_ICON_BUTTON_VARIANT.solid).toContain('border-ink-300')
       expect(UI_ICON_BUTTON_VARIANT.solid).toContain('text-ink-800')
     })
 
-    it('never reaches for ink-300 for that border', () => {
-      // `--color-ink-300` is #ededee; the refreshed kit moved this shared
-      // neutral to #eaeaeb, and docs/STATE.md "Что дальше" §2 forbids spreading
-      // #ededee further until the one token edit lands. Same pin as uiBadge.
-      expect(UI_ICON_BUTTON_VARIANT.solid).not.toContain('ink-300')
+    it('never reaches for a raw #eaeaeb or the stale #ededee for that border', () => {
+      // --color-ink-300 is #eaeaeb since the DP-15258 token fix; the raw-hex
+      // escape hatch this used to pin is gone.
+      expect(UI_ICON_BUTTON_VARIANT.solid).not.toContain('[#eaeaeb]')
       expect(UI_ICON_BUTTON_VARIANT.solid).not.toContain('#ededee')
     })
 

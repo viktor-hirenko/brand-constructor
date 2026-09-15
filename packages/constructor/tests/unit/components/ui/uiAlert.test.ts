@@ -46,11 +46,11 @@ describe('kit alert — Figma 3461:5236', () => {
     expect(UI_ALERT_TONES.error.icon).toContain('text-red-content')
   })
 
-  it('keeps default neutral — white box, hairline #eaeaeb, ink icon', () => {
-    // The one hex without a token in the file: the kit neutral ramp jumps
-    // #ededee → #dfdfe2 and the alert border sits between them.
+  it('keeps default neutral — white box, ink-300 hairline, ink icon', () => {
+    // alert/border/default is #eaeaeb, which is --color-ink-300 since the
+    // DP-15258 token fix (app.css).
     expect(UI_ALERT_TONES.default.box).toContain('bg-white')
-    expect(UI_ALERT_TONES.default.box).toContain('border-[#eaeaeb]')
+    expect(UI_ALERT_TONES.default.box).toContain('border-ink-300')
     expect(UI_ALERT_TONES.default.icon).toContain('text-ink-900')
   })
 

@@ -16,9 +16,10 @@
  *   caption/l/medium      14 / 16, weight 500, letterSpacing 0
  *   spacing/4             4
  * Both colours land on our tokens byte for byte, so this component carries no
- * raw hex — unlike `uiAlert.ts`, `uiBadge.ts` and `uiIconButton.ts`, which all
- * had to write #eaeaeb because the refreshed kit moved that shared neutral off
- * `--color-ink-300`. The link slots are untouched by that shift.
+ * raw hex. `uiAlert.ts`, `uiBadge.ts` and `uiIconButton.ts` briefly had to
+ * write #eaeaeb as a raw hex because the kit had moved that shared neutral off
+ * `--color-ink-300` — the DP-15258 token fix closed that gap (`app.css`), and
+ * the link slots were never affected by it in the first place.
  *
  * Why a `.ts` map and not a component test: `packages/constructor` has no
  * `@vue/test-utils` and no `jsdom`, and `vitest.config.ts:11` sets

@@ -71,7 +71,7 @@ const KIT_TOKENS: Record<string, string> = {
   '--color-ink-600': '#95959d',
   '--color-ink-500': '#cacace',
   '--color-ink-400': '#dfdfe2',
-  '--color-ink-300': '#ededee',
+  '--color-ink-300': '#eaeaeb',
   '--color-ink-200': '#f3f3f5',
   '--color-primary-hover': '#2d2d39',
   '--color-green-content': '#218358',

@@ -48,15 +48,12 @@ export const UI_BADGE_ICON_CLASS = 'ui-badge__icon inline-flex size-4 shrink-0 i
 /**
  * `badge/bg/*` and `badge/content/*`, straight off `3453:1619`.
  *
- * Neutral's `#eaeaeb` is written as a hex on purpose. The kit neutral ramp in
- * `@theme` jumps `--color-ink-300` `#ededee` → `--color-ink-400` `#dfdfe2`, and
- * the refreshed kit moved this slot between them. Reaching for `bg-ink-300`
- * would spread `#ededee` — the very value `docs/STATE.md` "Что дальше" §2 says
- * to stop spreading — so the badge carries the kit value directly, the same way
- * `uiAlert.ts` carries it for the `default` tone.
+ * Neutral's `badge/bg/neutral` `#eaeaeb` rides `--color-ink-300` — the
+ * DP-15258 token fix moved that shared neutral from `#ededee` to the kit's
+ * `#eaeaeb` (`app.css`).
  */
 export const UI_BADGE_TONES: Record<UiBadgeTone, string> = {
-  neutral: 'ui-badge--neutral bg-[#eaeaeb] text-ink-800',
+  neutral: 'ui-badge--neutral bg-ink-300 text-ink-800',
   green: 'ui-badge--green bg-green-bg text-green-content',
   amber: 'ui-badge--amber bg-amber-bg text-amber-content',
   red: 'ui-badge--red bg-red-bg text-red-content',
