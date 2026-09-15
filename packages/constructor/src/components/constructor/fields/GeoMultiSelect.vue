@@ -3,6 +3,7 @@ import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { GEO_COUNTRIES, type GeoOption } from '@/data/geo-countries';
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue';
+import UiBadge from '@/components/ui/UiBadge.vue'
 
 const model = defineModel<string[]>({ required: true });
 
@@ -86,19 +87,24 @@ onBeforeUnmount(() => {
       :class="isOpen ? 'ring-2 ring-primary/20' : ''"
       @click="openDropdown(); searchInputRef?.focus()"
     >
-      <span
-        v-for="code in model"
-        :key="code"
-        class="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 rounded-md text-sm font-medium"
-      >
-        {{ code }}
-        <button
-          class="text-muted-foreground hover:text-foreground transition-colors ml-0.5"
-          @click.stop="removeGeo(code)"
-        >
-          <CloseIcon class="size-3.5" :stroke-width="2.5" />
-        </button>
-      </span>
+      <!--
+        Kit badge `3453:1619`, neutral tone, with the remove control riding the
+        kit's own `Icon right` slot. Was a rounded-6 `bg-primary/10` chip at
+        14/16 — the one badge recipe in the wizard that was neither a pill nor
+        a kit colour.
+      -->
+      <UiBadge v-for="code in model" :key="code" tone="neutral" :label="code">
+        <template #trailing>
+          <button
+            type="button"
+            class="geo-multi-select__chip-remove inline-flex size-4 items-center justify-center text-ink-700 transition-colors hover:text-ink-900"
+            :aria-label="`Прибрати ${code}`"
+            @click.stop="removeGeo(code)"
+          >
+            <CloseIcon class="size-3.5" :stroke-width="2.5" />
+          </button>
+        </template>
+      </UiBadge>
       <input
         ref="searchInputRef"
         v-model="search"

@@ -31,8 +31,8 @@ withDefaults(defineProps<Props>(), { count: 6 })
       </div>
       <div class="h-6 w-1/3 rounded bg-muted animate-pulse" />
       <!-- Badge placeholder (matches real card's "Available" badge geometry):
-           px-2 py-1 rounded-[8px], visible row at the bottom of the card. -->
-      <div class="h-6 w-[72px] rounded-[8px] bg-muted animate-pulse" />
+           kit badge 3453:1619 — 24 tall, radius 1000, since DP-15258 phase 7. -->
+      <div class="h-6 w-[72px] rounded-full bg-muted animate-pulse" />
     </div>
   </div>
 </template>

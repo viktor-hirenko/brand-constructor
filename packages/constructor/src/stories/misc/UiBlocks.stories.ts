@@ -11,6 +11,9 @@ import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import UiFooter from '@/components/ui/UiFooter.vue';
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue';
+import UiBadge from '@/components/ui/UiBadge.vue';
+import UiStatusDot from '@/components/ui/UiStatusDot.vue';
+import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue';
 import StatusPillBadge from '@/components/ui/StatusPillBadge.vue';
 import BrandBriefStatusBadge from '@/components/constructor/review/BrandBriefStatusBadge.vue';
 import UnresolvedDot from '@/components/ui/UnresolvedDot.vue';
@@ -314,6 +317,52 @@ export const UiFooterStack: StoryObj = {
 };
 
 // ─── Atom badges ──────────────────────────────────────────────────────────
+
+export const UiBadgeTones: StoryObj = {
+  name: 'UiBadge / Six kit tones',
+  render: () => ({
+    components: { UiBadge },
+    template: `
+      <div class="flex flex-wrap items-center gap-3">
+        <UiBadge tone="neutral" label="Neutral" />
+        <UiBadge tone="green" label="Available" />
+        <UiBadge tone="amber" label="Потрібно доопрацювати" />
+        <UiBadge tone="red" label="Sold" />
+        <UiBadge tone="blue" label="На розгляді" />
+        <UiBadge tone="purple" label="Purple" />
+      </div>
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const UiBadgeWithIcons: StoryObj = {
+  name: 'UiBadge / Icon slots',
+  render: () => ({
+    components: { UiBadge, InfoCircleFilledIcon },
+    template: `
+      <div class="flex flex-wrap items-center gap-3">
+        <UiBadge tone="amber" label="Type C">
+          <template #leading><InfoCircleFilledIcon class="size-4 shrink-0" /></template>
+        </UiBadge>
+        <UiBadge tone="neutral" label="UA">
+          <template #trailing><InfoCircleFilledIcon class="size-4 shrink-0" /></template>
+        </UiBadge>
+      </div>
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const UiStatusDotExample: StoryObj = {
+  name: 'UiStatusDot / 6×6 info dot',
+  render: () => ({
+    components: { UiStatusDot },
+    template:
+      '<div class="flex items-center gap-2 text-sm text-ink-900"><span>Brand Basics</span><UiStatusDot /></div>',
+  }),
+  parameters: { cardWidth: 520 },
+};
 
 export const SectionStatusBadgeAttention: StoryObj = {
   name: 'SectionStatusBadge / Attention',

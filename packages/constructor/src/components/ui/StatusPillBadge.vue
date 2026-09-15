@@ -1,28 +1,34 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed, useSlots } from 'vue'
+import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
+import UiBadge from '@/components/ui/UiBadge.vue'
 import {
-  STATUS_PILL_BADGE_ICON_CLASS,
-  STATUS_PILL_BADGE_INNER_CLASS,
-  STATUS_PILL_BADGE_LABEL_CLASS,
-  STATUS_PILL_BADGE_OUTER_CLASS,
   resolveStatusPillTone,
   type StatusPillLeading,
   type StatusPillTone,
 } from '@/components/ui/statusPillBadge'
 
+/**
+ * Brief-status badge — a thin adapter over `UiBadge` (DP-15258 phase 7).
+ *
+ * The name, the props and the `tone` vocabulary survive the sweep so the review
+ * tree keeps compiling; the paint and the geometry now come from the kit badge
+ * `3453:1619`. Two things changed on screen: the hairline border is gone (the
+ * kit badge has none) and the `attention` marker is the same filled info circle
+ * the Step 7 conflict chip already uses, in the tone's own colour, instead of a
+ * hand-built `#DCA100` circle with an exclamation mark in it.
+ */
 interface StatusPillBadgeProps {
   label: string
   tone?: StatusPillTone
   leading?: StatusPillLeading
-  surfaceClass?: HTMLAttributes['class']
   class?: HTMLAttributes['class']
 }
 
 const props = withDefaults(defineProps<StatusPillBadgeProps>(), {
   tone: undefined,
   leading: undefined,
-  surfaceClass: undefined,
   class: undefined,
 })
 
@@ -35,28 +41,18 @@ const leadingKind = computed<StatusPillLeading>(() => {
   return toneMeta.value?.leading ?? 'none'
 })
 
-const showAttentionIcon = computed(
-  () => leadingKind.value === 'attention' && !slots.leading
-)
-
-const outerClass = computed(() => [
-  STATUS_PILL_BADGE_OUTER_CLASS,
-  toneMeta.value?.surfaceClass,
-  props.surfaceClass,
-  props.class,
-])
+const showAttentionIcon = computed(() => leadingKind.value === 'attention' && !slots.leading)
 </script>
 
 <template>
-  <span :class="outerClass">
-    <span :class="STATUS_PILL_BADGE_INNER_CLASS">
+  <UiBadge
+    :class="['status-pill-badge', props.class]"
+    :tone="toneMeta?.tone ?? 'neutral'"
+    :label="label"
+  >
+    <template v-if="slots.leading || showAttentionIcon" #leading>
       <slot v-if="slots.leading" name="leading" />
-      <span
-        v-else-if="showAttentionIcon"
-        :class="STATUS_PILL_BADGE_ICON_CLASS"
-        aria-hidden="true"
-      >!</span>
-      <span :class="STATUS_PILL_BADGE_LABEL_CLASS">{{ label }}</span>
-    </span>
-  </span>
+      <InfoCircleFilledIcon v-else class="size-4 shrink-0" />
+    </template>
+  </UiBadge>
 </template>

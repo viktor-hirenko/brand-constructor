@@ -1,14 +1,24 @@
-export const STATUS_PILL_BADGE_OUTER_CLASS =
-  'status-pill-badge inline-flex rounded-full border border-solid p-1'
-
-export const STATUS_PILL_BADGE_INNER_CLASS =
-  'status-pill-badge__inner inline-flex items-center gap-1 px-0.5 py-0'
-
-export const STATUS_PILL_BADGE_LABEL_CLASS =
-  'status-pill-badge__label text-xs font-medium leading-4 tracking-[-0.3125px] whitespace-nowrap'
-
-export const STATUS_PILL_BADGE_ICON_CLASS =
-  'status-pill-badge__icon flex size-4 shrink-0 items-center justify-center rounded-full bg-[#DCA100] text-[0.5625rem] font-bold leading-none text-white'
+/**
+ * Tone map for `StatusPillBadge.vue` — the brief-status adapter over `UiBadge`.
+ *
+ * The component name and its `tone` vocabulary are kept so the 19 review files
+ * do not get renamed for the sake of a rename (DP-15258 phase 7). What changed
+ * underneath is the paint: every tone now resolves to one of the six kit tones
+ * of Figma `3453:1619` instead of its own hand-mixed pair.
+ *
+ * Before → after, all four verified against the redrawn canvas `5382:36911`:
+ *
+ * | tone              | was                          | now (kit)       |
+ * |-------------------|------------------------------|-----------------|
+ * | brief-submitted   | `#d7ecff` / `#0048ef` + border| blue            |
+ * | brief-revision    | `#fff9db` / `#916c00` + border| amber           |
+ * | brief-approved    | `#f0fdf4` / `#15803d`         | green           |
+ * | section-attention | `#fff9db` / `#936c00` + border| amber           |
+ *
+ * The two near-identical ambers (`#916c00` vs `#936c00`) collapse into one, and
+ * the hairline border disappears — the kit badge has no border slot on any tone.
+ */
+import type { UiBadgeTone } from '@/components/ui/uiBadge'
 
 export type StatusPillLeading = 'none' | 'attention'
 
@@ -19,31 +29,19 @@ export type StatusPillTone =
   | 'section-attention'
 
 export interface StatusPillToneMeta {
-  surfaceClass: string
+  tone: UiBadgeTone
   leading: StatusPillLeading
 }
 
 export function resolveStatusPillTone(tone: StatusPillTone): StatusPillToneMeta {
   switch (tone) {
     case 'brief-submitted':
-      return {
-        surfaceClass: 'bg-[#d7ecff] border-[#cee5f9] text-[#0048ef]',
-        leading: 'none',
-      }
+      return { tone: 'blue', leading: 'none' }
     case 'brief-revision':
-      return {
-        surfaceClass: 'bg-[#fff9db] border-[#feebb4] text-[#916c00]',
-        leading: 'none',
-      }
+      return { tone: 'amber', leading: 'none' }
     case 'brief-approved':
-      return {
-        surfaceClass: 'bg-[#f0fdf4] border-transparent text-[#15803d]',
-        leading: 'none',
-      }
+      return { tone: 'green', leading: 'none' }
     case 'section-attention':
-      return {
-        surfaceClass: 'bg-[#fff9db] border-[#feebb4] text-[#936c00]',
-        leading: 'attention',
-      }
+      return { tone: 'amber', leading: 'attention' }
   }
 }

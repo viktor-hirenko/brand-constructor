@@ -20,6 +20,7 @@ import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
+import UiBadge from '@/components/ui/UiBadge.vue'
 
 const store = useConstructorStore()
 const previewContext = useVisualComponentPreviewContext()
@@ -310,19 +311,20 @@ onMounted(loadComponentTypes)
             <span class="text-base font-medium text-foreground tracking-[-0.31px]">{{
               type.name
             }}</span>
-            <!-- Badge chip with the picked variant; amber while the pair conflicts -->
-            <span
+            <!--
+              Badge chip with the picked variant; amber while the pair conflicts.
+              Kit badge `3453:1619` — the redrawn Visual Components canvas
+              (`5382:36912`) uses the same two tones, so only the recipe moved.
+            -->
+            <UiBadge
               v-if="getSelectedVariantLabel(type.id)"
-              class="flex items-center rounded-full py-1 text-xs font-medium leading-4"
-              :class="
-                isTypeInConflict(type.id)
-                  ? 'gap-1 pl-1 pr-2 bg-[#ffee9c] text-[#ab6400]'
-                  : 'px-2 bg-[#ededee] text-[#393947]'
-              "
+              :tone="isTypeInConflict(type.id) ? 'amber' : 'neutral'"
+              :label="getSelectedVariantLabel(type.id) ?? ''"
             >
-              <InfoCircleFilledIcon v-if="isTypeInConflict(type.id)" class="size-4 shrink-0" />
-              {{ getSelectedVariantLabel(type.id) }}
-            </span>
+              <template v-if="isTypeInConflict(type.id)" #leading>
+                <InfoCircleFilledIcon class="size-4 shrink-0" />
+              </template>
+            </UiBadge>
           </div>
           <ChevronDownIcon
             class="size-5 text-foreground transition-transform duration-200"

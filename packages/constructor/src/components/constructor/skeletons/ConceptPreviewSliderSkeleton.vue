@@ -25,7 +25,7 @@ withDefaults(
         <div class="h-8 w-[220px] rounded bg-muted animate-pulse" />
         <div
           v-if="!singleHeaderLine"
-          class="h-9 w-[140px] rounded-full bg-muted animate-pulse shrink-0"
+          class="h-6 w-[120px] rounded-full bg-muted animate-pulse shrink-0"
         />
       </div>
     </div>

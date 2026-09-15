@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
+import UiBadge from '@/components/ui/UiBadge.vue'
 
 interface ExternalNamingGridProps {
   namings: ExternalNaming[]
@@ -109,26 +110,25 @@ function formatPrice(price: number | null | undefined): string {
         </p>
       </div>
 
-      <div
+      <!--
+        Kit badge `3453:1619`. The redrawn Name card (`5382:46492` available,
+        `5382:48314` sold) paints these two with `badge/*/green` and
+        `badge/*/red` at `radius/badge` 1000 — which is what finally makes the
+        pair match: Available used to be a rounded-8 `#d4fde5` box and Sold a
+        rounded-100 `#fdd4d4` one.
+      -->
+      <UiBadge
         v-if="naming.availability_status === 'available'"
-        class="external-naming-grid__badge external-naming-grid__badge--available backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[8px] bg-[#d4fde5]"
-      >
-        <span
-          class="text-[0.75rem] font-medium leading-4 tracking-[-0.3125px] text-[#006929] whitespace-nowrap"
-        >
-          Available
-        </span>
-      </div>
-      <div
+        class="external-naming-grid__badge external-naming-grid__badge--available"
+        tone="green"
+        label="Available"
+      />
+      <UiBadge
         v-else-if="naming.availability_status === 'sold'"
-        class="external-naming-grid__badge external-naming-grid__badge--sold backdrop-blur-[5px] flex items-center justify-center px-2 py-1 rounded-[100px] bg-[#fdd4d4]"
-      >
-        <span
-          class="text-[0.75rem] font-medium leading-4 tracking-[-0.3125px] text-[#9e0101] whitespace-nowrap"
-        >
-          Sold
-        </span>
-      </div>
+        class="external-naming-grid__badge external-naming-grid__badge--sold"
+        tone="red"
+        label="Sold"
+      />
 
       <div
         v-if="isSelected(naming)"
