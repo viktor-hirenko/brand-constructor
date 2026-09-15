@@ -488,7 +488,7 @@ export const ModalWithFooter: StoryObj = {
     components: { UiModal, UiButton },
     setup: () => ({ onClose: fn() }),
     template: `
-      <UiModal title="Замовити новий концепт" size="lg" @close="onClose">
+      <UiModal title="Замовити новий концепт" size="md" @close="onClose">
         <div class="flex flex-col gap-4">
           <p class="text-base text-ink-700">
             Тіло модалки прокручується саме, коли вміст вищий за 85% екрана.

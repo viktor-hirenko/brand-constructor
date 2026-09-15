@@ -41,7 +41,6 @@ const title = computed(() => {
     :is-valid="isValid"
     :readonly="readonly"
     :show-edit-action="showEditAction"
-    size="md"
     @cancel="emit('cancel')"
     @save="handleSave"
     @edit="emit('edit')"

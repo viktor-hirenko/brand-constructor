@@ -17,17 +17,18 @@ import {
 /**
  * `UiModal` class map — DP-15258 phase 6.
  *
- * The kit has no modal (open question 6), so there is no node to diff against;
- * what this file pins is the set of decisions the phase made, above all the two
- * that break silently: `max-h-[85vh]` (a long modal has to scroll inside the
- * admin panel, not run off it) and the rem-only interior.
+ * The kit has no modal component, but on 2026-09-15 the designer published five
+ * frames that draw one: `5562:49171`, `5562:49268`, `5562:49684`, `5562:49771`,
+ * `5562:48269`. The numbers below are read off those frames; the two that break
+ * silently — `max-h-[85vh]` (a long modal has to scroll inside the admin panel,
+ * not run off it) and the rem-only interior — are ours and are pinned here too.
  *
  * Component tests are impossible in this package (no `@vue/test-utils`, no
  * `jsdom`, `vitest.config.ts:11` sets `environment: 'node'`), so the class
  * decision is a pure function and this file is the only guard on it.
  */
 
-const SIZES: UiModalSize[] = ['sm', 'md', 'lg']
+const SIZES: UiModalSize[] = ['sm', 'md']
 
 describe('wizard modal shell — DP-15258 phase 6', () => {
   it('keeps the 85vh ceiling that makes a long modal scroll', () => {
@@ -52,11 +53,15 @@ describe('wizard modal shell — DP-15258 phase 6', () => {
     expect(UI_MODAL_DIALOG_CLASS).toContain('overflow-hidden')
   })
 
-  it('offers exactly three widths and no fourth', () => {
+  it('offers exactly two widths and no third', () => {
+    // 560 is what all five drawn frames use for a brief form; 450 is the
+    // confirmation width, which the design never drew. A `lg` 672 existed for
+    // one deploy and is gone: the concept and external naming forms were the
+    // only ones on it and the frames put them at 560.
     expect(Object.keys(UI_MODAL_SIZE).sort()).toEqual([...SIZES].sort())
     expect(UI_MODAL_SIZE.sm).toBe('max-w-[450px]')
     expect(UI_MODAL_SIZE.md).toBe('max-w-[560px]')
-    expect(UI_MODAL_SIZE.lg).toBe('max-w-[672px]')
+    expect(Object.keys(UI_MODAL_SIZE)).not.toContain('lg')
   })
 
   it('lets every width shrink in a narrow panel instead of overflowing it', () => {
@@ -84,13 +89,22 @@ describe('wizard modal shell — DP-15258 phase 6', () => {
     expect(UI_MODAL_BACKDROP_CLASS).not.toContain('backdrop-blur')
   })
 
-  it('holds the 72px header: 20 padding around a 32 close button', () => {
+  it('holds the 72px header the frames draw: 20 padding around a 32 row', () => {
+    // 20 + 32 + 20 = 72, and the 24 glyph centred in the 32 box lands at 24 from
+    // the edge — where `5562:49208` puts both the title and the close icon.
     expect(UI_MODAL_HEADER_CLASS).toContain('px-6')
     expect(UI_MODAL_HEADER_CLASS).toContain('py-5')
     expect(UI_MODAL_HEADER_CLASS).toContain('shrink-0')
     expect(UI_MODAL_CLOSE_CLASS).toContain('size-8')
-    expect(UI_MODAL_CLOSE_CLASS).toContain('rounded-full')
-    expect(UI_MODAL_CLOSE_ICON_CLASS).toContain('size-5')
+  })
+
+  it('draws the close control as a bare 24 glyph, not a filled circle', () => {
+    // The frames show an `Icon` 24×24 with no plate under it. A background here
+    // is the regression: it is what the pre-phase form shell had (grey 40) and
+    // what the first phase-6 deploy re-introduced (ghost 32).
+    expect(UI_MODAL_CLOSE_ICON_CLASS).toContain('size-6')
+    expect(UI_MODAL_CLOSE_CLASS).not.toContain('bg-')
+    expect(UI_MODAL_CLOSE_CLASS).toContain('text-ink-700')
   })
 
   it('types the heading 20/24 medium with no letter-spacing', () => {

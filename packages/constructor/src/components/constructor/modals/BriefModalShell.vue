@@ -11,6 +11,11 @@ import UiModal from '@/components/ui/UiModal.vue'
  * read-only mode. Its four call sites (`NewConceptModal`, `NewNamingModal`,
  * `NewInternalNamingModal`, `PrPackagePreviewPopup`) are unchanged.
  *
+ * **Width is no longer a prop.** All five modal frames the designer published on
+ * 2026-09-15 (`5562:49171` and siblings) draw the brief form at 560, the width
+ * only the internal-naming modal used to ask for. The concept and external
+ * naming forms were 672 and are now 560 with the rest.
+ *
  * The backdrop still closes the modal, as it did before the phase. It is a
  * questionable affordance over a half-filled brief — one stray click drops the
  * typed answers — but changing it is a behaviour change the phase was not asked
@@ -20,8 +25,6 @@ import UiModal from '@/components/ui/UiModal.vue'
 interface BriefModalShellProps {
   title: string
   isValid?: boolean
-  /** 'lg' = 672px wide (default); 'md' = 560px. */
-  size?: 'md' | 'lg'
   /**
    * Read-only mode: shell renders the form (slot) as disabled and replaces
    * the «Зберегти» action with optional «Редагувати». Used by brief preview
@@ -34,7 +37,6 @@ interface BriefModalShellProps {
 
 const props = withDefaults(defineProps<BriefModalShellProps>(), {
   isValid: true,
-  size: 'lg',
   readonly: false,
   showEditAction: false,
 })
@@ -50,7 +52,7 @@ const showFooter = computed(() => !props.readonly || props.showEditAction)
 </script>
 
 <template>
-  <UiModal :title="title" :size="props.size" @close="emit('cancel')">
+  <UiModal :title="title" size="md" @close="emit('cancel')">
     <slot />
 
     <template v-if="showFooter" #footer>

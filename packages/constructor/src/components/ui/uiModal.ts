@@ -1,16 +1,23 @@
 /**
  * Class map for `UiModal.vue`.
  *
- * ── The kit has no modal ─────────────────────────────────────────────────────
- * Open question 6 of DP-15258: Figma ships no modal window, and the code had
- * four shells. This file is therefore *our decision*, not a trace of a node.
- * It is assembled from three kit parts:
- *   · Section card `3761:2273` — header row, then a divider, then the content.
- *     https://www.figma.com/design/aCe1cUDNaA7Tmcn9Mmvv1w/Brand-Builder?node-id=3761-2273&m=dev
- *   · Divider `3446:5229` — the rule under the header and above the footer,
- *     rendered by `UiDivider`, so the hairline is the kit `#ededee`.
- *   · Button `3333:5860` — every action inside a modal is `UiButton` on the kit
- *     recipe. Phase 6 is the one that flips the four modals over to it.
+ * ── The kit had no modal; the screens now do ─────────────────────────────────
+ * Open question 6 of DP-15258 said Figma ships no modal window, so this file
+ * started as *our decision*, assembled from three kit parts: Section card
+ * `3761:2273` (header row → divider → content), Divider `3446:5229` and Button
+ * `3333:5860`.
+ *
+ * **On 2026-09-15 the owner pointed at five freshly drawn frames** on the new
+ * key-screen canvas, all carrying the same modal shell:
+ *   `5562:49171` · `5562:49268` · `5562:49684` · `5562:49771` · `5562:48269`
+ *   https://www.figma.com/design/aCe1cUDNaA7Tmcn9Mmvv1w/Brand-Builder?node-id=5562-49171&m=dev
+ * The assembled shell and the drawn one agreed on everything that matters —
+ * `radius/modal` 16, header 72 with 24 padding, divider, body 24, footer 80 with
+ * 48-tall buttons right-aligned at gap 8, title `header m` 20/24 weight 500 in
+ * `content/primary` #1f1f2e with zero letter-spacing. Two values did not, and
+ * the drawn frames win: the close control is a bare 24 icon (not a filled
+ * circle), and every brief form is 560 wide (not 672). Open question 6 is
+ * answered by the design, not by us.
  *
  * The four shells this replaces: `ui/ConfirmationModal.vue`,
  * `constructor/modals/BriefModalShell.vue` and the two inline `Teleport`s in
@@ -40,18 +47,17 @@
 
 /**
  * One width scale for every modal in the wizard. The five widths that existed
- * before (450 / 448 / 560 / 600 / 672) collapse onto the three that carry real
- * differences in content: a confirmation, a medium form, a wide form.
+ * before (450 / 448 / 560 / 600 / 672) collapse onto two: the drawn frames put
+ * *every* form at 560, and the confirmations — which the design never drew —
+ * keep the 450 they always had.
  */
-export type UiModalSize = 'sm' | 'md' | 'lg'
+export type UiModalSize = 'sm' | 'md'
 
 export const UI_MODAL_SIZE: Record<UiModalSize, string> = {
-  /** Confirmations and the delegate dialog. */
+  /** Confirmations and the delegate dialog. No Figma frame; 450 is the legacy value. */
   sm: 'max-w-[450px]',
-  /** Medium forms: the internal-naming order modal, the PR package detail. */
+  /** Every brief form and the PR package detail — 560 in all five drawn frames. */
   md: 'max-w-[560px]',
-  /** Wide forms: concept and external-naming order modals, PR package preview. */
-  lg: 'max-w-[672px]',
 }
 
 /**
@@ -73,9 +79,12 @@ export const UI_MODAL_DIALOG_CLASS =
   'ui-modal__dialog relative mx-4 flex max-h-[85vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)]'
 
 /**
- * Header height is 72 = 20 + 32 + 20, where 32 is the close button. The two
- * shells it unifies were 72 (`p-6` around a 24 line) and 73 (`h-[73px]`), so
- * nothing moves visibly; the close button grows into the space instead.
+ * Header height 72, as drawn. The arithmetic is 20 + 32 + 20, not 24 + 24 + 24:
+ * the row is as tall as the close box (32), and the 24 glyph centred in it lands
+ * 4 lower, i.e. at 24 from the header edge — which is where the frame puts both
+ * the title baseline box and the icon. Paying the padding in 20 keeps the drawn
+ * 72 while giving the close control a 32 target. The two shells it unifies were
+ * 72 (`p-6` around a 24 line) and 73 (`h-[73px]`).
  */
 export const UI_MODAL_HEADER_CLASS = 'ui-modal__header flex shrink-0 items-center gap-5 px-6 py-5'
 
@@ -91,15 +100,20 @@ export const UI_MODAL_TITLE_CLASS =
   'ui-modal__title flex min-w-0 flex-1 flex-wrap items-center gap-2 text-xl/6 font-medium text-ink-900'
 
 /**
- * Round 32 — the small size of the kit icon button `3333:5541`, ghost fill.
- * Replaces two different buttons: a grey 40 circle in the form shell and a
- * 24 ghost square in the confirmation shell. The fill variants (Solid / Glass)
- * belong to phase 8, which owns `UiIconButton`; this stays neutral until then.
+ * A bare 24 icon, as drawn (`Icon` 24×24 at the 24 padding edge) — no circle, no
+ * fill, in `content/tertiary` #6f6f7d. It replaces two different buttons: a grey
+ * 40 circle in the form shell and a 24 ghost square in the confirmation shell.
+ *
+ * The clickable box stays 32 while the glyph is 24: at rest nothing is painted,
+ * so the header looks exactly like the frame, but the target does not drop to
+ * the 24 minimum. Hover darkens the glyph instead of painting a plate — the
+ * frames draw no hover state for it, and `UiIconButton` (phase 8) is where
+ * Solid / Glass fills belong.
  */
 export const UI_MODAL_CLOSE_CLASS =
-  'ui-modal__close flex size-8 shrink-0 items-center justify-center rounded-full text-ink-700 transition-colors hover:bg-ink-200 hover:text-ink-900'
+  'ui-modal__close flex size-8 shrink-0 items-center justify-center rounded-full text-ink-700 transition-colors hover:text-ink-900'
 
-export const UI_MODAL_CLOSE_ICON_CLASS = 'ui-modal__close-icon size-5'
+export const UI_MODAL_CLOSE_ICON_CLASS = 'ui-modal__close-icon size-6'
 
 /**
  * `min-h-0` is load-bearing: without it a flex child refuses to shrink below
