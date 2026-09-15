@@ -18,6 +18,7 @@ import {
   EDIT_FLOW_DIVIDER_CLASS,
   EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
 } from '@/constants/editFlowLayout'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -340,12 +341,7 @@ async function goDali() {
       </div>
 
       <ConceptGridSkeleton v-if="showGridSkeleton" />
-      <div v-else-if="error" class="text-center py-8 text-red-500">
-        <p class="mb-2">{{ error }}</p>
-        <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
-          Спробувати знову
-        </button>
-      </div>
+      <UiAsyncState v-else-if="error" :message="error" @retry="loadConcepts" />
       <ConceptGrid
         v-else
         :concepts="availableConcepts"

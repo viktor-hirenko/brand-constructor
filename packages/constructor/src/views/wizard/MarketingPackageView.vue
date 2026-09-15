@@ -18,6 +18,7 @@ import TrophyIcon from '@/components/icons/TrophyIcon.vue'
 import ZapIcon from '@/components/icons/ZapIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
 const {
@@ -104,15 +105,7 @@ onMounted(loadPackages)
     <MarketingPackageGridSkeleton v-if="showSkeleton" :count="3" />
 
     <!-- Error -->
-    <div v-else-if="error" class="text-center py-16 text-red-500">
-      <p>{{ error }}</p>
-      <button
-        class="mt-4 px-4 py-2 bg-primary text-white rounded-[10px] text-sm"
-        @click="loadPackages"
-      >
-        Спробувати знову
-      </button>
-    </div>
+    <UiAsyncState v-else-if="error" :message="error" @retry="loadPackages" />
 
     <!-- Package Cards Grid -->
     <template v-else>

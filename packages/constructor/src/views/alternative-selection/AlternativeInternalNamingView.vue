@@ -18,6 +18,7 @@ import {
   EDIT_FLOW_DIVIDER_CLASS,
 } from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -167,12 +168,7 @@ const showSkeleton = computed(
       </template>
 
       <!-- Error state -->
-      <div v-else-if="error" class="text-center py-12">
-        <p class="text-red-500 mb-3">{{ error }}</p>
-        <button type="button" class="text-primary underline text-sm" @click="loadNamings">
-          Спробувати знову
-        </button>
-      </div>
+      <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
 
       <!-- Ready state -->
       <template v-else-if="isReady">

@@ -26,6 +26,7 @@ import {
   isExternalNamingCommentRequired,
   isExternalNamingStepValid,
 } from '@/utils/externalNamingValidation'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -230,12 +231,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
       </template>
 
       <!-- Error state -->
-      <div v-else-if="error" class="text-center py-12">
-        <p class="text-red-500 mb-3">{{ error }}</p>
-        <button class="text-primary underline text-sm" @click="loadNamings">
-          Спробувати знову
-        </button>
-      </div>
+      <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
 
       <!-- Ready state -->
       <template v-else-if="isReady">

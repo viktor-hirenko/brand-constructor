@@ -10,6 +10,7 @@ import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
 const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
@@ -144,12 +145,7 @@ function confirmDeleteBrief() {
     />
 
     <ConceptGridSkeleton v-if="showSkeleton" />
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-red-500 mb-3">{{ error }}</p>
-      <button class="text-primary underline text-sm" @click="loadConcepts">
-        Спробувати знову
-      </button>
-    </div>
+    <UiAsyncState v-else-if="error" :message="error" @retry="loadConcepts" />
     <ConceptGrid
       v-else-if="concepts.length > 0"
       :concepts="concepts"

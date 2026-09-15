@@ -17,6 +17,8 @@ import UnresolvedDot from '@/components/ui/UnresolvedDot.vue';
 import UiStepHeader from '@/components/ui/UiStepHeader.vue';
 import UiProgressBar from '@/components/ui/UiProgressBar.vue';
 import UiDivider from '@/components/ui/UiDivider.vue';
+import UiAlert from '@/components/ui/UiAlert.vue';
+import UiAsyncState from '@/components/ui/UiAsyncState.vue';
 
 /**
  * Miscellaneous UI building blocks that don't warrant
@@ -352,7 +354,7 @@ export const UnresolvedDotExample: StoryObj = {
 export const StepHeaderFull: StoryObj = {
   name: 'UiStepHeader / Title + badge + description + progress + alert',
   render: () => ({
-    components: { UiStepHeader, BrandBriefStatusBadge },
+    components: { UiStepHeader, BrandBriefStatusBadge, UiAlert },
     template: `
       <UiStepHeader
         title="Зовнішній неймінг"
@@ -363,9 +365,11 @@ export const StepHeaderFull: StoryObj = {
       >
         <template #badge><BrandBriefStatusBadge status="submitted" /></template>
         <template #alert>
-          <div class="rounded-[16px] border border-[#EDEDED] bg-white px-6 py-6 text-sm text-ink-700">
-            Слот алерта. UiAlert приїжджає у фазі 5.
-          </div>
+          <UiAlert
+            type="info"
+            title="Домени перевіряються"
+            description="Статус доступності оновиться протягом хвилини."
+          />
         </template>
       </UiStepHeader>
     `,
@@ -416,6 +420,58 @@ export const DividerOrientations: StoryObj = {
           <span>Праворуч</span>
         </div>
       </div>
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const AlertTypes: StoryObj = {
+  name: 'UiAlert / All five kit types',
+  render: () => ({
+    components: { UiAlert },
+    template: `
+      <div class="flex flex-col gap-4">
+        <UiAlert title="Default" description="Нейтральна картка без семантичного тону." />
+        <UiAlert type="info" title="Info" description="Статус оновиться протягом хвилини." />
+        <UiAlert type="success" title="Success" description="Бриф надіслано на розгляд." />
+        <UiAlert type="warning" title="Warning" description="Додайте хоча б один коментар." />
+        <UiAlert type="error" title="Error" description="Не вдалося завантажити дані." />
+      </div>
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const AlertWithActions: StoryObj = {
+  name: 'UiAlert / With an action row',
+  render: () => ({
+    components: { UiAlert, UiButton },
+    template: `
+      <UiAlert
+        type="warning"
+        title="Бриф повернуто на доопрацювання"
+        description="Замовник залишив три коментарі, на які потрібно відповісти."
+      >
+        <template #actions>
+          <UiButton kit variant="secondary" size="S">Переглянути</UiButton>
+          <UiButton kit variant="ghost" size="S">Пізніше</UiButton>
+        </template>
+      </UiAlert>
+    `,
+  }),
+  parameters: { cardWidth: 520 },
+};
+
+export const AsyncStateFailure: StoryObj = {
+  name: 'UiAsyncState / Failed to load',
+  render: () => ({
+    components: { UiAsyncState },
+    setup: () => ({ onRetry: fn() }),
+    template: `
+      <UiAsyncState
+        message="Request failed with status code 500"
+        @retry="onRetry"
+      />
     `,
   }),
   parameters: { cardWidth: 520 },

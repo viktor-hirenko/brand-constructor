@@ -9,6 +9,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import InternalNamingGrid from '@/components/constructor/alternative-selection/InternalNamingGrid.vue'
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
 const { data: namings, loading, error, fetchData } = useApiList<InternalNaming>(
@@ -88,12 +89,7 @@ watch(
 <template>
   <div class="flex flex-col gap-6">
     <InternalNamingGridSkeleton v-if="loading" />
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-red-500 mb-3">{{ error }}</p>
-      <button class="text-primary underline text-sm" @click="loadNamings">
-        Спробувати знову
-      </button>
-    </div>
+    <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
     <InternalNamingGrid
       v-else
       :namings="namings"

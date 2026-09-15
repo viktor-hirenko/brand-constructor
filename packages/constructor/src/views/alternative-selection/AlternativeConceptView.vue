@@ -22,6 +22,7 @@ import {
 } from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
 const route = useRoute()
@@ -226,12 +227,7 @@ async function confirmConceptSelection() {
         </div>
 
         <ConceptGridSkeleton v-if="!isReady" />
-        <div v-else-if="error" class="text-center py-12 text-red-500">
-          <p class="mb-3">{{ error }}</p>
-          <button type="button" class="text-primary underline text-sm" @click="loadConcepts">
-            Спробувати знову
-          </button>
-        </div>
+        <UiAsyncState v-else-if="error" :message="error" @retry="loadConcepts" />
         <ConceptGrid
           v-else
           :concepts="availableConcepts"

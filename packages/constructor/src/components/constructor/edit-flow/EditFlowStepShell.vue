@@ -14,25 +14,19 @@ import UiStepHeader from '@/components/ui/UiStepHeader.vue'
  * Edit mode: dual-pane column has no horizontal padding; scroll body applies
  * LEFT_PANE_SCROLL_GUTTER_CLASS. Dividers and footer border span the full column.
  *
- * Pass `loading` / `error` + listen to `retry` to centralise the full-body
- * async boundary that is shared across all 6 edit/reselect views.
+ * The shell carries no async state of its own: DP-15258 phase 5 found the
+ * spinner and error branches unreachable (none of the 8 call sites ever
+ * passed them) and removed them. Views drop `ui/UiAsyncState.vue` into the
+ * default slot instead.
  */
 interface EditFlowStepShellProps {
   title: string
   subtitle?: string
-  loading?: boolean
-  error?: string | null
 }
 
 withDefaults(defineProps<EditFlowStepShellProps>(), {
   subtitle: '',
-  loading: false,
-  error: null,
 })
-
-const emit = defineEmits<{
-  retry: []
-}>()
 </script>
 
 <template>
@@ -56,18 +50,7 @@ const emit = defineEmits<{
           :description="subtitle"
         />
 
-        <div v-if="loading" class="flex items-center justify-center py-16">
-          <div
-            class="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent"
-          />
-        </div>
-        <div v-else-if="error" class="py-12 text-center text-red-500">
-          <p class="mb-3">{{ error }}</p>
-          <button type="button" class="text-sm text-primary underline" @click="emit('retry')">
-            Спробувати знову
-          </button>
-        </div>
-        <slot v-else />
+        <slot />
       </div>
     </div>
 

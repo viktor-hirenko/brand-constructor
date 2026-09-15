@@ -20,6 +20,7 @@ import {
   isExternalNamingCommentRequired,
   isExternalNamingStepValid,
 } from '@/utils/externalNamingValidation'
+import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 /**
  * Draft inline-edit — chained External Naming screen (Figma "Twil" flow).
@@ -129,12 +130,7 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
         <EditFlowSectionLabel>Назви для обраного концепту</EditFlowSectionLabel>
 
         <ExternalNamingGridSkeleton v-if="showSkeleton" :count="6" />
-        <div v-else-if="error" class="text-center py-12">
-          <p class="text-red-500 mb-3">{{ error }}</p>
-          <button type="button" class="text-primary underline text-sm" @click="loadNamings">
-            Спробувати знову
-          </button>
-        </div>
+        <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
         <ExternalNamingGrid
           v-else
           :namings="namings"
