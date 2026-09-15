@@ -20,9 +20,9 @@ import { resolveUiFooterClasses, type UiFooterLayout } from '@/components/ui/uiF
  * (На погодження CEO над Назад). DOM order follows the visual order, so tab
  * order does too.
  *
- * `kit` on the buttons lives here rather than at the call sites — DP-15258
- * phase 4 took it off `BriefShellView` and `EditFlowFooter` that way. The flag
- * itself dies in phase 10 with the last pre-kit modal.
+ * The buttons are plain `UiButton` L-48. Phase 4 routed them through the `kit`
+ * flag; phase 10 deleted that flag along with the pre-kit recipe, so there is
+ * nothing left to pass — the kit is the only recipe `UiButton` has.
  */
 type UiFooterAction = 'cancel' | 'primary'
 
@@ -106,7 +106,6 @@ function onAction(role: UiFooterAction) {
         <UiButton
           v-for="button in pair"
           :key="button.role"
-          kit
           size="L"
           :variant="button.variant"
           :block="layout === 'bar'"

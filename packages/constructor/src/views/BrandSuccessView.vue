@@ -8,6 +8,17 @@ import { useJiraInitiativePoll } from '@/composables/useJiraInitiativePoll'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import RevisionReturnIcon from '@/components/icons/RevisionReturnIcon.vue'
 import SendIcon from '@/components/icons/SendIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+
+/**
+ * The three actions are kit Buttons at L-48 — Primary, Secondary, Ghost.
+ *
+ * This screen has no mockup (the key screens cover steps 2, 3, 4, 7, 8 only;
+ * open question 5 says such screens keep their layout and get kit elements),
+ * so only the controls move. They were 50 tall with radius 10 — the same two
+ * off-kit numbers DP-15258 phase 1 corrected in the wizard footer, and they
+ * become 48 and 8 here for the same reason.
+ */
 
 const router = useRouter()
 const store = useConstructorStore()
@@ -183,31 +194,37 @@ function handleGoHome() {
         </div>
 
         <div class="flex flex-col gap-3">
-          <button
+          <UiButton
             v-if="
               store.brandId &&
               store.successType !== 'submitted' &&
               store.successType !== 'needs_revision' &&
               store.successType !== 'approved'
             "
-            class="w-full h-[50px] bg-primary text-primary-foreground rounded-[10px] hover:opacity-90 transition-all text-base font-medium"
+            variant="primary"
+            size="L"
+            class="brand-success__view-button w-full"
             @click="router.push(`/constructor/brand/${store.brandId}`)"
           >
             Переглянути бриф
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             v-if="successConfig.showCreateNew && authStore.canStartNewBrandBrief"
-            class="w-full h-[50px] border border-black/10 text-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
+            variant="secondary"
+            size="L"
+            class="brand-success__new-brief-button w-full"
             @click="handleNewBrief"
           >
             Створити новий бриф
-          </button>
-          <button
-            class="w-full h-[50px] text-muted-foreground rounded-[10px] hover:bg-black/[0.02] transition-all text-base font-medium"
+          </UiButton>
+          <UiButton
+            variant="ghost"
+            size="L"
+            class="brand-success__home-button w-full"
             @click="handleGoHome"
           >
             Повернутись на головну
-          </button>
+          </UiButton>
         </div>
       </div>
     </div>

@@ -9,21 +9,20 @@ import {
 /**
  * Button primitive. Kit matrix lives in `uiButton.ts` — Figma `3333:5860`.
  *
- * `kit` is off by default because four modal shells used to render the pre-kit
- * look. **Phase 6 moved the last of them over: as of 2026-09-15 every call site
- * in the tree passes `kit`, and the default branch has no consumers.** The prop
- * and `UI_BUTTON_LEGACY_*` are removed by phase 10, which converts the raw
- * `<button>`s of the review screens — same arrangement phase 1 used for the
- * `BRIEF_BTN_*` constants it left for phase 4. Verify with:
+ * There is one recipe. The `kit` prop that used to switch between the kit and
+ * the pre-kit look was retired by phase 10 together with the raw `<button>`s of
+ * the review screens; every call site renders the kit. Verify with:
  *   grep -rn '<UiButton' --include='*.vue' packages/constructor/src
+ *
+ * This is the labelled control. An icon-only round control is `UiIconButton`
+ * (`3333:5541`), and a modal's close is a bare 24 glyph owned by `UiModal` —
+ * three different kit recipes, deliberately not merged.
  */
 interface UiButtonProps {
-  /** Kit Style. `neutral` and `ghost` only exist in the kit recipe. */
+  /** Kit Style. */
   variant?: UiButtonVariant
-  /** Kit Size: S-32 / M-40 / L-48. Only read when `kit` is set. */
+  /** Kit Size: S-32 / M-40 / L-48. */
   size?: UiButtonSize
-  /** Render the Figma `3333:5860` recipe instead of the pre-kit one. */
-  kit?: boolean
   loading?: boolean
   loadingLabel?: string
   disabled?: boolean
@@ -35,7 +34,6 @@ interface UiButtonProps {
 const props = withDefaults(defineProps<UiButtonProps>(), {
   variant: 'primary',
   size: 'L',
-  kit: false,
   loading: false,
   loadingLabel: 'Зачекайте…',
   disabled: false,
@@ -58,9 +56,7 @@ const classes = computed(() =>
   resolveUiButtonClasses({
     variant: props.variant,
     size: props.size,
-    kit: props.kit,
     block: props.block,
-    hasIcon: hasIconLeft.value || hasIconRight.value,
   }),
 )
 

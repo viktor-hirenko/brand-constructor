@@ -4,6 +4,7 @@ import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 import { CONCEPT_CARD_TITLE_GRADIENT } from '@/constants/conceptCardVisual'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
+import UiIconButton from '@/components/ui/UiIconButton.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
 import FileIcon from '@/components/icons/FileIcon.vue'
@@ -11,6 +12,13 @@ import MoonIcon from '@/components/icons/MoonIcon.vue'
 import SunIcon from '@/components/icons/SunIcon.vue'
 
 // Concept cards: 230×230px → 14.375rem @16 design base (fluid in embed).
+//
+// The eye on a card is the kit's icon button, Solid at S-32 — `get_variable_defs`
+// on the drawn Concept section (`5387:91785`) returns `button/secondary/bg/default`
+// #ffffff, `button/secondary/border` #eaeaeb and `radius/icon-button` 1000 for it,
+// which is the Solid recipe DP-15258 phase 8 built (Solid IS Secondary; there is
+// no `button/solid/*` family). Not Glass: Glass is the translucent dark control
+// that sits on the preview panel's own image, and the kit draws this one white.
 
 interface ReviewConceptBlockProps {
   concept: Concept | null
@@ -129,14 +137,17 @@ const singlePoLabel = 'Вибір Замовника'
               {{ concept.name }}
             </p>
           </div>
-          <button
-            type="button"
-            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+          <UiIconButton
+            variant="solid"
+            size="S"
+            class="review-concept-block__preview-button absolute top-1 right-1"
             aria-label="Переглянути концепт"
             @click="concept && emit('preview', concept)"
           >
-            <EyeIcon />
-          </button>
+            <template #default="{ iconClass }">
+              <EyeIcon :class="iconClass" />
+            </template>
+          </UiIconButton>
         </div>
         <div
           v-else-if="isNewConcept"
@@ -146,14 +157,17 @@ const singlePoLabel = 'Вибір Замовника'
           <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
             Бриф нового концепту
           </p>
-          <button
-            type="button"
-            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+          <UiIconButton
+            variant="solid"
+            size="S"
+            class="review-concept-block__preview-button absolute top-1 right-1"
             aria-label="Переглянути бриф нового концепту"
             @click="emit('previewBrief')"
           >
-            <EyeIcon />
-          </button>
+            <template #default="{ iconClass }">
+              <EyeIcon :class="iconClass" />
+            </template>
+          </UiIconButton>
         </div>
         <div
           v-else-if="conceptName"
@@ -186,14 +200,17 @@ const singlePoLabel = 'Вибір Замовника'
               {{ ceoConcept.name }}
             </p>
           </div>
-          <button
-            type="button"
-            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors z-[2] text-[#030213]"
+          <UiIconButton
+            variant="solid"
+            size="S"
+            class="review-concept-block__preview-button absolute top-1 right-1 z-[2]"
             aria-label="Переглянути концепт CEO"
             @click="ceoConcept && emit('preview', ceoConcept)"
           >
-            <EyeIcon />
-          </button>
+            <template #default="{ iconClass }">
+              <EyeIcon :class="iconClass" />
+            </template>
+          </UiIconButton>
         </div>
       </template>
 
@@ -210,15 +227,18 @@ const singlePoLabel = 'Вибір Замовника'
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
             <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
           </div>
-          <button
+          <UiIconButton
             v-if="concept"
-            type="button"
-            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+            variant="solid"
+            size="S"
+            class="review-concept-block__preview-button absolute top-1 right-1"
             aria-label="Переглянути концепт"
             @click="emit('preview', concept)"
           >
-            <EyeIcon />
-          </button>
+            <template #default="{ iconClass }">
+              <EyeIcon :class="iconClass" />
+            </template>
+          </UiIconButton>
         </div>
         <div
           v-else-if="conceptName"
@@ -241,15 +261,18 @@ const singlePoLabel = 'Вибір Замовника'
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
             <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
           </div>
-          <button
+          <UiIconButton
             v-if="concept"
-            type="button"
-            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+            variant="solid"
+            size="S"
+            class="review-concept-block__preview-button absolute top-1 right-1"
             aria-label="Переглянути концепт"
             @click="emit('preview', concept)"
           >
-            <EyeIcon />
-          </button>
+            <template #default="{ iconClass }">
+              <EyeIcon :class="iconClass" />
+            </template>
+          </UiIconButton>
         </div>
         <div
           v-else-if="isNewConcept"
@@ -259,14 +282,17 @@ const singlePoLabel = 'Вибір Замовника'
           <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
             Бриф нового концепту
           </p>
-          <button
-            type="button"
-            class="review-concept-block__preview-button absolute top-1 right-1 inline-flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white transition-colors text-[#030213]"
+          <UiIconButton
+            variant="solid"
+            size="S"
+            class="review-concept-block__preview-button absolute top-1 right-1"
             aria-label="Переглянути бриф нового концепту"
             @click="emit('previewBrief')"
           >
-            <EyeIcon />
-          </button>
+            <template #default="{ iconClass }">
+              <EyeIcon :class="iconClass" />
+            </template>
+          </UiIconButton>
         </div>
         <div
           v-else-if="conceptName"

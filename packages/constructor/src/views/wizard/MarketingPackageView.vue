@@ -300,7 +300,7 @@ onMounted(loadPackages)
         </div>
 
         <div v-if="!isDetailPackageSelected">
-          <UiButton kit size="L" variant="primary" block @click="selectFromDetail">
+          <UiButton size="L" variant="primary" block @click="selectFromDetail">
             Обрати пакет
           </UiButton>
         </div>

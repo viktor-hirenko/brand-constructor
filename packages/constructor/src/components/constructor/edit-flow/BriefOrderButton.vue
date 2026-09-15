@@ -3,6 +3,26 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+
+/**
+ * Order-a-brief control on steps 2, 3 and 4.
+ *
+ * The "not yet created" state is drawn in the kit: `5382:44787` on the Concept
+ * Selection screen of the new canvas is a 222×40 instance whose
+ * `get_variable_defs` returns `button/neutral/bg/default` #eaeaeb,
+ * `button/neutral/content/default` #1f1f2e, `caption/l/medium` 14/16,
+ * `spacing/12`, `spacing/4`, `radius/button` 8 — kit Neutral at M-40. The
+ * height was already 40 here; what changes is the label, 16/24 → the kit's
+ * 14/16, and the tint, `rgba(3,2,19,0.1)` → the neutral surface.
+ *
+ * The "created" state is ours — the kit draws no such toggle — so it takes the
+ * nearest kit style, Primary, at the same M-40, because the two states swap in
+ * one slot and must not resize it.
+ *
+ * The dropdown below is NOT converted: the kit renders that as List item
+ * (`3446:5054`) inside a Popover (`3446:5235`), and both are phase 11.
+ */
 
 interface BriefOrderButtonProps {
   createLabel: string
@@ -42,29 +62,36 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 <template>
   <div ref="containerRef" class="relative self-start">
-    <button
+    <UiButton
       v-if="!isCreated"
-      type="button"
-      class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[8px] transition-colors text-base font-medium leading-6 tracking-[-0.31px] bg-[rgba(3,2,19,0.1)] text-[#030213] hover:bg-[rgba(3,2,19,0.15)]"
+      variant="neutral"
+      size="M"
+      class="brief-order-button brief-order-button--create"
       @click="handleMainClick"
     >
-      <PlusIcon class="size-4" />
+      <template #icon-left="{ iconClass }">
+        <PlusIcon :class="iconClass" />
+      </template>
       {{ createLabel }}
-    </button>
+    </UiButton>
 
-    <button
+    <UiButton
       v-else
-      type="button"
-      class="inline-flex items-center gap-2 h-[40px] px-4 rounded-[8px] transition-colors text-base font-medium leading-6 tracking-[-0.31px] bg-[#030213] text-white hover:opacity-90"
+      variant="primary"
+      size="M"
+      class="brief-order-button brief-order-button--created"
       @click="handleMainClick"
     >
-      <CheckIcon class="size-4" />
+      <template #icon-left="{ iconClass }">
+        <CheckIcon :class="iconClass" />
+      </template>
       {{ createdLabel }}
-      <ChevronDownIcon
-        class="size-3 ml-1 transition-transform"
-        :class="showDropdown ? 'rotate-180' : ''"
-      />
-    </button>
+      <template #icon-right="{ iconClass }">
+        <ChevronDownIcon
+          :class="[iconClass, 'transition-transform', showDropdown ? 'rotate-180' : '']"
+        />
+      </template>
+    </UiButton>
 
     <div
       v-if="showDropdown"

@@ -1,5 +1,17 @@
 /**
- * CEO comment card + resolve actions — Figma Brand-Builder 1979:1533 / Comment component.
+ * CEO comment card — Figma Brand-Builder 1979:1533 / Comment component.
+ *
+ * What is left here is the card's paint. The button recipes that used to live
+ * alongside it are gone: DP-15258 phase 10 put «Позначити як вирішений» /
+ * «Вирішено» on the kit's Secondary S-32 (`3443:4915` / `3443:4916` inside the
+ * kit Comment `3439:1309`) and «Застосувати варіант CEO» on Secondary L-48
+ * (the 495×48 `Button` instance in `5387:105224`).
+ *
+ * The four colours below stay hand-written on purpose — they are the Comment
+ * component's own surface, and the kit values for it (`comment/bg/default`
+ * #f9f9fb, `comment/content/label` #6f6f7d, `comment/content/value` #1f1f2e)
+ * land in phase 13 together with `UiComment`. Changing them here would move
+ * paint on a screen this phase is not allowed to restyle.
  */
 
 export const CEO_COMMENT_CARD_BG = 'rgba(217,217,217,0.2)'
@@ -7,38 +19,16 @@ export const CEO_COMMENT_UNRESOLVED_ACCENT = '#4882ff'
 export const CEO_COMMENT_LABEL_COLOR = '#5b5b62'
 export const CEO_COMMENT_VALUE_COLOR = '#3d3d3d'
 
-export const CEO_COMMENT_RESOLVE_BUTTON_BASE_CLASS =
-  'inline-flex items-center self-start justify-center rounded-[8px] border border-solid p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50'
-
-export const CEO_COMMENT_RESOLVE_BUTTON_WHITE_CLASS =
-  'border-[rgba(0,0,0,0.1)] bg-[#ffffff] hover:bg-[rgba(0,0,0,0.03)]'
-
-export const CEO_COMMENT_RESOLVE_BUTTON_HOVER_CLASS =
-  'border-[rgba(0,0,0,0.1)] bg-[#ededed] hover:bg-[#e4e4e4]'
-
-export const CEO_COMMENT_RESOLVE_BUTTON_LABEL_CLASS =
-  'px-1 text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737]'
-
-/** Secondary outline action (e.g. «Застосувати варіант CEO»). */
+/**
+ * Secondary outline action — **dead, zero call sites**, and deliberately not
+ * deleted here: the plan gives it to phase 20 together with the other residue.
+ * Its value is the exact string it has always produced; the two constants it
+ * used to be composed from were the resolve button's recipe, which phase 10
+ * removed. Verify it is still unused:
+ *   grep -rn 'REVIEW_SECONDARY_ACTION_BUTTON_CLASS' packages/constructor/src
+ */
 export const REVIEW_SECONDARY_ACTION_BUTTON_CLASS = [
-  CEO_COMMENT_RESOLVE_BUTTON_BASE_CLASS,
+  'inline-flex items-center self-start justify-center rounded-[8px] border border-solid p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50',
   'w-full',
-  CEO_COMMENT_RESOLVE_BUTTON_WHITE_CLASS,
+  'border-[rgba(0,0,0,0.1)] bg-[#ffffff] hover:bg-[rgba(0,0,0,0.03)]',
 ].join(' ')
-
-/**
- * Wide full-width outline button «Застосувати варіант CEO».
- * Matches Figma node 1979:1067 — 12 px padding, white bg, rounded-8.
- */
-export const REVIEW_APPLY_VARIANT_BUTTON_CLASS = [
-  'inline-flex items-center self-start justify-center rounded-[8px] border border-solid p-3 transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-  'w-full',
-  CEO_COMMENT_RESOLVE_BUTTON_WHITE_CLASS,
-].join(' ')
-
-/**
- * Label inside «Застосувати варіант CEO» — 16 px / 24 lh / #0a0a0a.
- * Figma node 1979:1069.
- */
-export const REVIEW_APPLY_VARIANT_LABEL_CLASS =
-  'px-2 text-[1rem] font-medium leading-6 tracking-[-0.3125px] text-[#0a0a0a] whitespace-nowrap'

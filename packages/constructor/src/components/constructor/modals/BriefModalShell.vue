@@ -56,12 +56,11 @@ const showFooter = computed(() => !props.readonly || props.showEditAction)
     <slot />
 
     <template v-if="showFooter" #footer>
-      <UiButton v-if="!readonly" kit size="L" variant="secondary" @click="emit('cancel')">
+      <UiButton v-if="!readonly" size="L" variant="secondary" @click="emit('cancel')">
         Скасувати
       </UiButton>
       <UiButton
         v-if="!readonly"
-        kit
         size="L"
         variant="primary"
         :disabled="!isValid"
@@ -71,7 +70,6 @@ const showFooter = computed(() => !props.readonly || props.showEditAction)
       </UiButton>
       <UiButton
         v-else-if="showEditAction"
-        kit
         size="L"
         variant="primary"
         @click="emit('edit')"

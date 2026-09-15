@@ -2,8 +2,18 @@
 import { computed } from 'vue'
 import UnresolvedDot from '@/components/ui/UnresolvedDot.vue'
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue'
+import UiButton from '@/components/ui/UiButton.vue'
 import RefreshIcon from '@/components/icons/RefreshIcon.vue'
 import PencilIcon from '@/components/icons/PencilIcon.vue'
+
+/**
+ * The header action is the kit's Ghost button at M-40, not a link: the drawn
+ * section card carries it as instance `3760:2297` — 128×40, `radius/button` 8,
+ * `button/ghost/content/default` #393947, `caption/l/medium` 14/16, 12 padding
+ * with a 4 gap — which DP-15258 phase 9 measured while deciding that the five
+ * «Переглянути» actions elsewhere in review ARE links. Same header, two
+ * different kit parts; that is the kit's call, not ours.
+ */
 
 interface ReviewSectionProps {
   title: string
@@ -92,24 +102,30 @@ const titleTruncates = computed(() => {
         <UnresolvedDot v-if="hasUnresolved && !needsChoice" />
         <SectionStatusBadge v-if="needsChoice" variant="attention" />
       </div>
-      <button
+      <UiButton
         v-if="editStep != null"
-        type="button"
-        class="review-section__edit-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
+        variant="ghost"
+        size="M"
+        class="review-section__edit-button shrink-0"
         @click="onEditClick"
       >
-        <PencilIcon class="size-4 shrink-0 text-[#373737]" />
+        <template #icon-left="{ iconClass }">
+          <PencilIcon :class="iconClass" />
+        </template>
         Редагувати
-      </button>
-      <button
+      </UiButton>
+      <UiButton
         v-else-if="changeChoice"
-        type="button"
-        class="review-section__change-button inline-flex items-center justify-center gap-1 rounded-[8px] p-3 text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737] transition-colors hover:bg-[rgba(0,0,0,0.04)]"
+        variant="ghost"
+        size="M"
+        class="review-section__change-button shrink-0"
         @click="emit('change')"
       >
-        <RefreshIcon class="size-4 shrink-0 text-[#373737]" />
+        <template #icon-left="{ iconClass }">
+          <RefreshIcon :class="iconClass" />
+        </template>
         Змінити вибір
-      </button>
+      </UiButton>
     </header>
     <hr class="border-t border-black/10" />
     <div class="review-section__body p-4 flex flex-col">

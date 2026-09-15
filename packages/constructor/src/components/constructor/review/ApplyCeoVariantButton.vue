@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import {
-  REVIEW_APPLY_VARIANT_BUTTON_CLASS,
-  REVIEW_APPLY_VARIANT_LABEL_CLASS,
-} from '@/constants/ceoCommentCardVisual'
+import UiButton from '@/components/ui/UiButton.vue'
 
+/**
+ * «Застосувати варіант CEO» — kit Button, Secondary, L-48, full width.
+ *
+ * Measured on the drawn returned-from-CEO screen (`5387:105224`): the action
+ * sits inside the section card's Property list as an instance named `Button`,
+ * 495×48 — the same L-48 the navigation bar uses, not a link and not the S-32
+ * chip the Comment carries. Its old class strings lived in
+ * `constants/ceoCommentCardVisual.ts`; DP-15258 phase 10 removed them.
+ */
 interface Props {
   loading: boolean
 }
@@ -16,18 +22,17 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <button
-    type="button"
+  <UiButton
+    variant="secondary"
+    size="L"
     :class="[
-      'review-apply-ceo-button',
-      REVIEW_APPLY_VARIANT_BUTTON_CLASS,
+      'review-apply-ceo-button w-full whitespace-nowrap',
       loading ? 'review-apply-ceo-button--loading' : '',
     ]"
-    :disabled="loading"
+    :loading="loading"
+    loading-label="Застосовується…"
     @click="emit('click')"
   >
-    <span :class="REVIEW_APPLY_VARIANT_LABEL_CLASS">
-      {{ loading ? 'Застосовується…' : 'Застосувати варіант CEO' }}
-    </span>
-  </button>
+    Застосувати варіант CEO
+  </UiButton>
 </template>

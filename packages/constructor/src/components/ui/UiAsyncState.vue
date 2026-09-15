@@ -33,7 +33,7 @@ const classes = resolveUiAsyncStateClasses()
   <div :class="classes.root">
     <UiAlert type="error" :title="title" :description="message ?? ''">
       <template #actions>
-        <UiButton kit variant="secondary" size="S" @click="emit('retry')">
+        <UiButton variant="secondary" size="S" @click="emit('retry')">
           {{ retryLabel }}
         </UiButton>
       </template>

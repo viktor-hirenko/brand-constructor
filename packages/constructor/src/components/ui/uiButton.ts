@@ -1,5 +1,5 @@
 /**
- * Class maps for `UiButton.vue`.
+ * Class map for `UiButton.vue`.
  *
  * Kit source: Figma `3333:5860` — Style = Primary / Secondary / Neutral / Ghost
  * × State = Default / Hovered / Disabled × Size = S-32 / M-40 / L-48.
@@ -10,16 +10,15 @@
  * `environment: 'node'` — mounting a component is impossible here. So the part
  * that can hold a regression, the class decision, is a pure function, and the
  * markup stays under manual acceptance on prod. Same idiom as
- * `ui/statusPillBadge.ts`.
+ * `ui/uiIconButton.ts`, `ui/uiBadge.ts` and `ui/uiLink.ts`.
  *
- * ── Two recipes, on purpose ───────────────────────────────────────────────────
- * `kit: false` (the default) reproduces the pre-kit primary/secondary pair byte
- * for byte, because four modal shells rendered it and DP-15258 phase 1 was only
- * allowed to change the wizard footer. **Phase 6 (2026-09-15) converted the last
- * of those shells — this branch now has zero consumers** and stays only so that
- * phase 10 can retire it together with the raw `<button>`s of the review
- * screens. Until then it is dead code with a date on it, not a fallback.
- * `kit: true` is Figma `3333:5860` and nothing else.
+ * ── One recipe as of phase 10 (2026-09-15) ───────────────────────────────────
+ * Phase 1 shipped this file with two: the kit matrix behind a `kit` flag, and a
+ * byte-for-byte copy of the pre-kit primary/secondary pair that four modal
+ * shells were still rendering. Phases 4 and 6 moved the last of those shells,
+ * phase 10 converted the raw `<button>`s of the review screens, and the flag,
+ * the `UI_BUTTON_LEGACY_*` strings and the `hasIcon` gap they needed are gone
+ * with them. Every call site now gets Figma `3333:5860` and nothing else.
  *
  * ── Geometry is rem-only ─────────────────────────────────────────────────────
  * Every utility below resolves to `rem` (Tailwind's spacing/text scales are
@@ -42,7 +41,7 @@ export type UiButtonSize = 'S' | 'M' | 'L'
 export interface UiButtonClassSet {
   /** Classes for the `<button>` element. */
   root: string
-  /** Classes for the label wrapper. Empty string when the recipe needs none. */
+  /** Classes for the label wrapper. */
   label: string
   /** Classes a slotted icon should carry (kit icon box: 24 at L, 16 at M/S). */
   icon: string
@@ -51,23 +50,22 @@ export interface UiButtonClassSet {
 export interface ResolveUiButtonOptions {
   variant?: UiButtonVariant
   size?: UiButtonSize
-  /** `true` → Figma `3333:5860`. `false` → the pre-kit look (default). */
-  kit?: boolean
   /** Equal-width footer buttons (`flex-1`). */
   block?: boolean
-  /** An icon slot is filled — the pre-kit recipe needs an explicit gap for it. */
-  hasIcon?: boolean
 }
 
-/** Shared by both recipes: layout, radius 8 (`--radius-lg` = 0.5rem), weight. */
+/** Shared by every style: layout, radius 8 (`--radius-lg` = 0.5rem), weight. */
 const BASE_CLASS = 'ui-button inline-flex items-center justify-center rounded-lg font-medium'
-
-// ─── Kit recipe — Figma 3333:5860 ─────────────────────────────────────────────
 
 /**
  * Per-size geometry. The kit puts no `gap` on the button: the spacing between a
  * left icon, the label and a right icon comes from the label's own horizontal
  * padding (8 at L, 4 at M/S), which is also what widens the label-only button.
+ *
+ * Measured, not assumed: `get_metadata` on the Ghost M instance `3760:2297`
+ * (the section-card header action) returns 128×40 built as 12 + icon 16 +
+ * label frame 88 + 12, and inside that frame the text sits at x=4 with 4 left
+ * over on the right — `p-3` plus `px-1`, exactly what this table emits.
  */
 export const UI_BUTTON_KIT_SIZE: Record<UiButtonSize, { root: string; label: string; icon: string }> = {
   // 8px padding · 14/16 text · 16px icon → 32px tall, border inside
@@ -94,53 +92,8 @@ export const UI_BUTTON_KIT_VARIANT: Record<UiButtonVariant, string> = {
 /** Kit `opacity/50`, plus the cursor the browser needs to say "not clickable". */
 export const UI_BUTTON_KIT_DISABLED_CLASS = 'disabled:cursor-not-allowed disabled:opacity-50'
 
-// ─── Pre-kit recipe — retired by phases 4, 6 and 10 ───────────────────────────
-
-/**
- * The exact class strings `UiButton.vue` shipped before DP-15258. Pinned in a
- * test while the four modals still rendered them; kept pinned until phase 10
- * deletes the branch, so that "dead" and "quietly edited" stay distinguishable.
- * `tracking-[-0.3125px]` is kept deliberately: the kit's letter-spacing is 0,
- * but open question 7 says carry-over screens keep their current rendering,
- * because dropping tracking changes line wrapping everywhere at once.
- */
-export const UI_BUTTON_LEGACY_BASE_CLASS =
-  'ui-button inline-flex items-center justify-center rounded-[8px] p-3 text-[1rem] font-medium leading-6 tracking-[-0.3125px]'
-
-export const UI_BUTTON_LEGACY_VARIANT: Record<UiButtonVariant, string> = {
-  primary:
-    'bg-[#030213] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40',
-  secondary:
-    'border border-black/10 bg-white text-[#0a0a0a] transition-colors hover:bg-black/[0.02] disabled:opacity-40',
-  // Neutral and ghost exist only in the kit. Asking for them without `kit`
-  // would be a silent downgrade to a look the kit does not have, so they fall
-  // back to the closest pre-kit surface rather than inventing colours.
-  neutral:
-    'border border-black/10 bg-white text-[#0a0a0a] transition-colors hover:bg-black/[0.02] disabled:opacity-40',
-  ghost: 'text-[#0a0a0a] transition-colors hover:bg-black/[0.02] disabled:opacity-40',
-}
-
-/** The pre-kit recipe has no label padding, so an icon needs a real gap. */
-export const UI_BUTTON_LEGACY_ICON_GAP_CLASS = 'gap-2'
-export const UI_BUTTON_LEGACY_ICON_CLASS = 'size-4'
-
 export function resolveUiButtonClasses(options: ResolveUiButtonOptions = {}): UiButtonClassSet {
-  const { variant = 'primary', size = 'L', kit = false, block = false, hasIcon = false } = options
-
-  const blockClass = block ? 'flex-1' : ''
-
-  if (!kit) {
-    return {
-      root: join([
-        UI_BUTTON_LEGACY_BASE_CLASS,
-        blockClass,
-        hasIcon ? UI_BUTTON_LEGACY_ICON_GAP_CLASS : '',
-        UI_BUTTON_LEGACY_VARIANT[variant],
-      ]),
-      label: '',
-      icon: UI_BUTTON_LEGACY_ICON_CLASS,
-    }
-  }
+  const { variant = 'primary', size = 'L', block = false } = options
 
   const geometry = UI_BUTTON_KIT_SIZE[size]
 
@@ -149,7 +102,7 @@ export function resolveUiButtonClasses(options: ResolveUiButtonOptions = {}): Ui
       BASE_CLASS,
       'transition-colors',
       geometry.root,
-      blockClass,
+      block ? 'flex-1' : '',
       UI_BUTTON_KIT_VARIANT[variant],
       UI_BUTTON_KIT_DISABLED_CLASS,
     ]),

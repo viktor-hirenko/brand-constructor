@@ -70,7 +70,6 @@ const emit = defineEmits<{
   >
     <UiButton
       v-if="showSubmit"
-      kit
       size="L"
       variant="primary"
       class="po-actions-footer__submit"
@@ -84,7 +83,6 @@ const emit = defineEmits<{
 
     <UiButton
       v-if="showBack"
-      kit
       size="L"
       variant="secondary"
       class="po-actions-footer__back"
@@ -95,7 +93,6 @@ const emit = defineEmits<{
 
     <UiButton
       v-if="showShare"
-      kit
       size="L"
       variant="neutral"
       class="po-actions-footer__share"
@@ -110,7 +107,6 @@ const emit = defineEmits<{
 
     <UiButton
       v-if="showPdf"
-      kit
       size="L"
       variant="primary"
       class="po-actions-footer__pdf"

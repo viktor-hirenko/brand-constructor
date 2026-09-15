@@ -49,7 +49,6 @@ const emit = defineEmits<{
         ]"
       >
         <UiButton
-          kit
           size="L"
           variant="secondary"
           block
@@ -59,7 +58,6 @@ const emit = defineEmits<{
           {{ cancelLabel }}
         </UiButton>
         <UiButton
-          kit
           size="L"
           variant="primary"
           block
