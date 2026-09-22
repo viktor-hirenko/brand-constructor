@@ -57,11 +57,22 @@ export const SEGMENTED_CONTROL_ROOT_CLASS =
  * vertical padding around a 16 line box → 32 tall.
  */
 export const SEGMENT_BASE_CLASS =
-  'segmented-control__segment inline-flex items-center justify-center rounded-md px-3 py-2 text-sm/4 font-normal whitespace-nowrap transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-500'
+  'segmented-control__segment inline-flex items-center justify-center rounded-md px-3 py-2 text-sm/4 font-normal whitespace-nowrap transition-[background-color,color,filter] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-500'
 
-/** State = Active. The shadow is the kit's `drop-shadow(0 8 5 rgba(0,0,0,0.1))`. */
+/**
+ * State = Active.
+ *
+ * The shadow is written as the kit writes it — `filter: drop-shadow(...)`, not
+ * `box-shadow`. Figma applies a *drop shadow* to the layer, and that is what
+ * `get_design_context` returns for `3706:5979`
+ * (`drop-shadow-[0px_8px_5px_rgba(0,0,0,0.1)]`). The numbers are identical
+ * either way, but the owner read the first pass as "sharper than the design",
+ * so the technique now matches the file too and there is nothing left to
+ * differ. Before phase 17 this was Tailwind's `shadow-lg` preset — two layers
+ * at blur 15 — which is the softness that was actually being compared against.
+ */
 export const SEGMENT_ACTIVE_CLASS =
-  'segmented-control__segment--active bg-white text-ink-900 shadow-[0_8px_5px_rgba(0,0,0,0.1)]'
+  'segmented-control__segment--active bg-white text-ink-900 drop-shadow-[0px_8px_5px_rgba(0,0,0,0.1)]'
 
 /**
  * State = Inactive, with State = Hovered folded into its `hover:`. The kit

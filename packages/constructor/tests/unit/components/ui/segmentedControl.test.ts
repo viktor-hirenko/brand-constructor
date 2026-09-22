@@ -67,8 +67,10 @@ describe('kit segmented control — Figma 3706:6076', () => {
   it('gives Active a white plate, the kit shadow and #1f1f2e ink', () => {
     expect(SEGMENT_ACTIVE_CLASS).toContain('bg-white')
     expect(SEGMENT_ACTIVE_CLASS).toContain('text-ink-900')
-    expect(SEGMENT_ACTIVE_CLASS).toContain('shadow-[0_8px_5px_rgba(0,0,0,0.1)]')
-    // `shadow-lg` is Tailwind's own stack, not the kit's single drop shadow.
+    // Written the way the kit writes it: a drop shadow on the layer, which is
+    // `filter: drop-shadow()`, not `box-shadow`.
+    expect(SEGMENT_ACTIVE_CLASS).toContain('drop-shadow-[0px_8px_5px_rgba(0,0,0,0.1)]')
+    // `shadow-lg` is Tailwind's own two-layer preset at blur 15, not the kit's.
     expect(SEGMENT_ACTIVE_CLASS).not.toContain('shadow-lg')
   })
 
