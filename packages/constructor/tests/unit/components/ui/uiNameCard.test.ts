@@ -20,6 +20,7 @@ import {
   UI_NAME_CARD_META_CLASS,
   UI_NAME_CARD_PRICE_CLASS,
   UI_NAME_CARD_PRICE_HEIGHT_CLASS,
+  UI_NAME_CARD_BADGE_SLOT_CLASS,
   UI_NAME_CARD_BADGE_SKELETON_CLASS,
   formatUiNameCardPrice,
   resolveUiNameCardBadge,
@@ -70,6 +71,7 @@ const ALL = [
   UI_NAME_CARD_META_CLASS,
   UI_NAME_CARD_PRICE_CLASS,
   UI_NAME_CARD_PRICE_HEIGHT_CLASS,
+  UI_NAME_CARD_BADGE_SLOT_CLASS,
   UI_NAME_CARD_BADGE_SKELETON_CLASS,
 ]
 
@@ -191,13 +193,40 @@ describe('step 3 slots: domain, price, badge — kit 3719:5979', () => {
     expect(UI_NAME_CARD_PRICE_CLASS).toContain('text-ink-900')
   })
 
-  it('right-aligns the number so the gap to the badge is always 16', () => {
-    // Owner's call, divergence row 50. The kit left-aligns inside the fill box,
-    // which leaves a hole whenever the price is short — its own Sold row has a
-    // 46 gap (glyphs end 396.18, badge starts 442) and our real prices are
-    // `$15`, not the mockup's `$1 500`. Right-aligned, the gap is `spacing/16`
-    // in every row and the numbers line up on their right edge.
+  it('right-aligns the number and reserves the badge column, so prices line up', () => {
+    // Owner's call, divergence row 50, in two halves that only work together.
+    //
+    // The kit left-aligns the price inside the fill box, which leaves a hole
+    // whenever the price is short — its own Sold row has a 46 gap (glyphs end
+    // 396.18, badge starts 442) and our real prices are `$15`, not the mockup's
+    // `$1 500`. Right-aligning closed the hole but made the number hang off
+    // whichever badge followed it, and «Available» (68) is 26 wider than «Sold»
+    // (42) — so the numbers stepped down a mixed list.
+    //
+    // Reserving the badge column at the widest badge's width makes the price
+    // box identical in every row, which is what puts the numbers in one line.
     expect(UI_NAME_CARD_PRICE_CLASS).toContain('text-right')
+    expect(UI_NAME_CARD_BADGE_SLOT_CLASS).toContain('min-w-17')
+    expect(UI_NAME_CARD_BADGE_SLOT_CLASS).toContain('shrink-0')
+    // The badge stays flush with the card's right padding inside that column.
+    expect(UI_NAME_CARD_BADGE_SLOT_CLASS).toContain('justify-end')
+    // Reserved, not fixed: a third, longer label must not be clipped silently.
+    expect(UI_NAME_CARD_BADGE_SLOT_CLASS).not.toMatch(/(^|\s)w-\d+(\s|$)/)
+    // The skeleton's placeholder is that same column.
+    expect(UI_NAME_CARD_BADGE_SKELETON_CLASS).toContain('w-17')
+  })
+
+  it('reserves that column only where rows actually carry badges', () => {
+    // «Вибір замовника» has no availability in any row, so 68 of reserved air
+    // against the card's right edge would be a defect, not an alignment.
+    const card = read('components/ui/UiNameCard.vue')
+    const external = read(
+      'components/constructor/alternative-selection/ExternalNamingGrid.vue'
+    )
+    const authorRow = read('components/constructor/alternative-selection/AuthorNamingsRow.vue')
+    expect(card).toContain('reserveBadge')
+    expect(external).toContain('reserve-badge')
+    expect(authorRow).not.toContain('reserve-badge')
   })
 
   it('formats the price the way the mockup writes it', () => {

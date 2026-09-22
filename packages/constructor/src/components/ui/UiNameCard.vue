@@ -4,6 +4,7 @@ import {
   formatUiNameCardPrice,
   resolveUiNameCardBadge,
   resolveUiNameCardClasses,
+  UI_NAME_CARD_BADGE_SLOT_CLASS,
   UI_NAME_CARD_DOMAIN_CLASS,
   UI_NAME_CARD_META_CLASS,
   UI_NAME_CARD_NAME_CLASS,
@@ -44,6 +45,12 @@ interface UiNameCardProps {
   price?: number | null
   /** `available` / `sold`; anything else draws no badge. */
   availability?: string | null
+  /**
+   * Keep the badge column even in rows that have no badge, so the prices line
+   * up. Set by lists whose rows carry availability; «Вибір замовника» does not,
+   * and there the column would be empty air.
+   */
+  reserveBadge?: boolean
 }
 
 const props = withDefaults(defineProps<UiNameCardProps>(), {
@@ -54,6 +61,7 @@ const props = withDefaults(defineProps<UiNameCardProps>(), {
   domain: null,
   price: null,
   availability: null,
+  reserveBadge: false,
 })
 
 const emit = defineEmits<{
@@ -95,10 +103,15 @@ function handleClick() {
       <span v-if="detailed && domain" :class="UI_NAME_CARD_DOMAIN_CLASS">({{ domain }})</span>
     </span>
     <!-- The 140 block is drawn on every instance, so the badge stays flush with
-         the card's right padding even when a naming carries no price. -->
+         the card's right padding even when a naming carries no price. The badge
+         column inside it is reserved at the widest badge's width, which is what
+         keeps the right-aligned prices in one line down a mixed list. -->
     <span v-if="detailed" :class="UI_NAME_CARD_META_CLASS">
       <span :class="UI_NAME_CARD_PRICE_CLASS">{{ priceLabel }}</span>
-      <UiBadge v-if="badge" :tone="badge.tone" :label="badge.label" />
+      <span v-if="reserveBadge" :class="UI_NAME_CARD_BADGE_SLOT_CLASS">
+        <UiBadge v-if="badge" :tone="badge.tone" :label="badge.label" />
+      </span>
+      <UiBadge v-else-if="badge" :tone="badge.tone" :label="badge.label" />
     </span>
   </component>
 </template>

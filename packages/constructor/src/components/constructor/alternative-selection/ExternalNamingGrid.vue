@@ -84,6 +84,7 @@ function handleSelect(naming: ExternalNaming) {
       v-for="naming in visibleNamings"
       :key="naming.id"
       detailed
+      reserve-badge
       :name="naming.name"
       :domain="naming.domain"
       :price="naming.price"

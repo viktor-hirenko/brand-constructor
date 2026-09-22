@@ -228,12 +228,14 @@ export const UI_NAME_CARD_META_CLASS = 'ui-name-card__meta flex w-35 shrink-0 it
  * the kit's own Sold row proves it: glyphs end at 396.18, badge starts at 442,
  * a 46 gap (the Available row has 20). The mockup was drawn with four-digit
  * prices, so it barely shows there; our real prices are `$15`, and the leftover
- * reads as a hole about 100 wide.
+ * read as a hole about 100 wide.
  *
- * Right-aligning the number inside the same box makes that space exactly the
- * kit's `spacing/16` in every row, and the numbers line up on their right edge,
- * which is how numbers are normally set anyway. Nothing else moves: the block
- * is still the kit's fixed 140, so the badges still line up down the list.
+ * Right-aligning the number inside the same box closes that hole. On its own it
+ * traded one problem for another, though: the number then hung off whichever
+ * badge followed it, and «Available» is 26 wider than «Sold», so the numbers
+ * stepped left and right down a mixed list. `UI_NAME_CARD_BADGE_SLOT_CLASS`
+ * below is the other half of the fix — with the badge column reserved, the
+ * price box is the same width in every row, so the numbers sit in one line.
  * Written up as row 50 in `dp-15258-divergences.md`.
  */
 export const UI_NAME_CARD_PRICE_CLASS =
@@ -241,6 +243,27 @@ export const UI_NAME_CARD_PRICE_CLASS =
 
 /** The price's 24 line box, for the skeletons. */
 export const UI_NAME_CARD_PRICE_HEIGHT_CLASS = 'h-6'
+
+/**
+ * The badge column, reserved at the width of the kit's widest badge:
+ * «Available» measures **68** on the symbol (`w-17`), «Sold» 42.
+ *
+ * Without it the price — now right-aligned — would hang off whichever badge
+ * followed it, and the numbers would step left and right down a list that mixes
+ * Available and Sold rows. With it the price box is the same width in every
+ * row, so the numbers line up; the badge still sits flush with the card's right
+ * padding, because it is right-aligned inside the reserved column.
+ *
+ * It is a `min-w` rather than a hard width so a longer label could still grow
+ * (the price, being the flexible one, would give up the room) — the product has
+ * only these two labels today, but a fixed width would clip a third silently.
+ *
+ * Lists whose rows carry no availability at all — the customer's picks in
+ * «Вибір замовника» — do not reserve it: there is no badge in any row there, so
+ * the column would be 68 of empty air against the card's right edge.
+ */
+export const UI_NAME_CARD_BADGE_SLOT_CLASS =
+  'ui-name-card__badge-slot flex min-w-17 shrink-0 justify-end'
 
 /**
  * The badge instance is 68×24 in the kit (`Available`; `Sold` measures 42).
