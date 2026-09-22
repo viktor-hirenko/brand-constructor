@@ -17,7 +17,8 @@ import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSec
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
-  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+  EDIT_FLOW_COMMENT_OFFSET_CLASS,
+  EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS,
 } from '@/constants/editFlowLayout'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
@@ -165,8 +166,8 @@ async function goDali() {
     subtitle="Оберіть концепт та перегляньте прев'ю праворуч."
   >
     <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
-      <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
-        <div class="flex items-center justify-between max-w-[506px]">
+      <div :class="EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS">
+        <div class="flex items-center justify-between max-w-[31.625rem]">
           <EditFlowSectionLabel>Концепти</EditFlowSectionLabel>
           <SegmentedControl v-model="themeMode" :options="[...themeOptions]" aria-label="Тема інтерфейсу" />
         </div>
@@ -183,7 +184,11 @@ async function goDali() {
         />
       </div>
 
-      <StepCommentField v-model="comment" label="Коментар" class="mt-6" />
+      <StepCommentField
+        v-model="comment"
+        label="Коментар"
+        :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
+      />
     </div>
 
     <template #footer>

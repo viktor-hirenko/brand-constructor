@@ -40,7 +40,7 @@ withDefaults(defineProps<EditFlowStepShellProps>(), {
     >
       <div
         :class="[
-          'edit-flow-step-shell__inset flex flex-col gap-6 pb-[32px]',
+          'edit-flow-step-shell__inset flex flex-col gap-6 pb-8',
           LEFT_PANE_SCROLL_INNER_CLASS,
         ]"
       >

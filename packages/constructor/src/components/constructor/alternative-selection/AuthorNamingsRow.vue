@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import UiLink from '@/components/ui/UiLink.vue'
 import UiNameCard from '@/components/ui/UiNameCard.vue'
 import { UI_NAME_CARD_LIST_CLASS } from '@/components/ui/uiNameCard'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 
 /**
  * «Вибір замовника» above the external naming list in the CEO alternative flow.
@@ -81,9 +82,9 @@ function handleSelectAll() {
 <template>
   <div class="author-namings-row flex flex-col gap-3">
     <div class="author-namings-row__header flex items-center justify-between gap-3">
-      <p class="author-namings-row__label text-[1rem] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+      <EditFlowSectionLabel class="author-namings-row__label">
         Вибір замовника
-      </p>
+      </EditFlowSectionLabel>
       <!-- The mockup draws no action here at all — this one is ours. The kit's
            nearest primitive is Link `4378:8358`, which is what a text action is
            in this system; phase 10 assigned this button to phase 16. -->

@@ -404,7 +404,7 @@ defineExpose({
     >
       <div
         :class="[
-          'review-unified-view__scroll-inner flex flex-col gap-6 pt-12 pb-12',
+          'review-unified-view__scroll-inner flex flex-col gap-8 pt-12 pb-12',
           LEFT_PANE_SCROLL_INNER_CLASS,
         ]"
       >
@@ -607,44 +607,51 @@ defineExpose({
               />
             </template>
           </ReviewSection>
+        </div>
 
-          <!-- General CEO comment read-only for PO returned view (Figma 1973:7884) -->
-          <div
-            v-if="isPoReturnedView && getSectionCeoCommentValue('general')"
-            class="review-unified-view__general-comment-po space-y-3"
-          >
-            <UiFieldLabel>
-              <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
-              Загальний коментар CEO
-            </UiFieldLabel>
-            <!--
-              The caption stays OUTSIDE the box here, unlike every other comment
-              in review: it has to match the CEO's own editor a few lines below,
-              whose caption is the kit's Title (`3424:1050`) above an Input, not
-              the Comment's inner label.
-            -->
-            <UiComment :value="getSectionCeoCommentValue('general')" />
-          </div>
+        <!--
+          The general comment is the kit's own Input under the card list, not a
+          card in it: `4492:16847` ends at 2588 and `4492:17415` opens at 2620,
+          i.e. 32 below — the same 32 the list keeps from the step header and
+          the footer keeps from the comment. It used to live inside the list
+          and inherit its 16 (DP-15258 phase 18).
+        -->
+        <!-- General CEO comment read-only for PO returned view (Figma 1973:7884) -->
+        <div
+          v-if="isPoReturnedView && getSectionCeoCommentValue('general')"
+          class="review-unified-view__general-comment-po space-y-3"
+        >
+          <UiFieldLabel>
+            <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
+            Загальний коментар CEO
+          </UiFieldLabel>
+          <!--
+            The caption stays OUTSIDE the box here, unlike every other comment
+            in review: it has to match the CEO's own editor a few lines below,
+            whose caption is the kit's Title (`3424:1050`) above an Input, not
+            the Comment's inner label.
+          -->
+          <UiComment :value="getSectionCeoCommentValue('general')" />
+        </div>
 
-          <div
-            v-if="reviewMode === 'ceo'"
-            class="review-unified-view__general-comment-ceo space-y-3"
-          >
-            <UiFieldLabel>
-              <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
-              Загальний коментар
-            </UiFieldLabel>
-            <SectionCommentBlock
-              section-key="general"
-              always-expanded
-              :supervisor-comment="ceoComments.general ?? ''"
-              :supervisor-editable="true"
-              :highlighted="!!revisionWarning"
-              empty-label="Коментар CEO"
-              placeholder="Додайте ваші коментарі або побажання…"
-              @update:supervisor-comment="value => emit('general-ceo-comment-update', value)"
-            />
-          </div>
+        <div
+          v-if="reviewMode === 'ceo'"
+          class="review-unified-view__general-comment-ceo space-y-3"
+        >
+          <UiFieldLabel>
+            <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
+            Загальний коментар
+          </UiFieldLabel>
+          <SectionCommentBlock
+            section-key="general"
+            always-expanded
+            :supervisor-comment="ceoComments.general ?? ''"
+            :supervisor-editable="true"
+            :highlighted="!!revisionWarning"
+            empty-label="Коментар CEO"
+            placeholder="Додайте ваші коментарі або побажання…"
+            @update:supervisor-comment="value => emit('general-ceo-comment-update', value)"
+          />
         </div>
 
         <div

@@ -13,9 +13,11 @@ import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepSh
 import UiDivider from '@/components/ui/UiDivider.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_COMMENT_OFFSET_CLASS,
   EDIT_FLOW_DIVIDER_CLASS,
   EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
   EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS,
+  EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS,
 } from '@/constants/editFlowLayout'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
@@ -152,22 +154,22 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
          the resolved values only populate after the API call. -->
     <div v-if="showSkeleton" :class="EDIT_FLOW_BODY_OFFSET_CLASS">
       <div :class="EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS">
-        <div v-if="isPostApply && poOriginalId" class="flex flex-col gap-3">
+        <div v-if="isPostApply && poOriginalId" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
           <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
           <InternalNamingGridSkeleton :count="1" />
         </div>
 
         <template v-else>
-          <div v-if="poOriginalId" class="flex flex-col gap-3">
+          <div v-if="poOriginalId" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
             <InternalNamingGridSkeleton :count="1" />
           </div>
-          <div v-else class="flex flex-col gap-2">
+          <div v-else :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
             <p class="text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
           </div>
 
-          <div v-if="ceoInternalId" class="flex flex-col gap-3">
+          <div v-if="ceoInternalId" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
             <InternalNamingGridSkeleton :count="1" />
           </div>
@@ -188,7 +190,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
     <!-- Ready state -->
     <div v-else-if="isReady" :class="EDIT_FLOW_BODY_OFFSET_CLASS">
       <div :class="EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS">
-        <div v-if="isPostApply && poOriginalNaming" class="flex flex-col gap-3">
+        <div v-if="isPostApply && poOriginalNaming" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
           <EditFlowSectionLabel>Обрана назва</EditFlowSectionLabel>
           <InternalNamingGrid
             :namings="[poOriginalNaming]"
@@ -198,7 +200,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         </div>
 
         <template v-else>
-          <div v-if="poOriginalNaming" class="flex flex-col gap-3">
+          <div v-if="poOriginalNaming" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
             <InternalNamingGrid
               :namings="[poOriginalNaming]"
@@ -206,12 +208,12 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
               @select="handleSelect"
             />
           </div>
-          <div v-else class="flex flex-col gap-2">
+          <div v-else :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
             <p class="text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] italic">Назву не обрано</p>
           </div>
 
-          <div v-if="ceoNaming" class="flex flex-col gap-3">
+          <div v-if="ceoNaming" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
             <InternalNamingGrid
               :namings="[ceoNaming]"
@@ -233,7 +235,11 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         />
       </div>
 
-      <StepCommentField v-model="poInternalComment" label="Коментар" class="mt-6" />
+      <StepCommentField
+        v-model="poInternalComment"
+        label="Коментар"
+        :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
+      />
     </div>
 
     <template #footer>

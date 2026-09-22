@@ -2,6 +2,8 @@
 import type { Concept } from '@brand-constructor/shared/types'
 import { computed } from 'vue'
 import ConceptCard from '@/components/constructor/alternative-selection/ConceptCard.vue'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
+import { EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS } from '@/constants/editFlowLayout'
 
 interface AuthorPickPreviewProps {
   concept: Concept | null
@@ -37,13 +39,18 @@ function handleClick() {
 </script>
 
 <template>
-  <!-- Kit "Concept card with label" `4131:8433`: the caption sits 8 above the
-       card, `caption/l` 14/16 weight 500 on `concept-card/label` #6f6f7d
-       (= --color-ink-700), and the card is the kit's 162 square. -->
-  <div class="author-pick-preview flex flex-col gap-2">
-    <p class="author-pick-preview__label text-sm/4 font-medium text-ink-700">
+  <!--
+    The caption is the flow's own section label, not the kit component's: on
+    the screens themselves (`4492:11561`, `4492:12420`) it is a 24-tall line of
+    `body/medium` 16/24 with the card opening 12 below it, and every other
+    label on these screens is that same line. It used to be its own `caption/l`
+    14/16 at 8 — which also disagreed with its own skeleton's 12 and shifted the
+    block when the data arrived (DP-15258 phase 18).
+  -->
+  <div :class="['author-pick-preview flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
+    <EditFlowSectionLabel class="author-pick-preview__label">
       Вибір замовника
-    </p>
+    </EditFlowSectionLabel>
     <div v-if="concept && previewUrl" class="author-pick-preview__card w-[10.125rem] shrink-0">
       <ConceptCard
         :concept="concept"

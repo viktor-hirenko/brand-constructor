@@ -12,7 +12,9 @@ import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
+  EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS,
   EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_COMMENT_OFFSET_CLASS,
   EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
 } from '@/constants/editFlowLayout'
 import {
@@ -124,7 +126,7 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
     :subtitle="subtitleText"
   >
     <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
-      <ConceptCascadeBanner class="mb-6" />
+      <ConceptCascadeBanner :class="EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS" />
 
       <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
         <EditFlowSectionLabel>Назви для обраного концепту</EditFlowSectionLabel>
@@ -142,7 +144,7 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
       <StepCommentField
         v-model="comment"
         label="Коментар"
-        class="mt-6"
+        :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
         :required="isCommentRequired"
         :required-hint="commentHint"
       />

@@ -15,8 +15,11 @@ import UiDivider from '@/components/ui/UiDivider.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
+  EDIT_FLOW_COMMENT_OFFSET_CLASS,
+  EDIT_FLOW_CONCEPT_PAIR_GRID_CLASS,
   EDIT_FLOW_DIVIDER_CLASS,
-  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+  EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS,
+  EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS,
 } from '@/constants/editFlowLayout'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
@@ -277,24 +280,30 @@ async function goDali() {
     <!-- Header skeleton: kept in sync with the real layout below (single
          248×248 card in post-apply, 2 cards side-by-side in choice mode). -->
     <template v-if="showHeaderSkeleton">
-      <div v-if="isPostApply" class="flex flex-col gap-3" aria-hidden="true">
-        <div class="h-6 w-[140px] rounded bg-muted animate-pulse" />
-        <div class="w-[248px] h-[248px] rounded-2xl bg-muted animate-pulse" />
+      <div
+        v-if="isPostApply"
+        :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]"
+        aria-hidden="true"
+      >
+        <div class="h-6 w-35 rounded bg-muted animate-pulse" />
+        <div class="w-62 h-62 rounded-2xl bg-muted animate-pulse" />
       </div>
-      <div v-else class="grid grid-cols-2 gap-4 max-w-[506px]" aria-hidden="true">
-        <div v-for="i in 2" :key="i" class="flex flex-col gap-2">
-          <div class="h-4 w-[140px] rounded bg-muted animate-pulse" />
+      <div v-else :class="EDIT_FLOW_CONCEPT_PAIR_GRID_CLASS" aria-hidden="true">
+        <div
+          v-for="i in 2"
+          :key="i"
+          :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]"
+        >
+          <div class="h-6 w-35 rounded bg-muted animate-pulse" />
           <div class="w-full aspect-square rounded-2xl bg-muted animate-pulse" />
         </div>
       </div>
     </template>
 
     <!-- post-apply: single applied concept card -->
-    <div v-else-if="isPostApply" class="flex flex-col gap-2">
-      <p class="text-sm/4 font-medium text-ink-700">
-        Обраний концепт
-      </p>
-      <div class="w-[248px]">
+    <div v-else-if="isPostApply" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
+      <EditFlowSectionLabel>Обраний концепт</EditFlowSectionLabel>
+      <div class="w-62">
         <ConceptCard
           :concept="poConcept"
           :is-selected="true"
@@ -306,17 +315,17 @@ async function goDali() {
     </div>
 
     <!-- choice: PO previous + CEO pick side by side, same size -->
-    <div v-else class="grid grid-cols-2 gap-4 max-w-[506px]">
+    <div v-else :class="EDIT_FLOW_CONCEPT_PAIR_GRID_CLASS">
       <!-- PO previous — reference only, not selectable.
            CEO already rejected PO's pick; if PO wants to keep it they use "Скасувати". -->
-      <div class="flex flex-col gap-2">
-        <p class="text-sm/4 font-medium text-ink-700">Ваш попередній вибір</p>
+      <div :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
+        <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
         <ConceptCard :concept="poConcept" :show-overlay="true" :clickable="false" />
       </div>
 
       <!-- CEO pick (pre-selected) -->
-      <div class="flex flex-col gap-2">
-        <p class="text-sm/4 font-medium text-ink-700">Вибір CEO</p>
+      <div :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
+        <EditFlowSectionLabel>Вибір CEO</EditFlowSectionLabel>
         <ConceptCard
           :concept="ceoConcept"
           :is-selected="ceoConcept ? selectedId === ceoConcept.id : false"
@@ -332,8 +341,8 @@ async function goDali() {
     <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
 
     <!-- Other / available concepts grid -->
-    <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
-      <div class="flex items-center justify-between max-w-[506px]">
+    <div :class="EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS">
+      <div class="flex items-center justify-between max-w-[31.625rem]">
         <EditFlowSectionLabel>
           {{ isPostApply ? 'Доступні концепти' : 'Інші концепти' }}
         </EditFlowSectionLabel>
@@ -352,7 +361,11 @@ async function goDali() {
       />
     </div>
 
-    <StepCommentField v-model="poConceptComment" label="Коментар" class="mt-6" />
+    <StepCommentField
+      v-model="poConceptComment"
+      label="Коментар"
+      :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
+    />
 
     </div>
 

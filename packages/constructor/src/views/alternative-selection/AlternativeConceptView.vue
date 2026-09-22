@@ -17,7 +17,7 @@ import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepSh
 import UiDivider from '@/components/ui/UiDivider.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
-  EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS,
+  EDIT_FLOW_CONTROL_CARDS_BEFORE_COMMENT_SECTION_CLASS,
   EDIT_FLOW_DIVIDER_CLASS,
 } from '@/constants/editFlowLayout'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
@@ -219,7 +219,7 @@ async function confirmConceptSelection() {
 
       <!-- Available concepts — theme toggle right-aligned next to the section
            label, mirroring RevisionConceptView layout (Figma 2201-6968). -->
-      <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
+      <div :class="EDIT_FLOW_CONTROL_CARDS_BEFORE_COMMENT_SECTION_CLASS">
         <div class="flex items-center justify-between">
           <EditFlowSectionLabel>Доступні концепти</EditFlowSectionLabel>
           <!-- Theme toggle (light / dark) — filters available concepts -->

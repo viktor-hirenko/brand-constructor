@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import UiNameCard from '@/components/ui/UiNameCard.vue'
 import { UI_NAME_CARD_GRID_CLASS } from '@/components/ui/uiNameCard'
+import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 
 /**
  * «Вибір замовника» above the internal naming list in the alternative flow.
@@ -25,9 +26,9 @@ defineProps<AuthorInternalNamingPreviewProps>()
 
 <template>
   <div class="author-internal-naming-preview flex flex-col gap-3">
-    <p class="author-internal-naming-preview__label text-[1rem] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+    <EditFlowSectionLabel class="author-internal-naming-preview__label">
       Вибір замовника
-    </p>
+    </EditFlowSectionLabel>
     <div
       v-if="name"
       :class="['author-internal-naming-preview__grid', UI_NAME_CARD_GRID_CLASS]"

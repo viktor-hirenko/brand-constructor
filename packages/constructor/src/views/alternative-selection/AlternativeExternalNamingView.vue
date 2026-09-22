@@ -16,10 +16,12 @@ import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSec
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
 import {
+  EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS,
   EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS,
   EDIT_FLOW_DIVIDER_CLASS,
 } from '@/constants/editFlowLayout'
+import ConceptCascadeBanner from '@/components/constructor/edit-flow/ConceptCascadeBanner.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import {
   getExternalNamingCommentHint,
@@ -218,10 +220,23 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
       <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
            `showSkeleton` covers both `loading=true` and the initial pre-mount
            frame when `hasFetched=false`. -->
+      <!--
+        Chained from the concept screen: the customer's picks no longer belong
+        to the concept the CEO just switched to, so there is nothing above the
+        line — and the kit draws no line there either. `4492:12592` opens the
+        chained screen with the Alert instead, the same kit Warning the draft
+        flow already shows (`ConceptCascadeBanner`). Before DP-15258 phase 18
+        the divider rendered unconditionally and left a rule hanging over empty
+        space whenever this screen was reached through the concept step.
+      -->
       <template v-if="showSkeleton">
-        <AuthorNamingsRowSkeleton v-if="!isChainedFromConcept" />
-
-        <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
+        <template v-if="isChainedFromConcept">
+          <ConceptCascadeBanner :class="EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS" />
+        </template>
+        <template v-else>
+          <AuthorNamingsRowSkeleton />
+          <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
+        </template>
 
         <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
           <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>
@@ -235,7 +250,11 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
 
       <!-- Ready state -->
       <template v-else-if="isReady">
-        <template v-if="!isChainedFromConcept">
+        <ConceptCascadeBanner
+          v-if="isChainedFromConcept"
+          :class="EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS"
+        />
+        <template v-else>
           <AuthorNamingsRow
             :namings="poExternalMini"
             selectable
@@ -244,9 +263,9 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
             @toggle="handleToggle"
             @select-all="handleSelectAllPoNamings"
           />
-        </template>
 
-        <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
+          <UiDivider :class="EDIT_FLOW_DIVIDER_CLASS" />
+        </template>
 
         <div :class="EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS">
           <EditFlowSectionLabel>Варіанти назв для обраного концепту</EditFlowSectionLabel>

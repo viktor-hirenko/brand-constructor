@@ -64,10 +64,16 @@ describe('embed scale — the rule may not opt out of the root font-size', () =>
 })
 
 describe('the edit-flow rules keep their spacing and their full-bleed hook', () => {
-  it('leaves colour to UiDivider and keeps only my-10 plus the :deep() hook', () => {
+  it('leaves colour to UiDivider and keeps only my-12 plus the :deep() hook', () => {
     // EditFlowStepShell reaches for `.edit-flow-divider` with :deep() to pull
     // the rule out of the 48px inset. Renaming it silently un-bleeds 10 rules.
-    expect(EDIT_FLOW_DIVIDER_CLASS).toBe('edit-flow-divider my-10')
+    //
+    // 48, not the 40 that stood here until DP-15258 phase 18: the kit gives the
+    // rule the container's own padding on both sides — on `4492:27189` the
+    // block above ends at 426 inside a 474-tall container and the block below
+    // opens at y=48 of the next one, and `4492:29250`, `4492:16446` and
+    // `4492:12413` repeat it.
+    expect(EDIT_FLOW_DIVIDER_CLASS).toBe('edit-flow-divider my-12')
   })
 
   it('no longer carries the pre-kit black/10 rule', () => {
