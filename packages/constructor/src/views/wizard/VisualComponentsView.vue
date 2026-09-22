@@ -15,11 +15,13 @@ import {
 import VisualComponentsAccordionSkeleton from '@/components/constructor/skeletons/VisualComponentsAccordionSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
-import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
 import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
+import UiAccordion from '@/components/ui/UiAccordion.vue'
+import UiAccordionItem from '@/components/ui/UiAccordionItem.vue'
+import UiAccordionOption from '@/components/ui/UiAccordionOption.vue'
 import UiBadge from '@/components/ui/UiBadge.vue'
 
 const store = useConstructorStore()
@@ -228,38 +230,6 @@ async function loadVariantsForType(typeId: string) {
   loadingVariants.value[typeId] = false
 }
 
-function onAccordionEnter(el: Element) {
-  const htmlEl = el as HTMLElement
-  htmlEl.style.height = '0'
-  htmlEl.style.overflow = 'hidden'
-  htmlEl.offsetHeight
-  htmlEl.style.height = htmlEl.scrollHeight + 'px'
-  htmlEl.style.transition = 'height 0.25s ease'
-}
-
-function onAccordionAfterEnter(el: Element) {
-  const htmlEl = el as HTMLElement
-  htmlEl.style.height = ''
-  htmlEl.style.overflow = ''
-  htmlEl.style.transition = ''
-}
-
-function onAccordionLeave(el: Element) {
-  const htmlEl = el as HTMLElement
-  htmlEl.style.height = htmlEl.scrollHeight + 'px'
-  htmlEl.style.overflow = 'hidden'
-  htmlEl.offsetHeight
-  htmlEl.style.height = '0'
-  htmlEl.style.transition = 'height 0.25s ease'
-}
-
-function onAccordionAfterLeave(el: Element) {
-  const htmlEl = el as HTMLElement
-  htmlEl.style.height = ''
-  htmlEl.style.overflow = ''
-  htmlEl.style.transition = ''
-}
-
 onMounted(loadComponentTypes)
 </script>
 
@@ -291,118 +261,64 @@ onMounted(loadComponentTypes)
          Default count=5 mirrors the filtered (non-Theme) list rendered below. -->
     <VisualComponentsAccordionSkeleton v-if="isLoadingTypes" />
 
-    <!-- Component Accordions -->
-    <div
-      v-else
-      class="flex flex-col gap-2"
-      :class="{ 'opacity-40 pointer-events-none': isDelegated }"
-    >
-      <div
+    <!-- Component Accordions — kit `3839:12607` (section) + `3839:12381` (row) -->
+    <UiAccordion v-else :disabled="isDelegated">
+      <UiAccordionItem
         v-for="type in componentTypes"
         :key="type.id"
-        class="border border-black/10 rounded-[10px] overflow-hidden"
+        :title="type.name"
+        :open="openAccordionId === type.id"
+        @toggle="toggleAccordion(type.id)"
       >
-        <!-- Accordion Header -->
-        <button
-          class="w-full px-4 py-3 bg-[#f3f3f5] flex items-center justify-between hover:bg-[#ececf0] transition-colors"
-          @click="toggleAccordion(type.id)"
+        <!--
+          Badge chip with the picked variant; amber while the pair conflicts.
+          Kit badge `3453:1619` — the redrawn Visual Components canvas
+          (`5382:36912`) uses the same two tones, so only the recipe moved.
+        -->
+        <template v-if="getSelectedVariantLabel(type.id)" #badge>
+          <UiBadge
+            :tone="isTypeInConflict(type.id) ? 'amber' : 'neutral'"
+            :label="getSelectedVariantLabel(type.id) ?? ''"
+          >
+            <template v-if="isTypeInConflict(type.id)" #leading>
+              <InfoCircleFilledIcon class="size-4 shrink-0" />
+            </template>
+          </UiBadge>
+        </template>
+
+        <UiAccordionOption
+          v-for="variant in variantsByType[type.id] || []"
+          :key="variant.id"
+          :preview="getVariantDisplay(type.id, variant.id)?.letter ?? ''"
+          :title="getVariantDisplay(type.id, variant.id)?.label ?? ''"
+          :description="getIncompatibilityCaption(type.id, variant.id)"
+          :selected="selections[type.id] === variant.id"
+          @select="selectVariant(type.id, variant.id)"
         >
-          <div class="flex items-center gap-2">
-            <span class="text-base font-medium text-foreground tracking-[-0.31px]">{{
-              type.name
-            }}</span>
-            <!--
-              Badge chip with the picked variant; amber while the pair conflicts.
-              Kit badge `3453:1619` — the redrawn Visual Components canvas
-              (`5382:36912`) uses the same two tones, so only the recipe moved.
-            -->
-            <UiBadge
-              v-if="getSelectedVariantLabel(type.id)"
-              :tone="isTypeInConflict(type.id) ? 'amber' : 'neutral'"
-              :label="getSelectedVariantLabel(type.id) ?? ''"
-            >
-              <template v-if="isTypeInConflict(type.id)" #leading>
-                <InfoCircleFilledIcon class="size-4 shrink-0" />
-              </template>
-            </UiBadge>
-          </div>
-          <ChevronDownIcon
-            class="size-5 text-foreground transition-transform duration-200"
-            :class="{ 'rotate-180': openAccordionId === type.id }"
+          <template v-if="selections[type.id] === variant.id" #trailing="{ iconClass }">
+            <CheckIcon :class="iconClass" />
+          </template>
+        </UiAccordionOption>
+
+        <!-- Loading variants -->
+        <div v-if="loadingVariants[type.id]" class="flex items-center justify-center py-4">
+          <div
+            class="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"
           />
-        </button>
+        </div>
 
-        <!-- Accordion Body (animated) -->
-        <Transition
-          @enter="onAccordionEnter"
-          @after-enter="onAccordionAfterEnter"
-          @leave="onAccordionLeave"
-          @after-leave="onAccordionAfterLeave"
+        <!-- No variants -->
+        <div
+          v-if="
+            !loadingVariants[type.id] &&
+            (!variantsByType[type.id] || variantsByType[type.id].length === 0)
+          "
+          class="py-4 text-center text-sm text-muted-foreground"
         >
-          <div v-if="openAccordionId === type.id" class="bg-white overflow-hidden">
-            <div class="border-t border-[#ededee]" />
-            <div class="p-3 space-y-2">
-              <!-- Variant Items -->
-              <button
-                v-for="variant in variantsByType[type.id] || []"
-                :key="variant.id"
-                class="relative w-full pl-1 pr-6 py-1 rounded-2xl border transition-colors text-left group"
-                :class="
-                  selections[type.id] === variant.id
-                    ? 'border-[#030213] bg-transparent'
-                    : 'border-transparent hover:bg-[#f3f3f5]'
-                "
-                @click="selectVariant(type.id, variant.id)"
-              >
-                <div class="flex items-center gap-3">
-                  <!-- Letter tile: the design dropped the 64×64 thumbnail picture -->
-                  <div
-                    class="w-16 h-16 rounded-xl bg-[#ededee] flex-shrink-0 flex items-center justify-center"
-                  >
-                    <span class="text-2xl leading-8 text-[#95959d]">{{
-                      getVariantDisplay(type.id, variant.id)?.letter
-                    }}</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <span class="block text-sm font-medium text-foreground tracking-[-0.15px]">{{
-                      getVariantDisplay(type.id, variant.id)?.label
-                    }}</span>
-                    <span
-                      v-if="getIncompatibilityCaption(type.id, variant.id)"
-                      class="mt-1 block text-sm text-[#6f6f7d] tracking-[-0.15px]"
-                    >
-                      {{ getIncompatibilityCaption(type.id, variant.id) }}
-                    </span>
-                  </div>
-                  <CheckIcon
-                    v-if="selections[type.id] === variant.id"
-                    class="size-5 shrink-0 text-foreground"
-                  />
-                </div>
-              </button>
-
-              <!-- Loading variants -->
-              <div v-if="loadingVariants[type.id]" class="flex items-center justify-center py-4">
-                <div
-                  class="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"
-                />
-              </div>
-
-              <!-- No variants -->
-              <div
-                v-if="
-                  !loadingVariants[type.id] &&
-                  (!variantsByType[type.id] || variantsByType[type.id].length === 0)
-                "
-                class="py-4 text-center text-sm text-muted-foreground"
-              >
-                Варіанти поки не додані
-              </div>
-            </div>
-          </div>
-        </Transition>
-      </div>
-    </div>
+          Варіанти поки не додані
+        </div>
+      </UiAccordionItem>
+    </UiAccordion>
 
     <!-- Incompatibility Warning -->
     <div
