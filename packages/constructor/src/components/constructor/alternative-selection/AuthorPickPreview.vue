@@ -37,11 +37,14 @@ function handleClick() {
 </script>
 
 <template>
-  <div class="author-pick-preview flex flex-col gap-3">
-    <p class="author-pick-preview__label text-[1rem] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
+  <!-- Kit "Concept card with label" `4131:8433`: the caption sits 8 above the
+       card, `caption/l` 14/16 weight 500 on `concept-card/label` #6f6f7d
+       (= --color-ink-700), and the card is the kit's 162 square. -->
+  <div class="author-pick-preview flex flex-col gap-2">
+    <p class="author-pick-preview__label text-sm/4 font-medium text-ink-700">
       Вибір замовника
     </p>
-    <div v-if="concept && previewUrl" class="author-pick-preview__card w-[162px] shrink-0">
+    <div v-if="concept && previewUrl" class="author-pick-preview__card w-[10.125rem] shrink-0">
       <ConceptCard
         :concept="concept"
         :show-overlay="true"
@@ -50,12 +53,13 @@ function handleClick() {
         :is-active="selected || previewed"
         :show-selection-ring="selectable && selected"
         :show-checkmark="selectable && selected"
+        :show-preview-mark="previewed && !selected"
         @click="handleClick"
       />
     </div>
     <p
       v-else
-      class="author-pick-preview__empty text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] italic"
+      class="author-pick-preview__empty text-[1rem] leading-6 tracking-[-0.3125px] text-ink-700 italic"
     >
       Концепт не обрано
     </p>

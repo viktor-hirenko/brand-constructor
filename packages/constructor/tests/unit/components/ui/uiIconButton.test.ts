@@ -176,3 +176,36 @@ describe('kit icon button — Figma 3333:5541', () => {
     }
   })
 })
+
+/**
+ * `decorative` — DP-15258 phase 17. The kit draws this same chrome as a *mark*
+ * on the Concept card (`3715:5555` check, `3715:5627` eye): the card is itself
+ * the button, so the mark must keep the box and lose every interactive hook.
+ */
+describe('decorative mode — the mark on a Concept card', () => {
+  it('keeps the box, the fill, the border and the shadow', () => {
+    const { root, icon } = resolveUiIconButtonClasses({ size: 'S', decorative: true })
+    expect(root).toContain(UI_ICON_BUTTON_SIZE.S.root)
+    expect(root).toContain('border-ink-300')
+    expect(root).toContain('bg-white')
+    expect(root).toContain('shadow-[0_8px_4px_rgba(0,0,0,0.12)]')
+    expect(root).toContain('rounded-full')
+    expect(icon).toContain('size-4')
+  })
+
+  it('drops every pointer and focus hook — a button may not nest in a button', () => {
+    for (const variant of VARIANTS) {
+      const { root } = resolveUiIconButtonClasses({ variant, decorative: true })
+      expect(root).toContain('pointer-events-none')
+      expect(root).not.toContain('hover:')
+      expect(root).not.toContain('focus-visible:')
+      expect(root).not.toContain('disabled:')
+    }
+  })
+
+  it('leaves the interactive recipe untouched', () => {
+    const { root } = resolveUiIconButtonClasses({ size: 'S' })
+    expect(root).toContain(UI_ICON_BUTTON_ROOT_CLASS)
+    expect(root).not.toContain('pointer-events-none')
+  })
+})

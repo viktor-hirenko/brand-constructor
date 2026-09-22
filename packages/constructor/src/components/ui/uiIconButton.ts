@@ -44,6 +44,15 @@ export interface UiIconButtonClasses {
 export interface ResolveUiIconButtonOptions {
   variant?: UiIconButtonVariant
   size?: UiIconButtonSize
+  /**
+   * The kit draws this chrome in places where it is a *mark*, not a control:
+   * the check on a selected Concept card and the eye on a previewed one
+   * (`3715:5555` / `3715:5627`) sit inside a card that is itself the button,
+   * and a button cannot nest in a button. `decorative` keeps the box, the
+   * fill, the border and the shadow and drops everything that reacts to a
+   * pointer or to focus. Same idea as `UiToggle`'s `decorative` from phase 14.
+   */
+  decorative?: boolean
 }
 
 /**
@@ -57,6 +66,10 @@ export interface ResolveUiIconButtonOptions {
  */
 export const UI_ICON_BUTTON_ROOT_CLASS =
   'ui-icon-button inline-flex shrink-0 box-border items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50'
+
+/** The `decorative` root: the same box with every pointer/focus hook removed. */
+export const UI_ICON_BUTTON_DECORATIVE_ROOT_CLASS =
+  'ui-icon-button ui-icon-button--decorative pointer-events-none inline-flex shrink-0 box-border items-center justify-center rounded-full'
 
 /**
  * L: 48 = 12 + 24 + 12. S: 32 = 8 + 16 + 8 (`spacing/12` and `spacing/8` in the
@@ -88,14 +101,25 @@ export const UI_ICON_BUTTON_VARIANT: Record<UiIconButtonVariant, string> = {
     'ui-icon-button--glass bg-[rgba(57,57,71,0.25)] text-white backdrop-blur-[20px] hover:bg-[rgba(57,57,71,0.5)] focus-visible:ring-white/70',
 }
 
+/** The same two fills with the hover/focus/disabled hooks stripped out. */
+export const UI_ICON_BUTTON_DECORATIVE_VARIANT: Record<UiIconButtonVariant, string> = {
+  solid:
+    'ui-icon-button--solid border border-ink-300 bg-white text-ink-800 shadow-[0_8px_4px_rgba(0,0,0,0.12)]',
+  glass: 'ui-icon-button--glass bg-[rgba(57,57,71,0.25)] text-white backdrop-blur-[20px]',
+}
+
 export function resolveUiIconButtonClasses(
   options: ResolveUiIconButtonOptions = {}
 ): UiIconButtonClasses {
-  const { variant = 'solid', size = 'L' } = options
+  const { variant = 'solid', size = 'L', decorative = false } = options
   const sizing = UI_ICON_BUTTON_SIZE[size]
 
+  const root = decorative
+    ? `${UI_ICON_BUTTON_DECORATIVE_ROOT_CLASS} ${sizing.root} ${UI_ICON_BUTTON_DECORATIVE_VARIANT[variant]}`
+    : `${UI_ICON_BUTTON_ROOT_CLASS} ${sizing.root} ${UI_ICON_BUTTON_VARIANT[variant]}`
+
   return {
-    root: `${UI_ICON_BUTTON_ROOT_CLASS} ${sizing.root} ${UI_ICON_BUTTON_VARIANT[variant]}`,
+    root,
     icon: sizing.icon,
   }
 }

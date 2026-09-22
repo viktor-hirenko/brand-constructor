@@ -43,6 +43,7 @@ function isSelected(id: string): boolean {
       :is-active="isActive(concept.id)"
       :show-selection-ring="selectionRing && isSelected(concept.id)"
       :show-checkmark="isSelected(concept.id)"
+      :show-preview-mark="isActive(concept.id) && !isSelected(concept.id)"
       :show-overlay="true"
       :disabled="disabled"
       :clickable="!disabled"

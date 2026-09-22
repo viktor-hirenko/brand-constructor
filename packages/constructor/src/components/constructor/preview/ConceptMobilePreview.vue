@@ -34,7 +34,7 @@ const mobileSrc = computed(() => {
 
 <template>
   <div class="flex flex-col gap-6 h-full">
-    <h3 class="py-2 text-[1.5rem] font-medium tracking-[-0.4492px] leading-8 text-[#0a0a0a] shrink-0">
+    <h3 class="py-2 text-[1.5rem] font-medium leading-8 text-ink-900 shrink-0">
       Обраний концепт
     </h3>
 

@@ -11,6 +11,7 @@ import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import MaximizeIcon from '@/components/icons/MaximizeIcon.vue'
 import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
+import UiPagination from '@/components/ui/UiPagination.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
 import { isEmbedded } from '@/composables/useEmbedMode'
 
@@ -253,7 +254,7 @@ onUnmounted(() => {
         :class="embedded ? '' : 'rounded-[24px]'"
       >
         <ImagePlaceholderIcon class="size-10 mb-6 text-[#c8c8c8]" />
-        <p class="text-base leading-6 tracking-[-0.3125px] text-[#717182] max-w-[200px]">
+        <p class="text-base leading-6 tracking-[-0.3125px] text-ink-700 max-w-[200px]">
           Оберіть концепт зліва, щоб переглянути превʼю
         </p>
       </div>
@@ -261,10 +262,13 @@ onUnmounted(() => {
 
     <template v-else>
       <!-- Header: name + optional pill badge + select button -->
+      <!-- Kit Preview panel header `3717:1810`: name + badge in one row,
+           `spacing/8` between them, title `header/l` 24/32 weight 500 on
+           `preview-panel/content/title` #1f1f2e (= --color-ink-900). -->
       <div v-if="!props.hideHeader" class="flex items-center justify-between gap-4 shrink-0">
-        <div class="min-w-0 flex items-center gap-3 py-2">
+        <div class="min-w-0 flex items-center gap-2 py-2">
           <h3
-            class="min-w-0 flex-1 text-2xl font-medium tracking-[-0.4492px] leading-8 truncate text-[#0a0a0a]"
+            class="min-w-0 flex-1 text-2xl font-medium leading-8 truncate text-ink-900"
           >
             {{ concept.name }}
           </h3>
@@ -354,25 +358,18 @@ onUnmounted(() => {
           </template>
         </UiIconButton>
 
-        <!-- Top-center dots (Figma 1450:19308 — пілюля blur + rgba фон навколо крапок) -->
-        <div
+        <!-- Top-centre dots. Kit Pagination `3715:5756`, inset 20 from the
+             preview edge like the Navigation row below — that inset is the
+             `spacing/20` padding the kit's Preview frame carries. Until phase
+             17 this pill was the last carrier of the pre-kit glass tone; the
+             fill it uses now lives in `ui/uiPagination.ts`. -->
+        <UiPagination
           v-if="slideCount > 1"
-          class="absolute top-5 left-1/2 z-10 flex -translate-x-1/2 items-center rounded-full bg-[rgba(68,67,86,0.3)] p-3 backdrop-blur-[20px]"
-        >
-          <div class="flex items-center gap-1.5">
-            <button
-              v-for="i in slideCount"
-              :key="i - 1"
-              type="button"
-              class="rounded-full transition-all"
-              :class="
-                i - 1 === activeIndex ? 'size-3 bg-white' : 'size-2 bg-white/50 hover:bg-white/75'
-              "
-              :aria-label="`Слайд ${i}`"
-              @click="activeIndex = i - 1"
-            />
-          </div>
-        </div>
+          class="absolute top-5 left-1/2 z-10 -translate-x-1/2"
+          :count="slideCount"
+          :active-index="activeIndex"
+          @select="index => (activeIndex = index)"
+        />
 
         <!-- Side arrows. Kit Preview panel `3717:1817` builds its Navigation row
              from two Icon buttons, Glass L-48, inset 20 from the preview edges

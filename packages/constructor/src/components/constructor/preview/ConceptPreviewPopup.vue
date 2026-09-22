@@ -31,7 +31,7 @@ useEscapeClose(handleClose)
   >
     <header class="flex items-center justify-between gap-4 shrink-0">
       <h2
-        class="text-[1.5rem] font-medium leading-8 tracking-[-0.4492px] text-[#0a0a0a] truncate"
+        class="text-[1.5rem] font-medium leading-8 text-ink-900 truncate"
       >
         {{ concept.name }}
       </h2>

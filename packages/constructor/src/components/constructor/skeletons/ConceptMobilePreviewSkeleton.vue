@@ -8,7 +8,7 @@
 <template>
   <div class="concept-mobile-preview-skeleton flex flex-col gap-6 h-full" aria-hidden="true">
     <h3
-      class="text-[1.5rem] font-medium tracking-[-0.4492px] leading-8 text-[#0a0a0a] shrink-0"
+      class="text-[1.5rem] font-medium leading-8 text-ink-900 shrink-0"
     >
       Обраний концепт
     </h3>

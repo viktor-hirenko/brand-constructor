@@ -28,6 +28,10 @@ const selectClass = [
   'cursor-pointer appearance-none',
 ].join(' ')
 import { BRIEF_LANGUAGES, BRIEF_DOMAIN_ZONES } from '@/data/brief-constants'
+import {
+  DOMAIN_ZONE_CHIP_ROW_CLASS,
+  resolveDomainZoneChipClass,
+} from '@/components/constructor/modals/domainZoneChip'
 
 const props = withDefaults(
   defineProps<{
@@ -198,17 +202,13 @@ const title = computed(() => {
         <UiFieldLabel>
           9. Які доменні зони можна розглядати?
         </UiFieldLabel>
-        <div class="flex flex-wrap gap-2">
+        <div :class="DOMAIN_ZONE_CHIP_ROW_CLASS">
           <button
             v-for="zone in BRIEF_DOMAIN_ZONES"
             :key="zone"
             type="button"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all"
-            :class="
-              form.domainZones.includes(zone)
-                ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
-                : 'border-black/10 hover:border-black/20 text-[#0a0a0a]'
-            "
+            :aria-pressed="form.domainZones.includes(zone)"
+            :class="resolveDomainZoneChipClass(form.domainZones.includes(zone))"
             @click="toggleDomainZone(zone)"
           >
             {{ zone }}

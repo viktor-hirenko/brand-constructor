@@ -21,7 +21,10 @@ withDefaults(
     aria-hidden="true"
   >
     <div class="flex items-center justify-between gap-4 shrink-0">
-      <div class="min-w-0 flex items-center gap-3 flex-1 h-[48px]">
+      <!-- `gap-2` mirrors the kit's `spacing/8` between name and badge in
+           `ConceptPreviewSlider` — the two must stay equal or the pill jumps
+           sideways when the real header replaces this one. -->
+      <div class="min-w-0 flex items-center gap-2 flex-1 h-[48px]">
         <div class="h-8 w-[220px] rounded bg-muted animate-pulse" />
         <div
           v-if="!singleHeaderLine"

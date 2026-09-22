@@ -290,8 +290,8 @@ async function goDali() {
     </template>
 
     <!-- post-apply: single applied concept card -->
-    <div v-else-if="isPostApply" class="flex flex-col gap-3">
-      <p class="text-[1rem] font-medium leading-6 text-[#414141] tracking-[-0.3125px]">
+    <div v-else-if="isPostApply" class="flex flex-col gap-2">
+      <p class="text-sm/4 font-medium text-ink-700">
         Обраний концепт
       </p>
       <div class="w-[248px]">
@@ -310,13 +310,13 @@ async function goDali() {
       <!-- PO previous — reference only, not selectable.
            CEO already rejected PO's pick; if PO wants to keep it they use "Скасувати". -->
       <div class="flex flex-col gap-2">
-        <p class="text-[0.875rem] font-medium leading-4 text-[#717182]">Ваш попередній вибір</p>
+        <p class="text-sm/4 font-medium text-ink-700">Ваш попередній вибір</p>
         <ConceptCard :concept="poConcept" :show-overlay="true" :clickable="false" />
       </div>
 
       <!-- CEO pick (pre-selected) -->
       <div class="flex flex-col gap-2">
-        <p class="text-[0.875rem] font-medium leading-4 text-[#717182]">Вибір CEO</p>
+        <p class="text-sm/4 font-medium text-ink-700">Вибір CEO</p>
         <ConceptCard
           :concept="ceoConcept"
           :is-selected="ceoConcept ? selectedId === ceoConcept.id : false"
