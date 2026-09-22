@@ -191,6 +191,15 @@ describe('step 3 slots: domain, price, badge — kit 3719:5979', () => {
     expect(UI_NAME_CARD_PRICE_CLASS).toContain('text-ink-900')
   })
 
+  it('right-aligns the number so the gap to the badge is always 16', () => {
+    // Owner's call, divergence row 50. The kit left-aligns inside the fill box,
+    // which leaves a hole whenever the price is short — its own Sold row has a
+    // 46 gap (glyphs end 396.18, badge starts 442) and our real prices are
+    // `$15`, not the mockup's `$1 500`. Right-aligned, the gap is `spacing/16`
+    // in every row and the numbers line up on their right edge.
+    expect(UI_NAME_CARD_PRICE_CLASS).toContain('text-right')
+  })
+
   it('formats the price the way the mockup writes it', () => {
     // `uk-UA` groups with U+00A0, not a plain space — the mockup's `$1 500`.
     expect(formatUiNameCardPrice(1500)).toBe('$1 500')

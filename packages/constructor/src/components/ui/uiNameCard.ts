@@ -221,9 +221,23 @@ export const UI_NAME_CARD_META_CLASS = 'ui-name-card__meta flex w-35 shrink-0 it
  *
  * It fills what the badge leaves, so the badge stays flush with the card's
  * right padding whether or not a price exists.
+ *
+ * ── `text-right` is a deliberate divergence, on the owner's instruction ──────
+ * The kit left-aligns the price inside that fill box, which means the space
+ * between the number and the badge is whatever the column has left over — and
+ * the kit's own Sold row proves it: glyphs end at 396.18, badge starts at 442,
+ * a 46 gap (the Available row has 20). The mockup was drawn with four-digit
+ * prices, so it barely shows there; our real prices are `$15`, and the leftover
+ * reads as a hole about 100 wide.
+ *
+ * Right-aligning the number inside the same box makes that space exactly the
+ * kit's `spacing/16` in every row, and the numbers line up on their right edge,
+ * which is how numbers are normally set anyway. Nothing else moves: the block
+ * is still the kit's fixed 140, so the badges still line up down the list.
+ * Written up as row 50 in `dp-15258-divergences.md`.
  */
 export const UI_NAME_CARD_PRICE_CLASS =
-  'ui-name-card__price min-w-0 flex-1 truncate text-base/6 font-medium text-ink-900'
+  'ui-name-card__price min-w-0 flex-1 truncate text-right text-base/6 font-medium text-ink-900'
 
 /** The price's 24 line box, for the skeletons. */
 export const UI_NAME_CARD_PRICE_HEIGHT_CLASS = 'h-6'
