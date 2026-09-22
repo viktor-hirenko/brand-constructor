@@ -228,13 +228,15 @@ describe('kit accordion — Figma 3839:12607 / 3839:12381', () => {
       }
     })
 
-    it('keeps the letter-spacing the screen already had — open question 7', () => {
-      // Unlike the input family in phase 11, the current look here is defined:
-      // the header title is -0.31px and both row texts are -0.15px. The kit
-      // sets 0, and the divergence is recorded in the task document.
-      expect(UI_ACCORDION_HEADER_TITLE_CLASS).toContain('tracking-[-0.31px]')
-      expect(UI_ACCORDION_OPTION_TITLE_CLASS).toContain('tracking-[-0.15px]')
-      expect(UI_ACCORDION_OPTION_DESCRIPTION_CLASS).toContain('tracking-[-0.15px]')
+    it('carries the kit letterSpacing 0 — no tracking anywhere', () => {
+      // Phase 12 first shipped the screen's own trackings (-0.31px on the
+      // header, -0.15px on both row texts) under open question 7's default.
+      // QA overruled it: every value on this component matches the drawn one,
+      // and all five kit type styles set letterSpacing: 0. The rest of the
+      // tree still carries its trackings — that is phase 20, not here.
+      expect(UI_ACCORDION_HEADER_TITLE_CLASS).not.toContain('tracking-')
+      expect(UI_ACCORDION_OPTION_TITLE_CLASS).not.toContain('tracking-')
+      expect(UI_ACCORDION_OPTION_DESCRIPTION_CLASS).not.toContain('tracking-')
     })
   })
 })

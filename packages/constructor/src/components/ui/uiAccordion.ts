@@ -63,13 +63,17 @@
  *     and it keeps the row from shifting 1px when it is picked. This is the
  *     one deliberate divergence in the file.
  *
- * ── Letter-spacing: open question 7, honoured
+ * ── Letter-spacing: the kit's zero, by the owner's call
  *
- * Its default answer is "keep the current look on вынос screens". Unlike the
- * input family (phase 11), the current look here is well defined — the header
- * title carries `-0.31px` and both row texts carry `-0.15px` — so those are
- * kept, even though the kit sets `letterSpacing: 0`. `tracking-[…px]` is one of
- * the documented px exceptions in "Железные правила адаптива".
+ * Open question 7's standing default is "keep the current look on вынос
+ * screens", and phase 12 first shipped that way — the header title at
+ * `-0.31px`, both row texts at `-0.15px`. QA overruled it: the instruction is
+ * that every value on this component matches the drawn one. All five type
+ * styles in the kit set `letterSpacing: 0`, so the tracking is gone.
+ *
+ * This is the accordion only. The rest of the tree still carries its trackings
+ * and open question 7 is still open for them; phase 20 is where that gets
+ * settled in one pass rather than component by component.
  *
  * Why a `.ts` map and not a component test: `packages/constructor` has no
  * `@vue/test-utils` and no `jsdom`, and `vitest.config.ts:11` sets
@@ -129,7 +133,7 @@ export const UI_ACCORDION_HEADER_TITLE_GROUP_CLASS =
  * `UI_ACCORDION_HEADER_CONTENT_HEIGHT_CLASS` mirrors — the test pins the pair.
  */
 export const UI_ACCORDION_HEADER_TITLE_CLASS =
-  'ui-accordion-item__title truncate text-base font-medium tracking-[-0.31px] text-ink-900'
+  'ui-accordion-item__title truncate text-base font-medium text-ink-900'
 
 /**
  * The header's content height, for carriers that have no text to derive it
@@ -211,11 +215,11 @@ export const UI_ACCORDION_OPTION_TEXT_CLASS =
  * spell the kit's 16.
  */
 export const UI_ACCORDION_OPTION_TITLE_CLASS =
-  'ui-accordion-option__title block text-sm/4 font-medium tracking-[-0.15px] text-ink-900'
+  'ui-accordion-option__title block text-sm/4 font-medium text-ink-900'
 
 /** `caption/l/regular` 14/16 in `accordion/content/description` #6f6f7d. */
 export const UI_ACCORDION_OPTION_DESCRIPTION_CLASS =
-  'ui-accordion-option__description block text-sm/4 tracking-[-0.15px] text-ink-700'
+  'ui-accordion-option__description block text-sm/4 text-ink-700'
 
 /** The Selected row's trailing check — 20 in the kit, unlike the header's 16. */
 export const UI_ACCORDION_OPTION_ICON_CLASS =
