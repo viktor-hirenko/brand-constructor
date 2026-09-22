@@ -50,14 +50,12 @@ const layoutModifier = computed(() => {
       :layout="layout"
       applied-label="Обрана назва"
       dual-outer-gap="gap-4"
-      column-inner-gap="gap-1"
-      choice-gap="gap-1"
     >
       <template #applied>
         <ul class="review-internal-block__list flex flex-col gap-1">
           <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ poValue }}</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ poValue }}</span>
           </li>
         </ul>
       </template>
@@ -68,8 +66,8 @@ const layoutModifier = computed(() => {
           class="review-internal-block__brief flex items-center justify-between gap-4"
         >
           <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">Бриф нової Internal Naming</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">Бриф нової Internal Naming</span>
           </div>
           <UiLink @click="emit('previewBrief')">
             <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
@@ -78,8 +76,8 @@ const layoutModifier = computed(() => {
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
           <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ poValue }}</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ poValue }}</span>
           </li>
         </ul>
       </template>
@@ -87,8 +85,8 @@ const layoutModifier = computed(() => {
       <template #ceo>
         <ul class="review-internal-block__list flex flex-col gap-1">
           <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ ceoName }}</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ ceoName }}</span>
           </li>
         </ul>
       </template>
@@ -99,8 +97,8 @@ const layoutModifier = computed(() => {
           class="review-internal-block__brief flex items-center justify-between gap-4"
         >
           <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">Бриф нової Internal Naming</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">Бриф нової Internal Naming</span>
           </div>
           <UiLink @click="emit('previewBrief')">
             <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
@@ -109,8 +107,8 @@ const layoutModifier = computed(() => {
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
           <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ poValue }}</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ poValue }}</span>
           </li>
         </ul>
       </template>

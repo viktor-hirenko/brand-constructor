@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 import { ref } from 'vue';
 import { fn } from '@storybook/test';
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue';
-import SupervisorCommentReadonly from '@/components/constructor/edit-flow/SupervisorCommentReadonly.vue';
 import { CEO_COMMENT } from '../mocks/fixtures';
 
 const meta = {
@@ -78,15 +77,4 @@ export const RequiredWithHintFilled: Story = {
     required: true,
     requiredHint: "Коментар обов'язковий при виборі кількох назв або викупленої назви",
   },
-};
-
-export const SupervisorCommentReadonlyBlock: StoryObj = {
-  name: 'SupervisorCommentReadonly (revision-response flow)',
-  render: () => ({
-    components: { SupervisorCommentReadonly },
-    setup() {
-      return { value: CEO_COMMENT };
-    },
-    template: '<SupervisorCommentReadonly :value="value" />',
-  }),
 };

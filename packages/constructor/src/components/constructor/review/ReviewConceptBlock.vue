@@ -5,6 +5,7 @@ import { getAssetUrl } from '@/composables/useApi'
 import { CONCEPT_CARD_TITLE_GRADIENT } from '@/constants/conceptCardVisual'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
+import UiProperty from '@/components/ui/UiProperty.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
 import FileIcon from '@/components/icons/FileIcon.vue'
@@ -97,25 +98,23 @@ const singlePoLabel = 'Вибір Замовника'
 <template>
   <div :class="['review-concept-block flex flex-col gap-4', layoutModifier]">
     <!-- Mode row -->
-    <div class="review-concept-block__mode flex items-start gap-2">
-      <div class="size-5 shrink-0 text-[#5B5B62]">
-        <MoonIcon v-if="mode === 'dark'" class="size-5" />
-        <SunIcon v-else class="size-5" />
-      </div>
-      <div class="flex-1 min-w-0 flex flex-col gap-1">
-        <p class="text-[0.875rem] font-medium leading-4 text-[#5B5B62]">Mode</p>
-        <p class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#1A1A1A]">
-          {{ modeLabel }}
-        </p>
-      </div>
-    </div>
+    <UiProperty
+      class="review-concept-block__mode"
+      type="icon-label-value"
+      label="Mode"
+      :value="modeLabel"
+    >
+      <template #icon="{ iconClass }">
+        <MoonIcon v-if="mode === 'dark'" :class="iconClass" />
+        <SunIcon v-else :class="iconClass" />
+      </template>
+    </UiProperty>
 
     <ReviewChoiceGroup
       :layout="layout"
       applied-label="Обраний концепт"
       :po-label="singlePoLabel"
       dual-grid
-      column-inner-gap="gap-2"
     >
       <template #po>
         <div
@@ -151,10 +150,10 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="isNewConcept"
-          class="review-concept-block__card review-concept-block__card--brief relative w-full aspect-square rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
+          class="review-concept-block__card review-concept-block__card--brief relative w-full aspect-square rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
-          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
+          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-ink-900 text-center px-4">
             Бриф нового концепту
           </p>
           <UiIconButton
@@ -171,11 +170,11 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-[#5B5B62] w-full"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-ink-700 w-full"
         >
           {{ conceptName }}
         </div>
-        <div v-else class="review-concept-block__empty text-[0.875rem] text-[#5B5B62] italic">
+        <div v-else class="review-concept-block__empty text-[0.875rem] text-ink-700 italic">
           Концепт не обрано
         </div>
       </template>
@@ -242,7 +241,7 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-[#5B5B62]"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-ink-700"
         >
           {{ conceptName }}
         </div>
@@ -276,10 +275,10 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="isNewConcept"
-          class="review-concept-block__card review-concept-block__card--brief relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-[#f3f3f5] flex flex-col items-center justify-center gap-3 text-[#5B5B62]"
+          class="review-concept-block__card review-concept-block__card--brief relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
-          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-[#1A1A1A] text-center px-4">
+          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-ink-900 text-center px-4">
             Бриф нового концепту
           </p>
           <UiIconButton
@@ -296,11 +295,11 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-[#5B5B62]"
+          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-ink-700"
         >
           {{ conceptName }}
         </div>
-        <div v-else class="review-concept-block__empty text-[0.875rem] text-[#5B5B62] italic">
+        <div v-else class="review-concept-block__empty text-[0.875rem] text-ink-700 italic">
           Концепт не обрано
         </div>
       </template>

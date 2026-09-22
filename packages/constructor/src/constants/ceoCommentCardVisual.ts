@@ -1,23 +1,19 @@
 /**
- * CEO comment card — Figma Brand-Builder 1979:1533 / Comment component.
+ * What is left of the CEO comment card's hand-written paint: nothing.
  *
- * What is left here is the card's paint. The button recipes that used to live
- * alongside it are gone: DP-15258 phase 10 put «Позначити як вирішений» /
- * «Вирішено» on the kit's Secondary S-32 (`3443:4915` / `3443:4916` inside the
- * kit Comment `3439:1309`) and «Застосувати варіант CEO» on Secondary L-48
- * (the 495×48 `Button` instance in `5387:105224`).
+ * DP-15258 phase 13 put the card on the kit's Comment (`3439:1309`) via
+ * `ui/UiComment.vue`, so the four colours that used to live here —
+ * `rgba(217,217,217,0.2)`, #4882ff, #5b5b62, #3d3d3d, none of which the kit
+ * contains — are now `comment/bg/default` #f9f9fb (ink-100),
+ * `comment/border/accent` #3a5bc7 (blue-content), `comment/content/label`
+ * #6f6f7d (ink-700) and `comment/content/value` #1f1f2e (ink-900), all read
+ * from `ui/uiComment.ts` and none of them written as hex.
  *
- * The four colours below stay hand-written on purpose — they are the Comment
- * component's own surface, and the kit values for it (`comment/bg/default`
- * #f9f9fb, `comment/content/label` #6f6f7d, `comment/content/value` #1f1f2e)
- * land in phase 13 together with `UiComment`. Changing them here would move
- * paint on a screen this phase is not allowed to restyle.
+ * Phase 10 had already taken the button recipes out of this file:
+ * «Позначити як вирішений» / «Вирішено» onto the kit's Secondary S-32
+ * (`3443:4915` / `3443:4916`) and «Застосувати варіант CEO» onto Secondary
+ * L-48 (the 495×48 `Button` instance in `5387:105224`).
  */
-
-export const CEO_COMMENT_CARD_BG = 'rgba(217,217,217,0.2)'
-export const CEO_COMMENT_UNRESOLVED_ACCENT = '#4882ff'
-export const CEO_COMMENT_LABEL_COLOR = '#5b5b62'
-export const CEO_COMMENT_VALUE_COLOR = '#3d3d3d'
 
 /**
  * Secondary outline action — **dead, zero call sites**, and deliberately not

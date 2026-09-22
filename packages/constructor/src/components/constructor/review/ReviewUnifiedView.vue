@@ -11,7 +11,9 @@ import type { ComponentSelectionDetails } from '@/composables/useReviewComponent
 import SectionCommentBlock from '@/components/constructor/fields/SectionCommentBlock.vue'
 import ReviewHeader from '@/components/constructor/review/ReviewHeader.vue'
 import ReviewSection from '@/components/constructor/review/ReviewSection.vue'
-import ReviewSectionRow from '@/components/constructor/review/ReviewSectionRow.vue'
+import UiProperty from '@/components/ui/UiProperty.vue'
+import UiComment from '@/components/ui/UiComment.vue'
+import UiFieldLabel from '@/components/ui/UiFieldLabel.vue'
 import ReviewConceptBlock from '@/components/constructor/review/ReviewConceptBlock.vue'
 import ReviewExternalNamingsList from '@/components/constructor/review/ReviewExternalNamingsList.vue'
 import ReviewInternalNamingBlock from '@/components/constructor/review/ReviewInternalNamingBlock.vue'
@@ -423,33 +425,33 @@ defineExpose({
             :has-unresolved="hasSectionUnresolvedComment('basics')"
             @edit="step => emitEditSection(step, 'basics')"
           >
-            <ReviewSectionRow
+            <UiProperty
               v-if="basics.geo.length > 0"
               label="Географія"
               :value="basics.geo.join(', ')"
             >
-              <template #icon>
-                <GlobeIcon class="size-5" />
+              <template #icon="{ iconClass }">
+                <GlobeIcon :class="iconClass" />
               </template>
-            </ReviewSectionRow>
-            <ReviewSectionRow
+            </UiProperty>
+            <UiProperty
               v-if="basics.launchDate"
               label="Дата запуску"
               :value="formatDate(basics.launchDate)"
             >
-              <template #icon>
-                <CalendarIcon class="size-5 text-[#5B5B62]" />
+              <template #icon="{ iconClass }">
+                <CalendarIcon :class="iconClass" />
               </template>
-            </ReviewSectionRow>
-            <ReviewSectionRow
+            </UiProperty>
+            <UiProperty
               v-if="basics.linkedProduct"
               label="Звʼязок з іншим продуктом"
               :value="basics.linkedProduct"
             >
-              <template #icon>
-                <LinkIcon class="size-5" />
+              <template #icon="{ iconClass }">
+                <LinkIcon :class="iconClass" />
               </template>
-            </ReviewSectionRow>
+            </UiProperty>
             <template #comment>
               <SectionCommentBlock
                 v-bind="sectionCommentBindings('basics')"
@@ -611,31 +613,27 @@ defineExpose({
             v-if="isPoReturnedView && getSectionCeoCommentValue('general')"
             class="review-unified-view__general-comment-po space-y-3"
           >
-            <div class="flex items-center gap-2">
-              <ChatBubbleIcon class="size-5 shrink-0 text-[#5B5B62]" />
-              <span class="text-base font-medium text-foreground tracking-[-0.31px]">
-                Загальний коментар CEO
-              </span>
-            </div>
-            <div class="rounded-lg bg-[rgba(217,217,217,0.2)] p-4">
-              <p
-                class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line"
-              >
-                {{ getSectionCeoCommentValue('general') }}
-              </p>
-            </div>
+            <UiFieldLabel>
+              <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
+              Загальний коментар CEO
+            </UiFieldLabel>
+            <!--
+              The caption stays OUTSIDE the box here, unlike every other comment
+              in review: it has to match the CEO's own editor a few lines below,
+              whose caption is the kit's Title (`3424:1050`) above an Input, not
+              the Comment's inner label.
+            -->
+            <UiComment :value="getSectionCeoCommentValue('general')" />
           </div>
 
           <div
             v-if="reviewMode === 'ceo'"
             class="review-unified-view__general-comment-ceo space-y-3"
           >
-            <div class="flex items-center gap-2">
-              <ChatBubbleIcon class="size-5 shrink-0 text-[#5B5B62]" />
-              <span class="text-base font-medium text-foreground tracking-[-0.31px]">
-                Загальний коментар
-              </span>
-            </div>
+            <UiFieldLabel>
+              <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
+              Загальний коментар
+            </UiFieldLabel>
             <SectionCommentBlock
               section-key="general"
               always-expanded

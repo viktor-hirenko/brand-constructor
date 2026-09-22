@@ -3,10 +3,16 @@ import { computed } from 'vue'
 import UnresolvedDot from '@/components/ui/UnresolvedDot.vue'
 import SectionStatusBadge from '@/components/ui/SectionStatusBadge.vue'
 import UiButton from '@/components/ui/UiButton.vue'
+import UiSectionCard from '@/components/ui/UiSectionCard.vue'
 import RefreshIcon from '@/components/icons/RefreshIcon.vue'
 import PencilIcon from '@/components/icons/PencilIcon.vue'
 
 /**
+ * Review's adapter over the kit Section card `3761:2273` — the card itself is
+ * `ui/UiSectionCard.vue` since DP-15258 phase 13. What stays here is review's
+ * own business: which action the header shows, whether the section is flagged
+ * as needing a comment, and the borderless variant the kit has no symbol for.
+ *
  * The header action is the kit's Ghost button at M-40, not a link: the drawn
  * section card carries it as instance `3760:2297` — 128×40, `radius/button` 8,
  * `button/ghost/content/default` #393947, `caption/l/medium` 14/16, 12 padding
@@ -65,6 +71,13 @@ const titleTruncates = computed(() => {
     normalized.includes('быть')
   )
 })
+
+const cardModifierClass = computed(() => [
+  'review-section',
+  props.hasUnresolved && !props.needsChoice ? 'review-section--has-unresolved' : '',
+  props.needsChoice ? 'review-section--needs-choice' : '',
+  props.highlighted ? 'review-section--highlighted' : '',
+])
 </script>
 
 <template>
@@ -75,33 +88,19 @@ const titleTruncates = computed(() => {
     <slot name="comment" />
   </section>
 
-  <section
+  <UiSectionCard
     v-else
-    :class="[
-      'review-section rounded-2xl border bg-white transition-colors',
-      highlighted ? 'border-amber-400 ring-2 ring-amber-200 review-section--highlighted' : 'border-[#EDEDED]',
-      hasUnresolved && !needsChoice ? 'review-section--has-unresolved' : '',
-      needsChoice ? 'review-section--needs-choice' : '',
-    ]"
+    :title="title"
+    :highlighted="highlighted"
+    :title-truncates="needsChoice || titleTruncates"
+    :class="cardModifierClass"
   >
-    <header class="review-section__header flex items-center justify-between h-14 pl-4 pr-2">
-      <div
-        :class="[
-          'review-section__indicators flex min-w-0 flex-1 items-center gap-2',
-          needsChoice || titleTruncates ? 'flex-nowrap' : 'flex-wrap',
-        ]"
-      >
-        <h3
-          :class="[
-            'review-section__title text-[1.125rem] font-medium leading-6 tracking-[-0.1504px] text-[#0a0a0a]',
-            needsChoice || titleTruncates ? 'min-w-0 truncate' : '',
-          ]"
-        >
-          {{ title }}
-        </h3>
-        <UnresolvedDot v-if="hasUnresolved && !needsChoice" />
-        <SectionStatusBadge v-if="needsChoice" variant="attention" />
-      </div>
+    <template #badge>
+      <UnresolvedDot v-if="hasUnresolved && !needsChoice" />
+      <SectionStatusBadge v-if="needsChoice" variant="attention" />
+    </template>
+
+    <template #action>
       <UiButton
         v-if="editStep != null"
         variant="ghost"
@@ -126,13 +125,12 @@ const titleTruncates = computed(() => {
         </template>
         Змінити вибір
       </UiButton>
-    </header>
-    <hr class="border-t border-black/10" />
-    <div class="review-section__body p-4 flex flex-col">
-      <div class="review-section__content flex flex-col gap-4">
-        <slot />
-      </div>
+    </template>
+
+    <slot />
+
+    <template #comment>
       <slot name="comment" />
-    </div>
-  </section>
+    </template>
+  </UiSectionCard>
 </template>

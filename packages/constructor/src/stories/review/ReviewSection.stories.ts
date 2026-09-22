@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import { fn } from '@storybook/test';
 import ReviewSection from '@/components/constructor/review/ReviewSection.vue';
-import ReviewSectionRow from '@/components/constructor/review/ReviewSectionRow.vue';
+import UiProperty from '@/components/ui/UiProperty.vue';
 import SectionCommentBlock from '@/components/constructor/fields/SectionCommentBlock.vue';
 import GlobeIcon from '@/components/icons/GlobeIcon.vue';
 import CalendarIcon from '@/components/icons/CalendarIcon.vue';
@@ -26,18 +26,18 @@ export const Default: Story = {
     editStep: 1,
   },
   render: args => ({
-    components: { ReviewSection, ReviewSectionRow, GlobeIcon, CalendarIcon },
+    components: { ReviewSection, UiProperty, GlobeIcon, CalendarIcon },
     setup() {
       return { args };
     },
     template: `
       <ReviewSection v-bind="args">
-        <ReviewSectionRow label="Географія" value="UK">
-          <template #icon><GlobeIcon class="size-5" /></template>
-        </ReviewSectionRow>
-        <ReviewSectionRow label="Дата запуску" value="10 квітня 2026">
-          <template #icon><CalendarIcon class="size-5 text-[#5B5B62]" /></template>
-        </ReviewSectionRow>
+        <UiProperty label="Географія" value="UK">
+          <template #icon="{ iconClass }"><GlobeIcon :class="iconClass" /></template>
+        </UiProperty>
+        <UiProperty label="Дата запуску" value="10 квітня 2026">
+          <template #icon="{ iconClass }"><CalendarIcon :class="iconClass" /></template>
+        </UiProperty>
       </ReviewSection>
     `,
   }),
@@ -55,7 +55,7 @@ export const WithChangeChoice: Story = {
     },
     template: `
       <ReviewSection v-bind="args">
-        <p class="text-sm text-[#5B5B62]">Контент секції — див. ReviewConceptBlock</p>
+        <p class="text-sm text-ink-700">Контент секції — див. ReviewConceptBlock</p>
       </ReviewSection>
     `,
   }),
@@ -77,15 +77,15 @@ export const UnresolvedDot: Story = {
     hasUnresolved: true,
   },
   render: args => ({
-    components: { ReviewSection, ReviewSectionRow, SectionCommentBlock, GlobeIcon, CalendarIcon },
+    components: { ReviewSection, UiProperty, SectionCommentBlock, GlobeIcon, CalendarIcon },
     setup() {
       return { args, poComment: PO_COMMENT, ceoComment: CEO_COMMENT };
     },
     template: `
       <ReviewSection v-bind="args">
-        <ReviewSectionRow label="Географія" value="UK">
-          <template #icon><GlobeIcon class="size-5" /></template>
-        </ReviewSectionRow>
+        <UiProperty label="Географія" value="UK">
+          <template #icon="{ iconClass }"><GlobeIcon :class="iconClass" /></template>
+        </UiProperty>
         <template #comment>
           <SectionCommentBlock
             section-key="basics"

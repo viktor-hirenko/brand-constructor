@@ -55,12 +55,12 @@ const layoutModifier = computed(() => {
             :key="item.id"
             class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ item.name }}</span>
+            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
-        <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
+        <p v-else class="review-external-list__empty text-[0.875rem] text-ink-700 italic">
           Назву не обрано
         </p>
       </template>
@@ -72,9 +72,9 @@ const layoutModifier = computed(() => {
             :key="item.id"
             class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ item.name }}</span>
+            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
         <div
@@ -82,15 +82,15 @@ const layoutModifier = computed(() => {
           class="review-external-list__brief flex items-center justify-between gap-4"
         >
           <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">Бриф нового External Naming</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">Бриф нового External Naming</span>
           </div>
           <UiLink @click="emit('previewBrief')">
             <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
             Переглянути
           </UiLink>
         </div>
-        <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
+        <p v-else class="review-external-list__empty text-[0.875rem] text-ink-700 italic">
           Назву не обрано
         </p>
       </template>
@@ -102,9 +102,9 @@ const layoutModifier = computed(() => {
             :key="item.id"
             class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ item.name }}</span>
+            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
       </template>
@@ -116,9 +116,9 @@ const layoutModifier = computed(() => {
             :key="item.id"
             class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
           >
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-[#5B5B62]">({{ item.domain }})</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">{{ item.name }}</span>
+            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
         <div
@@ -126,15 +126,15 @@ const layoutModifier = computed(() => {
           class="review-external-list__brief flex items-center justify-between gap-4"
         >
           <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
-            <span class="text-[#5B5B62]">•</span>
-            <span class="text-[#1A1A1A]">Бриф нового External Naming</span>
+            <span class="text-ink-700">•</span>
+            <span class="text-ink-900">Бриф нового External Naming</span>
           </div>
           <UiLink @click="emit('previewBrief')">
             <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
             Переглянути
           </UiLink>
         </div>
-        <p v-else class="review-external-list__empty text-[0.875rem] text-[#5B5B62] italic">
+        <p v-else class="review-external-list__empty text-[0.875rem] text-ink-700 italic">
           Назву не обрано
         </p>
       </template>

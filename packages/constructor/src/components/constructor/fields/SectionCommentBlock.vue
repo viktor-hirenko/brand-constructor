@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import SupervisorCommentCard from '@/components/constructor/review/SupervisorCommentCard.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import { isSectionCommentBlockVisible } from '@/utils/sectionCommentBlockVisibility'
+import UiComment from '@/components/ui/UiComment.vue'
 import UiTextarea from '@/components/ui/UiTextarea.vue'
 
 /**
@@ -186,18 +187,13 @@ defineExpose({ isVisible })
     ]"
     :data-section="sectionKey"
   >
-    <!-- Product Owner comment (read-only) -->
-    <div
+    <!-- Product Owner comment (read-only) — kit Comment, Type = Default -->
+    <UiComment
       v-if="hasAuthorComment"
-      class="section-comment__po flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
-    >
-      <p class="text-[0.875rem] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
-        Коментар замовника
-      </p>
-      <p class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
-        {{ authorComment }}
-      </p>
-    </div>
+      class="section-comment__po"
+      label="Коментар замовника"
+      :value="authorComment"
+    />
 
     <!-- CEO comment block -->
     <template v-if="supervisorEditable">
@@ -250,16 +246,11 @@ defineExpose({ isVisible })
     </template>
 
     <!-- Read-only CEO comment without resolve UI (used outside the PO returned-from-CEO view) -->
-    <div
+    <UiComment
       v-else-if="hasSupervisorComment"
-      class="section-comment__ceo-readonly flex flex-col gap-1 rounded-lg bg-[rgba(217,217,217,0.2)] p-4"
-    >
-      <p class="text-[0.875rem] font-medium leading-4 tracking-[-0.1504px] text-[#5B5B62]">
-        Коментар CEO
-      </p>
-      <p class="text-[1rem] leading-6 tracking-[-0.1504px] text-[#3D3D3D] whitespace-pre-line">
-        {{ supervisorComment }}
-      </p>
-    </div>
+      class="section-comment__ceo-readonly"
+      label="Коментар CEO"
+      :value="supervisorComment"
+    />
   </div>
 </template>

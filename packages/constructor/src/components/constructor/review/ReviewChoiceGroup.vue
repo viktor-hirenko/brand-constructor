@@ -2,7 +2,16 @@
 /**
  * Layout shell for PO / CEO / applied choice blocks in review screens.
  * Business content is passed via slots; this component only renders labels and structure.
+ *
+ * Each column is the kit's Property in its label-first form — `Label + Value`
+ * (`4378:8011`) for the naming lists, `Label + Preview` (`4131:8340`) for the
+ * concept cards — so the caption is `UiProperty`'s label and the gap under it
+ * is the kit's `spacing/8`. DP-15258 phase 13 measured both symbols: the
+ * label-first types put 8 there, while `Icon + Label + Value` puts 4. The
+ * screen carried 4 in three of these five places and 8 in the other two.
  */
+import UiProperty from '@/components/ui/UiProperty.vue'
+
 type ReviewChoiceLayout = 'applied' | 'dual' | 'single'
 
 interface ReviewChoiceGroupProps {
@@ -14,10 +23,6 @@ interface ReviewChoiceGroupProps {
   dualGrid?: boolean
   /** Gap between dual columns / actions stack. */
   dualOuterGap?: string
-  /** Gap between label and content inside a column. */
-  columnInnerGap?: string
-  /** Gap on applied / single choice wrappers. */
-  choiceGap?: string
 }
 
 withDefaults(defineProps<ReviewChoiceGroupProps>(), {
@@ -26,8 +31,6 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
   appliedLabel: 'Обрані назви',
   dualGrid: false,
   dualOuterGap: 'gap-6',
-  columnInnerGap: 'gap-1',
-  choiceGap: 'gap-2',
 })
 </script>
 
@@ -41,50 +44,38 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
     ]"
   >
     <!-- Applied -->
-    <div
+    <UiProperty
       v-if="layout === 'applied'"
-      :class="[
-        'review-choice-group__choice review-choice-group__choice--applied flex flex-col',
-        choiceGap,
-      ]"
+      class="review-choice-group__choice review-choice-group__choice--applied"
+      type="label-value"
+      :label="appliedLabel"
     >
-      <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
-        {{ appliedLabel }}
-      </p>
       <slot name="applied" />
-    </div>
+    </UiProperty>
 
     <!-- Dual: PO + CEO (+ optional actions). Max width 506px → 31.625rem @16. -->
     <template v-else-if="layout === 'dual'">
       <div
         :class="[
           dualGrid
-            ? 'review-choice-group__choice review-choice-group__choice--dual grid grid-cols-2 gap-3 max-w-[31.625rem]'
+            ? 'review-choice-group__choice review-choice-group__choice--dual grid grid-cols-2 gap-2 max-w-[31.625rem]'
             : ['review-choice-group__choice review-choice-group__choice--dual flex flex-col', dualOuterGap],
         ]"
       >
-        <div
-          :class="[
-            'review-choice-group__column review-choice-group__column--po flex flex-col min-w-0',
-            columnInnerGap,
-          ]"
+        <UiProperty
+          class="review-choice-group__column review-choice-group__column--po"
+          :type="dualGrid ? 'label-preview' : 'label-value'"
+          :label="poLabel"
         >
-          <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
-            {{ poLabel }}
-          </p>
           <slot name="po" />
-        </div>
-        <div
-          :class="[
-            'review-choice-group__column review-choice-group__column--ceo flex flex-col min-w-0',
-            columnInnerGap,
-          ]"
+        </UiProperty>
+        <UiProperty
+          class="review-choice-group__column review-choice-group__column--ceo"
+          :type="dualGrid ? 'label-preview' : 'label-value'"
+          :label="ceoLabel"
         >
-          <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
-            {{ ceoLabel }}
-          </p>
           <slot name="ceo" />
-        </div>
+        </UiProperty>
       </div>
       <div v-if="$slots.actions" class="review-choice-group__actions mt-4">
         <slot name="actions" />
@@ -92,17 +83,13 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
     </template>
 
     <!-- Single: PO only -->
-    <div
+    <UiProperty
       v-else
-      :class="[
-        'review-choice-group__choice review-choice-group__choice--single flex flex-col',
-        choiceGap,
-      ]"
+      class="review-choice-group__choice review-choice-group__choice--single"
+      type="label-value"
+      :label="poLabel"
     >
-      <p class="review-choice-group__label text-[0.875rem] font-medium leading-4 text-[#5B5B62]">
-        {{ poLabel }}
-      </p>
       <slot name="single" />
-    </div>
+    </UiProperty>
   </div>
 </template>

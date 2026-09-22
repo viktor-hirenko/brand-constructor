@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import { fn } from '@storybook/test';
 import ReviewSection from '@/components/constructor/review/ReviewSection.vue';
-import ReviewSectionRow from '@/components/constructor/review/ReviewSectionRow.vue';
+import UiProperty from '@/components/ui/UiProperty.vue';
 import SectionCommentBlock from '@/components/constructor/fields/SectionCommentBlock.vue';
 import GlobeIcon from '@/components/icons/GlobeIcon.vue';
 import CalendarIcon from '@/components/icons/CalendarIcon.vue';
@@ -25,7 +25,7 @@ function brandBasicsTemplate(commentBlockArgs: Record<string, unknown>) {
   return {
     components: {
       ReviewSection,
-      ReviewSectionRow,
+      UiProperty,
       SectionCommentBlock,
       GlobeIcon,
       CalendarIcon,
@@ -39,12 +39,12 @@ function brandBasicsTemplate(commentBlockArgs: Record<string, unknown>) {
     },
     template: `
       <ReviewSection title="Brand Basics" :edit-step="1" @edit="onEdit">
-        <ReviewSectionRow label="Географія" value="UK">
-          <template #icon><GlobeIcon class="size-5" /></template>
-        </ReviewSectionRow>
-        <ReviewSectionRow label="Дата запуску" value="10 квітня 2026">
-          <template #icon><CalendarIcon class="size-5 text-[#5B5B62]" /></template>
-        </ReviewSectionRow>
+        <UiProperty label="Географія" value="UK">
+          <template #icon="{ iconClass }"><GlobeIcon :class="iconClass" /></template>
+        </UiProperty>
+        <UiProperty label="Дата запуску" value="10 квітня 2026">
+          <template #icon="{ iconClass }"><CalendarIcon :class="iconClass" /></template>
+        </UiProperty>
         <template #comment>
           <SectionCommentBlock
             section-key="basics"
@@ -90,7 +90,7 @@ export const CeoUnresolvedResolveUi: Story = {
   render: () => ({
     components: {
       ReviewSection,
-      ReviewSectionRow,
+      UiProperty,
       SectionCommentBlock,
       GlobeIcon,
       CalendarIcon,
@@ -104,12 +104,12 @@ export const CeoUnresolvedResolveUi: Story = {
     },
     template: `
       <ReviewSection title="Brand Basics" :edit-step="1" has-unresolved @edit="onEdit">
-        <ReviewSectionRow label="Географія" value="UK">
-          <template #icon><GlobeIcon class="size-5" /></template>
-        </ReviewSectionRow>
-        <ReviewSectionRow label="Дата запуску" value="10 квітня 2026">
-          <template #icon><CalendarIcon class="size-5 text-[#5B5B62]" /></template>
-        </ReviewSectionRow>
+        <UiProperty label="Географія" value="UK">
+          <template #icon="{ iconClass }"><GlobeIcon :class="iconClass" /></template>
+        </UiProperty>
+        <UiProperty label="Дата запуску" value="10 квітня 2026">
+          <template #icon="{ iconClass }"><CalendarIcon :class="iconClass" /></template>
+        </UiProperty>
         <template #comment>
           <SectionCommentBlock
             section-key="basics"
@@ -142,7 +142,7 @@ export const ExternalNamingNeedsChoice: Story = {
       >
         <div class="flex flex-col gap-4 text-[16px] leading-6">
           <div>
-            <p class="text-[14px] font-medium text-[#5B5B62] mb-2">Вибір замовника</p>
+            <p class="text-[14px] font-medium text-ink-700 mb-2">Вибір замовника</p>
             <ul class="space-y-1">
               <li>• Winphoria (test.com)</li>
               <li>• Winstery (test.com)</li>
@@ -150,7 +150,7 @@ export const ExternalNamingNeedsChoice: Story = {
             </ul>
           </div>
           <div>
-            <p class="text-[14px] font-medium text-[#5B5B62] mb-2">Вибір CEO</p>
+            <p class="text-[14px] font-medium text-ink-700 mb-2">Вибір CEO</p>
             <ul><li>• JoyMania (test.com)</li></ul>
           </div>
           <button
