@@ -145,7 +145,7 @@ const rightColumnClass = computed(() =>
           @click="closePreview"
         >
           <template #default="{ iconClass }">
-            <CloseIcon :class="iconClass" :stroke-width="1.5" />
+            <CloseIcon :class="iconClass" />
           </template>
         </UiIconButton>
         <slot name="right" />

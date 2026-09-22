@@ -40,7 +40,7 @@ useEscapeClose(handleClose)
            glyph the kit uses inside a modal header. -->
       <UiIconButton aria-label="Закрити" @click="handleClose">
         <template #default="{ iconClass }">
-          <CloseIcon :class="iconClass" :stroke-width="1.5" />
+          <CloseIcon :class="iconClass" />
         </template>
       </UiIconButton>
     </header>

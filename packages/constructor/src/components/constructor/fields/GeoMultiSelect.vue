@@ -118,7 +118,7 @@ onBeforeUnmount(() => {
             :aria-label="`Прибрати ${code}`"
             @click.stop="removeGeo(code)"
           >
-            <CloseIcon class="size-3.5" :stroke-width="2.5" />
+            <CloseIcon class="size-3.5" />
           </button>
         </template>
       </UiBadge>

@@ -1,9 +1,20 @@
 <script setup lang="ts">
-import type { StrokeIconProps } from './types'
+import type { IconProps } from './types'
 
-const props = withDefaults(defineProps<StrokeIconProps>(), {
-  strokeWidth: 2,
-})
+/**
+ * Phosphor `CaretRight`, Regular weight — the kit's own glyph, node `3261:859`.
+ *
+ * Source: icon set `3261:907`, exported at 24x24. The designer's Icon mapping
+ * table (`5658:39246`) names it outright: "Chevron right | chevron-right → CaretRight, Regular".
+ *
+ * The kit draws one filled path and no stroke at all. What stood here before
+ * was a 24-box stroked chevron at stroke-width 2, which is why the weight read
+ * differently at every size.
+ *
+ * Size and colour are decided by the component that shows this icon, never
+ * here — see `uiProperty.ts`, `uiButton.ts`, `uiIconButton.ts`, `uiLink.ts`.
+ */
+const props = defineProps<IconProps>()
 </script>
 
 <template>
@@ -12,14 +23,13 @@ const props = withDefaults(defineProps<StrokeIconProps>(), {
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
-    :stroke-width="props.strokeWidth"
-    stroke-linecap="round"
-    stroke-linejoin="round"
     :role="props.title ? 'img' : undefined"
     :aria-label="props.title"
     :aria-hidden="props.title ? undefined : true"
   >
-    <path d="m9 18 6-6-6-6" />
+    <path
+      d="M17.0306 12.5306L9.53055 20.0306C9.46087 20.1003 9.37815 20.1556 9.2871 20.1933C9.19606 20.231 9.09847 20.2504 8.99993 20.2504C8.90138 20.2504 8.8038 20.231 8.71276 20.1933C8.62171 20.1556 8.53899 20.1003 8.4693 20.0306C8.39962 19.9609 8.34435 19.8782 8.30663 19.7872C8.26892 19.6961 8.24951 19.5985 8.24951 19.5C8.24951 19.4014 8.26892 19.3039 8.30663 19.2128C8.34435 19.1218 8.39962 19.039 8.4693 18.9694L15.4396 12L8.4693 5.03061C8.32857 4.88988 8.24951 4.69901 8.24951 4.49999C8.24951 4.30097 8.32857 4.1101 8.4693 3.96936C8.61003 3.82863 8.80091 3.74957 8.99993 3.74957C9.19895 3.74957 9.38982 3.82863 9.53055 3.96936L17.0306 11.4694C17.1003 11.539 17.1556 11.6217 17.1933 11.7128C17.2311 11.8038 17.2505 11.9014 17.2505 12C17.2505 12.0986 17.2311 12.1961 17.1933 12.2872C17.1556 12.3782 17.1003 12.461 17.0306 12.5306Z"
+      fill="currentColor"
+    />
   </svg>
 </template>
