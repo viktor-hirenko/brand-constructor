@@ -3,34 +3,46 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
   UI_NAME_CARD_GRID_CLASS,
+  UI_NAME_CARD_LIST_CLASS,
   UI_NAME_CARD_BASE_CLASS,
+  UI_NAME_CARD_COMPACT_HEIGHT_CLASS,
+  UI_NAME_CARD_DETAILED_HEIGHT_CLASS,
   UI_NAME_CARD_DEFAULT_CLASS,
   UI_NAME_CARD_HOVER_CLASS,
   UI_NAME_CARD_SELECTED_CLASS,
   UI_NAME_CARD_DISABLED_CLASS,
   UI_NAME_CARD_READONLY_CLASS,
+  UI_NAME_CARD_TEXT_CLASS,
   UI_NAME_CARD_NAME_CLASS,
   UI_NAME_CARD_NAME_HEIGHT_CLASS,
+  UI_NAME_CARD_DOMAIN_CLASS,
+  UI_NAME_CARD_DOMAIN_HEIGHT_CLASS,
+  UI_NAME_CARD_META_CLASS,
+  UI_NAME_CARD_PRICE_CLASS,
+  UI_NAME_CARD_PRICE_HEIGHT_CLASS,
+  UI_NAME_CARD_BADGE_SKELETON_CLASS,
+  formatUiNameCardPrice,
+  resolveUiNameCardBadge,
   resolveUiNameCardClasses,
 } from '@/components/ui/uiNameCard'
 
 /**
- * `UiNameCard` class map — Figma `3719:5978`, DP-15258 phase 15 (redesign of
- * step 4; step 3 follows in phase 16 on the same primitive).
+ * `UiNameCard` class map — Figma `3719:5978`, DP-15258 phases 15 and 16 (the
+ * redesign of steps 4 and 3 on one primitive).
  *
  * Component tests are impossible in this package (no `@vue/test-utils`, no
  * `jsdom`, `vitest.config.ts:11` sets `environment: 'node'`), so the class
  * decision is a pure function and this file is the only guard on it.
  *
- * The numbers were measured on two canvases and on the three exported symbols,
- * not copied from the plan. The card is **64** tall on step 4, not the 76 of
- * the kit frame: 76 includes the domain line, which step 4 hides, leaving the
- * 32 checkbox plus 16 of padding on each side.
+ * The numbers were measured on four canvases and on the exported symbols, not
+ * copied from the plan. The card is **64** on step 4 and **76** on step 3: 76
+ * is the height with the domain line on, which step 4 hides, leaving the 32
+ * checkbox plus 16 of padding on each side.
  *
  * Verified to fail: give the card `h-[128px]` back, let the selected state
  * hover, swap the inset ring for a border (the 1px → 2px jump the ring exists
- * to avoid), put the tile grid's auto-fill formula back, or let the skeleton's
- * bar height drift away from the name's line box.
+ * to avoid), put the tile grid's auto-fill formula back, lay step 3 out in two
+ * columns, or let a skeleton's bar height drift away from its line box.
  */
 
 const SRC = fileURLToPath(new URL('../../../../src/', import.meta.url))
@@ -40,23 +52,42 @@ const plain = resolveUiNameCardClasses()
 const selected = resolveUiNameCardClasses({ selected: true })
 const disabled = resolveUiNameCardClasses({ disabled: true })
 const readonly = resolveUiNameCardClasses({ readonly: true })
+const detailed = resolveUiNameCardClasses({ detailed: true })
 
 const ALL = [
   UI_NAME_CARD_GRID_CLASS,
+  UI_NAME_CARD_LIST_CLASS,
   plain,
   selected,
   disabled,
   readonly,
+  detailed,
+  UI_NAME_CARD_TEXT_CLASS,
   UI_NAME_CARD_NAME_CLASS,
   UI_NAME_CARD_NAME_HEIGHT_CLASS,
+  UI_NAME_CARD_DOMAIN_CLASS,
+  UI_NAME_CARD_DOMAIN_HEIGHT_CLASS,
+  UI_NAME_CARD_META_CLASS,
+  UI_NAME_CARD_PRICE_CLASS,
+  UI_NAME_CARD_PRICE_HEIGHT_CLASS,
+  UI_NAME_CARD_BADGE_SKELETON_CLASS,
 ]
 
 describe('kit name card — Figma 3719:5978, measured on the drawn screens', () => {
-  it('is a 64 row, not the 76 of the kit frame and not the old 128 tile', () => {
-    // `4071:7776` and `5387:105124`: checkbox 32 at y=16 → 16 + 32 + 16 = 64.
-    expect(UI_NAME_CARD_BASE_CLASS).toContain('h-16')
-    expect(UI_NAME_CARD_BASE_CLASS).not.toContain('h-[128px]')
-    expect(UI_NAME_CARD_BASE_CLASS).not.toContain('h-19')
+  it('is 64 with the name alone and 76 with the domain line', () => {
+    // Step 4 `4071:7776` / `5387:105124`: checkbox 32 at y=16 → 16 + 32 + 16.
+    // Step 3 `4071:7400` / `3719:5979`: text frame 44 at y=16 → 16 + 44 + 16.
+    expect(UI_NAME_CARD_COMPACT_HEIGHT_CLASS).toBe('h-16')
+    expect(UI_NAME_CARD_DETAILED_HEIGHT_CLASS).toBe('h-19')
+    expect(plain).toContain('h-16')
+    expect(detailed).toContain('h-19')
+    expect(detailed).not.toContain('h-16')
+    // The height may not live in the shared base class: two screens, two
+    // heights, and a carrier that assembles the card by hand would lose it.
+    expect(UI_NAME_CARD_BASE_CLASS).not.toMatch(/\bh-\d/)
+    for (const value of [plain, detailed]) {
+      expect(value).not.toContain('h-[128px]')
+    }
   })
 
   it('pads 16 and gaps 16, with radius/concept-card 16 on a white fill', () => {
@@ -127,15 +158,67 @@ describe('kit name card — Figma 3719:5978, measured on the drawn screens', () 
     }
   })
 
-  it('drops the tracking — this is a redesign screen and the kit sets zero', () => {
+  it('drops the tracking — these are redesign screens and the kit sets zero', () => {
     for (const value of ALL) {
       expect(value).not.toContain('tracking-')
     }
   })
 })
 
-describe('the grid: two fixed columns, gap 8, shared with the skeleton', () => {
-  it('fixes the column count the mockup fixes', () => {
+describe('step 3 slots: domain, price, badge — kit 3719:5979', () => {
+  it('stacks the domain under the name at gap 4, 12/16 in content/secondary', () => {
+    // Export: `(test.com)` at y=28 under a 24 name → gap 4, `fill="#393947"`,
+    // which is `--color-ink-800`. The tile painted it #4b4b58, a colour the kit
+    // does not contain.
+    expect(UI_NAME_CARD_TEXT_CLASS).toContain('flex-col')
+    expect(UI_NAME_CARD_TEXT_CLASS).toContain('gap-1')
+    expect(UI_NAME_CARD_DOMAIN_CLASS).toContain('text-xs/4')
+    expect(UI_NAME_CARD_DOMAIN_CLASS).toContain('text-ink-800')
+    expect(UI_NAME_CARD_DOMAIN_CLASS).not.toContain('4b4b58')
+  })
+
+  it('fixes the price + badge block at 140 with 16 between them', () => {
+    // `Price + Badge` measures 140×24 on the kit symbol and on both drawn
+    // instances — the block is what lines the prices and badges up down the
+    // list while «Available» (68) and «Sold» (42) differ in width.
+    expect(UI_NAME_CARD_META_CLASS).toContain('w-35')
+    expect(UI_NAME_CARD_META_CLASS).toContain('gap-4')
+    expect(UI_NAME_CARD_META_CLASS).toContain('shrink-0')
+    // The price fills what the badge leaves, so the badge stays flush right.
+    expect(UI_NAME_CARD_PRICE_CLASS).toContain('flex-1')
+    expect(UI_NAME_CARD_PRICE_CLASS).toContain('text-base/6')
+    expect(UI_NAME_CARD_PRICE_CLASS).toContain('font-medium')
+    expect(UI_NAME_CARD_PRICE_CLASS).toContain('text-ink-900')
+  })
+
+  it('formats the price the way the mockup writes it', () => {
+    // `uk-UA` groups with U+00A0, not a plain space — the mockup's `$1 500`.
+    expect(formatUiNameCardPrice(1500)).toBe('$1 500')
+    expect(formatUiNameCardPrice(null)).toBe('')
+    expect(formatUiNameCardPrice(undefined)).toBe('')
+    expect(formatUiNameCardPrice(Number.NaN)).toBe('')
+    expect(formatUiNameCardPrice(0)).toBe('$0')
+  })
+
+  it('maps availability onto the two kit tones and nothing else', () => {
+    // `5382:46492` → badge/*/green, `5382:48314` → badge/*/red. `unknown` is
+    // drawn nowhere, so it gets no badge rather than an invented one.
+    expect(resolveUiNameCardBadge('available')).toEqual({ tone: 'green', label: 'Available' })
+    expect(resolveUiNameCardBadge('sold')).toEqual({ tone: 'red', label: 'Sold' })
+    expect(resolveUiNameCardBadge('unknown')).toBeNull()
+    expect(resolveUiNameCardBadge(null)).toBeNull()
+  })
+
+  it('does not dim a sold row — the kit paints it like any other', () => {
+    // `5382:48314` is a sold card: `name card/border/default`, the name still
+    // `name card/content/primary`. Only the badge changes.
+    expect(detailed).not.toContain('opacity-50')
+    expect(detailed).toContain('inset-ring-ink-300')
+  })
+})
+
+describe('the two layouts, each shared with its skeleton', () => {
+  it('step 4 fixes the two columns the mockup fixes', () => {
     // `4071:7486`: cards at x 0 and 254 of a 500 container; `5387:104658`:
     // x 0 and 267.5 of 527. Two columns on both canvases.
     expect(UI_NAME_CARD_GRID_CLASS).toContain('repeat(2,minmax(0,1fr))')
@@ -146,19 +229,37 @@ describe('the grid: two fixed columns, gap 8, shared with the skeleton', () => {
     expect(UI_NAME_CARD_GRID_CLASS).not.toContain('9rem')
   })
 
-  it('still cannot overflow a narrow container', () => {
-    // This is the half of the named invariant that survives: `minmax(0,1fr)`
-    // never grows past its track, and the card truncates instead.
-    expect(UI_NAME_CARD_GRID_CLASS).toContain('minmax(0,1fr)')
-    expect(UI_NAME_CARD_NAME_CLASS).toContain('min-w-0')
-    expect(UI_NAME_CARD_NAME_CLASS).toContain('truncate')
+  it('step 3 is one column, gap 8 — the 84 row pitch minus the 76 card', () => {
+    // `4071:7082`, `5382:37529` and `5395:107506` all draw five cards at x 0,
+    // full container width, 84 apart.
+    expect(UI_NAME_CARD_LIST_CLASS).toContain('flex flex-col')
+    expect(UI_NAME_CARD_LIST_CLASS).toContain('gap-2')
+    expect(UI_NAME_CARD_LIST_CLASS).not.toContain('grid')
+    expect(UI_NAME_CARD_LIST_CLASS).not.toContain('auto-fill')
   })
 
-  it('hands the skeleton the same 24 the name line box is', () => {
-    // `text-xl/6` IS 24 of line box; the grey bar has none, so the number
-    // travels as its own constant and this test pins the pair.
+  it('still cannot overflow a narrow container', () => {
+    // This is the half of the named invariant that survives: `minmax(0,1fr)`
+    // never grows past its track, and the text truncates instead.
+    expect(UI_NAME_CARD_GRID_CLASS).toContain('minmax(0,1fr)')
+    expect(UI_NAME_CARD_TEXT_CLASS).toContain('min-w-0')
+    expect(UI_NAME_CARD_NAME_CLASS).toContain('truncate')
+    expect(UI_NAME_CARD_DOMAIN_CLASS).toContain('truncate')
+    expect(UI_NAME_CARD_PRICE_CLASS).toContain('truncate')
+  })
+
+  it('hands the skeletons the same line boxes the text has', () => {
+    // `text-xl/6` IS 24 of line box, `text-xs/4` is 16, `text-base/6` is 24 —
+    // a grey bar has none, so each number travels as its own constant and this
+    // test pins every pair.
     expect(UI_NAME_CARD_NAME_CLASS).toContain('text-xl/6')
     expect(UI_NAME_CARD_NAME_HEIGHT_CLASS).toBe('h-6')
+    expect(UI_NAME_CARD_DOMAIN_CLASS).toContain('text-xs/4')
+    expect(UI_NAME_CARD_DOMAIN_HEIGHT_CLASS).toBe('h-4')
+    expect(UI_NAME_CARD_PRICE_CLASS).toContain('text-base/6')
+    expect(UI_NAME_CARD_PRICE_HEIGHT_CLASS).toBe('h-6')
+    // The badge placeholder is the kit instance's 68×24 at radius 1000.
+    expect(UI_NAME_CARD_BADGE_SKELETON_CLASS).toBe('h-6 w-17 rounded-full')
   })
 })
 
@@ -185,7 +286,7 @@ describe('step 4 is on the primitive — the tile recipe may not come back', () 
 
   it('the skeleton imports the geometry instead of copying it', () => {
     expect(skeleton).toContain('UI_NAME_CARD_GRID_CLASS')
-    expect(skeleton).toContain('UI_NAME_CARD_BASE_CLASS')
+    expect(skeleton).toContain('resolveUiNameCardClasses')
     expect(skeleton).toContain('UI_NAME_CARD_NAME_HEIGHT_CLASS')
     expect(skeleton).not.toContain('h-[128px]')
     expect(skeleton).not.toContain('9rem')
@@ -218,5 +319,65 @@ describe('step 4 is on the primitive — the tile recipe may not come back', () 
     expect(grid).toContain('selectedId')
     expect(grid).toContain("select: [namingId: string]")
     expect(grid).toContain("emit('select', naming.id)")
+  })
+})
+
+describe('step 3 is on the primitive — phase 16', () => {
+  const grid = read('components/constructor/alternative-selection/ExternalNamingGrid.vue')
+  const skeleton = read('components/constructor/skeletons/ExternalNamingGridSkeleton.vue')
+  const authorRow = read('components/constructor/alternative-selection/AuthorNamingsRow.vue')
+  const authorSkeleton = read('components/constructor/skeletons/AuthorNamingsRowSkeleton.vue')
+
+  it('the list renders UiNameCard in one column instead of tiles', () => {
+    expect(grid).toContain('UiNameCard')
+    expect(grid).toContain('UI_NAME_CARD_LIST_CLASS')
+    expect(grid).toContain('detailed')
+    expect(grid).not.toContain('auto-fill')
+    expect(grid).not.toContain('py-10')
+    expect(grid).not.toContain('rounded-[100px]')
+    expect(grid).not.toContain('#1a1a1a')
+    expect(grid).not.toContain('#4b4b58')
+    expect(grid).not.toContain('CheckIcon')
+  })
+
+  it('the skeleton imports the geometry instead of copying it', () => {
+    expect(skeleton).toContain('UI_NAME_CARD_LIST_CLASS')
+    expect(skeleton).toContain('resolveUiNameCardClasses')
+    expect(skeleton).toContain('UI_NAME_CARD_META_CLASS')
+    expect(skeleton).toContain('UI_NAME_CARD_BADGE_SKELETON_CLASS')
+    expect(skeleton).not.toContain('auto-fill')
+    expect(skeleton).not.toContain('py-10')
+    expect(skeleton).not.toMatch(/w-\[\d+px\]/)
+  })
+
+  it('«Вибір замовника» here is the same card too, and its action is a kit link', () => {
+    // Phase 15's lesson: the block sits on the screen phase 16 redraws, so it
+    // is inside phase 16 whatever the plan's file list said. Phase 10 left the
+    // raw «Обрати ці назви» button here for exactly this session.
+    for (const source of [authorRow, authorSkeleton]) {
+      expect(source).toContain('UI_NAME_CARD_LIST_CLASS')
+      expect(source).not.toContain('grid-cols-3')
+      expect(source).not.toContain('#f1f1f3')
+      expect(source).not.toContain('#1a1a1a')
+      expect(source).not.toContain('py-10')
+      expect(source).not.toMatch(/max-w-\[\d+px\]/)
+    }
+    expect(authorRow).toContain('UiLink')
+    expect(authorRow).not.toContain('<button')
+  })
+
+  it('multi-selection still leaves these components — the store owns it', () => {
+    // A broken cap or a broken sold rule looks fine on screen, so the contract
+    // the four call sites depend on is pinned here.
+    expect(grid).toContain("toggle: [namingId: string]")
+    expect(grid).toContain("emit('toggle', naming.id)")
+    expect(grid).toContain('maxSelectable')
+    expect(grid).toContain('isAtLimit')
+    // Sold namings stay selectable; only unselected cards are blocked at limit.
+    expect(grid).toContain('if (!isSelected(naming) && isAtLimit.value) return true')
+    // Available sorts above sold.
+    expect(grid).toContain("n.availability_status === 'available' ? 0 : 1")
+    expect(authorRow).toContain("toggle: [namingId: string]")
+    expect(authorRow).toContain("'select-all': []")
   })
 })

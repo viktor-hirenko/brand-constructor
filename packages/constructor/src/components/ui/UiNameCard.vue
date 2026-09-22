@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { resolveUiNameCardClasses, UI_NAME_CARD_NAME_CLASS } from '@/components/ui/uiNameCard'
+import {
+  formatUiNameCardPrice,
+  resolveUiNameCardBadge,
+  resolveUiNameCardClasses,
+  UI_NAME_CARD_DOMAIN_CLASS,
+  UI_NAME_CARD_META_CLASS,
+  UI_NAME_CARD_NAME_CLASS,
+  UI_NAME_CARD_PRICE_CLASS,
+  UI_NAME_CARD_TEXT_CLASS,
+} from '@/components/ui/uiNameCard'
+import UiBadge from '@/components/ui/UiBadge.vue'
 import UiCheckbox from '@/components/ui/UiCheckbox.vue'
 
 /**
@@ -9,13 +19,14 @@ import UiCheckbox from '@/components/ui/UiCheckbox.vue'
  *
  * The whole row is the control: it renders a `<button>` and the checkbox inside
  * it is presentational. `aria-pressed` carries the selected state, because the
- * screens this serves pick exactly one name out of a list rather than toggling
- * independent options.
+ * screens this serves pick names out of a list rather than toggling independent
+ * options.
  *
- * Step 4 (phase 15) needs the name and nothing else. The kit card also carries
- * a domain line, a price and a badge — all three are `hidden` on the step 4
- * instances, and they arrive with step 3 in phase 16, together with the call
- * sites that need them.
+ * Step 4 (phase 15) needs the name and nothing else, and is 64 tall. Step 3
+ * (phase 16) switches on the three slots the kit card also carries — the domain
+ * line, the price and the availability badge — and is 76. `detailed` is what
+ * says which, and it is a property of the list, not of the row: a naming with
+ * no domain still keeps its neighbours' height, so the list stays even.
  */
 interface UiNameCardProps {
   name: string
@@ -27,12 +38,22 @@ interface UiNameCardProps {
    * this same card in State = Default, but there is nothing to click.
    */
   readonly?: boolean
+  /** Step 3's layout: domain under the name, price and badge on the right. */
+  detailed?: boolean
+  domain?: string | null
+  price?: number | null
+  /** `available` / `sold`; anything else draws no badge. */
+  availability?: string | null
 }
 
 const props = withDefaults(defineProps<UiNameCardProps>(), {
   selected: false,
   disabled: false,
   readonly: false,
+  detailed: false,
+  domain: null,
+  price: null,
+  availability: null,
 })
 
 const emit = defineEmits<{
@@ -44,29 +65,40 @@ const classes = computed(() =>
     selected: props.selected,
     disabled: props.disabled,
     readonly: props.readonly,
+    detailed: props.detailed,
   })
 )
 
+/** A display is a `<div>`; everything else is the row-sized button. */
+const tag = computed(() => (props.readonly ? 'div' : 'button'))
+
+const controlAttrs = computed(() =>
+  props.readonly
+    ? {}
+    : { type: 'button' as const, disabled: props.disabled, 'aria-pressed': props.selected }
+)
+
+const priceLabel = computed(() => formatUiNameCardPrice(props.price))
+const badge = computed(() => resolveUiNameCardBadge(props.availability))
+
 function handleClick() {
-  if (props.disabled) return
+  if (props.disabled || props.readonly) return
   emit('select')
 }
 </script>
 
 <template>
-  <div v-if="readonly" :class="classes">
+  <component :is="tag" v-bind="controlAttrs" :class="classes" @click="handleClick">
     <UiCheckbox :checked="selected" />
-    <span :class="UI_NAME_CARD_NAME_CLASS">{{ name }}</span>
-  </div>
-  <button
-    v-else
-    type="button"
-    :class="classes"
-    :disabled="disabled"
-    :aria-pressed="selected"
-    @click="handleClick"
-  >
-    <UiCheckbox :checked="selected" />
-    <span :class="UI_NAME_CARD_NAME_CLASS">{{ name }}</span>
-  </button>
+    <span :class="UI_NAME_CARD_TEXT_CLASS">
+      <span :class="UI_NAME_CARD_NAME_CLASS">{{ name }}</span>
+      <span v-if="detailed && domain" :class="UI_NAME_CARD_DOMAIN_CLASS">({{ domain }})</span>
+    </span>
+    <!-- The 140 block is drawn on every instance, so the badge stays flush with
+         the card's right padding even when a naming carries no price. -->
+    <span v-if="detailed" :class="UI_NAME_CARD_META_CLASS">
+      <span :class="UI_NAME_CARD_PRICE_CLASS">{{ priceLabel }}</span>
+      <UiBadge v-if="badge" :tone="badge.tone" :label="badge.label" />
+    </span>
+  </component>
 </template>

@@ -1,38 +1,61 @@
 <script setup lang="ts">
+import {
+  resolveUiNameCardClasses,
+  UI_NAME_CARD_BADGE_SKELETON_CLASS,
+  UI_NAME_CARD_DOMAIN_HEIGHT_CLASS,
+  UI_NAME_CARD_LIST_CLASS,
+  UI_NAME_CARD_META_CLASS,
+  UI_NAME_CARD_NAME_HEIGHT_CLASS,
+  UI_NAME_CARD_PRICE_HEIGHT_CLASS,
+  UI_NAME_CARD_TEXT_CLASS,
+} from '@/components/ui/uiNameCard'
+
 /**
- * Pixel-matched skeleton for `ExternalNamingGrid`.
+ * Loading skeleton for `ExternalNamingGrid`.
  *
- * Mirrors card geometry (border-2, rounded-16, px-6 py-10) and grid layout
- * (3 cols, gap-2, max-w-506) so that swapping between skeleton and content
- * does not cause CLS on External Naming screens (PO wizard / CEO reselect / PO edit).
+ * It does not copy the card's geometry — it imports it. The column, the 76 box,
+ * the radius, the padding, the gaps, the border and the 140 meta block all come
+ * from `uiNameCard.ts`, the same file the real card reads, so the two cannot
+ * drift apart on External Naming screens (PO wizard / CEO reselect / PO edit /
+ * revision).
+ *
+ * The numbers that cannot travel as a shared class are the three line boxes —
+ * a grey bar has no line box — so they travel as their own constants and
+ * `uiNameCard.test.ts` pins each of them to the text class it stands in for.
+ * The tile version of this file kept those numbers by hand and the drift showed
+ * up as the list jumping when the real namings arrived.
  */
 interface Props {
-  /** Number of skeleton tiles (default 6 = two rows of three). */
+  /** Number of skeleton rows (default 6). */
   count?: number
 }
 
 withDefaults(defineProps<Props>(), { count: 6 })
+
+const cardClass = resolveUiNameCardClasses({ readonly: true, detailed: true })
 </script>
 
 <template>
-  <!-- Card min width 144px → 9rem @16; matches ConceptGrid density. -->
-  <div
-    class="external-naming-grid-skeleton grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"
-    aria-hidden="true"
-  >
+  <div :class="['external-naming-grid-skeleton', UI_NAME_CARD_LIST_CLASS]" aria-hidden="true">
     <div
       v-for="i in count"
       :key="i"
-      class="external-naming-grid-skeleton__card relative box-border rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 border-2 border-solid border-black/10"
+      :class="['external-naming-grid-skeleton__card', cardClass]"
     >
-      <div class="flex flex-col gap-1 w-full items-center">
-        <div class="h-6 w-3/4 rounded bg-muted animate-pulse" />
-        <div class="h-4 w-1/2 rounded bg-muted animate-pulse" />
+      <!-- The checkbox: 32 circle, same box as the real one. -->
+      <div class="size-8 shrink-0 rounded-full bg-muted animate-pulse" />
+      <div :class="UI_NAME_CARD_TEXT_CLASS">
+        <!-- The name: one 24 line box. Under it the domain's 16. -->
+        <div :class="['w-3/5 rounded bg-muted animate-pulse', UI_NAME_CARD_NAME_HEIGHT_CLASS]" />
+        <div :class="['w-2/5 rounded bg-muted animate-pulse', UI_NAME_CARD_DOMAIN_HEIGHT_CLASS]" />
       </div>
-      <div class="h-6 w-1/3 rounded bg-muted animate-pulse" />
-      <!-- Badge placeholder (matches real card's "Available" badge geometry):
-           kit badge 3453:1619 — 24 tall, radius 1000, since DP-15258 phase 7. -->
-      <div class="h-6 w-[72px] rounded-full bg-muted animate-pulse" />
+      <div :class="UI_NAME_CARD_META_CLASS">
+        <div
+          :class="['min-w-0 flex-1 rounded bg-muted animate-pulse', UI_NAME_CARD_PRICE_HEIGHT_CLASS]"
+        />
+        <!-- Badge placeholder: the kit instance is 68×24, radius 1000. -->
+        <div :class="['shrink-0 bg-muted animate-pulse', UI_NAME_CARD_BADGE_SKELETON_CLASS]" />
+      </div>
     </div>
   </div>
 </template>

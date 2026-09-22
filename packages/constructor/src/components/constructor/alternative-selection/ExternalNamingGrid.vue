@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
-import CheckIcon from '@/components/icons/CheckIcon.vue'
-import UiBadge from '@/components/ui/UiBadge.vue'
+import UiNameCard from '@/components/ui/UiNameCard.vue'
+import { UI_NAME_CARD_LIST_CLASS } from '@/components/ui/uiNameCard'
 
+/**
+ * Step 3 (external naming) — the designer redrew this screen: the square tiles
+ * became a single column of the kit's `Name card`, 76 tall, with the domain
+ * under the name and the price and the Available/Sold badge on the right
+ * (`4071:7082`, and the same layout again on the new canvas `5382:37529` and in
+ * the edit flow on `5395:107506`).
+ *
+ * Only the look changes. The multi-select rules — the cap of three, sold
+ * namings staying selectable, available namings sorting above sold — live here
+ * and in the store exactly as they did, and the props and events of this
+ * component are byte-identical to the tile version, so all four call sites
+ * (step 3, the CEO alternative flow, the draft edit flow, the revision flow)
+ * keep working untouched.
+ */
 interface ExternalNamingGridProps {
   namings: ExternalNaming[]
   /** Multi-select staged ids. */
@@ -40,10 +54,6 @@ const visibleNamings = computed(() => {
   })
 })
 
-function isSold(naming: ExternalNaming): boolean {
-  return naming.availability_status === 'sold'
-}
-
 function isSelected(naming: ExternalNaming): boolean {
   return selectedSet.value.has(naming.id)
 }
@@ -55,88 +65,33 @@ function isDisabledForSelection(naming: ExternalNaming): boolean {
   return false
 }
 
-function handleClick(naming: ExternalNaming) {
+function handleSelect(naming: ExternalNaming) {
   if (isDisabledForSelection(naming)) return
   emit('toggle', naming.id)
-}
-
-function formatPrice(price: number | null | undefined): string {
-  if (price === null || price === undefined || !Number.isFinite(price)) return ''
-  return `$${price.toLocaleString('uk-UA').replace(/,/g, ' ')}`
 }
 </script>
 
 <template>
-  <!-- Card min width 144px → 9rem @16; auto-fill adds columns on wide panels. -->
+  <!-- One column at the container's full width, gap 8 — measured on the drawn
+       screen; see `uiNameCard.ts`. The `external-naming-grid` hook is kept: BEM
+       names in this package are external hooks (риски раздел документа задачи),
+       so renaming one is not free even though no CSS in this repo defines it. -->
   <div
     v-if="visibleNamings.length > 0"
-    class="external-naming-grid grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"
+    :class="['external-naming-grid', UI_NAME_CARD_LIST_CLASS]"
   >
-    <div
+    <UiNameCard
       v-for="naming in visibleNamings"
       :key="naming.id"
-      class="external-naming-grid__card relative box-border rounded-[16px] bg-white flex flex-col items-center gap-2 px-6 py-10 border-2 border-solid transition-[border-color,opacity] duration-150"
-      :class="[
-        isSelected(naming)
-          ? 'external-naming-grid__card--selected border-[#030213] cursor-pointer'
-          : isDisabledForSelection(naming)
-            ? 'external-naming-grid__card--disabled border-black/10 opacity-40 cursor-not-allowed'
-            : 'border-black/10 hover:border-[#030213]/40 cursor-pointer',
-        isSold(naming) ? 'external-naming-grid__card--sold' : '',
-      ]"
-      @click="handleClick(naming)"
-    >
-      <div
-        class="external-naming-grid__card-body flex flex-col items-center gap-2 w-full text-center tracking-[-0.1504px]"
-      >
-        <div class="external-naming-grid__card-heading flex flex-col gap-1 w-full">
-          <p
-            class="external-naming-grid__card-name text-[1.25rem] font-medium leading-6 text-[#1a1a1a] w-full break-words truncate"
-          >
-            {{ naming.name }}
-          </p>
-          <p
-            v-if="naming.domain"
-            class="external-naming-grid__card-domain text-[0.75rem] font-normal leading-4 text-[#4b4b58] w-full truncate"
-          >
-            ({{ naming.domain }})
-          </p>
-        </div>
-        <p
-          v-if="naming.price !== null && naming.price !== undefined"
-          class="external-naming-grid__card-price text-[1rem] font-medium leading-6 text-[#1a1a1a] w-full"
-        >
-          {{ formatPrice(naming.price) }}
-        </p>
-      </div>
-
-      <!--
-        Kit badge `3453:1619`. The redrawn Name card (`5382:46492` available,
-        `5382:48314` sold) paints these two with `badge/*/green` and
-        `badge/*/red` at `radius/badge` 1000 — which is what finally makes the
-        pair match: Available used to be a rounded-8 `#d4fde5` box and Sold a
-        rounded-100 `#fdd4d4` one.
-      -->
-      <UiBadge
-        v-if="naming.availability_status === 'available'"
-        class="external-naming-grid__badge external-naming-grid__badge--available"
-        tone="green"
-        label="Available"
-      />
-      <UiBadge
-        v-else-if="naming.availability_status === 'sold'"
-        class="external-naming-grid__badge external-naming-grid__badge--sold"
-        tone="red"
-        label="Sold"
-      />
-
-      <div
-        v-if="isSelected(naming)"
-        class="external-naming-grid__card-check absolute top-[6px] left-[6px] size-8 rounded-[100px] bg-[#030213] flex items-center justify-center"
-      >
-        <CheckIcon class="size-4 text-white" />
-      </div>
-    </div>
+      detailed
+      :name="naming.name"
+      :domain="naming.domain"
+      :price="naming.price"
+      :availability="naming.availability_status"
+      :selected="isSelected(naming)"
+      :disabled="isDisabledForSelection(naming)"
+      @select="handleSelect(naming)"
+    />
   </div>
   <div v-else class="external-naming-grid__empty text-center py-8 text-muted-foreground text-sm">
     Неймінги не знайдено

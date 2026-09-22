@@ -1,7 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import CheckIcon from '@/components/icons/CheckIcon.vue'
+import UiLink from '@/components/ui/UiLink.vue'
+import UiNameCard from '@/components/ui/UiNameCard.vue'
+import { UI_NAME_CARD_LIST_CLASS } from '@/components/ui/uiNameCard'
 
+/**
+ * «Вибір замовника» above the external naming list in the CEO alternative flow.
+ *
+ * The designer draws the customer's picks as the same kit `Name card` the list
+ * below now uses — one column at the container's full width, 76 tall, domain
+ * under the name and the price on the right. Measured on `5395:107506` («Вибір
+ * CEO», one Name card 527×76 under a 24 label with a 12 gap) and on
+ * `5387:105118`, which is the same block in the internal naming flow.
+ *
+ * It used to be a three-column grid of hand-drawn grey tiles 128 tall, with two
+ * colours the kit does not contain — the same defect QA caught on the internal
+ * one in phase 15. The guard test forbids those literals here.
+ *
+ * Only the look changes: the props and both events are unchanged, so the single
+ * call site (`AlternativeExternalNamingView`) is untouched.
+ */
 interface NamingMini {
   id: string
   name: string
@@ -39,11 +57,6 @@ const allSelected = computed(
     props.namings.every(n => selectedSet.value.has(n.id)),
 )
 
-function formatPrice(price: number | null | undefined): string {
-  if (price === null || price === undefined || !Number.isFinite(price)) return ''
-  return `$${price.toLocaleString('uk-UA').replace(/,/g, ' ')}`
-}
-
 function isSelected(id: string): boolean {
   return selectedSet.value.has(id)
 }
@@ -71,60 +84,34 @@ function handleSelectAll() {
       <p class="author-namings-row__label text-[1rem] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
         Вибір замовника
       </p>
-      <button
+      <!-- The mockup draws no action here at all — this one is ours. The kit's
+           nearest primitive is Link `4378:8358`, which is what a text action is
+           in this system; phase 10 assigned this button to phase 16. -->
+      <UiLink
         v-if="selectable && namings.length > 0 && !allSelected"
-        type="button"
-        class="author-namings-row__select-all text-[0.875rem] font-medium leading-5 text-[#030213] underline underline-offset-2 hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+        class="author-namings-row__select-all"
         :disabled="disabled || isAtLimit"
         @click="handleSelectAll"
       >
         Обрати ці назви
-      </button>
+      </UiLink>
     </div>
     <div
       v-if="namings.length > 0"
-      class="author-namings-row__grid grid grid-cols-3 gap-2 max-w-[506px]"
+      :class="['author-namings-row__grid', UI_NAME_CARD_LIST_CLASS]"
     >
-      <div
+      <UiNameCard
         v-for="n in namings"
         :key="n.id"
-        class="author-namings-row__card relative box-border rounded-[16px] flex flex-col items-center gap-2 px-6 py-10 text-center tracking-[-0.1504px] border-2 border-solid transition-[border-color,opacity,background-color] duration-150"
-        :class="[
-          selectable
-            ? isSelected(n.id)
-              ? 'author-namings-row__card--selected bg-white border-[#030213] cursor-pointer'
-              : isDisabledForSelection(n.id)
-                ? 'author-namings-row__card--disabled bg-[#f1f1f3] border-black/10 opacity-40 cursor-not-allowed'
-                : 'author-namings-row__card--selectable bg-[#f1f1f3] border-black/10 hover:border-[#030213]/40 cursor-pointer'
-            : 'bg-[#f1f1f3] border-black/10',
-        ]"
-        @click="handleToggle(n.id)"
-      >
-        <div class="flex flex-col gap-1 w-full">
-          <p class="text-[1.25rem] font-medium leading-6 text-[#1a1a1a] break-words w-full">
-            {{ n.name }}
-          </p>
-          <p
-            v-if="n.domain"
-            class="text-[0.75rem] font-normal leading-4 text-[#4b4b58] truncate w-full"
-          >
-            ({{ n.domain }})
-          </p>
-        </div>
-        <p
-          v-if="formatPrice(n.price)"
-          class="text-[1rem] font-medium leading-6 text-[#1a1a1a] w-full"
-        >
-          {{ formatPrice(n.price) }}
-        </p>
-
-        <div
-          v-if="selectable && isSelected(n.id)"
-          class="author-namings-row__card-check absolute top-[6px] left-[6px] size-8 rounded-[100px] bg-[#030213] flex items-center justify-center"
-        >
-          <CheckIcon class="size-4 text-white" />
-        </div>
-      </div>
+        detailed
+        :name="n.name"
+        :domain="n.domain"
+        :price="n.price"
+        :readonly="!selectable"
+        :selected="selectable && isSelected(n.id)"
+        :disabled="selectable && isDisabledForSelection(n.id)"
+        @select="handleToggle(n.id)"
+      />
     </div>
     <p
       v-else

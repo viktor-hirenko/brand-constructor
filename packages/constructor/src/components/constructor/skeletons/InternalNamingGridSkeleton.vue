@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
-  UI_NAME_CARD_BASE_CLASS,
-  UI_NAME_CARD_DEFAULT_CLASS,
+  resolveUiNameCardClasses,
   UI_NAME_CARD_GRID_CLASS,
   UI_NAME_CARD_NAME_HEIGHT_CLASS,
+  UI_NAME_CARD_TEXT_CLASS,
 } from '@/components/ui/uiNameCard'
 
 /**
@@ -26,6 +26,13 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), { count: 6 })
+
+/**
+ * The read-only card, asked for by name rather than assembled from parts:
+ * phase 16 moved the height out of the base class (the same card is 64 here and
+ * 76 on step 3), and an assembled skeleton would have silently lost it.
+ */
+const cardClass = resolveUiNameCardClasses({ readonly: true })
 </script>
 
 <template>
@@ -33,21 +40,15 @@ withDefaults(defineProps<Props>(), { count: 6 })
     :class="['internal-naming-grid-skeleton', UI_NAME_CARD_GRID_CLASS]"
     aria-hidden="true"
   >
-    <div
-      v-for="i in count"
-      :key="i"
-      :class="[
-        'internal-naming-grid-skeleton__card',
-        UI_NAME_CARD_BASE_CLASS,
-        UI_NAME_CARD_DEFAULT_CLASS,
-      ]"
-    >
+    <div v-for="i in count" :key="i" :class="['internal-naming-grid-skeleton__card', cardClass]">
       <!-- The checkbox: 32 circle, same box as the real one. -->
       <div class="size-8 shrink-0 rounded-full bg-muted animate-pulse" />
       <!-- The name: one 24 line box, the height the kit gives the text frame. -->
-      <div
-        :class="['w-3/5 rounded bg-muted animate-pulse', UI_NAME_CARD_NAME_HEIGHT_CLASS]"
-      />
+      <div :class="UI_NAME_CARD_TEXT_CLASS">
+        <div
+          :class="['w-3/5 rounded bg-muted animate-pulse', UI_NAME_CARD_NAME_HEIGHT_CLASS]"
+        />
+      </div>
     </div>
   </div>
 </template>
