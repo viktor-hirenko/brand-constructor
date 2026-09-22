@@ -146,8 +146,21 @@ export const UI_ACCORDION_HEADER_CONTENT_HEIGHT_CLASS = 'h-6'
  */
 export const UI_ACCORDION_ICON_SIZE_CLASS = 'size-4'
 
-/** `accordion/content/icon` #1f1f2e. The 180° flip on open is ours, not drawn. */
-export const UI_ACCORDION_CHEVRON_CLASS = `ui-accordion-item__chevron ${UI_ACCORDION_ICON_SIZE_CLASS} shrink-0 text-ink-900 transition-transform duration-200`
+/**
+ * The header's chevron is `section card/content/label` #6f6f7d → ink-700, NOT
+ * the #1f1f2e that `accordion/content/icon` carries.
+ *
+ * Both tokens come back from `get_variable_defs` on the same node and it is
+ * easy to bind the wrong one: #1f1f2e belongs to the ROW's check
+ * (`3839:12409`, and the exported glyph is indeed `fill="#1F1F2E"`), while the
+ * header's two icons export `fill="#6F6F7D"` — verified by downloading both
+ * SVGs rather than by reading the token list. Phase 12 shipped ink-900 here
+ * and QA caught it.
+ *
+ * The 180° flip on open is ours: the kit draws a separate `CaretUp`, which is
+ * this glyph mirrored in the same colour.
+ */
+export const UI_ACCORDION_CHEVRON_CLASS = `ui-accordion-item__chevron ${UI_ACCORDION_ICON_SIZE_CLASS} shrink-0 text-ink-700 transition-transform duration-200`
 
 /** Content frame under the divider: `spacing/12` inset, `spacing/4` between rows. */
 export const UI_ACCORDION_CONTENT_CLASS =

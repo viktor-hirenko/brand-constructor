@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import * as accordion from '@/components/ui/uiAccordion'
 import {
   UI_ACCORDION_CHEVRON_CLASS,
@@ -80,6 +82,33 @@ describe('kit accordion — Figma 3839:12607 / 3839:12381', () => {
       expect(UI_ACCORDION_ICON_SIZE_CLASS).toBe('size-4')
       expect(UI_ACCORDION_CHEVRON_CLASS).toContain(UI_ACCORDION_ICON_SIZE_CLASS)
       expect(UI_ACCORDION_CHEVRON_CLASS).not.toContain('size-5')
+    })
+  })
+
+  describe('the header chevron — the one QA caught', () => {
+    it('is ink-700 #6f6f7d, never the ink-900 of the row check', () => {
+      // Both tokens come back from get_variable_defs on the same node:
+      // accordion/content/icon #1f1f2e and section card/content/label #6f6f7d.
+      // The exported glyphs settle which is which — the header's chevron and
+      // eye are fill="#6F6F7D", the row's check is fill="#1F1F2E". Phase 12
+      // shipped ink-900 here off the token list alone.
+      expect(UI_ACCORDION_CHEVRON_CLASS).toContain('text-ink-700')
+      expect(UI_ACCORDION_CHEVRON_CLASS).not.toContain('text-ink-900')
+      // The row's check keeps #1f1f2e — the two are genuinely different.
+      expect(UI_ACCORDION_OPTION_ICON_CLASS).toContain('text-ink-900')
+    })
+
+    it('renders the kit glyph, not the 2px stroked chevron', () => {
+      // The class map cannot express which component is imported, and the
+      // glyph is exactly what QA spotted, so the guard reads the source.
+      // ChevronDownIcon is a 24-box stroke-width-2 chevron; at 16 it renders
+      // ~1.33 wide against the kit's ~1 and reads heavier.
+      const source = readFileSync(
+        fileURLToPath(new URL('../../../../src/components/ui/UiAccordionItem.vue', import.meta.url)),
+        'utf8'
+      )
+      expect(source).toContain('CaretDownIcon')
+      expect(source).not.toContain('ChevronDownIcon')
     })
   })
 

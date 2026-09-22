@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import CaretDownIcon from '@/components/icons/CaretDownIcon.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
 import {
   UI_ACCORDION_CHEVRON_CLASS,
@@ -89,9 +89,7 @@ function onAfterLeave(el: Element) {
         <span :class="UI_ACCORDION_HEADER_TITLE_CLASS">{{ props.title }}</span>
         <slot name="badge" />
       </span>
-      <ChevronDownIcon
-        :class="[UI_ACCORDION_CHEVRON_CLASS, { 'rotate-180': props.open }]"
-      />
+      <CaretDownIcon :class="[UI_ACCORDION_CHEVRON_CLASS, { 'rotate-180': props.open }]" />
     </button>
 
     <Transition @enter="onEnter" @after-enter="onAfterEnter" @leave="onLeave" @after-leave="onAfterLeave">
