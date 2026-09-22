@@ -366,6 +366,19 @@ describe('step 3 is on the primitive — phase 16', () => {
     expect(authorRow).not.toContain('<button')
   })
 
+  it('the banner above the list is the kit alert, not a hand-drawn cream card', () => {
+    // `5395:111306` draws an Alert type = Warning right above this list on the
+    // edit flow. Ours was a hand-drawn card at radius 8 with four colours the
+    // kit does not contain; `UiAlert` already carries those tokens and already
+    // draws the kit's own `WarningCircle` Fill.
+    const banner = read('components/constructor/edit-flow/ConceptCascadeBanner.vue')
+    expect(banner).toContain('UiAlert')
+    expect(banner).toContain('type="warning"')
+    expect(banner).not.toContain('<svg')
+    expect(banner).not.toMatch(/\[#(fefce8|f5e6bc|eab308|717182|030213)\]/i)
+    expect(banner).not.toContain('rounded-lg')
+  })
+
   it('multi-selection still leaves these components — the store owns it', () => {
     // A broken cap or a broken sold rule looks fine on screen, so the contract
     // the four call sites depend on is pinned here.
