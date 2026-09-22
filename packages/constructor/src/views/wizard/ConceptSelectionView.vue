@@ -138,35 +138,42 @@ function confirmDeleteBrief() {
 
 <template>
   <div class="flex flex-col gap-6">
-    <SegmentedControl
-      v-model="themeMode"
-      :options="[...themeOptions]"
-      aria-label="Тема інтерфейсу"
-    />
+    <!-- Kit `5382:44776`: inside the selection block the gap is `spacing/16`
+         — segmented control → grid → order button. The 24 stays only between
+         that block and the comment field, which is where the kit's own
+         Container ends (`5382:44774`: inner container 371.5 tall at y 88, the
+         Input at y 483.5). -->
+    <div class="flex flex-col gap-4">
+      <SegmentedControl
+        v-model="themeMode"
+        :options="[...themeOptions]"
+        aria-label="Тема інтерфейсу"
+      />
 
-    <ConceptGridSkeleton v-if="showSkeleton" />
-    <UiAsyncState v-else-if="error" :message="error" @retry="loadConcepts" />
-    <ConceptGrid
-      v-else-if="concepts.length > 0"
-      :concepts="concepts"
-      :selected-id="selectedId"
-      :preview-id="previewId"
-      :selection-ring="true"
-      @select="handleSelect"
-    />
-    <div v-else class="text-center py-8 text-muted-foreground">
-      <p>Концептів поки немає. Створіть новий.</p>
+      <ConceptGridSkeleton v-if="showSkeleton" />
+      <UiAsyncState v-else-if="error" :message="error" @retry="loadConcepts" />
+      <ConceptGrid
+        v-else-if="concepts.length > 0"
+        :concepts="concepts"
+        :selected-id="selectedId"
+        :preview-id="previewId"
+        :selection-ring="true"
+        @select="handleSelect"
+      />
+      <div v-else class="text-center py-8 text-muted-foreground">
+        <p>Концептів поки немає. Створіть новий.</p>
+      </div>
+
+      <BriefOrderButton
+        create-label="Замовити новий концепт"
+        created-label="Бриф концепту створено"
+        :is-created="isCreatingNew"
+        @create="handleCreateBrief"
+        @view="store.openBriefPreview('concept')"
+        @edit="showNewModal = true"
+        @delete="showDeleteConfirm = true"
+      />
     </div>
-
-    <BriefOrderButton
-      create-label="Замовити новий концепт"
-      created-label="Бриф концепту створено"
-      :is-created="isCreatingNew"
-      @create="handleCreateBrief"
-      @view="store.openBriefPreview('concept')"
-      @edit="showNewModal = true"
-      @delete="showDeleteConfirm = true"
-    />
 
     <StepCommentField v-model="comment" />
 
