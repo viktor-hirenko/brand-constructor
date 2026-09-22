@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UiToggle from '@/components/ui/UiToggle.vue'
+
 interface DeliverableToggleCardProps {
   title: string
   description: string
@@ -25,12 +27,13 @@ const model = defineModel<boolean>({ required: true })
           <p class="text-sm text-muted-foreground tracking-[-0.15px]">{{ description }}</p>
         </div>
       </div>
-      <label class="relative inline-flex items-center cursor-pointer shrink-0">
-        <input v-model="model" type="checkbox" class="sr-only peer" />
-        <div
-          class="w-14 h-7 bg-[#ececf0] rounded-full peer peer-checked:bg-[#030213] transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-7"
-        />
-      </label>
+      <!--
+        Kit toggle `3764:6920`. Before DP-15258 phase 14 this was a CSS peer
+        recipe over a visually hidden checkbox: 56×28 with a ⌀24 thumb, inset 4,
+        travel 28, and an off colour the kit does not contain. See
+        `ui/uiToggle.ts` for the measured kit numbers.
+      -->
+      <UiToggle v-model="model" :aria-label="title" class="cursor-pointer" />
     </div>
   </div>
 </template>

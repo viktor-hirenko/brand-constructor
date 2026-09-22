@@ -23,6 +23,7 @@ import UiAccordion from '@/components/ui/UiAccordion.vue'
 import UiAccordionItem from '@/components/ui/UiAccordionItem.vue'
 import UiAccordionOption from '@/components/ui/UiAccordionOption.vue'
 import UiBadge from '@/components/ui/UiBadge.vue'
+import UiToggle from '@/components/ui/UiToggle.vue'
 
 const store = useConstructorStore()
 const previewContext = useVisualComponentPreviewContext()
@@ -245,15 +246,13 @@ onMounted(loadComponentTypes)
         <span class="flex-1 text-left text-base font-medium text-foreground tracking-[-0.31px]">
           Довірити вибір дизайнерам
         </span>
-        <div
-          class="w-14 h-7 rounded-full transition-colors relative shrink-0"
-          :class="isDelegated ? 'bg-[#030213]' : 'bg-[#e5e5e7]'"
-        >
-          <div
-            class="absolute top-0.5 size-6 bg-white rounded-full transition-all"
-            :class="isDelegated ? 'left-[30px]' : 'left-[2px]'"
-          />
-        </div>
+        <!--
+          Kit toggle `3764:6920`, decorative: the whole row is the button, and
+          the row's click may open the confirmation modal. Before phase 14 this
+          was nested divs at 56×28 with a ⌀24 thumb, its own off colour and a
+          30 travel. See `ui/uiToggle.ts` for the measured kit numbers.
+        -->
+        <UiToggle :model-value="isDelegated" decorative />
       </button>
     </div>
 
