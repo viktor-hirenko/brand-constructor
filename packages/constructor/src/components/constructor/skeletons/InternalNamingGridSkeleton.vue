@@ -1,14 +1,27 @@
 <script setup lang="ts">
+import {
+  UI_NAME_CARD_BASE_CLASS,
+  UI_NAME_CARD_DEFAULT_CLASS,
+  UI_NAME_CARD_GRID_CLASS,
+  UI_NAME_CARD_NAME_HEIGHT_CLASS,
+} from '@/components/ui/uiNameCard'
+
 /**
- * Pixel-matched skeleton for `InternalNamingGrid`.
+ * Loading skeleton for `InternalNamingGrid`.
  *
- * Mirrors card geometry (h-128, rounded-16, border), grid layout
- * (3 cols, gap-2, max-w-506), and the two-line name block (`text-[20px] leading-6`
- * in `InternalNamingGrid` typically wraps two words to two rows) — a single skeleton
- * bar caused visible vertical CLS when names loaded on two lines.
+ * It does not copy the card's geometry — it imports it. The grid track, the 64
+ * box, the radius, the padding, the gap and the border all come from
+ * `uiNameCard.ts`, which is the same file the real card reads, so the two
+ * cannot drift apart. The one number that cannot travel as a shared class is
+ * the name's 24 line box (a grey bar has no line box); it travels as
+ * `UI_NAME_CARD_NAME_HEIGHT_CLASS` and `uiNameCard.test.ts` pins the pair.
+ *
+ * The tile version of this file kept eight hand-typed copies of those numbers
+ * and the drift was invisible in review — it showed up as the list jumping when
+ * the real names arrived. Same lesson as the accordion skeleton in phase 12.
  */
 interface Props {
-  /** Number of skeleton tiles (default 6 = two rows of three). */
+  /** Number of skeleton rows (default 6 = three rows of two). */
   count?: number
 }
 
@@ -16,21 +29,25 @@ withDefaults(defineProps<Props>(), { count: 6 })
 </script>
 
 <template>
-  <!-- Card min width 144px → 9rem @16; matches ConceptGrid density. -->
   <div
-    class="internal-naming-grid-skeleton grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"
+    :class="['internal-naming-grid-skeleton', UI_NAME_CARD_GRID_CLASS]"
     aria-hidden="true"
   >
     <div
       v-for="i in count"
       :key="i"
-      class="internal-naming-grid-skeleton__card relative h-[128px] rounded-[16px] bg-white border border-black/10 flex flex-col items-center justify-center px-6 py-10"
+      :class="[
+        'internal-naming-grid-skeleton__card',
+        UI_NAME_CARD_BASE_CLASS,
+        UI_NAME_CARD_DEFAULT_CLASS,
+      ]"
     >
-      <!-- Two `leading-6` lines (~h-6 each) — matches wrapped internal naming titles. -->
-      <div class="flex flex-col gap-1 w-full items-center px-2">
-        <div class="h-6 w-4/5 max-w-[200px] rounded bg-muted animate-pulse" />
-        <div class="h-6 w-[55%] max-w-[140px] rounded bg-muted animate-pulse" />
-      </div>
+      <!-- The checkbox: 32 circle, same box as the real one. -->
+      <div class="size-8 shrink-0 rounded-full bg-muted animate-pulse" />
+      <!-- The name: one 24 line box, the height the kit gives the text frame. -->
+      <div
+        :class="['w-3/5 rounded bg-muted animate-pulse', UI_NAME_CARD_NAME_HEIGHT_CLASS]"
+      />
     </div>
   </div>
 </template>
