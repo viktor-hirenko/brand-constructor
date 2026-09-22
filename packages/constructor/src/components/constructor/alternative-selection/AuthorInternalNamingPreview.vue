@@ -1,4 +1,21 @@
 <script setup lang="ts">
+import UiNameCard from '@/components/ui/UiNameCard.vue'
+import { UI_NAME_CARD_GRID_CLASS } from '@/components/ui/uiNameCard'
+
+/**
+ * «Вибір замовника» above the internal naming list in the alternative flow.
+ *
+ * The designer draws it as the same kit Name card the list below now uses —
+ * `5387:105118`, 259.5×64, i.e. half of the 527 container, State = Default
+ * with the circle empty (`get_variable_defs` returns `checkbox/border`, not
+ * `checkbox/bg/default`). It is a display of a pick already made, so the card
+ * is `readonly`: no click, no hover, no tab stop.
+ *
+ * It used to be a hand-drawn grey tile 128 tall in a three-column grid, with
+ * two colours the kit does not contain — phase 15 left it behind when it
+ * redrew the list, and on screen the two sat side by side and did not match.
+ * The guard test forbids those literals here, comments included.
+ */
 interface AuthorInternalNamingPreviewProps {
   name: string | null
 }
@@ -11,14 +28,11 @@ defineProps<AuthorInternalNamingPreviewProps>()
     <p class="author-internal-naming-preview__label text-[1rem] font-medium leading-6 text-[#717182] tracking-[-0.3125px]">
       Вибір замовника
     </p>
-    <div v-if="name" class="author-internal-naming-preview__grid grid grid-cols-3 gap-2 max-w-[506px]">
-      <div
-        class="h-[128px] rounded-[16px] bg-[#f1f1f3] border border-black/10 flex flex-col items-center justify-center px-6 py-10 text-center"
-      >
-        <p class="text-[1.25rem] font-medium leading-6 text-[#1a1a1a] tracking-[-0.1504px] break-words w-full">
-          {{ name }}
-        </p>
-      </div>
+    <div
+      v-if="name"
+      :class="['author-internal-naming-preview__grid', UI_NAME_CARD_GRID_CLASS]"
+    >
+      <UiNameCard :name="name" readonly />
     </div>
     <p
       v-else

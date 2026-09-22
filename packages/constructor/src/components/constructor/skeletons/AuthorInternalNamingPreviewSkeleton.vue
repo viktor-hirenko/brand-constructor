@@ -1,10 +1,17 @@
 <script setup lang="ts">
+import {
+  UI_NAME_CARD_BASE_CLASS,
+  UI_NAME_CARD_DEFAULT_CLASS,
+  UI_NAME_CARD_GRID_CLASS,
+  UI_NAME_CARD_NAME_HEIGHT_CLASS,
+} from '@/components/ui/uiNameCard'
+
 /**
- * Pixel-matched skeleton for `AuthorInternalNamingPreview`.
+ * Loading skeleton for `AuthorInternalNamingPreview`.
  *
- * Mirrors label + single 128-height greyed-out customer pick card
- * (bg-[#f1f1f3]) so swapping between skeleton and content
- * does not cause CLS on Internal Naming author-pick block.
+ * Same rule as `InternalNamingGridSkeleton`: the geometry is imported from
+ * `uiNameCard.ts` rather than copied, so the grey card and the real one cannot
+ * drift apart. It used to hold its own copy of the 128-tall tile.
  */
 </script>
 
@@ -13,15 +20,15 @@
     class="author-internal-naming-preview-skeleton flex flex-col gap-3"
     aria-hidden="true"
   >
-    <div class="h-6 w-[140px] rounded bg-muted animate-pulse" />
-    <div class="author-internal-naming-preview-skeleton__grid grid grid-cols-3 gap-2 max-w-[506px]">
-      <div
-        class="h-[128px] rounded-[16px] bg-[#f1f1f3] border border-black/10 flex flex-col items-center justify-center px-6 py-10"
-      >
-        <div class="flex flex-col gap-1 w-full items-center px-2">
-          <div class="h-6 w-4/5 max-w-[200px] rounded bg-muted animate-pulse" />
-          <div class="h-6 w-[55%] max-w-[140px] rounded bg-muted animate-pulse" />
-        </div>
+    <div class="h-6 w-[8.75rem] rounded bg-muted animate-pulse" />
+    <div
+      :class="['author-internal-naming-preview-skeleton__grid', UI_NAME_CARD_GRID_CLASS]"
+    >
+      <div :class="[UI_NAME_CARD_BASE_CLASS, UI_NAME_CARD_DEFAULT_CLASS]">
+        <div class="size-8 shrink-0 rounded-full bg-muted animate-pulse" />
+        <div
+          :class="['w-3/5 rounded bg-muted animate-pulse', UI_NAME_CARD_NAME_HEIGHT_CLASS]"
+        />
       </div>
     </div>
   </div>

@@ -122,6 +122,17 @@ export const UI_NAME_CARD_DISABLED_CLASS = 'ui-name-card--disabled cursor-not-al
 export const UI_NAME_CARD_INTERACTIVE_CLASS = 'cursor-pointer'
 
 /**
+ * Read-only: the same card with nothing to click.
+ *
+ * The alternative flow shows the customer's own pick above the list
+ * («Вибір замовника»), and the designer draws it as this very card in State =
+ * Default — white, `name card/border/default` #eaeaeb, the circle empty
+ * (`5387:105118` returns `checkbox/border`, not `checkbox/bg/default`). It is a
+ * display, not a control, so it gets no hover, no pointer and no tab stop.
+ */
+export const UI_NAME_CARD_READONLY_CLASS = 'ui-name-card--readonly'
+
+/**
  * `header/m` 20/24 weight 500 in `name card/content/primary` #1f1f2e.
  * Tailwind's bare `text-xl` is 20/28; `/6` is how this tree spells the kit's
  * line height (`text-sm/4`, `text-lg/6` elsewhere).
@@ -143,14 +154,22 @@ export const UI_NAME_CARD_NAME_HEIGHT_CLASS = 'h-6'
 export interface UiNameCardOptions {
   selected?: boolean
   disabled?: boolean
+  /** A display of someone else's pick — no click, no hover, no tab stop. */
+  readonly?: boolean
 }
 
 export function resolveUiNameCardClasses(options: UiNameCardOptions = {}): string {
-  const { selected = false, disabled = false } = options
+  const { selected = false, disabled = false, readonly = false } = options
+
+  const outline = selected ? UI_NAME_CARD_SELECTED_CLASS : UI_NAME_CARD_DEFAULT_CLASS
+
+  if (readonly) {
+    return `${UI_NAME_CARD_BASE_CLASS} ${outline} ${UI_NAME_CARD_READONLY_CLASS}`
+  }
 
   return [
     UI_NAME_CARD_BASE_CLASS,
-    selected ? UI_NAME_CARD_SELECTED_CLASS : UI_NAME_CARD_DEFAULT_CLASS,
+    outline,
     disabled
       ? UI_NAME_CARD_DISABLED_CLASS
       : selected

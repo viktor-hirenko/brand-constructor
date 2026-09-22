@@ -8,6 +8,7 @@ import {
   UI_NAME_CARD_HOVER_CLASS,
   UI_NAME_CARD_SELECTED_CLASS,
   UI_NAME_CARD_DISABLED_CLASS,
+  UI_NAME_CARD_READONLY_CLASS,
   UI_NAME_CARD_NAME_CLASS,
   UI_NAME_CARD_NAME_HEIGHT_CLASS,
   resolveUiNameCardClasses,
@@ -38,12 +39,14 @@ const read = (path: string): string => readFileSync(`${SRC}${path}`, 'utf8')
 const plain = resolveUiNameCardClasses()
 const selected = resolveUiNameCardClasses({ selected: true })
 const disabled = resolveUiNameCardClasses({ disabled: true })
+const readonly = resolveUiNameCardClasses({ readonly: true })
 
 const ALL = [
   UI_NAME_CARD_GRID_CLASS,
   plain,
   selected,
   disabled,
+  readonly,
   UI_NAME_CARD_NAME_CLASS,
   UI_NAME_CARD_NAME_HEIGHT_CLASS,
 ]
@@ -107,6 +110,15 @@ describe('kit name card — Figma 3719:5978, measured on the drawn screens', () 
     expect(disabled).toContain('cursor-not-allowed')
     expect(disabled).not.toContain('opacity-40')
     expect(disabled).not.toContain('hover:')
+  })
+
+  it('shows someone else’s pick as the same card with nothing to click', () => {
+    // «Вибір замовника» — `5387:105118` is this card in State = Default, the
+    // circle empty. It is a display, so no hover and no pointer.
+    expect(readonly).toContain(UI_NAME_CARD_READONLY_CLASS)
+    expect(readonly).toContain('inset-ring-ink-300')
+    expect(readonly).not.toContain('hover:')
+    expect(readonly).not.toContain('cursor-pointer')
   })
 
   it('never writes a hex: the kit colours live in app.css as tokens', () => {
@@ -178,6 +190,26 @@ describe('step 4 is on the primitive — the tile recipe may not come back', () 
     expect(skeleton).not.toContain('h-[128px]')
     expect(skeleton).not.toContain('9rem')
     expect(skeleton).not.toMatch(/max-w-\[\d+px\]/)
+  })
+
+  it('«Вибір замовника» is the same card, not a grey tile beside it', () => {
+    // The alternative flow shows this block directly above the list. Leaving
+    // it a 128 tile while the list became 64 rows is what QA caught.
+    const preview = read(
+      'components/constructor/alternative-selection/AuthorInternalNamingPreview.vue'
+    )
+    const previewSkeleton = read(
+      'components/constructor/skeletons/AuthorInternalNamingPreviewSkeleton.vue'
+    )
+    for (const source of [preview, previewSkeleton]) {
+      expect(source).toContain('UI_NAME_CARD_GRID_CLASS')
+      expect(source).not.toContain('h-[128px]')
+      expect(source).not.toContain('#f1f1f3')
+      expect(source).not.toContain('grid-cols-3')
+      expect(source).not.toMatch(/max-w-\[\d+px\]/)
+    }
+    expect(preview).toContain('readonly')
+    expect(preview).not.toContain('#1a1a1a')
   })
 
   it('single selection still leaves this component — the store owns it', () => {

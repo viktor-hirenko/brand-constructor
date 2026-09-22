@@ -21,11 +21,18 @@ interface UiNameCardProps {
   name: string
   selected?: boolean
   disabled?: boolean
+  /**
+   * A display of a pick someone else made — the alternative flow's «Вибір
+   * замовника» (`5387:105118`). Renders a plain `<div>`: the kit draws it as
+   * this same card in State = Default, but there is nothing to click.
+   */
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<UiNameCardProps>(), {
   selected: false,
   disabled: false,
+  readonly: false,
 })
 
 const emit = defineEmits<{
@@ -33,7 +40,11 @@ const emit = defineEmits<{
 }>()
 
 const classes = computed(() =>
-  resolveUiNameCardClasses({ selected: props.selected, disabled: props.disabled })
+  resolveUiNameCardClasses({
+    selected: props.selected,
+    disabled: props.disabled,
+    readonly: props.readonly,
+  })
 )
 
 function handleClick() {
@@ -43,7 +54,12 @@ function handleClick() {
 </script>
 
 <template>
+  <div v-if="readonly" :class="classes">
+    <UiCheckbox :checked="selected" />
+    <span :class="UI_NAME_CARD_NAME_CLASS">{{ name }}</span>
+  </div>
   <button
+    v-else
     type="button"
     :class="classes"
     :disabled="disabled"
