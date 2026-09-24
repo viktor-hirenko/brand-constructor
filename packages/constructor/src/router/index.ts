@@ -311,7 +311,18 @@ const routes: RouteRecordRaw[] = [
         path: 'step/7',
         name: 'step-7',
         component: () => import('@/views/wizard/VisualComponentsView.vue'),
-        meta: { step: 7, title: 'Visual Components ⭐', subtitle: 'Візуальні компоненти' },
+        // Kit `Step header` `5382:57234`, read off the render and confirmed by
+        // `get_design_context`: the screen is called `Interface Components`,
+        // and its description is a sentence like every other step's. Steps 2,
+        // 3 and 4 already matched the kit word for word — this one carried a
+        // stray `⭐` and a label instead of the sentence. Step 8's header is
+        // the review screen's own component and moves with that work.
+        meta: {
+          step: 7,
+          title: 'Interface Components',
+          subtitle:
+            'Оберіть варіант структури для кожного компонента або довірте вибір дизайнерам.',
+        },
       },
       {
         path: 'step/8',
