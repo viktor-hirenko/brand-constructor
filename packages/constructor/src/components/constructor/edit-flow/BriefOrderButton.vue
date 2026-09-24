@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
-import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import CaretDownIcon from '@/components/icons/CaretDownIcon.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 
@@ -87,7 +87,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
       </template>
       {{ createdLabel }}
       <template #icon-right="{ iconClass }">
-        <ChevronDownIcon
+        <CaretDownIcon
           :class="[iconClass, 'transition-transform', showDropdown ? 'rotate-180' : '']"
         />
       </template>

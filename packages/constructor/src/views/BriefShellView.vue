@@ -675,9 +675,7 @@ watch(currentStep, step => {
           <ConceptPreviewSlider
             v-if="(route.name === 'po-edit-concept' || route.name === 'draft-edit-concept') && route.query.mode !== 'post-apply'"
             :concept="poEditPreviewConcept"
-            :is-final-selected="false"
             :top-label="poEditSliderTopLabel"
-            hide-primary-action
           />
           <template v-else>
             <ConceptMobilePreviewSkeleton v-if="poEditNamingRightPanelLoading" />
@@ -695,9 +693,7 @@ watch(currentStep, step => {
             <ConceptPreviewSlider
               v-else-if="ceoReselectPreviewConcept"
               :concept="ceoReselectPreviewConcept"
-              :is-final-selected="false"
               :top-label="ceoReselectSliderTopLabel"
-              hide-primary-action
             />
 
             <!-- CEO reselect with nothing picked yet is the kit's
@@ -711,8 +707,6 @@ watch(currentStep, step => {
               v-else
               class="constructor-layout__ceo-reselect-empty"
               :concept="null"
-              :is-final-selected="false"
-              hide-primary-action
             />
           </template>
           <template v-else>

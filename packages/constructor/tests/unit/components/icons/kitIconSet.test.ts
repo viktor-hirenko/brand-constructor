@@ -68,7 +68,6 @@ const KIT_ICONS: ReadonlyArray<
   ['ChatBubbleIcon', 'ChatCircleText', 'Regular', '3262:4467', 2267, 'M15.75 10.5C15.75 10.698'],
   ['CheckBadgeIcon', 'CheckCircle', 'Regular', '3262:4212', 1763, 'M16.2806 9.21937C16.3504'],
   ['CheckIcon', 'Check', 'Regular', '3262:993', 643, 'M21.5306 7.28062L9.53061'],
-  ['ChevronDownIcon', 'CaretDown', 'Regular', '3261:865', 830, 'M20.0306 9.53062L12.5306'],
   ['ChevronLeftIcon', 'CaretLeft', 'Regular', '3261:861', 813, 'M15.5306 18.9694C15.6003'],
   ['ChevronRightIcon', 'CaretRight', 'Regular', '3261:859', 824, 'M17.0306 12.5306L9.53055'],
   ['CloseIcon', 'X', 'Regular', '3261:877', 1078, 'M19.2807 18.2194C19.3504'],
@@ -116,50 +115,48 @@ const KIT_ICONS: ReadonlyArray<
 
 /**
  * `CaretDownIcon` is kit too, but it arrived in phase 12 from the accordion
- * header's own export at 16x16 rather than from the icon set at 24x24. Same
- * glyph — the 24 path is this one times 1.5, checked coordinate by coordinate
- * — so it is left alone rather than regenerated for tidiness.
+ * header's own export at 16x16 rather than from the icon set at 24x24.
+ *
+ * **It is now the only one.** `ChevronDownIcon.vue` used to sit in the table
+ * above carrying the 24-box version of this same glyph — the 24 path is this
+ * one times 1.5, checked coordinate by coordinate — so the tree held one
+ * drawing in two files. The clean-up deleted the 24 one and pointed its two
+ * carriers, `LandingDraftCta` and `BriefOrderButton`, at this file. A viewBox
+ * scales, so nothing on either screen changed size.
  */
 const KIT_ICON_ON_16_GRID = 'CaretDownIcon'
 
 /**
- * Icons the kit has no glyph for. Left on our own drawing on purpose: the
- * designer drew no clock, crown, rocket, package, moon, sun, file, spinner,
- * download, share, send, target, bolt, warning triangle, panel-layout or
- * return arrow, and no filled weight for sparkle or image placeholder.
+ * Icons the kit has no glyph for, and which still have a place on a screen.
+ * Left on our own drawing on purpose: the designer drew no clock, package,
+ * file, spinner, download, share, send or return arrow.
  *
- * **Membership did not change in the icons pass, but eleven of these are now
- * dead files.** The pass matched the table by USE CASE, so the slots these
- * drawings stood in got kit glyphs from new files rather than these files being
- * converted: `AlertTriangleIcon`, `BriefcaseIcon`, `ColumnsLayoutIcon`,
- * `CrownIcon`, `MoonIcon`, `RocketIcon`, `SparklesFilledIcon`, `SunIcon`,
- * `TagIcon`, `TargetIcon` and `ZapIcon` have zero references anywhere in `src`.
- * They are listed here rather than deleted because removing them is the
- * clean-up work's job, not this one's. `FileIcon` is still live — one slot, the
- * "Бриф нового концепту" placeholder, which the kit does not draw.
+ * **Twelve names left this list in the clean-up, and none of them was a
+ * decision about drawing.** The icons pass matched the designer's table by USE
+ * CASE, so the slots those drawings stood in were given kit glyphs from new
+ * files — the old files were not converted, they were orphaned, and they sat
+ * here with zero references anywhere in `src` until the clean-up deleted them:
+ * `AlertTriangleIcon`, `BriefcaseIcon`, `ColumnsLayoutIcon`, `CrownIcon`,
+ * `ImagePlaceholderFilledIcon`, `MoonIcon`, `RocketIcon`, `SparklesFilledIcon`,
+ * `SunIcon`, `TagIcon`, `TargetIcon` and `ZapIcon`.
+ *
+ * `FileIcon` is still live — one slot, the "Бриф нового концепту" placeholder,
+ * which the kit does not draw.
+ *
+ * The list is recomputed, never copied: `deadIconFiles()` below is the same
+ * check in code, so a file that loses its last call site shows up as a failure
+ * instead of quietly becoming the thirteenth.
  */
 const ICONS_WITHOUT_A_KIT_PAIR: readonly string[] = [
-  'AlertTriangleIcon',
-  'BriefcaseIcon',
   'ClockIcon',
-  'ColumnsLayoutIcon',
   'CornerUpLeftIcon',
-  'CrownIcon',
   'DownloadIcon',
   'FileIcon',
-  'ImagePlaceholderFilledIcon',
   'LoaderIcon',
-  'MoonIcon',
   'PackageIcon',
   'RevisionReturnIcon',
-  'RocketIcon',
   'SendIcon',
   'ShareIcon',
-  'SparklesFilledIcon',
-  'SunIcon',
-  'TagIcon',
-  'TargetIcon',
-  'ZapIcon',
 ]
 
 describe('kit icon set (DP-15258 phase 23)', () => {
@@ -216,5 +213,62 @@ describe('kit icon set (DP-15258 phase 23)', () => {
     it('is left on our own drawing rather than an invented Phosphor glyph', () => {
       expect(read(file)).not.toContain('Phosphor `')
     })
+  })
+})
+
+/**
+ * Nothing in the icons folder is dead — the clean-up work.
+ *
+ * Twelve files had zero call sites when this was written, every one of them
+ * orphaned the same way: the icons pass matched the designer's table by USE
+ * CASE, gave each slot a kit glyph from a NEW file, and left the old drawing
+ * behind with nobody pointing at it. They were deleted, and a thirteenth would
+ * appear the same way — silently, with no type error, no failing render and no
+ * changed class string.
+ *
+ * So the list is recomputed here rather than written down. This is the same
+ * check the clean-up ran as a shell loop, kept as a test so that removing the
+ * last call site of an icon fails instead of going unnoticed:
+ *
+ *   for f in src/components/icons/*.vue; do n=$(basename "$f" .vue);
+ *     c=$(grep -rl "<$n" --include='*.vue' src | grep -cv 'components/icons/');
+ *     [ "$c" = 0 ] && echo "$n"; done
+ *
+ * Counted by TAG (`<Name`), never by bare name: an icon named in a comment
+ * that explains where it used to stand is not a call site, and a bare grep
+ * would call every deleted file alive again.
+ */
+describe('no icon file is dead (clean-up work)', () => {
+  const SRC = fileURLToPath(new URL('../../../../src/', import.meta.url))
+
+  const walkVue = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      if (entry.name === '.swarm') return []
+      const path = `${dir}${entry.name}`
+      if (entry.isDirectory()) return walkVue(`${path}/`)
+      return entry.name.endsWith('.vue') ? [path] : []
+    })
+
+  const iconFiles = readdirSync(ICONS_DIR)
+    .filter((name) => name.endsWith('.vue'))
+    .map((name) => name.replace(/\.vue$/, ''))
+
+  /** Every `.vue` in `src` that is not itself an icon file. */
+  const callSites = walkVue(SRC)
+    .filter((path) => !path.includes('/components/icons/'))
+    .map((path) => readFileSync(path, 'utf8'))
+
+  it('gives every icon at least one call site outside the icons folder', () => {
+    const dead = iconFiles.filter(
+      (name) => !callSites.some((source) => source.includes(`<${name}`)),
+    )
+    expect(dead).toEqual([])
+  })
+
+  it('has one caret file, not two drawings of the same glyph', () => {
+    // `ChevronDownIcon.vue` carried this exact glyph on a 24 box. A viewBox
+    // scales, so the two were one drawing in two files.
+    expect(iconFiles).toContain('CaretDownIcon')
+    expect(iconFiles).not.toContain('ChevronDownIcon')
   })
 })

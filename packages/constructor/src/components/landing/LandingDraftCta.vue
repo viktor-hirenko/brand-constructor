@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { BrandListItem } from '@brand-constructor/shared/types'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
-import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import CaretDownIcon from '@/components/icons/CaretDownIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import LandingCtaButton from '@/components/landing/LandingCtaButton.vue'
 import {
@@ -194,7 +194,7 @@ onUnmounted(() => {
           @mouseleave="isToggleHovered = false"
         >
           <template #default="{ iconClass }">
-            <ChevronDownIcon
+            <CaretDownIcon
               class="draft-menu-chevron shrink-0"
               :class="[
                 iconClass,

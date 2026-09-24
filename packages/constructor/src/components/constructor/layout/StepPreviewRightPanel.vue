@@ -254,9 +254,7 @@ const phoneBox = computed(() =>
       <ConceptPreviewSlider
         v-else
         :concept="conceptPreviewForSlider"
-        :is-final-selected="isConceptSliderFinalSelected"
         :top-label="isConceptSliderFinalSelected ? 'Обраний концепт' : null"
-        hide-primary-action
       />
     </template>
 

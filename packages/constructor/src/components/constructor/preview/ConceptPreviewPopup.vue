@@ -46,7 +46,7 @@ useEscapeClose(handleClose)
     </header>
 
     <div class="flex-1 min-h-0 overflow-hidden">
-      <ConceptPreviewSlider :concept="concept" :is-final-selected="false" hide-header />
+      <ConceptPreviewSlider :concept="concept" hide-header />
     </div>
   </div>
 </template>

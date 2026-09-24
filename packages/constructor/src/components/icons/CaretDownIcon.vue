@@ -8,16 +8,14 @@ import type { IconProps } from './types'
  * path at 16×16, and the designer's Icon mapping table (`5658:39246`) names it
  * outright: "Chevron down → CaretDown, Regular".
  *
- * It is NOT interchangeable with `ChevronDownIcon.vue`, which is a 24-box
- * stroked chevron at `stroke-width: 2`. At 16 that stroke renders ~1.33 and
- * reads visibly heavier than this one, which is a filled outline shape about
- * 1 wide. That difference is what QA caught on phase 12.
- *
- * `ChevronDownIcon` is deliberately left alone: its other two carriers
- * (`LandingDraftCta`, `BriefOrderButton`) belong to phases 20 and 10, and
- * swapping the glyph under them would change screens this phase has no
- * business touching. The full Phosphor migration is its own work item —
- * `5658:39934` holds the set and the mapping table for all ~30 icons.
+ * One file, two boxes merged. `ChevronDownIcon.vue` used to sit beside this
+ * one and was a different drawing — a 24-box stroked chevron at
+ * `stroke-width: 2`, which at 16 rendered ~1.33 wide and read visibly heavier.
+ * That difference is what QA caught on phase 12. Phase 23 then converted it to
+ * this same Phosphor path on a 24 viewBox, which made the two files the same
+ * glyph twice: 16.5 of 24 and 11 of 16 are both 68.75% of the box, so they
+ * render identically at any size. The clean-up work deleted the duplicate and
+ * pointed its two carriers — `LandingDraftCta` and `BriefOrderButton` — here.
  *
  * The open state reuses this glyph under `rotate-180`. The kit draws a
  * separate `CaretUp` there, but it is the vertical mirror of this path in the

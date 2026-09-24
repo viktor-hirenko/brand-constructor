@@ -6,7 +6,6 @@ import { useConstructorStore } from '@/stores/constructor'
 import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon.vue'
 import ArrowRightIcon from '@/components/icons/ArrowRightIcon.vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
-import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import MaximizeIcon from '@/components/icons/MaximizeIcon.vue'
 import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
@@ -39,54 +38,16 @@ import {
 const props = withDefaults(
   defineProps<{
     concept: Concept | null
-    /** True when this concept is the final selected one */
-    isFinalSelected: boolean
-    /** Hide name row + "Обрати концепт" (e.g. overlay preview). */
+    /** Hide the whole name row (the concept-gallery drawer draws its own). */
     hideHeader?: boolean
     /** Small label above the concept name (e.g. "Вибір замовника" / "Вибір CEO"). */
     topLabel?: string | null
-    /** Override the primary action button label (default "Обрати концепт"). */
-    confirmLabel?: string
-    /** Force-disable the primary action regardless of `isFinalSelected`. */
-    confirmDisabled?: boolean
-    /** When true, primary action emits `cancelSelection` instead of `confirmSelection`. */
-    cancelMode?: boolean
-    /** Hide only the action button while keeping name and topLabel visible. */
-    hidePrimaryAction?: boolean
   }>(),
   {
     hideHeader: false,
     topLabel: null,
-    confirmLabel: '',
-    confirmDisabled: false,
-    cancelMode: false,
-    hidePrimaryAction: false,
   }
 )
-
-const emit = defineEmits<{
-  confirmSelection: []
-  cancelSelection: []
-}>()
-
-const computedConfirmLabel = computed(() => {
-  if (props.confirmLabel) return props.confirmLabel
-  if (props.cancelMode) return 'Скасувати вибір'
-  return props.isFinalSelected ? 'Обрано' : 'Обрати концепт'
-})
-
-const computedConfirmDisabled = computed(
-  () => props.confirmDisabled || (!props.cancelMode && props.isFinalSelected)
-)
-
-function handlePrimaryClick() {
-  if (computedConfirmDisabled.value) return
-  if (props.cancelMode) {
-    emit('cancelSelection')
-  } else {
-    emit('confirmSelection')
-  }
-}
 
 const store = useConstructorStore()
 
@@ -309,10 +270,11 @@ onUnmounted(() => {
         :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_HEADER_GAP_CLASS, 'justify-between']"
       >
         <!-- Kit header is 32 — the 24/32 name row and nothing else. The `py-2`
-             that stood here made it 48, reserving room for the "Обрати
-             концепт" button, which no call site renders (all four pass
-             `hide-primary-action` or `hide-header`). Divergences row 51, and
-             the responsive square needs the 32 to come out square.
+             that stood here made it 48, reserving room for an "Обрати концепт"
+             button that no call site had rendered for a long time: all five
+             passed `hide-primary-action` or `hide-header`. The padding went
+             with divergences row 51, the button itself with the clean-up, and
+             it took the last two `#ececf0` in the tree with it (row 54).
 
              The kit's own header carries one more slot — a 24 close glyph at
              the far right (`5377:26332`) — and turns it OFF on every screen it
@@ -324,23 +286,6 @@ onUnmounted(() => {
           </h3>
           <SelectionPillBadge v-if="topLabel" :label="topLabel" />
         </div>
-        <button
-          v-if="!hidePrimaryAction"
-          type="button"
-          :disabled="computedConfirmDisabled"
-          class="inline-flex items-center justify-center gap-2 h-12 text-base font-medium transition-all shrink-0 disabled:cursor-not-allowed rounded-[8px] px-5"
-          :class="
-            computedConfirmDisabled
-              ? 'bg-[#ececf0] text-[#030213] opacity-60'
-              : cancelMode
-                ? 'bg-[#ececf0] text-[#030213] hover:bg-[#dedde3]'
-                : 'bg-[#030213] text-white hover:opacity-90'
-          "
-          @click="handlePrimaryClick"
-        >
-          <CheckIcon v-if="!cancelMode && isFinalSelected" class="size-5 shrink-0" />
-          {{ computedConfirmLabel }}
-        </button>
       </div>
 
       <!-- Slider canvas. The square is the only thing that scrolls, and it
