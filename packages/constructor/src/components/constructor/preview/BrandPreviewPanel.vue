@@ -9,14 +9,17 @@
  * because it is an editing screen; a review screen shows both at once.
  */
 
-import { computed, onMounted, watch } from 'vue'
+import { computed, inject, onMounted, watch } from 'vue'
 import { useBrandPreviewLayers, type PreviewSlice } from '@/composables/useBrandPreviewLayers'
 import { useConstructorStore } from '@/stores/constructor'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
 import {
   PREVIEW_REVIEW_PHONE_BOX,
   PREVIEW_REVIEW_PHONE_GAP_CLASS,
+  PREVIEW_REVIEW_PHONE_GAP_PX,
 } from '@/constants/visualPreviewLayout'
+import { fitPhoneBoxRem } from '@/constants/wizardResponsive'
+import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
 import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCanvas.vue'
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
@@ -25,6 +28,22 @@ import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 
 const store = useConstructorStore()
 const { loadVariants, buildComposition, getOverlaySlice } = useBrandPreviewLayers()
+
+/**
+ * Two phones, 32 apart, inside the measured square — and shrinking together
+ * when the square is smaller than the pair, proportions kept (bullet five of
+ * the sticker `5395:118367`). Never larger than the size the kit draws them.
+ */
+const paneGeometry = inject(WIZARD_PANE_GEOMETRY_KEY, undefined)
+
+const phoneBox = computed(() =>
+  fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
+    designWidthPx: PREVIEW_REVIEW_PHONE_BOX.widthRem * 16,
+    designHeightPx: PREVIEW_REVIEW_PHONE_BOX.heightRem * 16,
+    count: 2,
+    gapPx: PREVIEW_REVIEW_PHONE_GAP_PX,
+  })
+)
 
 const isDelegated = computed(() => store.stepData.visualComponents.delegateToDesigners)
 
@@ -83,8 +102,8 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
       <PhonePreviewCanvas
         v-for="phone in phones"
         :key="phone.key"
-        :box-width-rem="PREVIEW_REVIEW_PHONE_BOX.widthRem"
-        :box-height-rem="PREVIEW_REVIEW_PHONE_BOX.heightRem"
+        :box-width-rem="phoneBox.widthRem"
+        :box-height-rem="phoneBox.heightRem"
       >
         <template v-if="composition.top" #top>
           <PhonePreviewSlice :slice="composition.top" />

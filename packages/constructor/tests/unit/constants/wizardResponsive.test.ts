@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  fitPhoneBoxRem,
   WIZARD_CAPPED_MIN_WIDTH,
   WIZARD_CONCEPT_COLUMNS,
   WIZARD_FRAME_INSET,
@@ -98,5 +99,64 @@ describe('thresholds are the wizard width, not the browser width', () => {
 
   it('counts concept columns 3 / 4 / 5', () => {
     expect(WIZARD_CONCEPT_COLUMNS).toEqual({ base: 3, at1440: 4, at1920: 5 })
+  })
+})
+
+
+describe('the phone previews shrink into the square instead of being cropped', () => {
+  const STEP7 = { designWidthPx: 298.9702453613281, designHeightPx: 650 }
+  const REVIEW = {
+    designWidthPx: 239.1761932373047,
+    designHeightPx: 520,
+    count: 2,
+    gapPx: 32,
+  }
+
+  it('leaves the step-7 phone alone once the square is big enough', () => {
+    // 1920×920 → square 727, and 650 fits with room.
+    expect(fitPhoneBoxRem(727, STEP7).heightRem * 16).toBe(650)
+    // Exactly at 650 it is still untouched.
+    expect(fitPhoneBoxRem(650, STEP7).heightRem * 16).toBe(650)
+  })
+
+  it('shrinks it at the breakpoints where the square is smaller than the phone', () => {
+    // 1440×768 → square 575: the phone is 650 and used to scroll the column.
+    const at1440 = fitPhoneBoxRem(575, STEP7)
+    expect(at1440.heightRem * 16).toBeCloseTo(575, 4)
+    // 1280×720 → square 527.
+    expect(fitPhoneBoxRem(527, STEP7).heightRem * 16).toBeCloseTo(527, 4)
+  })
+
+  it('keeps the proportions exactly, on both axes', () => {
+    const design = STEP7.designWidthPx / STEP7.designHeightPx
+    for (const side of [527, 575, 400, 200]) {
+      const box = fitPhoneBoxRem(side, STEP7)
+      expect(box.widthRem / box.heightRem).toBeCloseTo(design, 10)
+    }
+  })
+
+  it('fits the review PAIR, gap included, not one phone', () => {
+    // The pair is 2 × 239.18 + 32 = 510.35, so it survives untouched down to a
+    // 575 and a 527 square — the two smallest the kit draws.
+    expect(fitPhoneBoxRem(575, REVIEW).widthRem * 16).toBeCloseTo(239.176, 2)
+    expect(fitPhoneBoxRem(527, REVIEW).widthRem * 16).toBeCloseTo(239.176, 2)
+
+    // Below that, both constraints are live and the tighter one wins. At a 400
+    // square the HEIGHT binds (520 > 400), so the phones come out 400 tall and
+    // the pair lands just inside the width. The 32 gap is NOT scaled: it is a
+    // kit spacing, and kit spacings are the things this work holds fixed.
+    const tight = fitPhoneBoxRem(400, REVIEW)
+    expect(tight.heightRem * 16).toBeCloseTo(400, 4)
+    expect(tight.widthRem * 16 * 2 + 32).toBeLessThanOrEqual(400)
+
+    // And where the WIDTH binds instead, the pair fills the square exactly.
+    const wide = fitPhoneBoxRem(300, { ...REVIEW, designHeightPx: 200 })
+    expect(wide.widthRem * 16 * 2 + 32).toBeCloseTo(300, 4)
+  })
+
+  it('returns the design size before the first measurement', () => {
+    for (const side of [0, -1, Number.NaN]) {
+      expect(fitPhoneBoxRem(side, STEP7).heightRem * 16).toBe(650)
+    }
   })
 })

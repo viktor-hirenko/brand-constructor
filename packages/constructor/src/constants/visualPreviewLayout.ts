@@ -87,6 +87,7 @@ export const PREVIEW_REVIEW_PHONE_BOX = {
 
 /** Kit `spacing/32` between the two review phones — `5387:91764`. */
 export const PREVIEW_REVIEW_PHONE_GAP_CLASS = 'gap-8'
+export const PREVIEW_REVIEW_PHONE_GAP_PX = 32
 
 export type PreviewPlacement = 'top-fixed' | 'body' | 'bottom-fixed' | 'overlay'
 

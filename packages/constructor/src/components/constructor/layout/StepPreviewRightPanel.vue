@@ -12,7 +12,7 @@
  * Do not re-add a step-8 branch to this component.
  */
 
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
@@ -26,6 +26,9 @@ import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewComposition, PreviewSlice } from '@/composables/useBrandPreviewLayers'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
+import { PREVIEW_PHONE_BOX } from '@/constants/visualPreviewLayout'
+import { fitPhoneBoxRem } from '@/constants/wizardResponsive'
+import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
 import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCanvas.vue'
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
@@ -109,6 +112,21 @@ function handleSidebarAfterLeave() {
 
 const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
   props.delegateToDesigners ? 'delegated' : 'pick-components',
+)
+
+/**
+ * The phone shrinks to fit the measured square, keeping its proportions —
+ * bullet five of the designer's sticker `5395:118367`. At 1440 the square is
+ * 575 and the drawn phone is 650, so without this the right column scrolls
+ * where the mockup shows the phone whole. It never grows past its design size.
+ */
+const paneGeometry = inject(WIZARD_PANE_GEOMETRY_KEY, undefined)
+
+const phoneBox = computed(() =>
+  fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
+    designWidthPx: PREVIEW_PHONE_BOX.widthRem * 16,
+    designHeightPx: PREVIEW_PHONE_BOX.heightRem * 16,
+  })
 )
 </script>
 
@@ -228,7 +246,10 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
         </div>
         <div class="flex flex-col items-center justify-center flex-1">
           <div class="relative">
-            <PhonePreviewCanvas>
+            <PhonePreviewCanvas
+              :box-width-rem="phoneBox.widthRem"
+              :box-height-rem="phoneBox.heightRem"
+            >
               <template v-if="step7Composition.top" #top>
                 <PhonePreviewSlice :slice="step7Composition.top" />
               </template>

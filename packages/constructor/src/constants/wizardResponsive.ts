@@ -135,3 +135,65 @@ export function resolveWizardPaneGeometry(
     ),
   }
 }
+
+
+export interface PhoneBoxRem {
+  widthRem: number
+  heightRem: number
+}
+
+export interface FitPhoneBoxOptions {
+  /** Design size of one phone, in px at root 16. */
+  designWidthPx: number
+  designHeightPx: number
+  /** How many stand side by side inside the square (review draws two). */
+  count?: number
+  /** Kit gap between them when there is more than one. */
+  gapPx?: number
+}
+
+/**
+ * Fits the phone preview into the square, keeping its proportions.
+ *
+ * This is the designer's own rule, not an invented number — bullet five of the
+ * sticker `5395:118367`: «Preview завжди зберігає пропорції та не обрізається,
+ * щоб не убли обрізані важливі елементи». The square is what the responsive
+ * section sizes (`resolveWizardPaneGeometry`); the phone has to live inside it.
+ *
+ * **Never scales up.** At and above the size the phone was drawn at, this
+ * returns the design size unchanged, so nothing moves on the breakpoints where
+ * it already fits. Below it, both axes shrink by the same factor.
+ *
+ * Why it was not needed before: the whole wizard used to shrink with the Admin
+ * panel, so the phone happened to come out small enough. With the root fixed
+ * at 16 it does not — at 1440 the square is 575 and the step-7 phone is 650,
+ * so the column scrolled where the mockup shows the phone whole.
+ *
+ * `previewSide` of 0 means "not measured yet" and returns the design size, so
+ * the first paint is the full-size phone rather than a collapsed one.
+ */
+export function fitPhoneBoxRem(
+  previewSide: number,
+  { designWidthPx, designHeightPx, count = 1, gapPx = 0 }: FitPhoneBoxOptions
+): PhoneBoxRem {
+  const design: PhoneBoxRem = { widthRem: designWidthPx / 16, heightRem: designHeightPx / 16 }
+  if (!Number.isFinite(previewSide) || previewSide <= 0) return design
+
+  // The gap is a kit spacing and does NOT scale — this work's whole point is
+  // that kit spacings hold still — so it has to come off the square BEFORE the
+  // phones are measured against what is left. Dividing by a row width that
+  // included the gap and then adding the unscaled gap back overflowed the
+  // square by exactly that gap's share; the test caught it at a 300 square.
+  const gaps = gapPx * Math.max(0, count - 1)
+  const forPhones = Math.max(0, previewSide - gaps)
+  const scale = Math.min(
+    1,
+    forPhones / (designWidthPx * count),
+    previewSide / designHeightPx
+  )
+
+  return {
+    widthRem: (designWidthPx * scale) / 16,
+    heightRem: (designHeightPx * scale) / 16,
+  }
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import type { LayoutMode } from './dualPaneLayoutClasses'
 import {
   shellBaseClass,
@@ -11,6 +11,7 @@ import {
 } from './dualPaneLayoutClasses'
 import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
 import { useWizardPaneMetrics } from '@/composables/useWizardPaneMetrics'
+import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 
@@ -47,7 +48,11 @@ const shellBase = computed(() => shellBaseClass(props.embed))
  * width must not apply.
  */
 const bodyRef = ref<HTMLElement | null>(null)
-const { rightPaneStyle, rightPaneVarStyle } = useWizardPaneMetrics(bodyRef)
+const { geometry, rightPaneStyle, rightPaneVarStyle } = useWizardPaneMetrics(bodyRef)
+
+// The square is measured only here. Everything that has to fit inside it —
+// the phone previews — reads it from this provide rather than re-deriving it.
+provide(WIZARD_PANE_GEOMETRY_KEY, geometry)
 
 // Embedded mode fills the panel and scales via root font-size — no transform.
 const shellStyle = computed(() => ({
