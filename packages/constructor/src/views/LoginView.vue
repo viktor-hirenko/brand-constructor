@@ -4,6 +4,8 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { isEmbedded } from '@/composables/useEmbedMode';
 import { postAuthRequired } from '@/composables/useEmbedBridge';
+import LoaderIcon from '@/components/icons/LoaderIcon.vue';
+import UiAlert from '@/components/ui/UiAlert.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -92,133 +94,72 @@ onUnmounted(() => {
     scriptEl = null;
   }
 });
+
+/**
+ * DP-15258 phase 19 — the last SCSS file in the tree became Tailwind here, and
+ * `styles/{_variables,_mixins,global}.scss` went with it.
+ *
+ * The kit has NO login screen: `get_metadata` on the key-screens canvas
+ * `4016:4712` returns 2146 nodes and not one is named login / sign in / auth /
+ * Google, and `search_design_system` finds no such component in the
+ * Brand-Builder library. So nothing here is copied from Figma — every value is
+ * borrowed from a recipe the product already ships, and the borrow is named:
+ *
+ *   page bg      `--color-background` #f8f8f8 (was #f8fafc, a Tailwind-preset
+ *                slate that predates the kit)
+ *   card         `UiSectionCard` — radius 16, 1px `--color-ink-300` #eaeaeb,
+ *                white fill. The kit's one card recipe carries no shadow, so
+ *                the old `shadow-lg` is gone; divergences row 69 records it
+ *   padding 24   `UiModal` body (`p-6`) — the kit step nearest the old 40
+ *   title        `UiStepHeader` title: `header/l` 24/32 medium, ink-900
+ *   subtitle     `UiStepHeader` description: 16/24 regular, ink-700
+ *   error        `UiAlert type="error"` — the same box `UiAsyncState` uses,
+ *                replacing a hand-rolled #fff1f0 / #ffa39e pair
+ *   spinner      `LoaderIcon` + `animate-spin`, as in `AuthorActionsFooter`,
+ *                replacing a hand-rolled @keyframes border rotation
+ *
+ * `100dvh` is legal on THIS view and nowhere inside the wizard: "Железные
+ * правила адаптива" bans `vh`/`dvh` because the wizard shell multiplies them by
+ * its own `transform: scale()`. Login is routed straight off `App.vue` with no
+ * shell and no transform above it, so `dvh` here is the plain viewport — which
+ * is what the SCSS it replaces already did.
+ */
+const LOGIN_PAGE_CLASS = 'login flex min-h-[100dvh] items-center justify-center bg-background p-4';
 </script>
 
 <template>
-  <div v-if="embedded" class="login login--embedded">
-    <div class="login__interstitial">
-      <span class="login__spinner" />
-      <p class="login__subtitle">Сесія завершилась. Перенаправляємо на вхід…</p>
+  <div v-if="embedded" :class="LOGIN_PAGE_CLASS">
+    <div class="flex flex-col items-center gap-4">
+      <LoaderIcon class="size-7 animate-spin text-ink-700" />
+      <p class="text-center text-base text-ink-700">
+        Сесія завершилась. Перенаправляємо на вхід…
+      </p>
     </div>
   </div>
 
-  <div v-else class="login">
-    <div class="login__card">
-      <div class="login__logo">
-        <span class="login__logo-icon">◈</span>
-      </div>
-      <h1 class="login__title">Brand Constructor</h1>
-      <p class="login__subtitle">Увійдіть для продовження</p>
+  <div v-else :class="LOGIN_PAGE_CLASS">
+    <div
+      class="box-border flex w-full max-w-[25rem] flex-col items-center rounded-2xl border border-ink-300 bg-white p-6"
+    >
+      <span class="text-[2.5rem]/none text-primary" aria-hidden="true">◈</span>
 
-      <div class="login__body">
-        <p v-if="error" class="login__error">{{ error }}</p>
+      <h1 class="mt-4 text-center text-2xl font-medium text-ink-900">Brand Constructor</h1>
+      <p class="mt-2 text-center text-base text-ink-700">Увійдіть для продовження</p>
 
-        <div v-if="isLoading" class="login__loading">
+      <div class="mt-8 flex w-full flex-col items-center gap-4">
+        <UiAlert v-if="error" type="error" :description="error" />
+
+        <div v-if="isLoading" class="flex items-center gap-2 text-base text-ink-700">
+          <LoaderIcon class="size-6 animate-spin" />
           <span>Вхід...</span>
         </div>
 
-        <div v-show="!isLoading" ref="buttonContainer" class="login__google-btn" />
+        <div v-show="!isLoading" ref="buttonContainer" class="flex w-full justify-center" />
 
-        <p class="login__hint">Доступ обмежено авторизованими членами команди.</p>
+        <p class="max-w-[16.25rem] text-center text-xs text-ink-600">
+          Доступ обмежено авторизованими членами команди.
+        </p>
       </div>
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-@use '@/styles/mixins' as *;
-
-.login {
-  min-height: 100dvh;
-  @include flex-center;
-  padding: $spacing-4;
-  background: $color-bg;
-
-  &__card {
-    @include card;
-    padding: $spacing-10;
-    text-align: center;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: $shadow-lg;
-  }
-
-  &__logo {
-    margin-bottom: $spacing-4;
-  }
-
-  &__logo-icon {
-    font-size: 40px;
-    color: $color-primary;
-  }
-
-  &__title {
-    @include heading-2;
-    margin-bottom: $spacing-2;
-  }
-
-  &__subtitle {
-    @include small-text;
-    color: $color-text-secondary;
-    margin-bottom: $spacing-8;
-  }
-
-  &__body {
-    @include flex-column;
-    align-items: center;
-    gap: $spacing-4;
-  }
-
-  &__google-btn {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-  }
-
-  &__loading {
-    @include small-text;
-    color: $color-text-secondary;
-    padding: $spacing-3;
-  }
-
-  &__error {
-    width: 100%;
-    padding: $spacing-3 $spacing-4;
-    background-color: #fff1f0;
-    border: 1px solid #ffa39e;
-    border-radius: $radius-md;
-    @include small-text;
-    color: $color-error;
-    text-align: left;
-  }
-
-  &__hint {
-    font-size: $font-size-xs;
-    color: $color-text-muted;
-    max-width: 260px;
-    line-height: $line-height-normal;
-  }
-
-  &__interstitial {
-    @include flex-column;
-    align-items: center;
-    gap: $spacing-4;
-    text-align: center;
-  }
-
-  &__spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid $color-border;
-    border-top-color: $color-primary;
-    border-radius: 50%;
-    animation: login-spin 0.8s linear infinite;
-  }
-}
-
-@keyframes login-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>

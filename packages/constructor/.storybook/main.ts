@@ -24,13 +24,9 @@ const config: StorybookConfig = {
           '@': resolve(__dirname, '../src'),
         },
       },
-      css: {
-        preprocessorOptions: {
-          scss: {
-            additionalData: `@use "@/styles/variables" as *;\n`,
-          },
-        },
-      },
+      // The SCSS preprocessor block that stood here is gone with DP-15258
+      // phase 19 — see the note in `vite.config.ts`. Storybook mirrors the app
+      // config, so it must not resurrect `@/styles/variables` either.
     });
   },
 };

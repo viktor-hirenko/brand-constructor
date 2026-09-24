@@ -24,7 +24,20 @@ export function shellBaseClass(embed = false): string {
   return SHELL_BASE_CLASS
 }
 
-/** Scroll track styling — see global `.left-pane-scroll`. */
+/**
+ * Scroll track styling hook.
+ *
+ * The rules this class used to carry (thin 5px track, `rgb(0 0 0 / 0.12)`
+ * thumb) lived in `styles/global.scss`, and that file was never imported by
+ * `main.ts` — so the class has been inert in production for its whole life, not
+ * only since DP-15258 phase 19 deleted the file. The left pane has always shown
+ * the browser's default scrollbar.
+ *
+ * Kept as-is rather than removed: reviving the styling is a visible change on
+ * every wizard screen, which is a decision for the owner, not a side effect of
+ * a login-page phase. Recorded as row 70 of
+ * `docs/design-audit/dp-15258-divergences.md`.
+ */
 export const LEFT_PANE_SCROLL_TRACK_CLASS = 'left-pane-scroll'
 
 /** On the element with overflow-y-auto: narrow right gutter for scrollbar. */

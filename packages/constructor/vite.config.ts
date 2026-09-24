@@ -43,12 +43,12 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    css: {
-      preprocessorOptions: {
-        scss: {
-          additionalData: `@use "@/styles/variables" as *;\n`,
-        },
-      },
-    },
+    // No `css.preprocessorOptions.scss` here on purpose. DP-15258 phase 19
+    // moved the last SCSS consumer (`views/LoginView.vue`) to Tailwind and
+    // deleted `src/styles/{_variables,_mixins,global}.scss` with it, so there
+    // is nothing left for a preprocessor to preprocess. Re-adding the block
+    // would also re-open the way back for `global.scss`, whose
+    // `html { font-size: 16px }` silently kills the wizard's embed scale —
+    // guarded by `tests/unit/styles/legacyScss.test.ts`.
   };
 });
