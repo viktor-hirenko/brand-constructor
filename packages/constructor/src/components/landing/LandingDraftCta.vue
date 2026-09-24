@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { BrandListItem } from '@brand-constructor/shared/types'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import ChevronDownIcon from '@/components/icons/ChevronDownIcon.vue'
+import UiButton from '@/components/ui/UiButton.vue'
 import LandingCtaButton from '@/components/landing/LandingCtaButton.vue'
 import {
   DRAFT_CORNERS_RELEASE_MS,
@@ -148,36 +149,41 @@ onUnmounted(() => {
     class="landing-draft-cta relative inline-flex flex-col items-stretch"
     :style="draftCtaMotionStyle"
   >
-    <LandingCtaButton v-if="!hasDrafts" :disabled="creating" @click="handleCreateNew">
+    <!-- No drafts: the kit button itself, exactly as step 0 draws it. -->
+    <UiButton v-if="!hasDrafts" :disabled="creating" @click="handleCreateNew">
       Order New Brand
-      <SparklesIcon class="size-5 shrink-0 text-primary-foreground" />
-    </LandingCtaButton>
+      <template #icon-right="{ iconClass }">
+        <SparklesIcon :class="iconClass" />
+      </template>
+    </UiButton>
 
     <template v-else>
       <div class="inline-flex">
         <LandingCtaButton
-          variant="split-main"
+          half="main"
           :menu-open="isAttachedUi"
           :passive="isAttachedUi"
           :disabled="creating"
           :aria-label="showContinueLabel ? 'Продовжити' : 'Order New Brand'"
           @click="handleCreateNew"
         >
-          <div class="cta-main-label" aria-hidden="true">
-            <div
-              class="cta-main-label__track"
-              :class="{ 'cta-main-label__track--continue': showContinueLabel }"
-            >
-              <span class="cta-main-label__row">
-                Order New Brand
-                <SparklesIcon class="size-5 shrink-0 text-primary-foreground" />
-              </span>
-              <span class="cta-main-label__row">Продовжити</span>
+          <template #default="{ iconClass }">
+            <div class="cta-main-label" aria-hidden="true">
+              <div
+                class="cta-main-label__track"
+                :class="{ 'cta-main-label__track--continue': showContinueLabel }"
+              >
+                <span class="cta-main-label__row">
+                  Order New Brand
+                  <SparklesIcon :class="[iconClass, 'shrink-0']" />
+                </span>
+                <span class="cta-main-label__row">Продовжити</span>
+              </div>
             </div>
-          </div>
+          </template>
         </LandingCtaButton>
         <LandingCtaButton
-          variant="split-toggle"
+          half="toggle"
           :menu-open="isAttachedUi"
           :disabled="creating"
           aria-label="Список чернеток"
@@ -187,21 +193,26 @@ onUnmounted(() => {
           @mouseenter="isToggleHovered = true"
           @mouseleave="isToggleHovered = false"
         >
-          <ChevronDownIcon
-            class="draft-menu-chevron size-5 shrink-0 text-primary-foreground"
-            :class="{
-              'draft-menu-chevron--open': isPanelVisible,
-              'draft-menu-chevron--hover-closed': isToggleHovered && !isPanelVisible,
-              'draft-menu-chevron--hover-open': isToggleHovered && isPanelVisible,
-            }"
-          />
+          <template #default="{ iconClass }">
+            <ChevronDownIcon
+              class="draft-menu-chevron shrink-0"
+              :class="[
+                iconClass,
+                {
+                  'draft-menu-chevron--open': isPanelVisible,
+                  'draft-menu-chevron--hover-closed': isToggleHovered && !isPanelVisible,
+                  'draft-menu-chevron--hover-open': isToggleHovered && isPanelVisible,
+                },
+              ]"
+            />
+          </template>
         </LandingCtaButton>
       </div>
 
       <Transition name="draft-menu" @after-leave="onPanelAfterLeave">
         <div
           v-if="isPanelVisible"
-          class="draft-menu-panel absolute left-0 top-full z-30 flex w-full min-w-full flex-col overflow-hidden rounded-b-[14px] rounded-t-none border-2 border-black bg-card px-3 pb-4 pt-5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+          class="draft-menu-panel absolute left-0 top-full z-30 flex w-full min-w-full flex-col overflow-hidden rounded-b-lg rounded-t-none border-2 border-primary bg-card px-3 pb-4 pt-5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
           role="menu"
           aria-label="Продовжити чернетку"
         >
@@ -235,8 +246,10 @@ onUnmounted(() => {
 <style scoped>
 /* Motion tokens: draftCtaMotion.ts → :style on .landing-draft-cta */
 
+/* One kit line: `body/medium` is 16/24, so a row is 1.5rem and the track
+   travels exactly one row. It was 1.75rem, sized for the pre-kit 18/28. */
 .cta-main-label {
-  height: 1.75rem;
+  height: 1.5rem;
   overflow: hidden;
 }
 
@@ -255,7 +268,7 @@ onUnmounted(() => {
 
 .cta-main-label__row {
   display: flex;
-  height: 1.75rem;
+  height: 1.5rem;
   flex-shrink: 0;
   align-items: center;
   gap: 0.5rem;

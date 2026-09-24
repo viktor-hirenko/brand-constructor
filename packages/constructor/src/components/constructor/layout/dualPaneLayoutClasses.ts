@@ -3,7 +3,15 @@
  * Tailwind classes only — change here to update wizard / edit / review screens.
  */
 
-export type LayoutMode = 'wizard' | 'edit' | 'review'
+/**
+ * `landing` is the wizard's own step 0 — `Brand Creation (step 0)` `5409:35125`.
+ * It is the same `Wizard` as every other screen (header 73 + the 591 · 639 row),
+ * and it differs from `wizard` in exactly two measured ways: its Step panel is
+ * `bg/body` #ffffff rather than the `bg/alt-1` #f9f9fb the other screens use,
+ * and its right pane is a full-bleed picture with none of the 32 padding that
+ * frames the preview square.
+ */
+export type LayoutMode = 'wizard' | 'edit' | 'review' | 'landing'
 
 /**
  * `flex-col`, not `flex`: since the Wizard header (`5382:30951`) exists, the
@@ -110,9 +118,14 @@ export function leftPanelWidthClass(fullWidth: boolean): string {
 /**
  * Left column background — kit `bg/alt-1` #f9f9fb on every breakpoint frame
  * and on the drawn step-8 review. Was #f9f9f9, which is in no kit section.
+ *
+ * Step 0 is the exception, and it is measured rather than assumed:
+ * `get_variable_defs` on its Step panel `5409:35131` returns `bg/body` #ffffff
+ * and no `bg/alt-1` at all, and the render shows the column the same white as
+ * the header above it.
  */
-export function leftPanelBgClass(_reviewShell?: boolean): string {
-  return 'bg-ink-100'
+export function leftPanelBgClass(mode: LayoutMode = 'wizard'): string {
+  return mode === 'landing' ? 'bg-card' : 'bg-ink-100'
 }
 
 interface LeftContentPaddingOptions {
@@ -132,6 +145,15 @@ export function leftContentPaddingClass(mode: LayoutMode, opts: LeftContentPaddi
   if (mode === 'review') {
     // Horizontal inset on ReviewUnifiedView scroll body; vertical pad scrolls with content.
     return `${base} flex flex-col overflow-hidden`
+  }
+
+  // landing — the kit's own 32 on all four sides, exactly as on a step: the
+  // Container `5409:35133` is 527 wide inside a 591 pane (32 + 527 + 32) and
+  // opens at y=175.5 of a 695 pane, which is 344 centred in 695 − 64. So the
+  // padding here plus the centring on the router wrapper reproduce the drawn
+  // block without a single number of their own.
+  if (mode === 'landing') {
+    return `${base} px-8 pt-8 pb-8 overflow-y-auto`
   }
 
   // wizard — kit `spacing/32` all round; the right side gives 10 of its 32 to
@@ -179,6 +201,15 @@ interface RightPaneOptions {
  * full height and this one is not.
  */
 export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): string {
+  // Step 0 is the one screen whose right pane holds no preview square, so it
+  // gets no padding either: `Right panel` `5409:35332` is 639 × 695 of picture,
+  // edge to edge, and the picture itself (639 × 959) is centred and cropped by
+  // the pane. The WIDTH is still the measured one — the kit draws step 0 on the
+  // same 591 · 639 split as every other screen.
+  if (mode === 'landing') {
+    return 'constructor-dual-pane-shell__right relative min-h-0 min-w-0 shrink-0 overflow-hidden'
+  }
+
   const base =
     'constructor-dual-pane-shell__right min-h-0 min-w-0 shrink-0 bg-card py-8 overflow-hidden'
 

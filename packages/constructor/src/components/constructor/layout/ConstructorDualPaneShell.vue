@@ -93,7 +93,7 @@ watch(isDrawerMode, mode => {
 const leftColumnClass = computed(() => [
   'constructor-dual-pane-shell__left flex flex-col min-h-0',
   isDrawerMode.value ? 'w-full' : leftPanelWidthClass(props.fullWidth),
-  leftPanelBgClass(props.reviewShell),
+  leftPanelBgClass(props.layoutMode),
 ])
 
 const leftContentClass = computed(() =>
@@ -111,6 +111,15 @@ const leftRouterClass = computed(() => {
 
   if (isFixedHeightRouter) {
     return 'flex-1 min-h-0 flex flex-col overflow-hidden'
+  }
+
+  // Step 0 centres its block in the pane — `Container` `5409:35133` sits at
+  // y=175.5 of a 695 panel, i.e. 344 centred in the 631 the padding leaves.
+  // `min-h-full` rather than `h-full` on purpose: it centres while the block
+  // fits and lets the scroll area do its job the moment it does not, instead
+  // of pushing the top of the block out of reach.
+  if (props.layoutMode === 'landing') {
+    return 'flex min-h-full flex-col justify-center'
   }
 
   // Compensate reduced scroll-container pr-3 so content keeps 48px inset from column edge.
