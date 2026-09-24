@@ -25,7 +25,7 @@ interface WizardNavigatedPayload {
 
 interface WizardBridgeMessage {
   source?: string
-  type?: 'ready' | 'done' | 'auth-required' | 'navigated'
+  type?: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close'
   payload?: unknown
 }
 
@@ -114,6 +114,14 @@ function handleMessage(event: MessageEvent<WizardBridgeMessage>) {
       // Mirror the Wizard's current brand + step into the Admin URL so F5
       // restores the same place. Does not touch the running iframe.
       syncAdminUrl((data.payload ?? {}) as WizardNavigatedPayload)
+      break
+    case 'close':
+      // The kit's Wizard header (`5382:30951`) draws a close cross at the right
+      // edge of every wizard screen. The mockup has no Admin header, so there
+      // the cross IS the exit from a brand; here it does exactly what the
+      // header's "← Brands" button does. The wizard saves as it goes, so
+      // leaving discards nothing.
+      void router.push({ name: 'brands' })
       break
   }
 }

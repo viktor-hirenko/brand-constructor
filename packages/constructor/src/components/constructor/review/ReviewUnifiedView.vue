@@ -424,9 +424,6 @@ defineExpose({
           :title="unifiedReviewTitle"
           :status="brandStatus"
           :subtitle="unifiedReviewSubtitle"
-          :current-step="reviewMode === 'po-draft' ? 8 : undefined"
-          :total-steps="reviewMode === 'po-draft' ? 8 : undefined"
-          :progress-percent="reviewMode === 'po-draft' ? 100 : undefined"
           :info-override="reviewHeaderInfoOverride"
         />
 

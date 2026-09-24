@@ -105,6 +105,14 @@ const rightColumnClass = computed(() =>
 
 <template>
   <div class="constructor-dual-pane-shell" :class="shellBase" :style="shellStyle">
+    <!-- Kit `Wizard` = `Wizard header` 1230×73 + `Wizard content` (`5382:30951`,
+         drawn on all 29 refactor frames and all four breakpoints). The shell is
+         therefore a column, and the two panes are the row inside it. The row —
+         not the shell — is the positioning context for the narrow-panel drawer,
+         so the drawer slides under the header instead of over it. -->
+    <slot name="header" />
+
+    <div class="constructor-dual-pane-shell__body relative flex min-h-0 w-full flex-1">
     <div :class="leftColumnClass">
       <div :class="leftContentClass">
         <slot name="left-header" />
@@ -160,6 +168,7 @@ const rightColumnClass = computed(() =>
         Прев'ю
       </button>
     </template>
+    </div>
 
     <slot name="overlays" />
   </div>

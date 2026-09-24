@@ -18,7 +18,7 @@ interface NavigatedPayload {
 
 interface EmbedMessage {
   source: 'brand-wizard';
-  type: 'ready' | 'done' | 'auth-required' | 'navigated';
+  type: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close';
   payload?: unknown;
 }
 
@@ -40,6 +40,22 @@ function post(type: EmbedMessage['type'], payload?: unknown): void {
 export function postAuthRequired(): void {
   if (!isEmbedded()) return;
   post('auth-required');
+}
+
+/**
+ * Ask the Admin to leave the brand and go back to the brand list.
+ *
+ * The close control is the kit's own: `Wizard header` `5382:30951` draws a 24
+ * cross at the right edge of every one of the 29 drawn screens. The mockup has
+ * no Admin header, so in the kit this cross IS the way out of a brand; in the
+ * product it does what the Admin's "← Brands" button does, which is the only
+ * exit that exists today.
+ *
+ * No-op standalone — `BriefShellView` routes to the landing there instead.
+ */
+export function postClose(): void {
+  if (!isEmbedded()) return;
+  post('close');
 }
 
 /**

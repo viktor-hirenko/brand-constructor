@@ -17,9 +17,6 @@ export const PoDraftReady: Story = {
     title: 'Final review',
     subtitle: 'Перевірте всі дані перед відправкою',
     status: 'draft',
-    currentStep: 8,
-    totalSteps: 8,
-    progressPercent: 100,
     infoOverride: {
       title: 'Бриф готовий!',
       description:
@@ -72,13 +69,10 @@ export const CeoSubmittedView: Story = {
   },
 };
 
-/** PO mid-wizard: step progress visible */
-export const WithProgress: Story = {
+/** PO mid-wizard: plain title, no badge — progress now lives in `UiWizardHeader`. */
+export const PoDraft: Story = {
   args: {
     title: 'JoyMania',
     status: 'draft',
-    currentStep: 5,
-    totalSteps: 8,
-    progressPercent: 62,
   },
 };

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   UI_STEP_HEADER_DESCRIPTION_CLASS,
-  UI_STEP_HEADER_PROGRESS_CLASS,
   UI_STEP_HEADER_ROOT_CLASS,
   UI_STEP_HEADER_TEXT_CLASS,
   UI_STEP_HEADER_TITLE_CLASS,
@@ -29,7 +28,6 @@ const ALL = [
   UI_STEP_HEADER_TITLE_ROW_CLASS,
   UI_STEP_HEADER_TITLE_CLASS,
   UI_STEP_HEADER_DESCRIPTION_CLASS,
-  UI_STEP_HEADER_PROGRESS_CLASS,
 ]
 
 describe('kit geometry — Figma 3984:8226', () => {
@@ -39,13 +37,13 @@ describe('kit geometry — Figma 3984:8226', () => {
     expect(UI_STEP_HEADER_ROOT_CLASS).toBe('ui-step-header flex w-full flex-col gap-4')
   })
 
-  it('leaves the progress row at 24, because the kit has no progress row here', () => {
+  it('has no progress row at all, because the kit has none here', () => {
     // There is no progress node in the symbol — not even hidden — and none on
     // any drawn screen (step 7 `5382:57234` is 88 = 32 + 8 + a two-line 48).
-    // In the kit it is the 1px line at the bottom of `Wizard header`
-    // `5382:30951`, which is not built yet. So the row we draw keeps the 24 it
-    // shipped with: root 16 plus its own 8.
-    expect(UI_STEP_HEADER_PROGRESS_CLASS).toBe('ui-step-header__progress mt-2')
+    // In the kit it is the 1px rule at the bottom of `Wizard header`
+    // `5382:30951`, and `uiWizardHeader.ts` now draws it there. Divergence 79.
+    expect(Object.keys(resolveUiStepHeaderClasses())).not.toContain('progress')
+    expect(ALL.join(' ')).not.toContain('progress')
   })
 
   it('puts 8 between the title row and the description', () => {
@@ -74,14 +72,13 @@ describe('kit geometry — Figma 3984:8226', () => {
 })
 
 describe('the three shells now share one header', () => {
-  it('hands every caller the same six strings', () => {
+  it('hands every caller the same five strings', () => {
     expect(resolveUiStepHeaderClasses()).toEqual({
       root: UI_STEP_HEADER_ROOT_CLASS,
       text: UI_STEP_HEADER_TEXT_CLASS,
       titleRow: UI_STEP_HEADER_TITLE_ROW_CLASS,
       title: UI_STEP_HEADER_TITLE_CLASS,
       description: UI_STEP_HEADER_DESCRIPTION_CLASS,
-      progress: UI_STEP_HEADER_PROGRESS_CLASS,
     })
   })
 

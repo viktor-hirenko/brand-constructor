@@ -45,21 +45,12 @@ interface ReviewHeaderProps {
   status: 'submitted' | 'needs_revision' | 'approved' | string
   /** Optional line under the title (e.g. PO final step instruction). */
   subtitle?: string
-  /** Step index for progress row (PO draft). */
-  currentStep?: number
-  /** Total steps for progress row (PO draft). */
-  totalSteps?: number
-  /** 0–100 — shows progress bar when set (PO draft). */
-  progressPercent?: number
   /** When set, replaces status-derived info block (PO “Бриф готовий!”). */
   infoOverride?: InfoOverride | null
 }
 
 const props = withDefaults(defineProps<ReviewHeaderProps>(), {
   subtitle: undefined,
-  currentStep: undefined,
-  totalSteps: undefined,
-  progressPercent: undefined,
   infoOverride: undefined,
 })
 
@@ -113,13 +104,6 @@ const displayInfo = computed<InfoMeta | null>(() => {
   }
   return info.value
 })
-
-const showProgress = computed(
-  () =>
-    props.progressPercent != null &&
-    props.currentStep != null &&
-    props.totalSteps != null
-)
 </script>
 
 <template>
@@ -127,9 +111,6 @@ const showProgress = computed(
     <UiStepHeader
       :title="title"
       :description="subtitle"
-      :current-step="showProgress ? currentStep : undefined"
-      :total-steps="showProgress ? totalSteps : undefined"
-      :progress-percent="showProgress ? progressPercent : undefined"
     >
       <template v-if="showStatusBadge" #badge>
         <BrandBriefStatusBadge class="review-header__badge shrink-0" :status="status" />

@@ -31,9 +31,10 @@
  *     1px line at the bottom of `Wizard header` `5382:30951`, the one component
  *     of 34 we have not built (row 4 of the divergences file).
  *
- * So `gap-4` is the kit's own number, and the progress row — which only we draw
- * — keeps its former 24 by adding its own 8 on top. Do not fold that 8 into the
- * root gap: that would move the alert too, and the alert has a measurement.
+ * So `gap-4` is the kit's own number. The progress row — which only we drew —
+ * is gone from this component: the wizard-header work put it where the kit
+ * keeps it, as the 1px rule under `Wizard header` `5382:30951`. Divergence row
+ * 79 is closed by that move, not by deleting an indicator.
  *
  * ── Why a `.ts` map ──────────────────────────────────────────────────────────
  * `packages/constructor` has no `@vue/test-utils` and no `jsdom`, and
@@ -65,8 +66,6 @@ export interface UiStepHeaderClassSet {
   title: string
   /** body 16/24 regular in `step header/description`. */
   description: string
-  /** Progress row — ours, not the kit's: 8 on top of the root gap keeps it 24. */
-  progress: string
 }
 
 /** kit `spacing/16` between the text block and the alert (`3984:8226`). */
@@ -87,14 +86,6 @@ export const UI_STEP_HEADER_TITLE_CLASS =
 export const UI_STEP_HEADER_DESCRIPTION_CLASS =
   'ui-step-header__description text-base text-ink-700 tracking-[-0.3125px]'
 
-/**
- * The progress row has no kit counterpart in this component, so it has no
- * measurement of its own either: `mt-2` on top of the root `gap-4` reproduces
- * the 24 the wizard shipped with. It moves — or goes — with the Wizard header
- * work, not before it.
- */
-export const UI_STEP_HEADER_PROGRESS_CLASS = 'ui-step-header__progress mt-2'
-
 export function resolveUiStepHeaderClasses(): UiStepHeaderClassSet {
   return {
     root: UI_STEP_HEADER_ROOT_CLASS,
@@ -102,6 +93,5 @@ export function resolveUiStepHeaderClasses(): UiStepHeaderClassSet {
     titleRow: UI_STEP_HEADER_TITLE_ROW_CLASS,
     title: UI_STEP_HEADER_TITLE_CLASS,
     description: UI_STEP_HEADER_DESCRIPTION_CLASS,
-    progress: UI_STEP_HEADER_PROGRESS_CLASS,
   }
 }

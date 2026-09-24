@@ -30,6 +30,8 @@ import {
 } from '@/composables/visualComponentPreviewContext'
 import UiFooter from '@/components/ui/UiFooter.vue'
 import UiStepHeader from '@/components/ui/UiStepHeader.vue'
+import UiWizardHeader from '@/components/ui/UiWizardHeader.vue'
+import { postClose } from '@/composables/useEmbedBridge'
 import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
@@ -91,7 +93,20 @@ const stepTitle = computed(() => {
 })
 const stepSubtitle = computed(() => (route.meta.subtitle as string) || '')
 const totalSteps = 8
-const progressPercent = computed(() => Math.round((currentStep.value / totalSteps) * 100))
+
+/**
+ * The kit's close control (`Wizard header` `5382:30951`): in the Admin it does
+ * what the Admin's own "← Brands" button does, because that is the only way out
+ * of a brand the product has; standalone it returns to the wizard landing.
+ * The wizard saves as it goes, so there is nothing to discard here.
+ */
+function handleWizardClose(): void {
+  if (embedded) {
+    postClose()
+    return
+  }
+  void router.push('/')
+}
 
 const isFirstStep = computed(() => currentStep.value === 1)
 const isLastStep = computed(() => currentStep.value === totalSteps)
@@ -587,16 +602,21 @@ watch(currentStep, step => {
       :review-shell="isReviewShell"
       :wizard-step="currentStep"
     >
+      <template #header>
+        <UiWizardHeader
+          :current-step="currentStep"
+          :total-steps="totalSteps"
+          @close="handleWizardClose"
+        />
+      </template>
+
       <template #left-header>
         <UiStepHeader
           v-if="!isReviewShell"
           :class="currentStep === 8 ? 'shrink-0' : ''"
-          class="constructor-layout__wizard-header mb-8"
+          class="constructor-layout__step-header mb-6"
           :title="stepTitle"
           :description="stepSubtitle"
-          :current-step="currentStep"
-          :total-steps="totalSteps"
-          :progress-percent="progressPercent"
         />
       </template>
 

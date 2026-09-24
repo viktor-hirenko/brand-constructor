@@ -402,16 +402,13 @@ export const UnresolvedDotExample: StoryObj = {
 // ─── Step header, progress bar, divider — Figma 3984:8226 / 3889:2849 / 3446:5230 ──
 
 export const StepHeaderFull: StoryObj = {
-  name: 'UiStepHeader / Title + badge + description + progress + alert',
+  name: 'UiStepHeader / Title + badge + description + alert',
   render: () => ({
     components: { UiStepHeader, BrandBriefStatusBadge, UiAlert },
     template: `
       <UiStepHeader
         title="Зовнішній неймінг"
         description="Оберіть до трьох доменних імен для бренду."
-        :current-step="3"
-        :total-steps="8"
-        :progress-percent="38"
       >
         <template #badge><BrandBriefStatusBadge status="submitted" /></template>
         <template #alert>

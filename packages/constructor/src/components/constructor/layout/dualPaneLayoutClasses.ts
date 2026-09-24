@@ -5,8 +5,13 @@
 
 export type LayoutMode = 'wizard' | 'edit' | 'review'
 
+/**
+ * `flex-col`, not `flex`: since the Wizard header (`5382:30951`) exists, the
+ * shell is the kit's `Wizard` — header on top, the two panes as the row below.
+ * The row lives in `ConstructorDualPaneShell.vue` as `__body`.
+ */
 export const SHELL_BASE_CLASS =
-  'relative shrink-0 w-[1440px] h-[900px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex'
+  'relative shrink-0 w-[1440px] h-[900px] bg-card rounded-[14px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col'
 
 /**
  * Outer shell wrapper class.
@@ -19,7 +24,7 @@ export const SHELL_BASE_CLASS =
  */
 export function shellBaseClass(embed = false): string {
   if (embed) {
-    return 'relative w-full h-full bg-card overflow-hidden flex'
+    return 'relative w-full h-full bg-card overflow-hidden flex flex-col'
   }
   return SHELL_BASE_CLASS
 }
