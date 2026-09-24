@@ -15,10 +15,10 @@ import {
 import VisualComponentsAccordionSkeleton from '@/components/constructor/skeletons/VisualComponentsAccordionSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
-import AlertTriangleIcon from '@/components/icons/AlertTriangleIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
+import UiAlert from '@/components/ui/UiAlert.vue'
 import UiAccordion from '@/components/ui/UiAccordion.vue'
 import UiAccordionItem from '@/components/ui/UiAccordionItem.vue'
 import UiAccordionOption from '@/components/ui/UiAccordionOption.vue'
@@ -236,14 +236,27 @@ onMounted(loadComponentTypes)
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Delegate to Designers Toggle -->
-    <div class="border border-black/10 rounded-[10px] overflow-hidden">
+    <!--
+      Delegate row — kit `Designer mode` `5382:57235`, measured 24.09
+      (divergences row 43). The row is 527x56, WHITE on a 1px `#eaeaeb`
+      border at radius 16 — not the grey `#f3f3f5` box at radius 10 that
+      stood here. The glyph sits in a 48x48 `bg/alt-3` `#eaeaeb` square inset
+      4 from the row, so that square's radius is the row's 16 minus the inset
+      = 12. Text opens at x=68 (4 + 48 + 16) and the toggle ends 16 from the
+      right edge: `p-1 pr-4` plus `gap-4` prints exactly that.
+
+      Letter-spacing dropped — the kit sets 0 on `body/medium`, and open
+      question 7 only defends tracking on screens a phase is NOT rewriting.
+    -->
+    <div class="overflow-hidden rounded-2xl border border-ink-300">
       <button
-        class="w-full px-4 py-3 bg-[#f3f3f5] flex items-center gap-2 hover:bg-[#ececf0] transition-colors"
+        class="flex h-14 w-full items-center gap-4 bg-white p-1 pr-4 transition-colors hover:bg-ink-100"
         @click="handleDelegateToggle"
       >
-        <SparklesIcon class="size-6 text-primary shrink-0" />
-        <span class="flex-1 text-left text-base font-medium text-foreground tracking-[-0.31px]">
+        <span class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-ink-300">
+          <SparklesIcon class="size-6 text-ink-900" />
+        </span>
+        <span class="flex-1 text-left text-base font-medium text-ink-900">
           Довірити вибір дизайнерам
         </span>
         <!--
@@ -256,92 +269,101 @@ onMounted(loadComponentTypes)
       </button>
     </div>
 
-    <!-- Loading State: pixel-matched skeleton (no spinner — avoids CLS).
-         Default count=5 mirrors the filtered (non-Theme) list rendered below. -->
-    <VisualComponentsAccordionSkeleton v-if="isLoadingTypes" />
+    <!--
+      The accordions and the incompatibility alert share one box, because the
+      kit puts them in one: `Container` `5382:57241` holds the accordion list
+      (ends at y=512) and the `Alert` (opens at y=528) — a gap of **16**, not
+      the 24 the outer column hands everything else. The container itself sits
+      24 under the delegate row and 24 over the comment field, which is what
+      the outer `gap-6` already gives.
+    -->
+    <div class="flex flex-col gap-4">
+      <!-- Loading State: pixel-matched skeleton (no spinner — avoids CLS).
+           Default count=5 mirrors the filtered (non-Theme) list rendered below. -->
+      <VisualComponentsAccordionSkeleton v-if="isLoadingTypes" />
 
-    <!-- Component Accordions — kit `3839:12607` (section) + `3839:12381` (row) -->
-    <UiAccordion v-else :disabled="isDelegated">
-      <UiAccordionItem
-        v-for="type in componentTypes"
-        :key="type.id"
-        :title="type.name"
-        :open="openAccordionId === type.id"
-        @toggle="toggleAccordion(type.id)"
-      >
-        <!--
-          Badge chip with the picked variant; amber while the pair conflicts.
-          Kit badge `3453:1619` — the redrawn Visual Components canvas
-          (`5382:36912`) uses the same two tones, so only the recipe moved.
-        -->
-        <template v-if="getSelectedVariantLabel(type.id)" #badge>
-          <UiBadge
-            :tone="isTypeInConflict(type.id) ? 'amber' : 'neutral'"
-            :label="getSelectedVariantLabel(type.id) ?? ''"
-          >
-            <template v-if="isTypeInConflict(type.id)" #leading>
-              <InfoCircleFilledIcon class="size-4 shrink-0" />
-            </template>
-          </UiBadge>
-        </template>
-
-        <UiAccordionOption
-          v-for="variant in variantsByType[type.id] || []"
-          :key="variant.id"
-          :preview="getVariantDisplay(type.id, variant.id)?.letter ?? ''"
-          :title="getVariantDisplay(type.id, variant.id)?.label ?? ''"
-          :description="getIncompatibilityCaption(type.id, variant.id)"
-          :selected="selections[type.id] === variant.id"
-          @select="selectVariant(type.id, variant.id)"
+      <!-- Component Accordions — kit `3839:12607` (section) + `3839:12381` (row) -->
+      <UiAccordion v-else :disabled="isDelegated">
+        <UiAccordionItem
+          v-for="type in componentTypes"
+          :key="type.id"
+          :title="type.name"
+          :open="openAccordionId === type.id"
+          @toggle="toggleAccordion(type.id)"
         >
-          <template v-if="selections[type.id] === variant.id" #trailing="{ iconClass }">
-            <CheckIcon :class="iconClass" />
+          <!--
+            Badge chip with the picked variant; amber while the pair conflicts.
+            Kit badge `3453:1619` — the redrawn Visual Components canvas
+            (`5382:36912`) uses the same two tones, so only the recipe moved.
+          -->
+          <template v-if="getSelectedVariantLabel(type.id)" #badge>
+            <UiBadge
+              :tone="isTypeInConflict(type.id) ? 'amber' : 'neutral'"
+              :label="getSelectedVariantLabel(type.id) ?? ''"
+            >
+              <template v-if="isTypeInConflict(type.id)" #leading>
+                <InfoCircleFilledIcon class="size-4 shrink-0" />
+              </template>
+            </UiBadge>
           </template>
-        </UiAccordionOption>
 
-        <!-- Loading variants -->
-        <div v-if="loadingVariants[type.id]" class="flex items-center justify-center py-4">
-          <div
-            class="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"
-          />
-        </div>
-
-        <!-- No variants -->
-        <div
-          v-if="
-            !loadingVariants[type.id] &&
-            (!variantsByType[type.id] || variantsByType[type.id].length === 0)
-          "
-          class="py-4 text-center text-sm text-muted-foreground"
-        >
-          Варіанти поки не додані
-        </div>
-      </UiAccordionItem>
-    </UiAccordion>
-
-    <!-- Incompatibility Warning -->
-    <div
-      v-if="hasConflicts && !isDelegated"
-      class="border border-black/10 rounded-[10px] overflow-hidden"
-    >
-      <div class="bg-[#fff8dc] px-4 py-3">
-        <div class="flex items-center gap-3 mb-1">
-          <AlertTriangleIcon class="size-6 text-[#d97706] shrink-0" />
-          <span class="text-base font-medium text-foreground tracking-[-0.31px]"
-            >Несумісні компоненти</span
+          <UiAccordionOption
+            v-for="variant in variantsByType[type.id] || []"
+            :key="variant.id"
+            :preview="getVariantDisplay(type.id, variant.id)?.letter ?? ''"
+            :title="getVariantDisplay(type.id, variant.id)?.label ?? ''"
+            :description="getIncompatibilityCaption(type.id, variant.id)"
+            :selected="selections[type.id] === variant.id"
+            @select="selectVariant(type.id, variant.id)"
           >
-        </div>
-        <p
-          v-for="(conflict, idx) in conflicts"
-          :key="idx"
-          class="text-base text-foreground/80 tracking-[-0.31px] leading-6"
-        >
-          <span class="text-[#ab6400]">{{ conflict.titleA }}</span>
+            <template v-if="selections[type.id] === variant.id" #trailing="{ iconClass }">
+              <CheckIcon :class="iconClass" />
+            </template>
+          </UiAccordionOption>
+
+          <!-- Loading variants -->
+          <div v-if="loadingVariants[type.id]" class="flex items-center justify-center py-4">
+            <div
+              class="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"
+            />
+          </div>
+
+          <!-- No variants -->
+          <div
+            v-if="
+              !loadingVariants[type.id] &&
+              (!variantsByType[type.id] || variantsByType[type.id].length === 0)
+            "
+            class="py-4 text-center text-sm text-muted-foreground"
+          >
+            Варіанти поки не додані
+          </div>
+        </UiAccordionItem>
+      </UiAccordion>
+
+      <!--
+        Incompatibility warning — kit `Alert` instance `5382:57256`, 527x112.
+        `get_variable_defs` returns `alert/bg/warning` #fefbe9,
+        `alert/border/warning` #e9c162, `alert/icon/warning` #ab6400, title
+        `header/s` 18/24 medium #1f1f2e, description `body/regular` 16/24
+        #6f6f7d, `radius/alert` 16 — byte for byte `UiAlert type="warning"`.
+        What stood here was a hand-rolled `#fff8dc` box at radius 10 with a
+        `#d97706` triangle: three hexes the kit does not contain (row 13).
+
+        The two conflicting names were amber `#ab6400`. The kit gives a
+        description exactly one colour, so the emphasis moves from colour to
+        weight and the hex goes. The triangle goes with it —
+        `AlertTriangleIcon` has no kit pair (row 32), while `UiAlert`'s own
+        glyph is the Phosphor WarningCircle Fill the kit actually draws.
+      -->
+      <UiAlert v-if="hasConflicts && !isDelegated" type="warning" title="Несумісні компоненти">
+        <p v-for="(conflict, idx) in conflicts" :key="idx">
+          <span class="font-medium text-ink-900">{{ conflict.titleA }}</span>
           і
-          <span class="text-[#ab6400]">{{ conflict.titleB }}</span>
+          <span class="font-medium text-ink-900">{{ conflict.titleB }}</span>
           конфліктують між собою. Змініть один із варіантів, щоб продовжити.
         </p>
-      </div>
+      </UiAlert>
     </div>
 
     <!-- Comment -->
