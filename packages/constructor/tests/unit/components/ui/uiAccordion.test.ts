@@ -136,8 +136,27 @@ describe('kit accordion — Figma 3839:12607 / 3839:12381', () => {
       // The kit draws Default with no border and Selected with a 1px one. Taken
       // literally that moves the row by a pixel when it is picked, so Default
       // keeps a transparent border instead — the one deliberate divergence.
-      expect(UI_ACCORDION_OPTION_CLASS).toContain('border border-transparent')
+      // The WIDTH is unconditional; only the colour changes.
+      expect(UI_ACCORDION_OPTION_CLASS).toMatch(/(?<![a-z-])border(?![a-z-])/)
       expect(resolveUiAccordionOptionClasses({ selected: true })).toContain('border-primary')
+      expect(resolveUiAccordionOptionClasses({ selected: false })).toContain('border-transparent')
+    })
+
+    it('never hands the row two border colours at once', () => {
+      // **This is the assertion that was missing, and its absence cost the
+      // component its selected state for its whole life.** The transparent
+      // used to sit in the base class and the accent was added on top. Both
+      // are plain border-colour utilities of equal weight, so the cascade is
+      // settled by the order Tailwind emits them in — and it emits
+      // `.border-transparent` last. The old test asserted that each class was
+      // present, which was true, and the product still drew no border.
+      const selected = resolveUiAccordionOptionClasses({ selected: true })
+      const plain = resolveUiAccordionOptionClasses({ selected: false })
+
+      expect(selected).not.toContain('border-transparent')
+      expect(plain).not.toContain('border-primary')
+      expect(UI_ACCORDION_OPTION_CLASS).not.toContain('border-transparent')
+      expect(UI_ACCORDION_OPTION_CLASS).not.toContain('border-primary')
     })
   })
 

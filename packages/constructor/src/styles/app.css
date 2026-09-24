@@ -250,6 +250,34 @@ html.wizard-embed {
   height: var(--wizard-preview-side, 100%);
 }
 
+/*
+ * The rule between the two columns — kit `Divider`, e.g. `5382:64144`.
+ *
+ * It is a node of width ZERO sitting between the panes: 591 + 639 = 1230 on
+ * the 1440 frame, the whole row, so the line costs the left pane nothing and
+ * its content is the full 527. A `border-r` costs 1, and that 1 is not a
+ * rounding error — the concept grid is `auto-fill` over the designer's card
+ * size, and four cards plus three gaps come to 527 exactly, so a 526 content
+ * box drops the grid to three columns and blows the cards up to 170.
+ *
+ * Painted as a positioned pseudo-element rather than a background or an inset
+ * shadow because the footer inside the pane carries its own `bg-ink-100` and
+ * would cover either along its last 73 px. A positioned descendant paints
+ * above the backgrounds of its in-flow siblings, so the line stays whole.
+ */
+.wizard-pane-divider {
+  position: relative;
+}
+
+.wizard-pane-divider::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 1px;
+  background-color: var(--color-ink-300);
+  pointer-events: none;
+}
+
 /* Review dual-phone row: below ~560px two iPhone frames + gutter + pane padding
    no longer fit side-by-side — stack vertically (embed-only, drawer/mobile).
    `justify-content: flex-start` is required here: the row's original Tailwind

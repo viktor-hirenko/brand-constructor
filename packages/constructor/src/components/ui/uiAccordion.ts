@@ -63,6 +63,14 @@
  *     and it keeps the row from shifting 1px when it is picked. This is the
  *     one deliberate divergence in the file.
  *
+ *     **And for its whole life it drew no border at all.** The transparent was
+ *     in the base class and the accent was added on top, but both are plain
+ *     border-colour utilities of equal weight, so the winner is whichever
+ *     Tailwind emits last — and that is `.border-transparent`. The selected
+ *     row therefore looked exactly like the unselected one, and only the check
+ *     on the right told them apart. The two colours are now mutually
+ *     exclusive; `uiAccordion.test.ts` holds them apart.
+ *
  * ── Letter-spacing: the kit's zero, by the owner's call
  *
  * Open question 7's standing default is "keep the current look on вынос
@@ -177,17 +185,34 @@ export const UI_ACCORDION_CONTENT_CLASS =
 /**
  * pl 4 / pr 16 / py 4 around a 48 preview → 56 tall, `radius/accordion` 16.
  *
- * The border is declared here and left transparent in Default: see the note on
- * the 1px shift at the top of the file.
+ * The border WIDTH is declared here so the row never shifts by a pixel when it
+ * is picked; the COLOUR is chosen by the resolver, and the two states are
+ * mutually exclusive on purpose.
+ *
+ * **`border-transparent` used to live here, and that is why the selected row
+ * had no border on screen.** Both `border-transparent` and `border-primary`
+ * are single-class border-colour utilities, so neither outranks the other and
+ * the cascade is decided by their order in the built stylesheet — where
+ * Tailwind puts `.border-transparent` after `.border-primary`. Adding the
+ * accent on top of a permanent transparent therefore changed nothing, at any
+ * breakpoint, for as long as the component existed. The source read correctly
+ * and the product never drew it.
  */
 export const UI_ACCORDION_OPTION_CLASS =
-  'ui-accordion-option box-border flex w-full items-center gap-4 rounded-2xl border border-transparent py-1 pl-1 pr-4 text-left transition-colors'
+  'ui-accordion-option box-border flex w-full items-center gap-4 rounded-2xl border py-1 pl-1 pr-4 text-left transition-colors'
 
 /** State = Hovered — `accordion/bg/hovered` #f3f3f5. */
 export const UI_ACCORDION_OPTION_INTERACTIVE_CLASS = 'hover:bg-ink-200'
 
 /** State = Selected — `accordion/border/accent` #030213, fill stays white. */
 export const UI_ACCORDION_OPTION_SELECTED_CLASS = 'ui-accordion-option--selected border-primary'
+
+/**
+ * States Default and Hovered — the kit draws no border on either, and the row
+ * keeps the same 1px so picking it moves nothing. Applied only when the row is
+ * NOT selected: see the note on the cascade in `UI_ACCORDION_OPTION_CLASS`.
+ */
+export const UI_ACCORDION_OPTION_UNSELECTED_CLASS = 'border-transparent'
 
 /** `opacity/50` again, for a row disabled on its own rather than by the list. */
 export const UI_ACCORDION_OPTION_DISABLED_CLASS =
@@ -260,7 +285,7 @@ export function resolveUiAccordionOptionClasses(
 
   return [
     UI_ACCORDION_OPTION_CLASS,
-    selected ? UI_ACCORDION_OPTION_SELECTED_CLASS : '',
+    selected ? UI_ACCORDION_OPTION_SELECTED_CLASS : UI_ACCORDION_OPTION_UNSELECTED_CLASS,
     disabled ? UI_ACCORDION_OPTION_DISABLED_CLASS : UI_ACCORDION_OPTION_INTERACTIVE_CLASS,
   ]
     .filter(Boolean)

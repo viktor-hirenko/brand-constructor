@@ -1,4 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import {
+  LEFT_PANE_SCROLL_GUTTER_CLASS,
+  leftPanelWidthClass,
+} from '@/components/constructor/layout/dualPaneLayoutClasses'
+import { PREVIEW_PANEL_SCROLL_CLASS } from '@/constants/previewLayout'
 import {
   WIZARD_CAPPED_MIN_WIDTH,
   WIZARD_FRAME_INSET,
@@ -292,5 +299,94 @@ describe('a taller window must not move the columns', () => {
     expect(layout.previewSide).toBe(674)
     expect(layout.rightPaneWidth).toBe(738)
     expect(layout.leftPaneWidth).toBe(780)
+  })
+})
+
+/**
+ * The second half of the chain: pane width → content box → concept cards.
+ *
+ * The first half above stops at the column widths, and that is exactly where
+ * the next defect hid. The owner opened DevTools on the drawn 1440 and found
+ * the cards 128 where the kit draws **125.75** — the grid was right, its
+ * container was 9 too wide, and nothing in the suite looked past the pane.
+ *
+ * Two subtractions were wrong, and both were invisible in source:
+ *
+ *   − 10  the pane gave its right side 22 instead of 32 and expected
+ *         `scrollbar-gutter: stable` to hand the 10 back. The gutter is zero
+ *         with OVERLAY scrollbars, which is the macOS default.
+ *   −  1  the rule between the columns was a `border-r`, and the kit's own
+ *         `Divider` is a node of width 0 — 591 + 639 = 1230, the whole row.
+ *
+ * The 1 is not a rounding error: four cards plus three gaps come to 527
+ * exactly, so a 526 content box drops the grid to three columns and the cards
+ * jump to 170.
+ *
+ * Read from `app.css` rather than restated here, because the card minimum is a
+ * custom property and a test that restated it would agree with itself.
+ */
+const APP_CSS = readFileSync(
+  fileURLToPath(new URL('../../../src/styles/app.css', import.meta.url)),
+  'utf8'
+)
+
+/** `--wizard-concept-card-min` at a given wizard width, straight out of app.css. */
+function cardMinFor(wizardWidth: number): number {
+  const declarations = [...APP_CSS.matchAll(/--wizard-concept-card-min:\s*([\d.]+)px/g)]
+  const thresholds = [...APP_CSS.matchAll(/@media \(min-width:\s*(\d+)px\)/g)].map(m =>
+    Number(m[1])
+  )
+  // The first declaration is the bare `:root`; each later one belongs to the
+  // media query that precedes it in the file.
+  let value = Number(declarations[0][1])
+  declarations.slice(1).forEach((declaration, index) => {
+    const at = APP_CSS.indexOf(declaration[0])
+    const guard = thresholds.filter(t => APP_CSS.indexOf(`@media (min-width: ${t}px)`) < at).pop()
+    if (guard !== undefined && wizardWidth >= guard) value = Number(declaration[1])
+    void index
+  })
+  return value
+}
+
+/** What CSS grid does with `repeat(auto-fill, minmax(min, 1fr))` and `gap`. */
+function cardSizeIn(content: number, min: number, gap = 8): { columns: number; card: number } {
+  const columns = Math.max(1, Math.floor((content + gap) / (min + gap)))
+  return { columns, card: (content - gap * (columns - 1)) / columns }
+}
+
+describe('the concept cards are her size, and that is the pane minus 64', () => {
+  const FRAMES = [
+    { name: '1280 `5395:119372`', viewport: 1280, left: 479, columns: 3, card: 133 },
+    { name: '1440 `5395:118730`', viewport: 1440, left: 591, columns: 4, card: 125.75 },
+    { name: '1920 `5395:119180`', viewport: 1920, left: 879, columns: 5, card: 156.6 },
+    { name: '2560 `5395:119533`', viewport: 2560, left: 796, columns: 5, card: 140 },
+  ] as const
+
+  it.each(FRAMES)('$name draws $columns cards of $card', ({ viewport, left, columns, card }) => {
+    const layout = layoutForViewport(viewport, viewport === 2560 ? 1300 : viewport === 1920 ? 920 : viewport === 1440 ? 768 : 720)
+    expect(layout.leftPaneWidth).toBe(left)
+
+    // The pane's own `spacing/32` on both sides, and nothing else taken out of
+    // it — no scrollbar gutter, no border for the divider.
+    const content = left - 64
+    const grid = cardSizeIn(content, cardMinFor(layout.wizardWidth))
+    expect(grid.columns).toBe(columns)
+    expect(grid.card).toBeCloseTo(card, 2)
+  })
+
+  it('loses the grid a whole column if the divider takes its pixel back', () => {
+    // This is why the rule is drawn rather than bordered. One pixel, four cards
+    // to three, 125.75 to 170.
+    const grid = cardSizeIn(591 - 64 - 1, cardMinFor(1230))
+    expect(grid.columns).toBe(3)
+    expect(grid.card).toBeCloseTo(170, 0)
+  })
+
+  it('keeps both panes off the scrollbar-gutter arithmetic', () => {
+    expect(LEFT_PANE_SCROLL_GUTTER_CLASS).toBe('px-8')
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('px-8')
+    expect(leftPanelWidthClass(false)).not.toContain('border-r')
+    expect(leftPanelWidthClass(false)).toContain('wizard-pane-divider')
+    expect(APP_CSS).toMatch(/\.wizard-pane-divider::after\s*\{[^}]*position:\s*absolute/)
   })
 })

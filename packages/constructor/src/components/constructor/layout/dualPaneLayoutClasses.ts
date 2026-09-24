@@ -49,12 +49,30 @@ export const LEFT_PANE_SCROLL_TRACK_CLASS = 'left-pane-scroll wizard-scrollbar'
  * Horizontal padding of the scrolling pane — kit `spacing/32` on both sides
  * (`Step content` on every breakpoint frame is `p-32`).
  *
- * The right side is 22 rather than 32 because the drawn scrollbar reserves the
- * other 10: `scrollbar-gutter: stable` keeps that gutter whether or not the
- * content overflows, so the content column stays exactly 527 wide at a 591
- * pane — which is the number the mockup gives it.
+ * **It was 32 / 22, and the missing 10 were never given back.** The idea was
+ * that `scrollbar-gutter: stable` reserves the other 10 for the drawn
+ * scrollbar, so the content would come out at the kit's 527 in a 591 pane. It
+ * does not: the gutter is zero whenever the browser uses OVERLAY scrollbars,
+ * which is the macOS default and the machine this is reviewed on. The content
+ * came out 536 instead — measured in the owner's own DevTools — and since the
+ * concept grid is `auto-fill` over her card size, those 10 landed on the
+ * cards: 128.25 each at 1440 where the kit draws 125.75.
+ *
+ * With a plain 32 the four drawn breakpoints land on her card sizes exactly,
+ * and that is the check that this number is right rather than merely nicer:
+ *
+ *   1280  pane 479 → content 415 → 3 × **133**    (415 − 2×8) / 3
+ *   1440  pane 591 → content 527 → 4 × **125.75** (527 − 3×8) / 4
+ *   1920  pane 879 → content 815 → 5 × **156.6**  (815 − 4×8) / 5
+ *   2560  pane 796 → content 732 → 5 × **140**    (732 − 4×8) / 5
+ *
+ * The drawn bar overlays that padding rather than pushing the content, which
+ * is what the kit shows: `5382:64143` sits 4 in from the pane's own edge, not
+ * beside the content. A browser with classic scrollbars will take its 10 out
+ * of the 32 when the pane actually overflows; that is the platform's business
+ * and it is the same on any web page.
  */
-export const LEFT_PANE_SCROLL_GUTTER_CLASS = 'pl-8 pr-[1.375rem]'
+export const LEFT_PANE_SCROLL_GUTTER_CLASS = 'px-8'
 
 /**
  * Nothing to compensate any more: the pane's own padding is the kit's 32 and
@@ -75,9 +93,18 @@ export const LEFT_PANE_SCROLL_INNER_CLASS = ''
  * because it is drawn full height while the panel is not: on `5382:48413` the
  * divider is 713 tall next to a 695-tall panel. Dropped when the right column
  * is hidden (steps 5 and 6), where there is nothing to divide.
+ *
+ * **It is drawn, not bordered, and the 1px is the reason.** In the kit the
+ * `Divider` is a node of width **0** sitting between a 591 pane and a 639 one
+ * — 591 + 639 = 1230, the whole row — so the rule costs the left pane nothing
+ * and its content is the full 527. A `border-r` costs exactly 1, and 1 is not
+ * a rounding error here: the concept grid is `auto-fill` over her card size,
+ * and four cards plus three gaps come to 527 **exactly**, so a content box of
+ * 526 drops the grid to three columns and blows the cards up to 170.
+ * `wizard-pane-divider` in `app.css` paints the same line as an overlay.
  */
 export function leftPanelWidthClass(fullWidth: boolean): string {
-  return fullWidth ? 'w-full' : 'min-w-0 flex-1 border-r border-ink-300'
+  return fullWidth ? 'w-full' : 'min-w-0 flex-1 wizard-pane-divider'
 }
 
 /**

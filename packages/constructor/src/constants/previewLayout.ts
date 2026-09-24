@@ -71,12 +71,22 @@ export const PREVIEW_PANEL_HEADER_GAP_CLASS = 'gap-2'
 
 /**
  * The scroll area — the only thing in the column that moves. Spans the pane
- * edge to edge and pays for the drawn scrollbar out of its own right padding:
- * 32 on the left, 22 + the reserved 10 on the right, so the square inside is
- * exactly `--wizard-preview-side` wide however tall the window is.
+ * edge to edge and carries the pane's own `spacing/32` on both sides, so the
+ * square inside is exactly `--wizard-preview-side` wide: 639 − 64 = 575 at
+ * 1440, and the same subtraction at every other breakpoint.
+ *
+ * **Not 32 / 22.** The first version of this file gave the right side 22 and
+ * expected `scrollbar-gutter: stable` to hand back the other 10 for the drawn
+ * bar. That gutter is zero whenever the browser uses OVERLAY scrollbars — the
+ * macOS default, and the machine this is reviewed on — so the content came out
+ * 10 too WIDE and the square stopped being square again, in the other
+ * direction this time. The same mistake was already costing the left column
+ * its card sizes; see `LEFT_PANE_SCROLL_GUTTER_CLASS`. The bar overlays the
+ * padding, which is what the kit draws: `5396:120156` sits 4 in from the
+ * pane's edge, not beside the square.
  */
 export const PREVIEW_PANEL_SCROLL_CLASS =
-  'wizard-scrollbar min-h-0 flex-1 overflow-y-auto pl-8 pr-[1.375rem]'
+  'wizard-scrollbar min-h-0 flex-1 overflow-y-auto px-8'
 
 /**
  * The square. Its height is the side the shell measured, published as

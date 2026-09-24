@@ -10,7 +10,11 @@ import {
   PREVIEW_PANEL_SCROLL_CLASS,
   PREVIEW_PANEL_SQUARE_CLASS,
 } from '@/constants/previewLayout'
-import { rightPaneClass } from '@/components/constructor/layout/dualPaneLayoutClasses'
+import {
+  LEFT_PANE_SCROLL_GUTTER_CLASS,
+  leftPanelWidthClass,
+  rightPaneClass,
+} from '@/components/constructor/layout/dualPaneLayoutClasses'
 import { WIZARD_PREVIEW_HEADER_HEIGHT, WIZARD_PREVIEW_GAP } from '@/constants/wizardResponsive'
 
 /**
@@ -173,16 +177,27 @@ describe('only the square scrolls — the header stays put (row 94)', () => {
   it('keeps the horizontal 32 off the pane so the bar can float in it', () => {
     // `5396:120156`: the bar sits 4 in from the PANE edge and 22 clear of the
     // square, i.e. inside the pane's own padding. That only works if the pane
-    // stops at `py-8` and the scroll area spans it edge to edge, paying for
-    // the reserved gutter out of its own right padding: 32 + 22 + 10 = 64.
+    // stops at `py-8` and the scroll area spans it edge to edge.
     for (const mode of ['wizard', 'edit', 'review'] as const) {
       expect(rightPaneClass(mode)).toContain('py-8')
       expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])p-8\b/)
       expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])px-8\b/)
     }
-    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('pl-8')
-    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('pr-[1.375rem]')
     expect(PREVIEW_PANEL_HEADER_CLASS).toContain('px-8')
+  })
+
+  it('pays for the drawn bar with padding, never with the square', () => {
+    // Both sides are the kit's 32, so the square is exactly
+    // `--wizard-preview-side`: 639 − 64 = 575 at 1440.
+    //
+    // This was 32 / 22, on the assumption that `scrollbar-gutter: stable`
+    // returns the other 10. It returns nothing when the browser draws OVERLAY
+    // scrollbars — the macOS default — and the square came out 10 too wide.
+    // The left column had the same arithmetic and it cost the concept cards
+    // their size, so neither column may reserve a gutter out of its content.
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('px-8')
+    expect(PREVIEW_PANEL_SCROLL_CLASS).not.toContain('pr-[')
+    expect(LEFT_PANE_SCROLL_GUTTER_CLASS).toBe('px-8')
   })
 
   it('states the square as a height instead of letting it be flex-1', () => {
