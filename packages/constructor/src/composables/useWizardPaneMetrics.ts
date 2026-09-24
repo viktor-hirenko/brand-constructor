@@ -1,7 +1,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import {
   WIZARD_CAPPED_MIN_WIDTH,
-  resolvePreviewMaxSide,
+  resolvePreviewSide,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
 
@@ -50,11 +50,12 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
 
   const isCapped = computed(() => paneWidth.value >= WIZARD_CAPPED_MIN_WIDTH)
 
-  // The square is the size drawn for this breakpoint and nothing else moves
-  // it; the height only decides whether the panel fits or scrolls.
+  // The square comes from the WIDTH — her number at her four widths, the
+  // straight line between her numbers in between. The height only decides
+  // whether the panel fits or scrolls.
   const geometry = computed(() =>
     resolveWizardPaneGeometry(paneHeight.value, {
-      maxSide: resolvePreviewMaxSide(paneWidth.value),
+      previewSide: resolvePreviewSide(paneWidth.value),
     })
   )
 

@@ -4,7 +4,7 @@ import {
   WIZARD_FRAME_INSET,
   WIZARD_FRAME_MAX_HEIGHT,
   WIZARD_FRAME_MAX_WIDTH,
-  resolvePreviewMaxSide,
+  resolvePreviewSide,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
 
@@ -66,7 +66,7 @@ function layoutForViewport(viewportWidth: number, viewportHeight: number): Layou
     : contentHeight
 
   const { previewSide, rightPaneWidth, rightPaneHeight, rightPaneContentHeight } =
-    resolveWizardPaneGeometry(frameHeight, { maxSide: resolvePreviewMaxSide(frameWidth) })
+    resolveWizardPaneGeometry(frameHeight, { previewSide: resolvePreviewSide(frameWidth) })
 
   return {
     wizardWidth,
@@ -258,10 +258,35 @@ describe('a taller window must not move the columns', () => {
     expect(layoutForViewport(2560, 884).rightPaneContentHeight).toBe(896)
   })
 
-  it('carries the ceilings the designer drew, and no invented ones', () => {
-    expect(resolvePreviewMaxSide(1070)).toBe(527) // 1280 − 210
-    expect(resolvePreviewMaxSide(1230)).toBe(575) // 1440 − 210
-    expect(resolvePreviewMaxSide(1670)).toBe(727) // 1920 − 250
-    expect(resolvePreviewMaxSide(1700)).toBe(840) // the capped frame
+  it('lands on her number at each of her four widths, to the pixel', () => {
+    expect(resolvePreviewSide(1070)).toBe(527) // 1280 − 210
+    expect(resolvePreviewSide(1230)).toBe(575) // 1440 − 210
+    expect(resolvePreviewSide(1670)).toBe(727) // 1920 − 250
+    expect(resolvePreviewSide(1700)).toBe(840) // the capped frame
+  })
+
+  it('runs the straight line between her numbers in between', () => {
+    // Halfway from 1070 to 1230 is halfway from 527 to 575.
+    expect(resolvePreviewSide(1150)).toBe(551)
+    // Halfway from 1230 to 1670 is halfway from 575 to 727.
+    expect(resolvePreviewSide(1450)).toBe(651)
+  })
+
+  it('holds at 527 below her narrowest frame instead of extrapolating down', () => {
+    // Otherwise a narrow panel ends up with a right column wider than the left.
+    for (const width of [1070, 900, 600, 0]) {
+      expect(resolvePreviewSide(width)).toBe(527)
+    }
+  })
+
+  it('fixes the 16-inch MacBook, which is the window that exposed this', () => {
+    // 1728 default scaling − 210 sidebar = 1518 of wizard. Held as a step
+    // function it was 879 · 639 — her own 1440 is 591 · 639, almost even, and
+    // 879 · 639 is a layout she never drew.
+    const layout = layoutForViewport(1728, 899)
+    expect(layout.wizardWidth).toBe(1518)
+    expect(layout.previewSide).toBe(674)
+    expect(layout.rightPaneWidth).toBe(738)
+    expect(layout.leftPaneWidth).toBe(780)
   })
 })

@@ -106,21 +106,41 @@ export const WIZARD_RIGHT_PANE_HORIZONTAL_CHROME = WIZARD_PANE_PADDING * 2
  */
 
 /**
- * Ceiling of the square, per breakpoint — the size the designer drew for it.
- * 1280 `5395:119385` → 527, 1440 `5395:118764` → 575, 1920 `5395:119205` → 727,
- * above 1920 `5395:119562` → 840 (which is also `max-height: 960` minus the 120
- * of chrome, so the kit states it twice).
+ * The square the designer drew, at the four wizard widths she drew it at.
+ * `1280 − 210 = 1070`, `1440 − 210 = 1230`, `1920 − 250 = 1670`, and the
+ * capped frame above that.
  *
- * Without this the square grows with the window forever and eats the left
- * column; with it, a window taller than the one she drew simply leaves white
- * space under the square, which is what every one of the 29 screens shows.
+ *   1070 → 527  `5395:119385`
+ *   1230 → 575  `5395:118764`
+ *   1670 → 727  `5395:119205`
+ *   capped → 840 `5395:119562` (= `max-height: 960` minus the 120 of chrome)
+ *
+ * ── Between them the square is INTERPOLATED, and that is a decision ──────────
+ * She drew four windows. A real one is rarely any of them: a 16" MacBook at
+ * its default scaling is 1728 wide, which gives the wizard 1518 — 288 more
+ * than her 1440 frame. Held as a step function, all 288 land on the left
+ * column, which comes out 879 against a 639 right column. Her own 1440 is
+ * 591·639, almost even; 879·639 is not a layout she ever drew, and the long
+ * text lines it produces are the thing the owner called ugly.
+ *
+ * So between two of her widths the square runs along the straight line between
+ * her two numbers. At her four widths the result IS her number, to the pixel —
+ * that is what makes it an interpolation and not an invention. Below the first
+ * anchor it holds at 527 rather than extrapolating down, or a narrow panel
+ * would end up with a right column wider than the left.
+ *
+ * Owner's decision, 24.09: "пусть смотрит, нам же не нужно будет ещё 10
+ * брейкпоинтов". Divergence recorded — the behaviour between her frames is
+ * ours, the numbers at her frames are hers.
  */
-export const WIZARD_PREVIEW_MAX_SIDE = {
-  base: 527,
-  at1440: 575,
-  at1920: 727,
-  capped: 840,
-} as const
+export const WIZARD_PREVIEW_ANCHORS = [
+  { wizardWidth: 1070, side: 527 },
+  { wizardWidth: 1230, side: 575 },
+  { wizardWidth: 1670, side: 727 },
+] as const
+
+/** Inside the capped frame the square does not interpolate — the frame is fixed. */
+export const WIZARD_PREVIEW_SIDE_CAPPED = 840
 
 /** Narrowest right column that still makes sense before the drawer takes over. */
 export const WIZARD_RIGHT_PANE_MIN_WIDTH = 320
@@ -151,20 +171,38 @@ export const WIZARD_WIDTH_AT_1440 = 1230
 export const WIZARD_WIDTH_AT_1920 = 1670
 export const WIZARD_CAPPED_MIN_WIDTH = WIZARD_WIDTH_AT_1920 + 1
 
-/** Concept grid columns per breakpoint — 3 / 4 / 5, measured on all four frames. */
-export const WIZARD_CONCEPT_COLUMNS = { base: 3, at1440: 4, at1920: 5 } as const
+/**
+ * The concept grid no longer counts columns: it is `auto-fill` over
+ * `--wizard-concept-card-min` in `app.css`, so a column appears as soon as one
+ * fits. The counts she draws (3 / 4 / 5) fall out of her card sizes.
+ */
 
 /**
- * The ceiling that applies at a given wizard width. Thresholds are the same
- * ones the concept grid uses, and for the same reason: they are the designer's
- * four windows minus the sidebar (1440−210, 1920−250).
+ * The square for a given wizard width: her number at her widths, the straight
+ * line between her numbers in between. Rounded, so nothing downstream lands on
+ * a half pixel and grows a one-pixel scrollbar.
  */
-export function resolvePreviewMaxSide(wizardWidth: number): number {
-  if (!Number.isFinite(wizardWidth)) return WIZARD_PREVIEW_MAX_SIDE.base
-  if (wizardWidth >= WIZARD_CAPPED_MIN_WIDTH) return WIZARD_PREVIEW_MAX_SIDE.capped
-  if (wizardWidth >= WIZARD_WIDTH_AT_1920) return WIZARD_PREVIEW_MAX_SIDE.at1920
-  if (wizardWidth >= WIZARD_WIDTH_AT_1440) return WIZARD_PREVIEW_MAX_SIDE.at1440
-  return WIZARD_PREVIEW_MAX_SIDE.base
+export function resolvePreviewSide(wizardWidth: number): number {
+  const first = WIZARD_PREVIEW_ANCHORS[0]
+  const last = WIZARD_PREVIEW_ANCHORS[WIZARD_PREVIEW_ANCHORS.length - 1]
+
+  if (!Number.isFinite(wizardWidth)) return first.side
+  if (wizardWidth >= WIZARD_CAPPED_MIN_WIDTH) return WIZARD_PREVIEW_SIDE_CAPPED
+  // Below her narrowest frame the square holds instead of extrapolating down:
+  // otherwise a narrow panel ends up with a right column wider than the left.
+  if (wizardWidth <= first.wizardWidth) return first.side
+  if (wizardWidth >= last.wizardWidth) return last.side
+
+  for (let i = 1; i < WIZARD_PREVIEW_ANCHORS.length; i += 1) {
+    const from = WIZARD_PREVIEW_ANCHORS[i - 1]
+    const to = WIZARD_PREVIEW_ANCHORS[i]
+    if (wizardWidth <= to.wizardWidth) {
+      const share = (wizardWidth - from.wizardWidth) / (to.wizardWidth - from.wizardWidth)
+      return Math.round(from.side + share * (to.side - from.side))
+    }
+  }
+
+  return last.side
 }
 
 export interface WizardPaneGeometry {
@@ -192,33 +230,31 @@ export interface WizardPaneGeometry {
 /**
  * Right-column geometry for a given row height.
  *
- * `maxSide` is the size drawn for the current breakpoint
- * (`resolvePreviewMaxSide`), and below 1920 it is BOTH the ceiling and the
- * floor: the square does not move with the window at all, and a window too
- * short for it makes the column scroll — the same thing a short window already
- * does to the left column. Growing with the height ate the left column;
- * shrinking with it made the concept tiles grow. Both were defects.
+ * `previewSide` comes from `resolvePreviewSide` and is the whole answer: the
+ * square IS that number, decided by the WIDTH alone. Growing it with the
+ * height ate the left column; shrinking it with the height made the concept
+ * tiles grow as the window got smaller. Both were defects.
  *
  * A non-finite or absurd height (first paint, a detached node) returns zeroes,
  * which the caller reads as "not measured yet" and leaves the column on its CSS
  * default — never as "collapse the column to nothing".
  *
- * `maxSide` is **required** and is the whole answer: the square IS that number.
- * The height only decides whether the panel fits or scrolls.
+ * `previewSide` is **required**: the height alone cannot decide anything but
+ * whether the panel fits or scrolls.
  */
 export function resolveWizardPaneGeometry(
   paneHeight: number,
-  { maxSide }: { maxSide: number }
+  { previewSide: side }: { previewSide: number }
 ): WizardPaneGeometry {
-  if (!Number.isFinite(paneHeight) || paneHeight <= 0 || !Number.isFinite(maxSide)) {
+  if (!Number.isFinite(paneHeight) || paneHeight <= 0 || !Number.isFinite(side)) {
     return { previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0, rightPaneContentHeight: 0 }
   }
 
-  // The square is the size drawn for this breakpoint, full stop. The window
-  // height moves nothing: too short simply means the panel scrolls, exactly as
+  // The square comes from the width and nothing else. The window height moves
+  // nothing: too short simply means the panel scrolls, exactly as
   // the left column already does, and exactly as `5395:119983` draws it — a
   // 740×740 `Preview` inside a 651-tall `Content`, overflowing by 145.
-  const previewSide = maxSide
+  const previewSide = side
 
   return {
     previewSide,
