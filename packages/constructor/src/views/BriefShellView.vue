@@ -34,9 +34,7 @@ import UiWizardHeader from '@/components/ui/UiWizardHeader.vue'
 import { postClose } from '@/composables/useEmbedBridge'
 import SupervisorBriefGateView from '@/components/constructor/review/SupervisorBriefGateView.vue'
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
-import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
-import { PREVIEW_HEADER_RESERVE_CLASS } from '@/constants/previewLayout'
 import { wizardStepLocation } from '@/utils/brandHydration'
 import type { Concept } from '@brand-constructor/shared/types'
 
@@ -702,17 +700,20 @@ watch(currentStep, step => {
               hide-primary-action
             />
 
-            <div v-else class="constructor-layout__ceo-reselect-empty flex h-full flex-col gap-6">
-              <div :class="['shrink-0', PREVIEW_HEADER_RESERVE_CLASS]" aria-hidden="true" />
-              <div
-                class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px] flex flex-col items-center justify-center gap-6"
-              >
-                <ImagePlaceholderFilledIcon class="size-10 text-[#c8c8c8]" />
-                <p class="text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] text-center w-[200px]">
-                  Оберіть концепт зліва, щоб переглянути прев'ю.
-                </p>
-              </div>
-            </div>
+            <!-- CEO reselect with nothing picked yet is the kit's
+                 `Type=Placeholder` `4492:11680`, which is exactly what the
+                 slider draws with no concept. It used to be a second hand-made
+                 copy of that box, and it had drifted on five counts: a dashed
+                 `rgba(0,0,0,0.1)` frame, `#c8c8c8`, `#717182`, a 24 gap where
+                 the kit has 16, and the FILLED placeholder glyph, which the kit
+                 does not carry at any size (divergences row 41). -->
+            <ConceptPreviewSlider
+              v-else
+              class="constructor-layout__ceo-reselect-empty"
+              :concept="null"
+              :is-final-selected="false"
+              hide-primary-action
+            />
           </template>
           <template v-else>
             <ConceptMobilePreviewSkeleton v-if="ceoReselectNamingRightPanelLoading" />

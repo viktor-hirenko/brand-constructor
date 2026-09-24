@@ -217,14 +217,6 @@ export interface WizardPaneGeometry {
    * the row: a window too short makes the panel row-height and scroll inside.
    */
   rightPaneHeight: number
-  /**
-   * Height the CONTENT inside the panel claims — header 32 + gap 24 + the
-   * square — and it is deliberately not capped by the row. This is the number
-   * that makes the square a real square: every preview box in the tree is
-   * `flex-1`, so without a definite height above it the box squashes instead
-   * of overflowing, and the column silently stops matching its own width.
-   */
-  rightPaneContentHeight: number
 }
 
 /**
@@ -247,7 +239,7 @@ export function resolveWizardPaneGeometry(
   { previewSide: side }: { previewSide: number }
 ): WizardPaneGeometry {
   if (!Number.isFinite(paneHeight) || paneHeight <= 0 || !Number.isFinite(side)) {
-    return { previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0, rightPaneContentHeight: 0 }
+    return { previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0 }
   }
 
   // The square comes from the width and nothing else. The window height moves
@@ -263,12 +255,13 @@ export function resolveWizardPaneGeometry(
       previewSide + WIZARD_RIGHT_PANE_HORIZONTAL_CHROME
     ),
     // What the panel claims: never more than the row, so a short row scrolls.
+    //
+    // The square itself does NOT come from this number — it is `previewSide`,
+    // stated on the box as a definite height (`--wizard-preview-side`, see
+    // `constants/previewLayout.ts`). A panel shorter than `side + 120` leaves
+    // the scroll area around the square short of it, and the area scrolls; the
+    // header above it is outside that area and stays put (divergences row 94).
     rightPaneHeight: Math.min(previewSide + WIZARD_PREVIEW_VERTICAL_CHROME, paneHeight),
-    // What the content inside the panel claims, and it is NOT capped by the
-    // row — this is the definite height that makes the square a real square
-    // instead of a `flex-1` box that squashes. Header 32 + gap 24 + the square.
-    rightPaneContentHeight:
-      previewSide + WIZARD_PREVIEW_HEADER_HEIGHT + WIZARD_PREVIEW_GAP,
   }
 }
 

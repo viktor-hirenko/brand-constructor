@@ -56,9 +56,10 @@ describe('the right column is the driver, and it comes from the height', () => {
     expect(WIZARD_PANE_PADDING).toBe(32)
     // right = square + the two horizontal paddings.
     expect(resolveWizardPaneGeometry(695, { previewSide: 575 }).rightPaneWidth).toBe(575 + 64)
-    // And the content box above the square is header 32 + gap 24 + the square,
-    // never capped by the row — that is what keeps the square a square.
-    expect(resolveWizardPaneGeometry(300, { previewSide: 575 }).rightPaneContentHeight).toBe(631)
+    // And a row exactly tall enough for the square gets a panel exactly that
+    // tall: square + the 120. One pixel less and the panel starts scrolling.
+    expect(resolveWizardPaneGeometry(695, { previewSide: 575 }).rightPaneHeight).toBe(695)
+    expect(resolveWizardPaneGeometry(694, { previewSide: 575 }).rightPaneHeight).toBe(694)
   })
 })
 
@@ -83,10 +84,17 @@ describe('the window height moves nothing — it only decides scroll', () => {
   it('lets the PANEL shrink to the row, so the overflow scrolls', () => {
     // The panel never claims more height than the row it sits in…
     expect(resolveWizardPaneGeometry(400, { previewSide: 575 }).rightPaneHeight).toBe(400)
-    // …while the content inside keeps its full height and overflows it. That
-    // difference is the scrollbar the kit draws in BOTH columns of the short
-    // frame, and the reason the square stops squashing into a rectangle.
-    expect(resolveWizardPaneGeometry(400, { previewSide: 575 }).rightPaneContentHeight).toBe(631)
+    // …while the square keeps its full side and overflows the scroll area
+    // inside the panel. That difference is the scrollbar the kit draws in BOTH
+    // columns of the short frame, and the reason the square stops squashing
+    // into a rectangle. The square is stated on the box itself now
+    // (`--wizard-preview-side`, `constants/previewLayout.ts`), which is what
+    // lets the header above the scroll area stay put — divergences row 94.
+    expect(resolveWizardPaneGeometry(400, { previewSide: 575 }).previewSide).toBe(575)
+    // The scroll area is the panel minus the 120 of chrome: 280 of a 575
+    // square visible, 295 reachable by scrolling.
+    const geometry = resolveWizardPaneGeometry(400, { previewSide: 575 })
+    expect(geometry.rightPaneHeight - WIZARD_PREVIEW_VERTICAL_CHROME).toBe(280)
   })
 })
 

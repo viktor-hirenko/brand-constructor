@@ -170,6 +170,28 @@ describe('kit icons by use case (DP-15258 icons pass)', () => {
     expect(source).not.toContain('<MoonIcon')
   })
 
+  it('"Placeholder" is ImageSquare Regular in every empty preview panel', () => {
+    // The kit's `Type=Placeholder` `4492:11680` puts a 40 `ImageSquare` in its
+    // empty square, and the mapping table names it outright: "Placeholder | →
+    // ImageSquare, Regular". `ImagePlaceholderIcon.vue` is that glyph;
+    // `ImagePlaceholderFilledIcon.vue` is ours, and the kit has no filled
+    // weight of it at any size (divergences row 41). It stood in the CEO
+    // reselect empty state — the right glyph's wrong twin, in the one place
+    // nobody looked, exactly the shape of mistake this file exists for.
+    for (const file of [
+      'components/constructor/preview/ConceptPreviewSlider.vue',
+      'components/constructor/preview/ConceptMobilePreview.vue',
+    ]) {
+      const source = withoutComments(read(file))
+      expect(source).toContain('<ImagePlaceholderIcon')
+      expect(source).not.toContain('ImagePlaceholderFilledIcon')
+    }
+    // And the shell no longer writes its own copy of that box at all.
+    expect(withoutComments(read('views/BriefShellView.vue'))).not.toContain(
+      'ImagePlaceholderFilledIcon'
+    )
+  })
+
   it('the review "Components" row is Sparkle Regular, the only weight the kit has', () => {
     const source = withoutComments(
       read('components/constructor/review/ReviewVisualComponentsBlock.vue')

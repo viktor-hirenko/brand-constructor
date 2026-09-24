@@ -25,7 +25,16 @@ import LinkIcon from '@/components/icons/LinkIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewComposition, PreviewSlice } from '@/composables/useBrandPreviewLayers'
-import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
+import {
+  PREVIEW_PANEL_HEADER_CLASS,
+  PREVIEW_PANEL_HEADER_GAP_CLASS,
+  PREVIEW_PANEL_ICON_CLASS,
+  PREVIEW_PANEL_PHONE_ROW_CLASS,
+  PREVIEW_PANEL_ROOT_CLASS,
+  PREVIEW_PANEL_SCROLL_CLASS,
+  PREVIEW_PANEL_SQUARE_CLASS,
+  PREVIEW_PANEL_TITLE_CLASS,
+} from '@/constants/previewLayout'
 import { PREVIEW_PHONE_BOX } from '@/constants/visualPreviewLayout'
 import { fitPhoneBoxRem } from '@/constants/wizardResponsive'
 import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
@@ -132,9 +141,19 @@ const phoneBox = computed(() =>
 
 <template>
   <div class="relative flex flex-col flex-1 min-h-0 w-full h-full">
-    <!-- Step 1 Preview -->
+    <!-- Step 1 Preview.
+         The kit draws no step-1 screen at all (open question 5), so the cards
+         below are ours and are left alone. Two things about this branch ARE
+         divergences and are written down rather than invented away: the kit's
+         `Type=UI preview` always carries the 32 «Превʼю» header and this branch
+         has none, and the cards are a pre-kit recipe — radius 14, a two-layer
+         shadow, `bg-primary/10`, 18/24 at −0.44. Divergences rows 95 and 96.
+
+         The scroll area is here for the padding as much as the scrolling: the
+         pane gave up its horizontal 32 so the drawn scrollbar could float in
+         it, so every branch carries its own. -->
     <template v-if="currentStep === 1">
-      <div class="flex flex-col flex-1 min-h-0 w-full">
+      <div :class="PREVIEW_PANEL_SCROLL_CLASS">
       <div v-if="brandBasics && hasAnyBasics()" class="flex flex-col gap-8">
         <div
           v-if="hasGeo()"
@@ -194,7 +213,7 @@ const phoneBox = computed(() =>
         </div>
       </div>
 
-      <div v-else class="flex flex-1 min-h-0 w-full items-center justify-center">
+      <div v-else class="flex h-full w-full items-center justify-center">
         <div class="flex flex-col items-center text-center text-muted-foreground">
           <GlobeIcon class="size-16 mb-4 opacity-30" />
           <p>Почніть заповнювати інформацію про бренд</p>
@@ -234,17 +253,31 @@ const phoneBox = computed(() =>
 
     <!-- Step 7 Preview: iPhone screen assembled from Visual Components slices -->
     <template v-else-if="currentStep === 7">
-      <div :class="['relative flex flex-col h-full', MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS]">
-        <PreviewPanelToast
-          :visible="sidebarHiddenCalloutVisible"
-          :message="SIDEBAR_TEMPORARILY_HIDDEN_MESSAGE"
-          :duration-ms="SIDEBAR_HIDDEN_CALLOUT_DURATION_MS"
-        />
-        <div class="flex items-center gap-2 shrink-0">
-          <SparklesIcon class="size-6" />
-          <span class="text-[1.25rem] font-medium leading-8 tracking-[-0.44px]">Превʼю</span>
+      <div :class="['relative', PREVIEW_PANEL_ROOT_CLASS]">
+        <!-- The toast is absolute; the wrapper gives it back the pane's 32,
+             which used to come from the pane's own padding. -->
+        <div class="pointer-events-none absolute inset-x-8 top-0 z-50">
+          <PreviewPanelToast
+            :visible="sidebarHiddenCalloutVisible"
+            :message="SIDEBAR_TEMPORARILY_HIDDEN_MESSAGE"
+            :duration-ms="SIDEBAR_HIDDEN_CALLOUT_DURATION_MS"
+          />
         </div>
-        <div class="flex flex-col items-center justify-center flex-1">
+        <!-- Kit `Type=UI preview` `3839:9514`, measured on the drawn step 7
+             `5382:64270`: a 24 `Sparkle` in #6f6f7d, `spacing/8`, «Превʼю» in
+             `header/l` 24/32 weight 500 #1f1f2e, letter-spacing 0. It was 20/32
+             at −0.44 with the glyph in whatever colour it inherited. -->
+        <header :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_HEADER_GAP_CLASS]">
+          <SparklesIcon :class="PREVIEW_PANEL_ICON_CLASS" />
+          <h2 :class="PREVIEW_PANEL_TITLE_CLASS">Превʼю</h2>
+        </header>
+        <div :class="PREVIEW_PANEL_SCROLL_CLASS">
+        <div :class="PREVIEW_PANEL_SQUARE_CLASS">
+        <!-- The phone opens 24 below the top of the square and is centred
+             across it — `5382:64270` puts its 239.18×520 at y=24, and the
+             review does the same with its pair. This used to centre it
+             vertically, which was nobody's number. -->
+        <div :class="PREVIEW_PANEL_PHONE_ROW_CLASS">
           <div class="relative">
             <PhonePreviewCanvas
               :box-width-rem="phoneBox.widthRem"
@@ -325,12 +358,14 @@ const phoneBox = computed(() =>
             </UiIconButton>
           </div>
         </div>
+        </div>
+        </div>
       </div>
     </template>
 
     <!-- Other steps: generic placeholder -->
     <template v-else>
-      <div class="flex items-center justify-center h-96">
+      <div :class="[PREVIEW_PANEL_SCROLL_CLASS, 'flex items-center justify-center']">
         <div class="text-center text-muted-foreground">
           <SparklesIcon class="size-16 mx-auto mb-4 opacity-30" />
           <p>Превʼю буде доступне після реалізації цього кроку</p>

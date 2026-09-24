@@ -129,15 +129,14 @@ const rightColumnClass = computed(() =>
 const rightColumnStyle = computed(() => (isDrawerMode.value ? {} : rightPaneStyle.value))
 
 /**
- * The slot box gets a DEFINITE height, and that is what makes the preview a
- * real square instead of a `flex-1` box that squashes. Every right-slot
- * component is a column flex with `h-full`, a 32 header, a 24 gap and a
- * `flex-1` picture, so a definite height here resolves the picture to exactly
- * `previewSide` — and when the row is shorter, this box overflows and the
- * panel scrolls, which is what the kit draws (`5395:119983`: a 740×740
- * `Preview` inside a 651-tall `Content`).
+ * Publishes the measured square as `--wizard-preview-side`, which the square
+ * inside every right-slot component takes as its DEFINITE height
+ * (`constants/previewLayout.ts`). That is what makes it a real square instead
+ * of a `flex-1` box that squashes, and it is also what lets the header above
+ * stay put: the square overflows the scroll area around it, not the column.
  *
- * Not applied in drawer mode, where the panel is a full-height overlay.
+ * Not applied in drawer mode, where the panel is a full-height overlay and the
+ * square falls back to filling it.
  */
 const rightContentStyle = computed(() =>
   isDrawerMode.value ? {} : rightPaneContentStyle.value
@@ -209,7 +208,10 @@ const rightContentStyle = computed(() =>
             <CloseIcon :class="iconClass" />
           </template>
         </UiIconButton>
-        <div class="constructor-dual-pane-shell__right-content w-full shrink-0" :style="rightContentStyle">
+        <div
+          class="constructor-dual-pane-shell__right-content flex h-full min-h-0 w-full flex-col"
+          :style="rightContentStyle"
+        >
           <slot name="right" />
         </div>
       </div>

@@ -96,9 +96,19 @@ describe('resolveCanvasUnitRem', () => {
     expect(pair * 16).toBeCloseTo(510.35, 1)
     expect(pair * 16).toBeLessThanOrEqual(527) // the narrowest drawn square, at 1280
 
-    // Four fifths of the step-7 phone, not a different device.
-    expect(PREVIEW_REVIEW_PHONE_BOX.widthRem / PREVIEW_PHONE_BOX.widthRem).toBeCloseTo(0.8, 5)
+    // The SAME phone step 7 draws, not a smaller one. Measured on `5382:64270`,
+    // the step-7 panel: its square is 575 and the phone inside it is
+    // 239.1761932373047 × 520 at y=24 — the review's number to the digit. The
+    // 298.97 × 650 that used to stand on step 7 came off the old canvas
+    // `3984:6389`, which is where the "four fifths" reading came from too.
+    expect(PREVIEW_PHONE_BOX.widthRem * 16).toBeCloseTo(239.1761932373047, 6)
+    expect(PREVIEW_PHONE_BOX.heightRem * 16).toBe(520)
+    expect(PREVIEW_REVIEW_PHONE_BOX.widthRem).toBe(PREVIEW_PHONE_BOX.widthRem)
     expect(PREVIEW_REVIEW_PHONE_BOX.heightRem * 16).toBe(520)
+
+    // And one phone alone clears the narrowest drawn square with room to spare,
+    // so `fitPhoneBoxRem` never has to shrink it on any breakpoint she drew.
+    expect(PREVIEW_PHONE_BOX.heightRem * 16).toBeLessThanOrEqual(527)
   })
 
   it('collapses to zero for a host with no size', () => {

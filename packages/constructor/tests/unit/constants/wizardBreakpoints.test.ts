@@ -45,7 +45,6 @@ interface Layout {
   previewSide: number
   rightPaneWidth: number
   rightPaneHeight: number
-  rightPaneContentHeight: number
   leftPaneWidth: number
 }
 
@@ -65,8 +64,10 @@ function layoutForViewport(viewportWidth: number, viewportHeight: number): Layou
     ? Math.min(contentHeight - WIZARD_FRAME_INSET * 2, WIZARD_FRAME_MAX_HEIGHT)
     : contentHeight
 
-  const { previewSide, rightPaneWidth, rightPaneHeight, rightPaneContentHeight } =
-    resolveWizardPaneGeometry(frameHeight, { previewSide: resolvePreviewSide(frameWidth) })
+  const { previewSide, rightPaneWidth, rightPaneHeight } = resolveWizardPaneGeometry(
+    frameHeight,
+    { previewSide: resolvePreviewSide(frameWidth) }
+  )
 
   return {
     wizardWidth,
@@ -74,7 +75,6 @@ function layoutForViewport(viewportWidth: number, viewportHeight: number): Layou
     previewSide,
     rightPaneWidth,
     rightPaneHeight,
-    rightPaneContentHeight,
     leftPaneWidth: frameWidth - rightPaneWidth,
   }
 }
@@ -245,17 +245,21 @@ describe('a taller window must not move the columns', () => {
       expect(layout.previewSide).toBe(840)
       expect(layout.rightPaneWidth).toBe(904)
       expect(layout.leftPaneWidth).toBe(796)
-      // And the content box above the square never shrinks, so the overflow
-      // becomes a scrollbar instead of squashing the square into a rectangle.
-      expect(layout.rightPaneContentHeight).toBe(896)
+      // And the square itself never shrinks with the height — it is stated on
+      // the box (`--wizard-preview-side`), so a short window scrolls it
+      // instead of squashing it into a rectangle.
+      expect(layout.previewSide).toBe(840)
     }
   })
 
   it('shrinks only the PANEL when the row is short, never the square', () => {
     // 884 − 73 header − 96 inset = 715 of frame, and the panel takes all of it
-    // while its content still claims 896 — the 181 difference is the scroll.
+    // while the square still claims 840 inside a scroll area of 715 − 120 =
+    // 595 — the 245 difference is the scroll. Her own short frame draws that:
+    // `5395:119983` is a 740×740 `Preview` inside a 651-tall `Content`.
     expect(layoutForViewport(2560, 884).rightPaneHeight).toBe(715)
-    expect(layoutForViewport(2560, 884).rightPaneContentHeight).toBe(896)
+    expect(layoutForViewport(2560, 884).previewSide).toBe(840)
+    expect(layoutForViewport(2560, 884).rightPaneHeight - 120).toBe(595)
   })
 
   it('lands on her number at each of her four widths, to the pixel', () => {

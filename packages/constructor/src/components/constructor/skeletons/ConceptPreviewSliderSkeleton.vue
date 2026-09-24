@@ -2,11 +2,22 @@
 /**
  * Pixel-matched skeleton for `ConceptPreviewSlider` (right preview column).
  *
- * Mirrors the header row (title + optional pill badge) and the flex-1 canvas
- * so the right column does not flash empty state / shift while libraries hydrate.
+ * Mirrors the header row (title + optional pill badge) and the square under it
+ * so the right column does not flash empty state / shift while libraries
+ * hydrate. Same three-part shape as the real panel — pinned header, scroll
+ * area, square — or the square would jump the moment the real one arrives.
  *
  * `singleHeaderLine` — steps 3/4 (`ConceptMobilePreview`): one title bar only, no pill.
  */
+import {
+  PREVIEW_PANEL_HEADER_CLASS,
+  PREVIEW_PANEL_HEADER_GAP_CLASS,
+  PREVIEW_PANEL_ROOT_CLASS,
+  PREVIEW_PANEL_SCROLL_CLASS,
+  PREVIEW_PANEL_SQUARE_CLASS,
+  PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
+} from '@/constants/previewLayout'
+
 withDefaults(
   defineProps<{
     singleHeaderLine?: boolean
@@ -16,15 +27,12 @@ withDefaults(
 </script>
 
 <template>
-  <div
-    class="concept-preview-slider-skeleton flex flex-col gap-6 h-full"
-    aria-hidden="true"
-  >
-    <div class="flex items-center justify-between gap-4 shrink-0">
+  <div :class="['concept-preview-slider-skeleton', PREVIEW_PANEL_ROOT_CLASS]" aria-hidden="true">
+    <div :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_HEADER_GAP_CLASS, 'justify-between']">
       <!-- `gap-2` mirrors the kit's `spacing/8` between name and badge in
            `ConceptPreviewSlider` — the two must stay equal or the pill jumps
            sideways when the real header replaces this one. -->
-      <div class="min-w-0 flex items-center gap-2 flex-1 h-8">
+      <div :class="['min-w-0 flex flex-1 items-center', PREVIEW_PANEL_HEADER_GAP_CLASS]">
         <div class="h-8 w-[220px] rounded bg-muted animate-pulse" />
         <div
           v-if="!singleHeaderLine"
@@ -32,6 +40,14 @@ withDefaults(
         />
       </div>
     </div>
-    <div class="relative flex-1 min-h-0 rounded-[24px] bg-muted animate-pulse" />
+    <div :class="PREVIEW_PANEL_SCROLL_CLASS">
+      <div
+        :class="[
+          PREVIEW_PANEL_SQUARE_CLASS,
+          PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
+          'bg-muted animate-pulse',
+        ]"
+      />
+    </div>
   </div>
 </template>

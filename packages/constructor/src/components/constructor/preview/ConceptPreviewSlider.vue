@@ -13,7 +13,20 @@ import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiPagination from '@/components/ui/UiPagination.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
-import { PREVIEW_HEADER_RESERVE_CLASS } from '@/constants/previewLayout'
+import {
+  PREVIEW_PANEL_HEADER_CLASS,
+  PREVIEW_PANEL_HEADER_GAP_CLASS,
+  PREVIEW_PANEL_PLACEHOLDER_BODY_CLASS,
+  PREVIEW_PANEL_PLACEHOLDER_CLASS,
+  PREVIEW_PANEL_PLACEHOLDER_ICON_CLASS,
+  PREVIEW_PANEL_PLACEHOLDER_TEXT,
+  PREVIEW_PANEL_PLACEHOLDER_TEXT_CLASS,
+  PREVIEW_PANEL_ROOT_CLASS,
+  PREVIEW_PANEL_SCROLL_CLASS,
+  PREVIEW_PANEL_SQUARE_CLASS,
+  PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
+  PREVIEW_PANEL_TITLE_CLASS,
+} from '@/constants/previewLayout'
 
 // `radius/concept-preview` 24 — the kit keeps it on every breakpoint frame
 // (`I5395:118764;3717:1816` and siblings), so the radius no longer depends on
@@ -228,6 +241,20 @@ function closeExpanded() {
   showExpanded.value = false
 }
 
+/**
+ * `hideHeader` is the concept-gallery drawer (`ConceptPreviewPopup`), which is
+ * not the wizard's right column: it brings its own header and its own padding,
+ * and it is not the box the responsive section measures. There the picture goes
+ * back to filling whatever it is given, with no square and no scroll of its own.
+ */
+const scrollAreaClass = computed(() =>
+  props.hideHeader ? 'min-h-0 flex-1 overflow-hidden' : PREVIEW_PANEL_SCROLL_CLASS
+)
+
+const squareClass = computed(() =>
+  props.hideHeader ? 'h-full w-full' : PREVIEW_PANEL_SQUARE_CLASS
+)
+
 function onKeydownEscape(e: KeyboardEvent) {
   if (e.key === 'Escape' && showExpanded.value) {
     closeExpanded()
@@ -245,17 +272,30 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 h-full">
-    <!-- Empty state — header area reserved (matches ConceptPreviewEmptySkeleton). -->
+  <div :class="PREVIEW_PANEL_ROOT_CLASS">
+    <!-- Empty state — kit `Type=Placeholder` `4492:11680`: an EMPTY 32 header
+         row above the square, exactly as the two other types carry a filled
+         one, then `#f9f9fb` inside a solid 1px `#eaeaeb`, a 40 `ImageSquare` in
+         `#95959d`, `spacing/16` to a 200-wide `body/regular` 16/24 in `#6f6f7d`.
+         The dashed `rgba(0,0,0,0.1)` frame and the `#c8c8c8` glyph that stood
+         here are in no kit section. -->
     <template v-if="!concept">
-      <div :class="['shrink-0', PREVIEW_HEADER_RESERVE_CLASS]" aria-hidden="true" />
-      <div
-        class="flex-1 min-h-0 flex flex-col items-center justify-center rounded-[24px] text-center text-muted-foreground border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb]"
-      >
-        <ImagePlaceholderIcon class="size-10 mb-6 text-[#c8c8c8]" />
-        <p class="text-base leading-6 tracking-[-0.3125px] text-ink-700 max-w-[200px]">
-          Оберіть концепт зліва, щоб переглянути превʼю
-        </p>
+      <div :class="PREVIEW_PANEL_HEADER_CLASS" aria-hidden="true" />
+      <div :class="scrollAreaClass">
+        <div
+          :class="[
+            squareClass,
+            PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
+            PREVIEW_PANEL_PLACEHOLDER_CLASS,
+          ]"
+        >
+          <div :class="PREVIEW_PANEL_PLACEHOLDER_BODY_CLASS">
+            <ImagePlaceholderIcon :class="PREVIEW_PANEL_PLACEHOLDER_ICON_CLASS" />
+            <p :class="PREVIEW_PANEL_PLACEHOLDER_TEXT_CLASS">
+              {{ PREVIEW_PANEL_PLACEHOLDER_TEXT }}
+            </p>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -264,16 +304,22 @@ onUnmounted(() => {
       <!-- Kit Preview panel header `3717:1810`: name + badge in one row,
            `spacing/8` between them, title `header/l` 24/32 weight 500 on
            `preview-panel/content/title` #1f1f2e (= --color-ink-900). -->
-      <div v-if="!props.hideHeader" class="flex items-center justify-between gap-4 shrink-0">
+      <div
+        v-if="!props.hideHeader"
+        :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_HEADER_GAP_CLASS, 'justify-between']"
+      >
         <!-- Kit header is 32 — the 24/32 name row and nothing else. The `py-2`
              that stood here made it 48, reserving room for the "Обрати
              концепт" button, which no call site renders (all four pass
              `hide-primary-action` or `hide-header`). Divergences row 51, and
-             the responsive square needs the 32 to come out square. -->
-        <div class="min-w-0 flex items-center gap-2">
-          <h3
-            class="min-w-0 flex-1 text-2xl font-medium leading-8 truncate text-ink-900"
-          >
+             the responsive square needs the 32 to come out square.
+
+             The kit's own header carries one more slot — a 24 close glyph at
+             the far right (`5377:26332`) — and turns it OFF on every screen it
+             draws: hidden on all four responsive frames and on `5382:48440`.
+             An empty slot is a decision too, so there is nothing to add here. -->
+        <div :class="['min-w-0 flex items-center', PREVIEW_PANEL_HEADER_GAP_CLASS]">
+          <h3 :class="[PREVIEW_PANEL_TITLE_CLASS, 'min-w-0 flex-1 truncate']">
             {{ concept.name }}
           </h3>
           <SelectionPillBadge v-if="topLabel" :label="topLabel" />
@@ -297,10 +343,21 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Slider canvas -->
+      <!-- Slider canvas. The square is the only thing that scrolls, and it
+           scrolls INSIDE this area — the header above is outside it and stays
+           put (divergences row 94). Dots and arrows keep their 20 inset from
+           the square's own edges and their centre on the square, which is what
+           the kit draws: on the short frame `5395:119983`, where the square is
+           clipped by the viewport, the arrows still sit at the square's middle
+           and not at the middle of what is visible. -->
+      <div :class="scrollAreaClass">
       <div
         ref="sliderCanvasRef"
-        class="relative flex-1 min-h-0 overflow-hidden rounded-[24px] bg-muted/30"
+        :class="[
+          squareClass,
+          PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
+          'relative overflow-hidden bg-muted/30',
+        ]"
       >
         <!-- Crossfade: background layer — currently visible image, always fully opaque.
              When the canvas aspect ratio drifts too far from the slide's own (a
@@ -401,6 +458,7 @@ onUnmounted(() => {
             <ArrowRightIcon :class="iconClass" />
           </template>
         </UiIconButton>
+      </div>
       </div>
     </template>
 

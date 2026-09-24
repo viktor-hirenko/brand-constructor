@@ -2,31 +2,44 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
-  PREVIEW_HEADER_RESERVE_CLASS,
   MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS,
+  PREVIEW_HEADER_RESERVE_CLASS,
+  PREVIEW_PANEL_HEADER_CLASS,
+  PREVIEW_PANEL_PHONE_ROW_CLASS,
+  PREVIEW_PANEL_ROOT_CLASS,
+  PREVIEW_PANEL_SCROLL_CLASS,
+  PREVIEW_PANEL_SQUARE_CLASS,
 } from '@/constants/previewLayout'
+import { rightPaneClass } from '@/components/constructor/layout/dualPaneLayoutClasses'
 import { WIZARD_PREVIEW_HEADER_HEIGHT, WIZARD_PREVIEW_GAP } from '@/constants/wizardResponsive'
 
 /**
- * Every header in the right column is 32 — Figma `Preview panel` `3839:9513`,
- * whose `Header` is the 24/32 name row and nothing else.
+ * The right column of the wizard — kit `Preview panel` `3839:9513`.
  *
- * Why this file exists: the right column's WIDTH is derived from its height by
+ * Two things this file holds, and they are the same thing seen twice.
+ *
+ * **The header is 32 and it is PINNED.** The kit's `Header` is the 24/32 name
+ * row and nothing else, and the column's WIDTH is derived from its height by
  * subtracting exactly 120 — two 32 paddings, a 32 header and a 24 gap
- * (`wizardResponsive.ts`). The preview under the header is a `flex-1` box, so
- * a header that is not 32 silently steals the difference from the square and
- * the column stops matching its own width. Three of them were 48, 48 and 55
- * and nobody noticed for the length of the responsive work; the square came
- * out 16 short on steps 3 and 4, and jumped 23 when a skeleton was replaced by
- * the real header.
+ * (`wizardResponsive.ts`). A header that is not 32 silently steals the
+ * difference from the square and the column stops matching its own width;
+ * three of them were 48, 48 and 55 and nobody noticed for the length of the
+ * responsive work.
  *
- * The check is deliberately crude — it looks for the shapes that make a header
- * taller than its line box — because the precise height is not knowable from
- * source in this package (no jsdom, `vitest.config.ts:11` is `environment:
- * 'node'`). It is the shapes that went wrong, every time.
+ * **Only the square scrolls.** Owner's decision, divergences row 94: the pane
+ * no longer scrolls as a whole, so the name stays on screen while the picture
+ * under it moves. That only holds while the header is a SIBLING of the scroll
+ * area rather than a child of it — which is what the ordering check below is
+ * for — and while the pane itself is `overflow-hidden`.
+ *
+ * The checks are deliberately crude — source text, not layout — because this
+ * package has no jsdom (`vitest.config.ts:11` is `environment: 'node'`). It is
+ * the shapes that went wrong, every time.
  *
  * Verified to fail, not assumed to: put `py-2` back on `ConceptMobilePreview`,
- * or `h-[48px]` back on the slider skeleton, and this file goes red.
+ * put `h-[48px]` back on the slider skeleton, give the pane back its
+ * `overflow-y-auto`, or move a header inside its scroll area, and this file
+ * goes red.
  */
 
 const SRC = fileURLToPath(new URL('../../../src/', import.meta.url))
@@ -35,6 +48,16 @@ const read = (path: string): string => readFileSync(`${SRC}${path}`, 'utf8')
 /** The prose in these files quotes the old values; measure the markup only. */
 const withoutComments = (source: string): string =>
   source.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+
+/**
+ * Just the template.
+ *
+ * The import list names every constant once, in alphabetical order, so any
+ * check that reads positions has to start below it — the first version of the
+ * ordering check below was measuring the imports and passed on a file whose
+ * header really had moved inside the scroll area.
+ */
+const templateOf = (source: string): string => source.slice(source.indexOf('<template>'))
 
 /** Every component that renders into the shell's `right` slot and draws a header. */
 const RIGHT_SLOT_FILES = [
@@ -60,25 +83,18 @@ describe('the right column header is 32 everywhere — Figma 3839:9513', () => {
     // And a hand-written pixel height is how both skeletons grew to 48 and 55.
     // Only header-sized values are banned (33…99): the lightbox inside
     // `ConceptPreviewSlider` is legitimately `h-[860px]` and lives in a
-    // `Teleport to="body"`, outside this column entirely, and the empty state
-    // of `ConceptMobilePreview` is a `min-h-[400px]` floor, not a header.
+    // `Teleport to="body"`, outside this column entirely.
     expect(markup).not.toMatch(/(?<![a-z-])h-\[(?:3[3-9]|[4-9]\d)px\]/)
   })
 
-  it('reserves the same 32 in the skeletons as the real header takes', () => {
+  it('states the 32 and the 24 once, and they are the kit numbers', () => {
+    expect(PREVIEW_PANEL_HEADER_CLASS).toContain('h-8')
+    expect(PREVIEW_PANEL_HEADER_CLASS).toContain('shrink-0')
     expect(PREVIEW_HEADER_RESERVE_CLASS).toBe('h-8')
-    expect(read('components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue')).toContain(
-      'PREVIEW_HEADER_RESERVE_CLASS'
-    )
-  })
-
-  it('keeps the gap under the header at the kit 24', () => {
     expect(MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS).toBe('gap-6')
-    for (const file of RIGHT_SLOT_FILES) {
-      // Every right-slot root is a column at `gap-6`; a different gap moves the
-      // square by the difference, the same way a wrong header does.
-      expect(withoutComments(read(file))).toMatch(/gap-6|MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS/)
-    }
+    // The root spends that same gap between the header and the scroll area, so
+    // there is one place where the 24 lives.
+    expect(PREVIEW_PANEL_ROOT_CLASS).toContain(MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS)
   })
 
   it('is the same 32 and 24 the column width is derived from', () => {
@@ -86,5 +102,127 @@ describe('the right column header is 32 everywhere — Figma 3839:9513', () => {
     // them — they are the same numbers, written once here and once in markup.
     expect(WIZARD_PREVIEW_HEADER_HEIGHT).toBe(32)
     expect(WIZARD_PREVIEW_GAP).toBe(24)
+  })
+})
+
+describe('only the square scrolls — the header stays put (row 94)', () => {
+  /**
+   * `ConceptPreviewSlider` is also the concept-gallery drawer, which is not
+   * this column at all — it brings its own header and padding — so it routes
+   * the two shared classes through a computed that swaps them out in that one
+   * case. The names are accepted here, and the swap itself is pinned below.
+   */
+  const SCROLL = /PREVIEW_PANEL_SCROLL_CLASS|scrollAreaClass/
+  const SQUARE = /PREVIEW_PANEL_SQUARE_CLASS|squareClass/
+
+  it.each(RIGHT_SLOT_FILES)('%s builds the panel out of the shared three parts', file => {
+    const markup = templateOf(withoutComments(read(file)))
+    expect(markup).toContain('PREVIEW_PANEL_ROOT_CLASS')
+    expect(markup).toMatch(SCROLL)
+    expect(markup).toMatch(SQUARE)
+
+  })
+
+  it('gives BOTH branches of the slider a scroll area, not just the empty one', () => {
+    // `ConceptPreviewSlider` is the only right-slot file whose two branches —
+    // empty state and picture — are separate subtrees, so each needs its own
+    // wrapper. The first version of the check above was satisfied by the empty
+    // branch alone and stayed green with the picture's wrapper deleted, which
+    // is the branch that actually overflows.
+    const markup = templateOf(
+      withoutComments(read('components/constructor/preview/ConceptPreviewSlider.vue'))
+    )
+    expect((markup.match(/scrollAreaClass/g) ?? []).length).toBe(2)
+    expect((markup.match(/squareClass/g) ?? []).length).toBe(2)
+  })
+
+  it('lets the slider swap those two only for the drawer, and for nothing else', () => {
+    const script = read('components/constructor/preview/ConceptPreviewSlider.vue')
+    expect(script).toMatch(/props\.hideHeader \? .* : PREVIEW_PANEL_SCROLL_CLASS/)
+    expect(script).toMatch(/props\.hideHeader \? .* : PREVIEW_PANEL_SQUARE_CLASS/)
+  })
+
+  it.each(RIGHT_SLOT_FILES)('%s keeps its header OUTSIDE the scroll area', file => {
+    // A header nested inside the scroll area scrolls away with the square —
+    // which is precisely the defect row 94 is about. In source order the
+    // header has to open before the scroll area does.
+    const markup = templateOf(withoutComments(read(file)))
+    const header = markup.indexOf('PREVIEW_PANEL_HEADER_CLASS')
+    const scroll = markup.search(SCROLL)
+    expect(header).toBeGreaterThan(-1)
+    expect(scroll).toBeGreaterThan(-1)
+    expect(header).toBeLessThan(scroll)
+  })
+
+  it('leaves the scrolling to the panel, not to the pane', () => {
+    // The pane used to be the scroll container, which is what carried the
+    // header away. Every mode of it is `overflow-hidden` now.
+    for (const mode of ['wizard', 'edit', 'review'] as const) {
+      expect(rightPaneClass(mode)).toContain('overflow-hidden')
+      expect(rightPaneClass(mode)).not.toContain('overflow-y-auto')
+      // And the drawn bar moved with the scrolling, off the pane and onto the
+      // area around the square.
+      expect(rightPaneClass(mode)).not.toContain('wizard-scrollbar')
+    }
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('overflow-y-auto')
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('wizard-scrollbar')
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('flex-1')
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('min-h-0')
+  })
+
+  it('keeps the horizontal 32 off the pane so the bar can float in it', () => {
+    // `5396:120156`: the bar sits 4 in from the PANE edge and 22 clear of the
+    // square, i.e. inside the pane's own padding. That only works if the pane
+    // stops at `py-8` and the scroll area spans it edge to edge, paying for
+    // the reserved gutter out of its own right padding: 32 + 22 + 10 = 64.
+    for (const mode of ['wizard', 'edit', 'review'] as const) {
+      expect(rightPaneClass(mode)).toContain('py-8')
+      expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])p-8\b/)
+      expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])px-8\b/)
+    }
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('pl-8')
+    expect(PREVIEW_PANEL_SCROLL_CLASS).toContain('pr-[1.375rem]')
+    expect(PREVIEW_PANEL_HEADER_CLASS).toContain('px-8')
+  })
+
+  it('states the square as a height instead of letting it be flex-1', () => {
+    // The whole point of row 90: a `flex-1` box squashes, so the column was
+    // sized by a square that was not inside it. The side is published by the
+    // shell and taken here as a definite height.
+    expect(PREVIEW_PANEL_SQUARE_CLASS).toContain('wizard-preview-square')
+    const css = readFileSync(`${SRC}styles/app.css`, 'utf8')
+    expect(css).toMatch(/\.wizard-preview-square\s*\{[^}]*height:\s*var\(--wizard-preview-side/)
+  })
+
+  it('stands the phone 24 below the top of the square, not in its middle', () => {
+    // `5382:64270` (step 7) and `5387:91948` (the review) both open their
+    // phones at y=24 of the square. Centring it vertically was nobody's number.
+    expect(PREVIEW_PANEL_PHONE_ROW_CLASS).toContain('items-start')
+    expect(PREVIEW_PANEL_PHONE_ROW_CLASS).toContain('pt-6')
+    expect(PREVIEW_PANEL_PHONE_ROW_CLASS).not.toContain('items-center')
+
+    // Both panels that draw a phone use it rather than rolling their own.
+    for (const file of [
+      'components/constructor/preview/BrandPreviewPanel.vue',
+      'components/constructor/layout/StepPreviewRightPanel.vue',
+    ]) {
+      expect(withoutComments(read(file))).toContain('PREVIEW_PANEL_PHONE_ROW_CLASS')
+    }
+  })
+
+  it('never leaves a branch of the step panel without the pane padding', () => {
+    // `StepPreviewRightPanel` is the one right-slot file with several branches
+    // (steps 1, 2, 3/4, 7 and the fallback). The pane no longer pads them, so
+    // a branch that forgets the scroll area renders edge to edge.
+    // The import list names every constant once; count uses, not mentions.
+    const markup = templateOf(
+      withoutComments(read('components/constructor/layout/StepPreviewRightPanel.vue'))
+    )
+    const branches = markup.match(/<template v-(?:if|else-if|else)[^>]*>/g) ?? []
+    expect(branches.length).toBeGreaterThanOrEqual(5)
+    // Steps 1 and 7 and the fallback each open one; steps 2 and 3/4 delegate
+    // to the components above, which carry their own.
+    const scrolls = markup.match(/PREVIEW_PANEL_SCROLL_CLASS/g) ?? []
+    expect(scrolls.length).toBe(3)
   })
 })

@@ -1,21 +1,32 @@
 <script setup lang="ts">
 /**
  * Pixel-matched skeleton for `ConceptMobilePreview` (right-column preview on
- * naming steps). Mirrors header + flex-1 canvas geometry to avoid CLS.
+ * naming steps). Mirrors the pinned header and the square under it to avoid CLS.
  */
+import {
+  PREVIEW_PANEL_HEADER_CLASS,
+  PREVIEW_PANEL_ROOT_CLASS,
+  PREVIEW_PANEL_SCROLL_CLASS,
+  PREVIEW_PANEL_SQUARE_CLASS,
+  PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
+  PREVIEW_PANEL_TITLE_CLASS,
+} from '@/constants/previewLayout'
 </script>
 
 <template>
-  <div class="concept-mobile-preview-skeleton flex flex-col gap-6 h-full" aria-hidden="true">
-    <h3
-      class="text-[1.5rem] font-medium leading-8 text-ink-900 shrink-0"
-    >
+  <div :class="['concept-mobile-preview-skeleton', PREVIEW_PANEL_ROOT_CLASS]" aria-hidden="true">
+    <h3 :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_TITLE_CLASS, 'truncate']">
       Обраний концепт
     </h3>
-    <div
-      class="concept-mobile-preview-skeleton__frame w-full aspect-square rounded-[24px] overflow-hidden bg-muted/30 flex-1"
-    >
-      <div class="w-full h-full bg-muted animate-pulse" />
+    <div :class="PREVIEW_PANEL_SCROLL_CLASS">
+      <div
+        :class="[
+          'concept-mobile-preview-skeleton__frame',
+          PREVIEW_PANEL_SQUARE_CLASS,
+          PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
+          'overflow-hidden bg-muted animate-pulse',
+        ]"
+      />
     </div>
   </div>
 </template>

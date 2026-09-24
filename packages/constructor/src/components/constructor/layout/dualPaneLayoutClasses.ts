@@ -133,29 +133,35 @@ interface RightPaneOptions {
  * same in a 785-tall one. Stretching it was the defect.
  *
  * Padding is `spacing/32` on all four sides in every drawn frame — the mixed
- * 48 / 20 / 44 / 100 this function used to hand out matched no kit node.
+ * 48 / 20 / 44 / 100 this function used to hand out matched no kit node. Only
+ * the VERTICAL 32 is here: the horizontal pair moved inside, onto the header
+ * and onto the scroll area, so that the scroll area can span the pane edge to
+ * edge. Two reasons, and the kit gives both on the short frame `5395:119983`:
+ * its bar `5396:120156` floats in the pane's padding, 4 in from the pane edge
+ * and 22 clear of the square; and with the padding out here the gutter that
+ * `scrollbar-gutter: stable` reserves came out of the SQUARE, which is why the
+ * square was 10 narrower than it was tall.
  *
- * The pane scrolls rather than squashing the square: that is bullet four of
- * the designer's sticker `5395:118367`. The divider between the columns is on
- * the LEFT pane, because it is drawn full height and this one is not.
+ * The pane itself no longer scrolls — `overflow-hidden`. What scrolls is the
+ * area around the square, inside the panel and below its header, so the header
+ * stays put (divergences row 94, the owner's decision). Bullet four of the
+ * sticker `5395:118367` is still honoured: a window too short for the square
+ * scrolls it rather than squashing it.
+ *
+ * The divider between the columns is on the LEFT pane, because it is drawn
+ * full height and this one is not.
  */
 export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): string {
   const base =
-    'constructor-dual-pane-shell__right wizard-scrollbar min-h-0 min-w-0 shrink-0 bg-card p-8'
+    'constructor-dual-pane-shell__right min-h-0 min-w-0 shrink-0 bg-card py-8 overflow-hidden'
 
   if (mode === 'review') {
-    return `${base} flex flex-col overflow-y-auto`
+    return `${base} flex flex-col`
   }
 
   if (mode === 'edit') {
-    return `${base} relative overflow-y-auto`
+    return `${base} relative flex flex-col`
   }
 
-  // Every step scrolls, step 1 included. The `overflow-hidden` it used to carry
-  // existed so its empty state could fill the column height, and `flex-1` in a
-  // scroll container would not do that — but the slot box now has a definite
-  // height (`rightPaneContentStyle`), so the empty state fills it either way.
-  // Left as `overflow-hidden`, a square too tall for a short window would be
-  // CLIPPED instead of scrolled, which is the one outcome the kit never shows.
-  return `${base} flex min-h-0 flex-col overflow-y-auto`
+  return `${base} flex min-h-0 flex-col`
 }

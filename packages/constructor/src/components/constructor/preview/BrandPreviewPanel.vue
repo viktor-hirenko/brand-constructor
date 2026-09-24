@@ -12,7 +12,16 @@
 import { computed, inject, onMounted, watch } from 'vue'
 import { useBrandPreviewLayers, type PreviewSlice } from '@/composables/useBrandPreviewLayers'
 import { useConstructorStore } from '@/stores/constructor'
-import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
+import {
+  PREVIEW_PANEL_HEADER_CLASS,
+  PREVIEW_PANEL_HEADER_GAP_CLASS,
+  PREVIEW_PANEL_ICON_CLASS,
+  PREVIEW_PANEL_PHONE_ROW_CLASS,
+  PREVIEW_PANEL_ROOT_CLASS,
+  PREVIEW_PANEL_SCROLL_CLASS,
+  PREVIEW_PANEL_SQUARE_CLASS,
+  PREVIEW_PANEL_TITLE_CLASS,
+} from '@/constants/previewLayout'
 import {
   PREVIEW_REVIEW_PHONE_BOX,
   PREVIEW_REVIEW_PHONE_GAP_CLASS,
@@ -65,26 +74,21 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
 </script>
 
 <template>
-  <aside
-    :class="[
-      // No `overflow-y-auto` here: the scroll belongs to the column, the same
-      // as on every other step. With it, this panel scrolled inside itself and
-      // the column never knew the content was too tall.
-      'relative w-full h-full flex flex-col bg-white',
-      MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS,
-    ]"
-  >
-    <header class="space-y-1">
-      <h2
-        class="text-lg font-medium tracking-[-0.45px] text-foreground inline-flex items-center gap-2"
-      >
-        <SparklesIcon class="size-6 shrink-0 text-[#5B5B62]" />
-        <span class="text-[1.25rem]">Превʼю</span>
-      </h2>
+  <aside :class="['relative bg-white', PREVIEW_PANEL_ROOT_CLASS]">
+    <!-- Kit `Type=UI preview` `3839:9514`: a 24 `Sparkle` in
+         `preview panel/content/icon` #6f6f7d, `spacing/8`, and the title in
+         `header/l` 24/32 weight 500 on `preview panel/content/title` #1f1f2e
+         with letter-spacing 0. It was 20/32 at −0.45 next to a #5B5B62 glyph —
+         a hex the kit does not carry anywhere, divergences row 26. -->
+    <header :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_HEADER_GAP_CLASS]">
+      <SparklesIcon :class="PREVIEW_PANEL_ICON_CLASS" />
+      <h2 :class="PREVIEW_PANEL_TITLE_CLASS">Превʼю</h2>
     </header>
 
+    <div :class="PREVIEW_PANEL_SCROLL_CLASS">
+      <div :class="PREVIEW_PANEL_SQUARE_CLASS">
     <!-- Delegated: single phone carrying the empty state, as on step 7. -->
-    <div v-if="isDelegated" class="flex flex-1 min-h-0 w-full items-center justify-center">
+    <div v-if="isDelegated" :class="PREVIEW_PANEL_PHONE_ROW_CLASS">
       <PhonePreviewCanvas>
         <template #body>
           <VisualComponentsPhoneEmptyState variant="delegated" />
@@ -93,15 +97,20 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
     </div>
 
     <!-- Normal: the screen, and the screen with the sidebar open.
-         Kit `5387:91764`: the two phones are 239.18×520, 32 apart, inside the
-         575 preview square — 510.36 of it. They are the step-7 phone at four
-         fifths, and the size has to be stated now that the root no longer
-         shrinks with the panel. `overflow-x-auto` is the fallback for a panel
-         shorter than any the designer drew, so the pair is never clipped. -->
+         Kit `5387:91948`: the two phones are 239.18×520, 32 apart and centred
+         inside the 575 preview square — 510.36 of it — and both open at y=24
+         from its top edge, which is what `PREVIEW_PANEL_PHONE_ROW_CLASS`
+         carries. They are the step-7 phone at four fifths; step 7 draws the
+         same 239.18×520 (`5382:64270`), so it is one size, not two.
+         `overflow-x-auto` used to stand here as a fallback and is gone: the
+         pair can no longer outgrow the square (`fitPhoneBoxRem` shrinks it to
+         fit), and a horizontal scroll container inside the square would have
+         made its block axis a scroll container too. -->
     <div
       v-else
       :class="[
-        'brand-preview-panel__dual-phones wizard-scrollbar flex flex-1 min-h-0 items-start justify-center overflow-x-auto',
+        'brand-preview-panel__dual-phones',
+        PREVIEW_PANEL_PHONE_ROW_CLASS,
         PREVIEW_REVIEW_PHONE_GAP_CLASS,
       ]"
     >
@@ -131,6 +140,8 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
           <PhonePreviewSidebar :slice="phone.sidebar" :unit-rem="unitRem" />
         </template>
       </PhonePreviewCanvas>
+    </div>
+      </div>
     </div>
   </aside>
 </template>

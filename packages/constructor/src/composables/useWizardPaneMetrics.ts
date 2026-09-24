@@ -92,13 +92,20 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
   }))
 
   /**
-   * Definite height for the box the `right` slot renders into. Not capped by
-   * the row: that is the point — when the row is shorter, this box overflows
-   * and the panel scrolls, instead of the preview squashing into a rectangle.
+   * The square's own side, published to the box the `right` slot renders into.
+   *
+   * It is a DEFINITE height on the square rather than a `flex-1` box, and that
+   * is the point: a `flex-1` box squashes when the row is short, so the column
+   * was being sized by a square that was not inside it (divergences row 90).
+   * Stated, a short row simply makes the scroll area around the square scroll —
+   * and the header, which sits outside that area, stays put (row 94).
+   *
+   * Empty in drawer mode, where the panel is a full-height overlay and the
+   * square falls back to filling it.
    */
   const rightPaneContentStyle = computed(() =>
-    geometry.value.rightPaneContentHeight > 0
-      ? { height: `${geometry.value.rightPaneContentHeight}px` }
+    geometry.value.previewSide > 0
+      ? { '--wizard-preview-side': `${geometry.value.previewSide}px` }
       : {}
   )
 

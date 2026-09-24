@@ -54,16 +54,28 @@ export const PREVIEW_CHASSIS = {
 } as const
 
 /**
- * On-screen size of the phone on step 7, measured from the Figma states section
- * (node 3984:6389): every state renders the preview at 298.9702453613281 × 650,
- * i.e. the 360×782.69 canvas at a uniform ≈0.8304 scale.
+ * On-screen size of the phone on step 7 — **239.1761932373047 × 520**, read off
+ * the drawn step-7 screen `5382:64114`. Its `Preview panel` `5382:64270` is
+ * 639×695 at 1440, its square is 575, and the phone inside it is that box at
+ * x=167.91 (centred) and y=24.
+ * https://www.figma.com/design/aCe1cUDNaA7Tmcn9Mmvv1w/Brand-Builder?node-id=5382-64114&m=dev
  *
- * Expressed in rem so the phone tracks the fluid root font inside the Admin
- * iframe, exactly like the rest of the wizard.
+ * It was 298.9702453613281 × 650, taken from the states section `3984:6389` of
+ * the OLD canvas — the same canvas the nineteen-phase plan was written against.
+ * Divergences row 89 carried the difference as "about 250×548 by the render,
+ * not measured"; measured, it is 239.18×520, and 239.18 / 298.97 = 0.8 exactly.
+ *
+ * **So step 7 and the step-8 review draw the same phone, not two.** The pair
+ * below is the same numbers, and the review only differs in standing two of
+ * them side by side. Keeping both constants is deliberate all the same: they
+ * are two measurements of two screens, and if the designer ever moves one she
+ * will not have moved the other.
+ *
+ * Expressed in rem, like the rest of the wizard's geometry.
  */
 export const PREVIEW_PHONE_BOX = {
-  widthRem: 298.9702453613281 / 16,
-  heightRem: 650 / 16,
+  widthRem: 239.1761932373047 / 16,
+  heightRem: 520 / 16,
 } as const
 
 /**
@@ -73,8 +85,8 @@ export const PREVIEW_PHONE_BOX = {
  * Measured on the drawn review `5387:91764`: the `Preview` slot is the 575
  * square, and the two `Preview` frames inside it are 239.1761932373047 × 520
  * at x=32.32 and x=303.5 — i.e. 32 apart, which is kit `spacing/32`, not the
- * 40 this panel used. 239.18 / 298.97 = 0.8 exactly, and 650 × 0.8 = 520, so
- * this is the step-7 phone at four fifths, not a different device.
+ * 40 this panel used. Both open at y=24 from the top of the square, the same
+ * inset step 7 gives its single phone.
  *
  * Why it had to be stated: until the responsive work the whole wizard shrank
  * with the Admin panel, so the step-7 box happened to come out near this size.
