@@ -66,7 +66,7 @@ function handleClick() {
     </div>
     <p
       v-else
-      class="author-pick-preview__empty text-[1rem] leading-6 tracking-[-0.3125px] text-ink-700 italic"
+      class="author-pick-preview__empty text-[1rem] leading-6 text-ink-700 italic"
     >
       Концепт не обрано
     </p>

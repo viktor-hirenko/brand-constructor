@@ -37,7 +37,7 @@ defineProps<AuthorInternalNamingPreviewProps>()
     </div>
     <p
       v-else
-      class="author-internal-naming-preview__empty text-[1rem] leading-6 tracking-[-0.3125px] text-ink-700 italic"
+      class="author-internal-naming-preview__empty text-[1rem] leading-6 text-ink-700 italic"
     >
       Назву не обрано
     </p>

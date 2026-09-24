@@ -46,7 +46,8 @@ describe('info block is the kit Alert — Figma 3461:5237', () => {
     expect(body(header)).not.toContain('px-6 py-6')
     expect(body(header)).not.toContain('pl-9')
     expect(body(header)).not.toContain('text-sm')
-    expect(body(header)).not.toContain('tracking-[-0.45px]')
+    // Its letter-spacing is covered by the tree-wide sweep in
+    // `styles/legacyScss.test.ts`.
   })
 
   it('keeps the glyph read off the render, not off the layer name', () => {

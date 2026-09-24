@@ -53,7 +53,7 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
           >
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
@@ -70,7 +70,7 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
           >
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
@@ -81,7 +81,7 @@ const layoutModifier = computed(() => {
           v-else-if="isNewBrief"
           class="review-external-list__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">Бриф нового External Naming</span>
           </div>
@@ -100,7 +100,7 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in ceoItems"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
           >
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
@@ -114,7 +114,7 @@ const layoutModifier = computed(() => {
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]"
+            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
           >
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
@@ -125,7 +125,7 @@ const layoutModifier = computed(() => {
           v-else-if="isNewBrief"
           class="review-external-list__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">Бриф нового External Naming</span>
           </div>

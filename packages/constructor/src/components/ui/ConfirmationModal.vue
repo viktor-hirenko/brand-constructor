@@ -37,7 +37,7 @@ const emit = defineEmits<{
   <UiModal :title="title" size="sm" @close="emit('cancel')">
     <div class="confirmation-modal__content flex flex-col gap-6">
       <p
-        class="confirmation-modal__text whitespace-pre-line text-base font-normal tracking-[-0.3125px] text-ink-700"
+        class="confirmation-modal__text whitespace-pre-line text-base font-normal text-ink-700"
       >
         {{ body }}
       </p>

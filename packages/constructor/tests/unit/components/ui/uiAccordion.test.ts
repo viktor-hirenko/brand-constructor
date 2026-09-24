@@ -239,11 +239,11 @@ describe('kit accordion — Figma 3839:12607 / 3839:12381', () => {
     it('expresses no length in px except letter-spacing', () => {
       // "Железные правила адаптива": the wizard is scaled by one root
       // font-size, and a px box opts out of it with nothing going red.
-      // `tracking-[…px]` is the documented exception and is what open
-      // question 7 asks us to keep here.
+      // Letter-spacing used to be the documented exception; it is gone from
+      // the whole wizard now (divergences row 6), so there is nothing left to
+      // strip before looking.
       for (const [name, value] of stringExports) {
-        const withoutTracking = value.replace(/tracking-\[[^\]]*\]/g, '')
-        expect(withoutTracking, `${name} carries a px length`).not.toContain('px]')
+        expect(value, `${name} carries a px length`).not.toContain('px]')
       }
     })
 

@@ -25,7 +25,7 @@
  * active ink and `#6b6b6b` inactive ink, and no Hovered/Disabled at all —
  * divergences row 21.
  *
- * The label's `tracking-[-0.3125px]` is dropped: the kit gives 0 and this
+ * The label's −0.3125px letter-spacing is dropped: the kit gives 0 and this
  * element is rewritten here, the same call phases 11 and 12 made for the
  * fields and the accordion. It is not row 48 (the badge) or row 46 (the edit
  * flow section label) — those stay put until the owner says otherwise.

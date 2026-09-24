@@ -137,7 +137,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">
+            <p class="text-[1rem] font-medium leading-6 text-white">
               {{ concept.name }}
             </p>
           </div>
@@ -158,7 +158,7 @@ const singlePoLabel = 'Вибір Замовника'
           class="review-concept-block__card review-concept-block__card--brief relative w-full aspect-square rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
-          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-ink-900 text-center px-4">
+          <p class="text-[0.875rem] font-medium leading-5 text-ink-900 text-center px-4">
             Бриф нового концепту
           </p>
           <UiIconButton
@@ -200,7 +200,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">
+            <p class="text-[1rem] font-medium leading-6 text-white">
               {{ ceoConcept.name }}
             </p>
           </div>
@@ -229,7 +229,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
+            <p class="text-[1rem] font-medium leading-6 text-white">{{ concept.name }}</p>
           </div>
           <UiIconButton
             v-if="concept"
@@ -263,7 +263,7 @@ const singlePoLabel = 'Вибір Замовника'
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
           />
           <div class="absolute bottom-0 left-0 right-0 z-[2] px-4 pb-4">
-            <p class="text-[1rem] font-medium leading-6 tracking-[-0.1504px] text-white">{{ concept.name }}</p>
+            <p class="text-[1rem] font-medium leading-6 text-white">{{ concept.name }}</p>
           </div>
           <UiIconButton
             v-if="concept"
@@ -283,7 +283,7 @@ const singlePoLabel = 'Вибір Замовника'
           class="review-concept-block__card review-concept-block__card--brief relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
-          <p class="text-[0.875rem] font-medium leading-5 tracking-[-0.1504px] text-ink-900 text-center px-4">
+          <p class="text-[0.875rem] font-medium leading-5 text-ink-900 text-center px-4">
             Бриф нового концепту
           </p>
           <UiIconButton

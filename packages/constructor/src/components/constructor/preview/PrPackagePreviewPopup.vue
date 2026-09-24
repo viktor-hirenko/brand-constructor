@@ -56,7 +56,7 @@ function handleClose() {
     <div class="flex flex-col gap-4">
       <p
         v-if="pkg.description"
-        class="text-base text-muted-foreground tracking-[-0.31px]"
+        class="text-base text-muted-foreground"
       >
         {{ pkg.description }}
       </p>
@@ -66,7 +66,7 @@ function handleClose() {
           <ClockIcon class="size-4 text-muted-foreground shrink-0" />
           <p class="text-xs text-muted-foreground">Строки впровадження</p>
         </div>
-        <p class="text-sm font-medium text-foreground tracking-[-0.15px]">
+        <p class="text-sm font-medium text-foreground">
           {{ pkg.timeline }}
         </p>
       </div>

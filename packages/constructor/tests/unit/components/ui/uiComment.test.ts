@@ -103,20 +103,20 @@ describe('kit comment — Figma 3439:1309', () => {
       expect(UI_COMMENT_VALUE_CLASS).toContain('whitespace-pre-line')
     })
 
-    it('keeps -0.1504px on BOTH halves (open question 7 default)', () => {
-      // Unlike the property, whose label carried no tracking, all three
-      // comment carriers drew label and value at -0.1504px. The kit sets 0;
-      // the default answer says keep the current look, so both are pinned.
-      expect(UI_COMMENT_LABEL_CLASS).toContain('tracking-[-0.1504px]')
-      expect(UI_COMMENT_VALUE_CLASS).toContain('tracking-[-0.1504px]')
+    it('sets no letter-spacing on either half — the kit gives 0', () => {
+      // Both halves drew -0.1504px under open question 7's default answer,
+      // keep the current look. The owner closed that question the other way
+      // (divergences row 6), so the kit's 0 now holds here too.
+      expect(UI_COMMENT_LABEL_CLASS).not.toContain('tracking-')
+      expect(UI_COMMENT_VALUE_CLASS).not.toContain('tracking-')
     })
   })
 
   describe('lengths follow the embed knob', () => {
     it('writes px only where the rules allow it', () => {
-      // Two exceptions, both documented in "Железные правила адаптива": the
-      // hairline rail (a rem border turns to grey mush at an 11px root) and
-      // the tracking.
+      // One exception left, documented in "Железные правила адаптива": the
+      // hairline rail (a rem border turns to grey mush at an 11px root). The
+      // tracking exception is gone with the tracking itself.
       const everything = [
         resolveUiCommentClasses({ unresolved: true }),
         UI_COMMENT_BODY_CLASS,
@@ -124,7 +124,7 @@ describe('kit comment — Figma 3439:1309', () => {
         UI_COMMENT_VALUE_CLASS,
       ].join(' ')
       const pxValues = everything.match(/\[[^\]]*px[^\]]*\]/g) ?? []
-      expect(pxValues).toEqual(['[calc(1rem-2px)]', '[-0.1504px]', '[-0.1504px]'])
+      expect(pxValues).toEqual(['[calc(1rem-2px)]'])
     })
   })
 })

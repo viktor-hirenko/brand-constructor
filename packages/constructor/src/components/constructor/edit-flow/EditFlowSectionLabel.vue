@@ -12,7 +12,7 @@ withDefaults(defineProps<EditFlowSectionLabelProps>(), {
 <template>
   <component
     :is="tag"
-    class="edit-flow-section-label text-[1rem] font-medium leading-6 text-ink-900 tracking-[-0.3125px]"
+    class="edit-flow-section-label text-[1rem] font-medium leading-6 text-ink-900"
   >
     <slot />
   </component>

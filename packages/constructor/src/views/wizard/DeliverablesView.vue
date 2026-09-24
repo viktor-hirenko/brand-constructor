@@ -37,7 +37,7 @@ const hasAnythingEnabled = computed(() => legalLanding.value || partnerLanding.v
 
 <template>
   <div class="flex flex-col gap-6">
-    <p class="text-muted-foreground text-base tracking-[-0.31px]">
+    <p class="text-muted-foreground text-base">
       Додаткові опції для вашого проєкту
     </p>
 
@@ -66,7 +66,7 @@ const hasAnythingEnabled = computed(() => legalLanding.value || partnerLanding.v
     <div v-if="hasAnythingEnabled" class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <CalendarIcon class="size-4 text-foreground" />
-        <span class="text-base font-medium text-foreground tracking-[-0.31px]">
+        <span class="text-base font-medium text-foreground">
           Дедлайн розробки
           <span class="text-red-500">*</span>
         </span>

@@ -53,7 +53,7 @@ const layoutModifier = computed(() => {
     >
       <template #applied>
         <ul class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ poValue }}</span>
           </li>
@@ -65,7 +65,7 @@ const layoutModifier = computed(() => {
           v-if="isNewBrief"
           class="review-internal-block__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">Бриф нової Internal Naming</span>
           </div>
@@ -75,7 +75,7 @@ const layoutModifier = computed(() => {
           </UiLink>
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ poValue }}</span>
           </li>
@@ -84,7 +84,7 @@ const layoutModifier = computed(() => {
 
       <template #ceo>
         <ul class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ ceoName }}</span>
           </li>
@@ -96,7 +96,7 @@ const layoutModifier = computed(() => {
           v-if="isNewBrief"
           class="review-internal-block__brief flex items-center justify-between gap-4"
         >
-          <div class="flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <div class="flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">Бриф нової Internal Naming</span>
           </div>
@@ -106,7 +106,7 @@ const layoutModifier = computed(() => {
           </UiLink>
         </div>
         <ul v-else class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6 tracking-[-0.1504px]">
+          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
             <span class="text-ink-900">{{ poValue }}</span>
           </li>

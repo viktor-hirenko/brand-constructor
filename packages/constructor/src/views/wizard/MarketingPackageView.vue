@@ -98,7 +98,7 @@ onMounted(loadPackages)
 
 <template>
   <div class="flex flex-col gap-6">
-    <p class="text-muted-foreground text-base tracking-[-0.31px]">
+    <p class="text-muted-foreground text-base">
       Оберіть пакет для запуску вашого бренду
     </p>
 
@@ -177,7 +177,7 @@ onMounted(loadPackages)
                   :class="selectedId === pkg.id ? 'text-primary' : 'text-muted-foreground'"
                 />
               </div>
-              <h3 class="text-lg font-medium text-foreground tracking-[-0.44px] mt-2.5">
+              <h3 class="text-lg font-medium text-foreground mt-2.5">
                 {{ pkg.name }}
               </h3>
             </div>
@@ -189,7 +189,7 @@ onMounted(loadPackages)
                   <ClockIcon class="size-4 text-muted-foreground" />
                   <span class="text-xs text-muted-foreground">Строки впровадження</span>
                 </div>
-                <p class="text-sm font-medium text-foreground tracking-[-0.15px]">
+                <p class="text-sm font-medium text-foreground">
                   {{ pkg.timeline }}
                 </p>
               </div>
@@ -257,7 +257,7 @@ onMounted(loadPackages)
       </template>
 
       <div class="marketing-package-detail flex flex-col gap-6">
-        <p class="text-muted-foreground text-base tracking-[-0.31px]">
+        <p class="text-muted-foreground text-base">
           {{ detailPackage.description }}
         </p>
 

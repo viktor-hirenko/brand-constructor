@@ -48,11 +48,11 @@
  * all follow the single embed knob (`app.css` `html.wizard-embed`). A `px`
  * length here would silently stop scaling with the Admin panel.
  *
- * The two `tracking-[…px]` values are carried over from the wizard and the edit
- * flow verbatim. The kit sets letter-spacing 0, but open question 7 (default
- * answer) keeps the current rendering on carry-over screens, because dropping
- * tracking rewraps every line of text at once. `px` is the documented unit for
- * tracking — see "Железные правила адаптива".
+ * The two letter-spacing values this file used to carry — one from the wizard,
+ * one from the edit flow — are gone. They stood under open question 7's default
+ * answer, keep the current rendering on carry-over screens; the owner has since
+ * closed that question the other way, and the kit's 0 now holds across the whole
+ * wizard (divergences row 6). Nothing here sets letter-spacing at all.
  */
 
 export interface UiStepHeaderClassSet {
@@ -80,11 +80,11 @@ export const UI_STEP_HEADER_TITLE_ROW_CLASS =
 
 /** `text-2xl` is 1.5rem/2rem = the kit's header l 24/32. */
 export const UI_STEP_HEADER_TITLE_CLASS =
-  'ui-step-header__title text-2xl font-medium text-ink-900 tracking-[0.0703px]'
+  'ui-step-header__title text-2xl font-medium text-ink-900'
 
 /** `text-base` is 1rem/1.5rem = the kit's body 16/24. */
 export const UI_STEP_HEADER_DESCRIPTION_CLASS =
-  'ui-step-header__description text-base text-ink-700 tracking-[-0.3125px]'
+  'ui-step-header__description text-base text-ink-700'
 
 export function resolveUiStepHeaderClasses(): UiStepHeaderClassSet {
   return {

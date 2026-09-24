@@ -61,7 +61,7 @@ export interface UiLinkClasses {
  *     invented.
  */
 export const UI_LINK_ROOT_CLASS =
-  'ui-link inline-flex shrink-0 items-center gap-1 rounded-sm text-sm/4 font-medium tracking-[-0.3125px] text-ink-800 transition-colors hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-ink-800'
+  'ui-link inline-flex shrink-0 items-center gap-1 rounded-sm text-sm/4 font-medium text-ink-800 transition-colors hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-ink-800'
 
 /** Kit `Icon` instance inside the link symbol: 16×16, flush with the text box. */
 export const UI_LINK_ICON_CLASS = 'ui-link__icon size-4 shrink-0'

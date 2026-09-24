@@ -89,10 +89,10 @@ describe('kit badge — Figma 3453:1619', () => {
   it('keeps every geometry length rem-based — no px at all, tracking included', () => {
     // The wizard scales through one root font-size; a px length here would
     // silently stop following it. The one exemption this file used to carry
-    // was `tracking-[-0.3125px]`, and it is gone: the kit states letter-spacing
-    // 0 for `caption/m/medium` (`3453:1619`) and the owner closed divergences
-    // row 48. The 6px dot is the only px left, and it lives in its own
-    // constant rather than in these three.
+    // was a −0.3125px letter-spacing, and it is gone: the kit states 0 for
+    // `caption/m/medium` (`3453:1619`) and the owner closed divergences row
+    // 48. The 6px dot is the only px left, and it lives in its own constant
+    // rather than in these three.
     for (const value of [UI_BADGE_ROOT_CLASS, UI_BADGE_LABEL_CLASS, UI_BADGE_ICON_CLASS]) {
       expect(value).not.toMatch(/\[[^\]]*\d(?:px)\]/)
     }

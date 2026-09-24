@@ -21,10 +21,10 @@ const model = defineModel<boolean>({ required: true })
           <slot name="icon" />
         </div>
         <div>
-          <h3 class="text-lg font-medium text-foreground tracking-[-0.44px] mb-1">
+          <h3 class="text-lg font-medium text-foreground mb-1">
             {{ title }}
           </h3>
-          <p class="text-sm text-muted-foreground tracking-[-0.15px]">{{ description }}</p>
+          <p class="text-sm text-muted-foreground">{{ description }}</p>
         </div>
       </div>
       <!--

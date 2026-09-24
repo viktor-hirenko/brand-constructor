@@ -20,10 +20,16 @@
  * `h-2` is 0.5rem and `gap-2` is 0.5rem, so the whole bar follows the single
  * embed knob (`app.css` `html.wizard-embed`). No `px` length may appear here.
  *
- * `tracking-[-0.15px]` on the label is carried over deliberately: the kit sets
- * letter-spacing 0, but open question 7 (default answer) says carry-over
- * screens keep their current rendering — dropping tracking rewraps text
- * everywhere at once. `px` is the documented unit for tracking.
+ * There is no letter-spacing here any more. The label carried −0.15px under
+ * open question 7's default answer — keep the current rendering on carry-over
+ * screens — and the owner has closed that question the other way: the kit sets
+ * 0 on all five of its type styles, so every letter-spacing in the wizard came
+ * off at once (divergences row 6).
+ *
+ * The class name is deliberately NOT spelled out here. Tailwind v4 scans raw
+ * text, comments included, and emits a rule for anything that looks like a
+ * class — so naming one in prose ships a dead rule in the built css and makes
+ * a grep of that css read as though the work was never done.
  */
 
 export interface UiProgressBarClassSet {
@@ -41,7 +47,7 @@ export interface UiProgressBarClassSet {
 export const UI_PROGRESS_BAR_ROOT_CLASS = 'ui-progress-bar flex w-full flex-col gap-2'
 
 /** caption l 14/16 in `progress bar/label` #6f6f7d. `text-sm/4` is 14/16. */
-export const UI_PROGRESS_BAR_LABEL_CLASS = 'ui-progress-bar__label text-sm/4 text-ink-700 tracking-[-0.15px]'
+export const UI_PROGRESS_BAR_LABEL_CLASS = 'ui-progress-bar__label text-sm/4 text-ink-700'
 
 /** 8 tall, radius 1000, `progress bar/bg` #ededee. */
 export const UI_PROGRESS_BAR_TRACK_CLASS =

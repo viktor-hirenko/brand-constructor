@@ -80,11 +80,11 @@ export const UI_COMMENT_UNRESOLVED_CLASS =
 
 /** `caption/l/medium` 14/16 in `comment/content/label` #6f6f7d. */
 export const UI_COMMENT_LABEL_CLASS =
-  'ui-comment__label text-sm/4 font-medium tracking-[-0.1504px] text-ink-700'
+  'ui-comment__label text-sm/4 font-medium text-ink-700'
 
 /** `body/regular` 16/24 in `comment/content/value` #1f1f2e. */
 export const UI_COMMENT_VALUE_CLASS =
-  'ui-comment__value whitespace-pre-line text-base font-normal tracking-[-0.1504px] text-ink-900'
+  'ui-comment__value whitespace-pre-line text-base font-normal text-ink-900'
 
 /** Label · `spacing/4` · value, the kit's inner Text frame. */
 export const UI_COMMENT_BODY_CLASS = 'ui-comment__body flex flex-col gap-1'

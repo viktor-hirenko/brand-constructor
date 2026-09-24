@@ -166,7 +166,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           </div>
           <div v-else :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-            <p class="text-[1rem] leading-6 tracking-[-0.3125px] text-ink-700 italic">Назву не обрано</p>
+            <p class="text-[1rem] leading-6 text-ink-700 italic">Назву не обрано</p>
           </div>
 
           <div v-if="ceoInternalId" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
@@ -210,7 +210,7 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           </div>
           <div v-else :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
             <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
-            <p class="text-[1rem] leading-6 tracking-[-0.3125px] text-ink-700 italic">Назву не обрано</p>
+            <p class="text-[1rem] leading-6 text-ink-700 italic">Назву не обрано</p>
           </div>
 
           <div v-if="ceoNaming" :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">

@@ -42,12 +42,9 @@ describe('kit link — Figma 4378:8358', () => {
 
     it('states every length in rem-based utilities, never px', () => {
       // The wizard scales from one root font-size (`app.css` html.wizard-embed);
-      // a px length silently opts out and nothing fails. `tracking` is the
-      // documented exception — see "Железные правила адаптива".
-      const geometry = `${UI_LINK_ROOT_CLASS} ${UI_LINK_ICON_CLASS}`.replace(
-        /tracking-\[[^\]]+\]/g,
-        ''
-      )
+      // a px length silently opts out and nothing fails. The `tracking`
+      // exception this test used to carve out is gone with the tracking.
+      const geometry = `${UI_LINK_ROOT_CLASS} ${UI_LINK_ICON_CLASS}`
       expect(geometry).not.toMatch(/\[-?\d*\.?\d+px\]/)
     })
   })
@@ -64,11 +61,11 @@ describe('kit link — Figma 4378:8358', () => {
       expect(UI_LINK_ROOT_CLASS).toContain('font-medium')
     })
 
-    it('keeps the current letter-spacing even though the kit sets 0', () => {
-      // Open question 7: the вынос phases preserve the rendering the product
-      // ships today; tracking is dropped only on the redesign screens. All five
-      // replaced call sites carried -0.3125px.
-      expect(UI_LINK_ROOT_CLASS).toContain('tracking-[-0.3125px]')
+    it('sets no letter-spacing — the kit gives 0', () => {
+      // All five replaced call sites carried -0.3125px, kept under open
+      // question 7's default answer. The owner closed that question the other
+      // way and every tracking in the wizard came off (divergences row 6).
+      expect(UI_LINK_ROOT_CLASS).not.toContain('tracking-')
     })
   })
 

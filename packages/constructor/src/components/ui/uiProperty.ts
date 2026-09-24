@@ -66,7 +66,7 @@ export const UI_PROPERTY_LABEL_CLASS =
 
 /** `body/regular` 16/24 in `section card/content/value` #1f1f2e. */
 export const UI_PROPERTY_VALUE_CLASS =
-  'ui-property__value text-base tracking-[-0.1504px] text-ink-900'
+  'ui-property__value text-base text-ink-900'
 
 /** Row: icon · `spacing/8` · container. The icon-less types have no row gap to spend. */
 export const UI_PROPERTY_ROW_CLASS = 'ui-property flex gap-2'

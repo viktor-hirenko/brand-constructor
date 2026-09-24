@@ -112,17 +112,17 @@ describe('kit property — Figma 3761:2281', () => {
       expect(UI_PROPERTY_VALUE_CLASS).toContain('text-ink-900')
     })
 
-    it('keeps the tracking each half already had (open question 7 default)', () => {
-      // The kit sets 0 on both. Review drew -0.1504px on every value and none
-      // on any label; "keep the current look" is honourable here, so both
-      // halves are pinned rather than quietly unified.
-      expect(UI_PROPERTY_VALUE_CLASS).toContain('tracking-[-0.1504px]')
+    it('sets no letter-spacing on either half — the kit gives 0', () => {
+      // The value drew -0.1504px under open question 7's default answer; the
+      // owner closed that question the other way (divergences row 6). Both
+      // halves are now the kit's 0, which is what the label always was.
+      expect(UI_PROPERTY_VALUE_CLASS).not.toContain('tracking-')
       expect(UI_PROPERTY_LABEL_CLASS).not.toContain('tracking-')
     })
   })
 
   describe('lengths follow the embed knob', () => {
-    it('writes no px anywhere but the value tracking', () => {
+    it('writes no px at all any more', () => {
       const everything = [
         ...ALL_TYPES.map(resolveUiPropertyRowClasses),
         ...ALL_TYPES.map(resolveUiPropertyContentClasses),
@@ -131,7 +131,7 @@ describe('kit property — Figma 3761:2281', () => {
         UI_PROPERTY_VALUE_CLASS,
       ].join(' ')
       const pxValues = everything.match(/\[[^\]]*px[^\]]*\]/g) ?? []
-      expect(pxValues).toEqual(['[-0.1504px]'])
+      expect(pxValues).toEqual([])
     })
   })
 })

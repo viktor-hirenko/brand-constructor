@@ -102,7 +102,7 @@ export const UI_SECTION_CARD_TITLE_GROUP_CLASS =
 
 /** `header/s` 18/24 Medium in `section card/content/value` #1f1f2e. */
 export const UI_SECTION_CARD_TITLE_CLASS =
-  'ui-section-card__title text-lg/6 font-medium tracking-[-0.1504px] text-ink-900'
+  'ui-section-card__title text-lg/6 font-medium text-ink-900'
 
 /** Content padding `spacing/16`; 16 again between the property list and the comment. */
 export const UI_SECTION_CARD_BODY_CLASS = 'ui-section-card__body flex flex-col p-4'

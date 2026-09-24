@@ -60,13 +60,13 @@ describe('kit geometry — Figma 3984:8226', () => {
 
   it('renders the title as kit header l 24/32 medium in #1f1f2e', () => {
     expect(UI_STEP_HEADER_TITLE_CLASS).toBe(
-      'ui-step-header__title text-2xl font-medium text-ink-900 tracking-[0.0703px]'
+      'ui-step-header__title text-2xl font-medium text-ink-900'
     )
   })
 
   it('renders the description as kit body 16/24 regular in #6f6f7d', () => {
     expect(UI_STEP_HEADER_DESCRIPTION_CLASS).toBe(
-      'ui-step-header__description text-base text-ink-700 tracking-[-0.3125px]'
+      'ui-step-header__description text-base text-ink-700'
     )
   })
 })
@@ -99,13 +99,12 @@ describe('the three shells now share one header', () => {
 })
 
 describe('embed scale — the header may not opt out of the root font-size', () => {
-  it('declares no px, vw, vh or em length outside tracking', () => {
+  it('declares no px, vw, vh or em length at all', () => {
     for (const value of ALL) {
-      // tracking is the documented px exception: at an 11px root a rem
-      // letter-spacing would drift, and it is not a box dimension.
-      const withoutTracking = value.replace(/tracking-\[[^\]]+\]/g, '')
-      expect(withoutTracking).not.toMatch(/\b\d+(\.\d+)?(px|vw|vh|dvh|em)\b/)
-      expect(withoutTracking).not.toMatch(/\[[^\]]*\d(px|vw|vh|dvh|em)\]/)
+      // The `tracking` exception this loop used to carve out is gone with the
+      // tracking itself — the kit sets letter-spacing 0 (divergences row 6).
+      expect(value).not.toMatch(/\b\d+(\.\d+)?(px|vw|vh|dvh|em)\b/)
+      expect(value).not.toMatch(/\[[^\]]*\d(px|vw|vh|dvh|em)\]/)
     }
   })
 

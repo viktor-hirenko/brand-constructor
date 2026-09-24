@@ -44,11 +44,25 @@ import { fileURLToPath } from 'node:url'
 const SRC = fileURLToPath(new URL('../../../src', import.meta.url))
 const CONSTRUCTOR = fileURLToPath(new URL('../../..', import.meta.url))
 
-/** Every file under `src`, recursively, as absolute paths. */
+/**
+ * Every SOURCE file under `src`, recursively, as absolute paths.
+ *
+ * The extension filter is not tidiness. The `claude-flow` session hook drops
+ * `.swarm/agentdb-memory.db` sidecars wherever it happens to be working, and
+ * several of them are sitting inside `src` right now — git-ignored, untracked,
+ * invisible to a reviewer. They are binary blobs holding, among other things,
+ * verbatim snippets of the very source being edited, so an unfiltered walk
+ * matches a class inside a database file and reports a source file that does
+ * not carry it. Every sweep in this file reads these paths, so the filter
+ * belongs here rather than in any one of them.
+ */
+const SOURCE_EXTENSIONS = ['.vue', '.ts', '.js', '.css', '.scss', '.json']
+
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry)
-    return statSync(path).isDirectory() ? walk(path) : [path]
+    if (statSync(path).isDirectory()) return entry === '.swarm' ? [] : walk(path)
+    return SOURCE_EXTENSIONS.some((ext) => path.endsWith(ext)) ? [path] : []
   })
 }
 
@@ -108,6 +122,60 @@ describe('legacy SCSS removal (DP-15258 phase 19)', () => {
     const offenders = sourceFiles.filter((path) =>
       /#2563eb/i.test(stripComments(readFileSync(path, 'utf8'))),
     )
+    expect(offenders).toEqual([])
+  })
+})
+
+/**
+ * Letter-spacing — divergences row 6, closed by the owner.
+ *
+ * The kit states `letterSpacing: 0` on all five of its type styles, and the
+ * wizard carried 47 arbitrary values against it (161 when the divergence list
+ * was opened, 75 when phase 17 last counted). They were kept deliberately for
+ * a long time as open question 7's default answer — "carry-over screens keep
+ * the rendering the product ships" — so their removal is a decision, and this
+ * is the guard that keeps the decision from leaking back one component at a
+ * time.
+ *
+ * It sweeps the TREE rather than a list of files, because that is the failure
+ * mode: each value was written where its own screen was built, never in one
+ * place.
+ *
+ * ── Why this one sweep does NOT strip comments ──────────────────────────────
+ * Everywhere else in this file, prose about a removed value is harmless and
+ * stripping comments is the right move (the `my-10` trap of phase 18, the
+ * `#5B5B62` trap of work 5 — a bare grep said 8 and the truth was 0). Here it
+ * is the opposite. Tailwind v4 scans raw text and emits a rule for anything
+ * shaped like a class, so a value named in a doc comment is still a rule in
+ * the built css. That was measured, not assumed: the first pass of this work
+ * left three such mentions behind and the shipped stylesheet carried the
+ * matching rules — including two nonsense ones built out of an ellipsis.
+ * Dead rules, but they make a grep of the built css read as though nothing
+ * had been done, which is the exact false signal this project keeps paying
+ * for. So the names are spelled out nowhere in the tree, this file included.
+ */
+describe('letter-spacing is the kit 0 everywhere (divergences row 6)', () => {
+  /** Built from parts so this file does not itself become a Tailwind candidate. */
+  const BRACKETED = new RegExp('tracking-' + '\\[')
+  const NAMED = new RegExp(
+    '(?:^|["\'`\\s])tracking-(?:tighter|tight|normal|wide|wider|widest)(?=["\'`\\s]|$)',
+    'm',
+  )
+
+  it('leaves no arbitrary tracking utility in any source file', () => {
+    // Raw text, NOT comment-stripped, and that is the point: Tailwind v4 scans
+    // raw text and emits a rule for anything shaped like a class, comments
+    // included. A class named only in prose still ships a rule in the built
+    // css — which is how a grep of that css comes to say the work was never
+    // done. Verified: naming one in a doc comment put it back in the bundle.
+    const offenders = sourceFiles.filter((path) => BRACKETED.test(readFileSync(path, 'utf8')))
+    expect(offenders).toEqual([])
+  })
+
+  it('leaves no named tracking utility either — tight, wide and the rest', () => {
+    // The same property under another spelling. A sweep that only banned the
+    // bracketed form would wave these through.
+    const offenders = sourceFiles.filter((path) => NAMED.test(readFileSync(path, 'utf8')))
     expect(offenders).toEqual([])
   })
 })

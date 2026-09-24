@@ -273,8 +273,9 @@ describe('step 1 carries the panel the kit gives it — rows 95 and 96', () => {
     expect(source).not.toContain('shadow-[0px_10px_15px')
     expect(source).not.toContain('border-black/10')
     expect(source).not.toContain('bg-primary/10')
-    expect(source).not.toContain('tracking-[-0.44px]')
-    expect(source).not.toContain('tracking-[0.07px]')
+    // The two letter-spacing values this branch carried are covered by the
+    // tree-wide sweep in `styles/legacyScss.test.ts`, which is deliberately
+    // the only place in the tree that may name them.
   })
 })
 

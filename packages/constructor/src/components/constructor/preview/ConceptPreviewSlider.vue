@@ -328,7 +328,7 @@ onUnmounted(() => {
           v-if="!hidePrimaryAction"
           type="button"
           :disabled="computedConfirmDisabled"
-          class="inline-flex items-center justify-center gap-2 h-12 text-base font-medium tracking-[-0.31px] transition-all shrink-0 disabled:cursor-not-allowed rounded-[8px] px-5"
+          class="inline-flex items-center justify-center gap-2 h-12 text-base font-medium transition-all shrink-0 disabled:cursor-not-allowed rounded-[8px] px-5"
           :class="
             computedConfirmDisabled
               ? 'bg-[#ececf0] text-[#030213] opacity-60'

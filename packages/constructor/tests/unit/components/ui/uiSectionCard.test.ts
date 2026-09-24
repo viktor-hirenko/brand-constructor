@@ -79,12 +79,11 @@ describe('kit section card — Figma 3761:2273', () => {
       expect(UI_SECTION_CARD_TITLE_CLASS).not.toContain('#0a0a0a')
     })
 
-    it('keeps the -0.1504px the screen already had (open question 7 default)', () => {
-      // The kit sets letterSpacing 0 on all five type styles. Question 7's
-      // default answer is "keep the current look on вынос screens", and here —
-      // unlike phase 11's fields — the current look is unambiguous: every
-      // review title carries -0.1504px. Flipping it has to stay a decision.
-      expect(UI_SECTION_CARD_TITLE_CLASS).toContain('tracking-[-0.1504px]')
+    it('sets no letter-spacing — the kit gives 0 on all five type styles', () => {
+      // The title kept -0.1504px as open question 7's default answer, and the
+      // flip was always going to be a decision rather than a measurement. The
+      // owner has made it (divergences row 6).
+      expect(UI_SECTION_CARD_TITLE_CLASS).not.toContain('tracking-')
     })
   })
 
@@ -116,7 +115,7 @@ describe('kit section card — Figma 3761:2273', () => {
   })
 
   describe('lengths follow the embed knob', () => {
-    it('writes no px anywhere but the hairline border', () => {
+    it('writes no px at all any more', () => {
       // "Железные правила адаптива": a px box opts out of html.wizard-embed
       // silently, with no test going red — except this one.
       const everything = [
@@ -129,7 +128,7 @@ describe('kit section card — Figma 3761:2273', () => {
         UI_SECTION_CARD_CONTENT_CLASS,
       ].join(' ')
       const pxValues = everything.match(/\[[^\]]*px[^\]]*\]/g) ?? []
-      expect(pxValues).toEqual(['[-0.1504px]'])
+      expect(pxValues).toEqual([])
     })
   })
 })

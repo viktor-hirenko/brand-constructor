@@ -26,7 +26,7 @@ defineProps<PreviewPanelToastProps>()
         <InfoCircleFilledIcon class="size-6 text-[#6F4BD8]" />
       </div>
 
-      <p class="preview-panel-toast__message flex-1 pt-0.5 text-sm font-medium leading-5 tracking-[-0.15px] text-[#14141A]">
+      <p class="preview-panel-toast__message flex-1 pt-0.5 text-sm font-medium leading-5 text-[#14141A]">
         {{ message }}
       </p>
 

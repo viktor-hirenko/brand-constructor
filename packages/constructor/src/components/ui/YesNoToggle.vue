@@ -6,7 +6,7 @@ const model = defineModel<boolean | null>({ required: true })
   <div class="flex gap-4">
     <button
       type="button"
-      class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
+      class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 transition-all"
       :class="
         model === true
           ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'
@@ -18,7 +18,7 @@ const model = defineModel<boolean | null>({ required: true })
     </button>
     <button
       type="button"
-      class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 tracking-[-0.31px] transition-all"
+      class="flex-1 h-[52px] rounded-[10px] border-2 text-base font-medium leading-6 transition-all"
       :class="
         model === false
           ? 'border-[#030213] bg-[rgba(3,2,19,0.05)] text-[#030213]'

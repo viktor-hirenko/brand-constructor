@@ -20,7 +20,7 @@ import {
  * page of its own — a floating 50/50 card with its own radius and shadow —
  * where the kit draws an ordinary wizard screen. Shown red by restoring, one at
  * a time: the `w-1/2` halves, the `rounded-[14px]` card, the `shadow-[…]`, the
- * "Brand builder" chip, the 48/48 title with `tracking-[0.35px]`, the 20/28
+ * "Brand builder" chip, the 48/48 title with its +0.35px letter-spacing, the 20/28
  * description capped at 452, and the bare `size-5` glyphs.
  */
 
@@ -70,7 +70,8 @@ describe('left column — Container 5409:35133, 527 × 344', () => {
     expect(viewBody).toContain('text-[2.5rem]')
     expect(viewBody).toContain('leading-[3rem]')
     expect(viewBody).not.toContain('text-[48px]')
-    expect(viewBody).not.toContain('tracking-[')
+    // Letter-spacing is swept tree-wide in `styles/legacyScss.test.ts`, the
+    // one file allowed to name the class — Tailwind reads comments too.
   })
 
   it('has nothing above the title — the kit ships that badge slot empty', () => {
@@ -106,7 +107,9 @@ describe('feature list — 5409:35766, two rows of two', () => {
 
   it('labels are caption/m/medium 12/16 in content/primary', () => {
     expect(viewBody).toContain('text-xs/4 font-medium text-ink-900')
-    expect(viewBody).not.toContain('text-base tracking-[-0.31px]')
+    // The pre-kit label was `text-base` weight 500 — `text-base/6` is still
+    // here, on the description, so the ban has to name the pair.
+    expect(viewBody).not.toContain('text-base font-medium')
   })
 })
 
@@ -158,6 +161,5 @@ describe('the call to action is the kit button, not a recipe of its own', () => 
     expect(ctaBody).not.toContain('shadow-[0px_10px_15px')
     expect(ctaBody).not.toContain('px-8 py-4')
     expect(ctaBody).not.toContain('text-lg')
-    expect(ctaBody).not.toContain('tracking-[')
   })
 })
