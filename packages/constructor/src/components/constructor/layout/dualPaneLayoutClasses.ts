@@ -17,10 +17,13 @@ export const SHELL_BASE_CLASS =
  * Outer shell wrapper class.
  *
  * Standalone: fixed 1440×900 card (scaled to the viewport via CSS transform).
- * Embedded (Admin iframe): fills the panel edge-to-edge (no fixed size, no
- * card chrome) while the fluid root font-size (`html.wizard-embed`) reflows
- * the rem-based content to fit. Columns are already `%`, so width fills; height
- * fills via flex; footer stays pinned.
+ * This is the measuring stand — the root is 16 and every number in the
+ * inspector equals its number in Figma.
+ *
+ * Embedded (Admin iframe): fills the panel edge-to-edge, no fixed size and no
+ * card chrome. Since this work the root is 16 there too: the columns adapt,
+ * the components do not (`constants/wizardResponsive.ts`). Above 1920 the
+ * frame inside gets the kit's 1700 cap — `app.css`, `__content` / `__frame`.
  */
 export function shellBaseClass(embed = false): string {
   if (embed) {
@@ -32,32 +35,52 @@ export function shellBaseClass(embed = false): string {
 /**
  * Scroll track styling hook.
  *
- * The rules this class used to carry (thin 5px track, `rgb(0 0 0 / 0.12)`
- * thumb) lived in `styles/global.scss`, and that file was never imported by
- * `main.ts` — so the class has been inert in production for its whole life, not
- * only since DP-15258 phase 19 deleted the file. The left pane has always shown
- * the browser's default scrollbar.
- *
- * Kept as-is rather than removed: reviving the styling is a visible change on
- * every wizard screen, which is a decision for the owner, not a side effect of
- * a login-page phase. Recorded as row 70 of
- * `docs/design-audit/dp-15258-divergences.md`.
+ * For its whole life this class was inert: its rules (a 5px track, an
+ * `rgb(0 0 0 / 0.12)` thumb) lived in `styles/global.scss`, which `main.ts`
+ * never imported, so the left pane always showed the browser default.
+ * Divergences row 70 left the decision open — and the kit has now answered it,
+ * because it draws a bar on every one of the four breakpoint frames
+ * (`5395:118756` and siblings): 6 wide, radius 100, `#e6e6e6`, inset 4 from
+ * the pane edge. `wizard-scrollbar` in `app.css` is that bar.
  */
-export const LEFT_PANE_SCROLL_TRACK_CLASS = 'left-pane-scroll'
+export const LEFT_PANE_SCROLL_TRACK_CLASS = 'left-pane-scroll wizard-scrollbar'
 
-/** On the element with overflow-y-auto: narrow right gutter for scrollbar. */
-export const LEFT_PANE_SCROLL_GUTTER_CLASS = 'pl-12 pr-3'
+/**
+ * Horizontal padding of the scrolling pane — kit `spacing/32` on both sides
+ * (`Step content` on every breakpoint frame is `p-32`).
+ *
+ * The right side is 22 rather than 32 because the drawn scrollbar reserves the
+ * other 10: `scrollbar-gutter: stable` keeps that gutter whether or not the
+ * content overflows, so the content column stays exactly 527 wide at a 591
+ * pane — which is the number the mockup gives it.
+ */
+export const LEFT_PANE_SCROLL_GUTTER_CLASS = 'pl-8 pr-[1.375rem]'
 
-/** Inner content: keeps ~48px inset from column right (pr-3 + pr-9). */
-export const LEFT_PANE_SCROLL_INNER_CLASS = 'pr-9'
+/**
+ * Nothing to compensate any more: the pane's own padding is the kit's 32 and
+ * the scrollbar lives in the reserved gutter beside it. Kept as an empty
+ * string so the three shells keep one named hook for the inner column.
+ */
+export const LEFT_PANE_SCROLL_INNER_CLASS = ''
 
+/**
+ * Left column width.
+ *
+ * `flex-1` — the remainder, which is exactly what the kit does: the RIGHT
+ * column is the driver (`right = pane height − 56`, see
+ * `constants/wizardResponsive.ts`) and the left one takes what is left.
+ * Checked on all five drawn frames; the old `w-[42%]` matched none of them.
+ */
 export function leftPanelWidthClass(fullWidth: boolean): string {
-  return fullWidth ? 'w-full' : 'w-[42%]'
+  return fullWidth ? 'w-full' : 'min-w-0 flex-1'
 }
 
-/** Left column background — same for wizard, edit, and review. */
+/**
+ * Left column background — kit `bg/alt-1` #f9f9fb on every breakpoint frame
+ * and on the drawn step-8 review. Was #f9f9f9, which is in no kit section.
+ */
 export function leftPanelBgClass(_reviewShell?: boolean): string {
-  return 'bg-[#f9f9f9]'
+  return 'bg-ink-100'
 }
 
 interface LeftContentPaddingOptions {
@@ -71,7 +94,7 @@ export function leftContentPaddingClass(mode: LayoutMode, opts: LeftContentPaddi
 
   if (mode === 'edit') {
     // Horizontal inset on EditFlowStepShell scroll body — keeps HR/footer full column width.
-    return `${base} pt-12 pb-0 flex flex-col overflow-hidden`
+    return `${base} pt-8 pb-0 flex flex-col overflow-hidden`
   }
 
   if (mode === 'review') {
@@ -79,32 +102,47 @@ export function leftContentPaddingClass(mode: LayoutMode, opts: LeftContentPaddi
     return `${base} flex flex-col overflow-hidden`
   }
 
-  // wizard — asymmetric horizontal padding: narrow right gutter for scrollbar
+  // wizard — kit `spacing/32` all round; the right side gives 10 of its 32 to
+  // the drawn scrollbar's reserved gutter (see LEFT_PANE_SCROLL_GUTTER_CLASS).
   const step8 = opts.wizardStep === 8
   const overflow = step8 ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
-  const horizontalPad = step8 ? 'px-12' : LEFT_PANE_SCROLL_GUTTER_CLASS
-  return `${base} ${horizontalPad} pt-12 pb-12 ${overflow}`
+  const horizontalPad = step8 ? 'px-8' : LEFT_PANE_SCROLL_GUTTER_CLASS
+  return `${base} ${horizontalPad} pt-8 pb-8 ${overflow}`
 }
 
 interface RightPaneOptions {
   wizardStep?: number
 }
 
-/** Outer right column (58%): width, bg, padding. */
-export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): string {
-  const base = 'constructor-dual-pane-shell__right min-h-0 bg-white'
+/**
+ * Outer right column: bg and the kit's 32 padding. The WIDTH is not a class —
+ * it is measured, because the kit derives it from the pane height
+ * (`useWizardPaneMetrics` + `constants/wizardResponsive.ts`). Everything here
+ * keeps `min-w-0` so the measured width, not the content, decides.
+ *
+ * Padding is `spacing/32` on all four sides in every drawn frame — the mixed
+ * 48 / 20 / 44 / 100 this function used to hand out matched no kit node, and
+ * the vertical pair is what made the square come out rectangular.
+ *
+ * The pane scrolls rather than squashing the square: that is bullet four of
+ * the designer's sticker `5395:118367`.
+ *
+ * `border-l` is the kit's vertical `Divider` — a 1px `divider/default` #eaeaeb
+ * between the columns on every breakpoint frame. It is drawn as its own
+ * zero-width node there; here it rides the right pane, so the measured width
+ * stays the outer box.
+ */
+export function rightPaneClass(mode: LayoutMode, _opts: RightPaneOptions = {}): string {
+  const base =
+    'constructor-dual-pane-shell__right wizard-scrollbar min-h-0 min-w-0 shrink-0 border-l border-ink-300 bg-card p-8'
 
   if (mode === 'review') {
-    return `${base} w-[58%] flex flex-col overflow-hidden p-12`
+    return `${base} flex flex-col overflow-y-auto`
   }
 
   if (mode === 'edit') {
-    return `${base} w-[58%] relative overflow-y-auto pt-[20px] pb-[100px] px-12`
+    return `${base} relative overflow-y-auto`
   }
 
-  const step = opts.wizardStep ?? 1
-  const verticalPad = step >= 2 && step <= 4 ? 'pt-6 pb-[44px]' : 'pt-12 pb-12'
-  // Step 1 empty preview must fill column height — overflow-y-auto shrinks flex children to content.
-  const overflow = step === 1 ? 'overflow-hidden' : 'overflow-y-auto'
-  return `${base} w-[58%] flex flex-col min-h-0 h-full ${overflow} px-12 ${verticalPad}`
+  return `${base} flex h-full min-h-0 flex-col overflow-y-auto`
 }

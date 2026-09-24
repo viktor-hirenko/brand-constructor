@@ -1,6 +1,6 @@
 /**
  * Shared layout for CEO re-select and PO edit step screens (layoutMode === 'edit').
- * Horizontal inset (48px) lives in EditFlowStepShell — not on the dual-pane column.
+ * Horizontal inset (32px) lives in EditFlowStepShell — not on the dual-pane column.
  * Subtitle → first block: shell body gap-6 (24px) + pt-2 (8px) = 32px.
  *
  * Every number below is measured off the edit-flow frames themselves, not off
@@ -11,8 +11,14 @@
  * CEO) and `4463:14684` (Product view / Edit Concept & External name).
  */
 
-/** Body content inset — must match former dual-pane edit px-12 (48px). */
-export const EDIT_FLOW_CONTENT_INSET_CLASS = 'px-12'
+/**
+ * Body content inset — the kit's `spacing/32` on `Step content`, the same on
+ * every breakpoint frame and on the drawn step-8 review `5387:91771`. It was
+ * 48, carried over from the pre-kit dual-pane column; the responsive work put
+ * both panes on 32, and this has to move with them or the body and the bar
+ * under it stop lining up.
+ */
+export const EDIT_FLOW_CONTENT_INSET_CLASS = 'px-8'
 
 export const EDIT_FLOW_BODY_OFFSET_CLASS = 'flex flex-col pt-2'
 

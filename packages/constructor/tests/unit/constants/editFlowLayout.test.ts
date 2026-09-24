@@ -121,8 +121,8 @@ describe('the edit-flow spacing scale is the kit’s', () => {
     for (const value of values) {
       expect(value).not.toMatch(/\b\d+(\.\d+)?(px|vw|vh|dvh|em)\b/)
     }
-    // Arbitrary values only — the file's prose names the 48px inset, and the
-    // scoped rule spells it `3rem`, which is the point.
+    // Arbitrary values only — the file's prose names the 32px inset, and the
+    // scoped rule spells it `2rem`, which is the point.
     expect(read('components/constructor/edit-flow/EditFlowStepShell.vue')).not.toMatch(
       /\[[\d.]+px\]/,
     )

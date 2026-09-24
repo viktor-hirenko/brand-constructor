@@ -161,8 +161,32 @@ describe('embed scale rule', () => {
     expect(withoutComments).not.toMatch(/(^|\})\s*html\s*\{/)
   })
 
-  it('keeps the clamp bounds and both viewport coefficients byte for byte', () => {
-    expect(withoutComments).toContain('font-size: clamp(11px, min(1.1111vw, 1.7778vh), 18px);')
+  it('holds the root at a flat 16 — the knob is off on purpose', () => {
+    // Was `clamp(11px, min(1.1111vw, 1.7778vh), 18px)`: one knob scaling the
+    // whole wizard with the Admin panel. The kit fixes the header 73, the
+    // buttons 128×48, the controls and every padding across all four drawn
+    // breakpoints and moves only the columns (`5395:118197`), so the root now
+    // stands where standalone already had it and the columns are computed in
+    // `constants/wizardResponsive.ts`. No `vw`/`vh` may come back here.
+    expect(withoutComments).toContain('font-size: 16px;')
+    expect(withoutComments).not.toMatch(/font-size:[^;]*\b(vw|vh|dvh)\b/)
+  })
+
+  it('counts the concept columns 3 / 4 / 5 at the kit breakpoints', () => {
+    // Wizard width = viewport − sidebar: 1440−210 = 1230, 1920−250 = 1670.
+    expect(withoutComments).toContain('--wizard-concept-columns: 3;')
+    expect(withoutComments).toMatch(/@media \(min-width: 1230px\)[\s\S]*?--wizard-concept-columns: 4;/)
+    expect(withoutComments).toMatch(/@media \(min-width: 1670px\)[\s\S]*?--wizard-concept-columns: 5;/)
+  })
+
+  it('caps the wizard frame above 1920 the way `5395:119538` does', () => {
+    expect(withoutComments).toMatch(/@media \(min-width: 1671px\)/)
+    expect(withoutComments).toContain('max-width: 1700px;')
+    expect(withoutComments).toContain('max-height: 960px;')
+    expect(withoutComments).toContain('padding-block: 48px;')
+    // `min-height: 860` is declared on the same kit node and deliberately not
+    // reproduced — `5395:119983` draws the frame 715 tall. Divergences row 84.
+    expect(withoutComments).not.toContain('min-height: 860px;')
   })
 
   it('keeps the 560px dual-phone stack contract with BrandPreviewPanel.vue', () => {

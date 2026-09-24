@@ -13,15 +13,14 @@ import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiPagination from '@/components/ui/UiPagination.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
-import { isEmbedded } from '@/composables/useEmbedMode'
 
-// The `rounded-[24px]` canvas is a "photo frame" that makes sense for the
-// standalone card (which itself has a rounded shell). Inside the Admin the
-// shell is an edge-to-edge square panel, so a floating rounded rectangle
-// with padding around it reads as a stray card-in-a-card — drop the radius
-// (and the blurred backdrop layer inherits the square clip for free, since
-// it's clipped by this same container).
-const embedded = isEmbedded()
+// `radius/concept-preview` 24 — the kit keeps it on every breakpoint frame
+// (`I5395:118764;3717:1816` and siblings), so the radius no longer depends on
+// the mode. It used to be dropped in the Admin because the preview filled an
+// edge-to-edge panel and a rounded rectangle inside a square one read as a
+// card-in-a-card; the responsive work gave the preview its own 32 padding and
+// its square shape, which is the frame the radius belongs to. With the last
+// caller gone, `isEmbedded` is no longer imported here.
 
 const props = withDefaults(
   defineProps<{
@@ -250,8 +249,7 @@ onUnmounted(() => {
     <template v-if="!concept">
       <div class="shrink-0 h-[56px]" aria-hidden="true" />
       <div
-        class="flex-1 min-h-0 flex flex-col items-center justify-center text-center text-muted-foreground border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb]"
-        :class="embedded ? '' : 'rounded-[24px]'"
+        class="flex-1 min-h-0 flex flex-col items-center justify-center rounded-[24px] text-center text-muted-foreground border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb]"
       >
         <ImagePlaceholderIcon class="size-10 mb-6 text-[#c8c8c8]" />
         <p class="text-base leading-6 tracking-[-0.3125px] text-ink-700 max-w-[200px]">
@@ -296,8 +294,7 @@ onUnmounted(() => {
       <!-- Slider canvas -->
       <div
         ref="sliderCanvasRef"
-        class="relative flex-1 min-h-0 overflow-hidden bg-muted/30"
-        :class="embedded ? '' : 'rounded-[24px]'"
+        class="relative flex-1 min-h-0 overflow-hidden rounded-[24px] bg-muted/30"
       >
         <!-- Crossfade: background layer — currently visible image, always fully opaque.
              When the canvas aspect ratio drifts too far from the slide's own (a

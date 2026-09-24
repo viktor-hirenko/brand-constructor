@@ -92,11 +92,22 @@ describe('the grid asks for the Preview state', () => {
     )
   })
 
-  it('keeps the named adaptive invariant of the step 2 density knob', () => {
-    // "Железные правила адаптива": 9rem is the only density handle and must
-    // stay equal between the grid and its skeleton.
-    expect(grid).toContain('repeat(auto-fill,minmax(min(9rem,100%),1fr))')
+  it('keeps the grid and its skeleton on one column count', () => {
+    // The named invariant used to be `9rem` under `auto-fill`. The responsive
+    // work replaced it: the kit counts columns by breakpoint — 3 / 4 / 5,
+    // measured on `5395:119372`, `5395:118745`, `5395:119192`, `5395:119545` —
+    // and the card gets smaller as the count grows, which `auto-fill` cannot
+    // do. What the invariant protected is unchanged: ONE handle, and the
+    // skeleton never diverging from the grid it stands in for.
+    const FORMULA = 'repeat(var(--wizard-concept-columns),minmax(0,1fr))'
+    expect(grid).toContain(FORMULA)
     const skeleton = read('components/constructor/skeletons/ConceptGridSkeleton.vue')
-    expect(skeleton).toContain('repeat(auto-fill,minmax(min(9rem,100%),1fr))')
+    expect(skeleton).toContain(FORMULA)
+    // `minmax(0,1fr)` is what now keeps a wide card from overflowing a narrow
+    // column — the job `min(…,100%)` used to do. Match the TEMPLATE, not the
+    // file: both components name the old formula in their prose, and a bare
+    // grep reads that comment as a live class (the `my-10` lesson of phase 18).
+    expect(grid).not.toContain('repeat(auto-fill')
+    expect(skeleton).not.toContain('repeat(auto-fill')
   })
 })

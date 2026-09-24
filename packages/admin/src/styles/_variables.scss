@@ -64,7 +64,12 @@ $shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 $shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
 // Sidebar
-$sidebar-width: 260px;
+// Kit `Sidebar` on the four responsive frames (`5395:118197`): 210 up to 1920,
+// 250 from 1920. This is the one place where the wizard's responsive behaviour
+// crosses the package boundary — divergences row 72. Was a single 260.
+$sidebar-width: 210px;
+$sidebar-width-wide: 250px;
+$bp-sidebar-wide: 1920px;
 $sidebar-collapsed-width: 64px;
 
 // Transitions

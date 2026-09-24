@@ -106,6 +106,13 @@ async function handleLogout() {
 .sidebar {
   width: $sidebar-width;
   height: 100svh;
+
+  // Kit `5395:119181` / `5395:119534`: the sidebar widens at 1920 and stays
+  // there. Everything else about it is unchanged on all four frames.
+  @include mq($bp-sidebar-wide) {
+    width: $sidebar-width-wide;
+  }
+
   background-color: $color-bg-sidebar;
   color: $color-text-inverse;
   display: flex;

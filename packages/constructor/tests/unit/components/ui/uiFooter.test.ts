@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   UI_FOOTER_ACTIONS,
+  UI_FOOTER_BUTTON,
   UI_FOOTER_LAYOUT,
   UI_FOOTER_ROOT_CLASS,
   resolveUiFooterClasses,
@@ -32,12 +33,26 @@ describe('kit bar — Figma 3984:7719', () => {
     // The kit has no @theme token for bg/alt-1 yet (phase 1 brought colours the
     // kit names; this one is a surface). Until it does, the literal lives here
     // and nowhere else — it used to be copied into EditFlowFooter by hand.
-    expect(UI_FOOTER_LAYOUT.bar).toContain('bg-[#f9f9fb]')
+    // Since the responsive work this is the same `--color-ink-100` the left
+    // column itself uses, so the bar and the pane can no longer drift apart.
+    expect(UI_FOOTER_LAYOUT.bar).toContain('bg-ink-100')
   })
 
-  it('insets the buttons by 48 and pads 24 top and bottom', () => {
-    expect(UI_FOOTER_LAYOUT.bar).toContain('px-12')
-    expect(UI_FOOTER_LAYOUT.bar).toContain('py-6')
+  it('insets the buttons by 32 and pads 12 top and bottom', () => {
+    // `5395:118753` and its three siblings: 1 + 12 + 48 + 12 = the 73 the bar
+    // is drawn at on 1280, 1440 and 1920. The 24/48 this test used to assert
+    // came from `3984:7719` on the superseded canvas. Above 1920 the padding
+    // doubles to 24 (bar 97) — that is a breakpoint and lives in `app.css`.
+    expect(UI_FOOTER_LAYOUT.bar).toContain('px-8')
+    expect(UI_FOOTER_LAYOUT.bar).toContain('py-3')
+  })
+
+  it('fixes the bar buttons at the kit 128 instead of splitting the column', () => {
+    // Every drawn bar puts two 128-wide buttons 8 apart at x=32 and x=168.
+    // They were `block` and shared the column, so they grew with the panel —
+    // exactly the scaling the kit gives up.
+    expect(UI_FOOTER_BUTTON.bar).toBe('w-32')
+    expect(UI_FOOTER_BUTTON.stack).toBe('')
   })
 
   it('keeps the inset equal to the edit-flow body inset — the rule spans the column, the buttons do not', () => {

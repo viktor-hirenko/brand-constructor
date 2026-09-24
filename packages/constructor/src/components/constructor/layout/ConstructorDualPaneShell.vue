@@ -10,6 +10,7 @@ import {
   rightPaneClass,
 } from './dualPaneLayoutClasses'
 import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
+import { useWizardPaneMetrics } from '@/composables/useWizardPaneMetrics'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 
@@ -101,6 +102,21 @@ const leftRouterClass = computed(() => {
 const rightColumnClass = computed(() =>
   rightPaneClass(props.layoutMode, { wizardStep: props.wizardStep })
 )
+
+/**
+ * The kit sizes the RIGHT column from the available height — `right = height −
+ * 56`, so the square preview inside it keeps its 32 padding on all four sides
+ * (`constants/wizardResponsive.ts`). CSS cannot express that: an
+ * `aspect-ratio` child of a column flexbox would have to resolve its own
+ * height before the parent can take a width from it. So the row is measured.
+ *
+ * In drawer mode the right column is a full-width overlay, so the measured
+ * width must not apply.
+ */
+const bodyRef = ref<HTMLElement | null>(null)
+const { rightPaneStyle } = useWizardPaneMetrics(bodyRef)
+
+const rightColumnStyle = computed(() => (isDrawerMode.value ? {} : rightPaneStyle.value))
 </script>
 
 <template>
@@ -112,7 +128,17 @@ const rightColumnClass = computed(() =>
          so the drawer slides under the header instead of over it. -->
     <slot name="header" />
 
-    <div class="constructor-dual-pane-shell__body relative flex min-h-0 w-full flex-1">
+    <!-- `__content` / `__frame` are the ">1920 px" regime of the designer's
+         sticker `5395:118367`: above that width the wizard stops filling the
+         panel and sits in its own 1700-wide frame, 48 from the top and bottom,
+         radius 24 with a 1px rule. The rules are in `app.css`, scoped to the
+         embed — standalone is still the fixed card and must not grow a second
+         frame inside itself. Below the threshold both elements are inert. -->
+    <div class="constructor-dual-pane-shell__content flex min-h-0 w-full flex-1">
+    <div
+      ref="bodyRef"
+      class="constructor-dual-pane-shell__frame constructor-dual-pane-shell__body relative flex min-h-0 w-full flex-1"
+    >
     <div :class="leftColumnClass">
       <div :class="leftContentClass">
         <slot name="left-header" />
@@ -140,6 +166,7 @@ const rightColumnClass = computed(() =>
             'constructor-dual-pane-shell__drawer--open': isDrawerMode && isPreviewOpen,
           },
         ]"
+        :style="rightColumnStyle"
       >
         <!-- Kit icon button `3333:5541`, Solid L-48. Until now this was a
              hand-rolled CSS twin of the `ConceptPreviewPopup` cross, value for
@@ -168,6 +195,7 @@ const rightColumnClass = computed(() =>
         Прев'ю
       </button>
     </template>
+    </div>
     </div>
 
     <slot name="overlays" />

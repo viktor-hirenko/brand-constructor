@@ -62,13 +62,13 @@ withDefaults(defineProps<EditFlowStepShellProps>(), {
 
 <style scoped>
 /**
- * Pull dividers out of the 48px inset so the rule spans the full left column.
- * Matches horizontal inset (3rem × 2 = 6rem): scroll gutter pl-12 + inner pr-9.
+ * Pull dividers out of the 32px inset so the rule spans the full left column.
+ * Matches `EDIT_FLOW_CONTENT_INSET_CLASS` (2rem × 2 = 4rem).
  */
 .edit-flow-step-shell__inset :deep(.edit-flow-divider) {
-  margin-left: -3rem;
-  margin-right: -3rem;
-  width: calc(100% + 6rem);
+  margin-left: -2rem;
+  margin-right: -2rem;
+  width: calc(100% + 4rem);
   max-width: none;
 }
 </style>

@@ -91,22 +91,122 @@
 }
 
 /*
- * Variant 3 — embedded (Admin iframe) fluid scale.
+ * Variant 3 — embedded (Admin iframe) layout.
  *
- * Standalone keeps the fixed 1440×900 card + CSS transform scale. When embedded,
- * `applyEmbedRootFlag()` adds `.wizard-embed` to <html>, and we drive a single
- * knob — the root font-size — from the iframe viewport. Tailwind v4's spacing
- * and text scales are rem-based, so the whole UI scales with the root.
+ * ── The knob is off, and that is the point of this work ─────────────────────
+ * This rule used to read `clamp(11px, min(1.1111vw, 1.7778vh), 18px)`: one
+ * root font-size driven by the panel, scaling the entire wizard — type,
+ * padding, radius, control heights — with it. The kit refuses that. Across all
+ * four drawn breakpoints (`5395:118197`) the wizard header 73, the footer
+ * buttons 128×48, the segmented control 219×40, the order button 222×40, the
+ * comment field 128, every pane padding 32 and the preview header 32 are
+ * **fixed**; only the two columns and the square preview move.
  *
- * The iframe fills the Admin panel, so `vw`/`vh` map to the panel size:
- *   - 1.1111vw  = 16 / 1440 * 100  → width-driven scale  (16px at 1440px wide)
- *   - 1.7778vh  = 16 /  900 * 100  → height-driven scale (16px at 900px tall)
- * `min()` picks the limiting dimension so content fits BOTH width and height
- * (no letterbox, no vertical clip). `clamp()` bounds the density (tunable).
- * Design reference: 16px root at 1440×900; clamp bounds 11px–18px.
+ * So the root stands at exactly 16 in the Admin, the same as standalone, every
+ * rem in the tree is a design pixel, and the columns are computed from the
+ * panel height in `constants/wizardResponsive.ts`. The audit of 24.09 struck
+ * out the "recalibrate the knob" phase for the same reason: it preserved the
+ * one behaviour the mockup gives up.
+ *
+ * Guarded by tests/unit/styles/legacyScss.test.ts, which pins that `font-size`
+ * on `html` appears in exactly one place in the whole tree.
  */
 html.wizard-embed {
-  font-size: clamp(11px, min(1.1111vw, 1.7778vh), 18px);
+  font-size: 16px;
+}
+
+/*
+ * Concept grid — 3 / 4 / 5 columns, read off the four breakpoint frames:
+ * 1280 `5395:119372` 3×133, 1440 `5395:118745` 4×125.75, 1920 `5395:119192`
+ * 5×156.6, 2560 `5395:119545` 5×140. The card shrinks as the count grows, so
+ * the driver is the viewport, not the container — an `auto-fill` formula
+ * cannot express it and has been replaced by this variable in both the grid
+ * and its skeleton (they must never disagree).
+ *
+ * The thresholds are the wizard's own width: inside the Admin that is the
+ * browser viewport minus the sidebar (1440−210 = 1230, 1920−250 = 1670).
+ * Declared on bare `:root` so the measuring stand at /wizard/ follows the same
+ * breakpoints as the panel.
+ */
+:root {
+  --wizard-concept-columns: 3;
+}
+
+@media (min-width: 1230px) {
+  :root {
+    --wizard-concept-columns: 4;
+  }
+}
+
+@media (min-width: 1670px) {
+  :root {
+    --wizard-concept-columns: 5;
+  }
+}
+
+/*
+ * Above 1920 the wizard stops filling the panel and gets its own frame —
+ * `5395:119538`: max-width 1700, max-height 960, radius 24, a 1px
+ * `section-card/border` rule, sitting 48 from the top and bottom of the
+ * content area. Scoped to the embed because standalone is still the fixed
+ * 1440×900 card, which must not grow a second frame inside itself on a wide
+ * monitor.
+ *
+ * `min-height: 860` is declared on the same node and deliberately NOT
+ * reproduced: the designer's own short-viewport frame `5395:119983` draws the
+ * box 715 tall and scrolls the right column instead. Divergences row 84.
+ */
+@media (min-width: 1671px) {
+  html.wizard-embed .constructor-dual-pane-shell__content {
+    justify-content: center;
+    padding-block: 48px;
+  }
+
+  html.wizard-embed .constructor-dual-pane-shell__frame {
+    max-width: 1700px;
+    max-height: 960px;
+    border: 1px solid var(--color-ink-300);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  /* `5395:119557`: the bar keeps its 32 sides and doubles its 12 to 24. */
+  html.wizard-embed .ui-footer--bar {
+    padding-block: 24px;
+  }
+}
+
+/*
+ * Drawn scrollbars — `5395:118756` and its four siblings: 6 wide, radius 100,
+ * `#e6e6e6`, inset 4 from the pane edge. The 4 is the track's transparent
+ * right border, clipped away from the thumb's own paint, so the reserved
+ * gutter is 10 and the thumb inside it is 6.
+ *
+ * This is also what finally styles `.left-pane-scroll`, a class that had been
+ * inert for its whole life: its rules lived in `styles/global.scss`, which
+ * `main.ts` never imported (divergences row 70). The kit draws a bar on every
+ * breakpoint frame, so this is the kit's answer to that open row.
+ */
+.wizard-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #e6e6e6 transparent;
+}
+
+.wizard-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.wizard-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wizard-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #e6e6e6;
+  border-right: 4px solid transparent;
+  background-clip: padding-box;
+  border-radius: 100px;
 }
 
 /* Review dual-phone row: below ~560px two iPhone frames + gutter + pane padding

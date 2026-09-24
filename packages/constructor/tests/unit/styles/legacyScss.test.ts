@@ -14,12 +14,20 @@ import { fileURLToPath } from 'node:url'
  * Three things here have no other protection in the tree:
  *
  * 1. **`global.scss` must never come back.** It opened with
- *    `html { font-size: 16px }`. The wizard embedded in the Admin iframe scales
- *    from exactly one knob — the root font-size set by `html.wizard-embed` in
- *    `app.css` — so a second, fixed rule on `html` pins the root at 16 and the
- *    whole wizard stops following the panel. Nothing would fail: not the build,
- *    not the types, not a single other test. The file sat unimported in the
- *    tree for months looking like a stylesheet somebody forgot to wire up.
+ *    `html { font-size: 16px }`. There must be exactly ONE `font-size` rule on
+ *    `html` in the whole tree, and its value is deliberate: a second rule from
+ *    anywhere would silently win or lose by source order, and nothing would
+ *    fail — not the build, not the types, not a single other test. The file
+ *    sat unimported in the tree for months looking like a stylesheet somebody
+ *    forgot to wire up.
+ *
+ *    **The value changed with the responsive work, on purpose.** It used to be
+ *    `clamp(11px, min(1.1111vw, 1.7778vh), 18px)` — one knob scaling the whole
+ *    wizard with the Admin panel. The kit fixes the header, the buttons, the
+ *    controls and every padding across all four breakpoints and moves only the
+ *    columns (`5395:118197`), so the root now stands at a flat 16 and the
+ *    columns are computed in `constants/wizardResponsive.ts`. The guard is
+ *    still the same guard: one rule, one value, changed only on purpose.
  *
  * 2. **No SCSS anywhere under `src`.** One `lang="scss"` block brings the
  *    preprocessor config back with it, and with it the landmine above.
@@ -93,7 +101,7 @@ describe('legacy SCSS removal (DP-15258 phase 19)', () => {
           match[1].trim(),
         )
       })
-    expect(rules).toEqual(['clamp(11px, min(1.1111vw, 1.7778vh), 18px)'])
+    expect(rules).toEqual(['16px'])
   })
 
   it('has no #2563eb left in the tree', () => {

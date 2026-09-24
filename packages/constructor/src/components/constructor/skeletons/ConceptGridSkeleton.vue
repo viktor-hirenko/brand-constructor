@@ -8,9 +8,9 @@ withDefaults(defineProps<Props>(), { count: 6 })
 </script>
 
 <template>
-  <!-- Card min width 144px → 9rem @16; matches ConceptGrid density. -->
+  <!-- Same `--wizard-concept-columns` as `ConceptGrid`; the two must agree. -->
   <div
-    class="concept-grid-skeleton grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]"
+    class="concept-grid-skeleton grid gap-2 [grid-template-columns:repeat(var(--wizard-concept-columns),minmax(0,1fr))]"
     aria-hidden="true"
   >
     <div

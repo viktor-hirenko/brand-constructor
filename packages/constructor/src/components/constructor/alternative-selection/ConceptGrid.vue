@@ -33,8 +33,17 @@ function isSelected(id: string): boolean {
 </script>
 
 <template>
-  <!-- Card min width 144px → 9rem @16; auto-fill adds columns on wide panels. -->
-  <div class="concept-grid grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(9rem,100%),1fr))]">
+  <!--
+    Kit column count — 3 / 4 / 5 by breakpoint, `--wizard-concept-columns` in
+    `app.css`. Measured on the four responsive frames: 1280 `5395:119372` is
+    3×133, 1440 `5395:118745` is 4×125.75, 1920 `5395:119192` is 5×156.6, 2560
+    `5395:119545` is 5×140. The card gets SMALLER as the count grows, so the
+    driver is the viewport and the old `auto-fill minmax(9rem)` formula — which
+    only ever produced 3 — cannot express it. `minmax(0,1fr)` keeps the
+    overflow protection that `min(…,100%)` used to give. Divergence row 53.
+    The skeleton reads the same variable and must never diverge from this line.
+  -->
+  <div class="concept-grid grid gap-2 [grid-template-columns:repeat(var(--wizard-concept-columns),minmax(0,1fr))]">
     <ConceptCard
       v-for="concept in concepts"
       :key="concept.id"
