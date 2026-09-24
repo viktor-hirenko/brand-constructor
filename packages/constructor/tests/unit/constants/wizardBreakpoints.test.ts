@@ -4,6 +4,7 @@ import {
   WIZARD_FRAME_INSET,
   WIZARD_FRAME_MAX_HEIGHT,
   WIZARD_FRAME_MAX_WIDTH,
+  resolvePreviewMaxSide,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
 
@@ -23,7 +24,8 @@ import {
  *   wizard header  73, on all four frames             (`5382:30951`)
  *   frame inset    48 top + 48 bottom, only above 1920 (`5395:119537`)
  *   frame height   capped at 960 above 1920            (`5395:119538`)
- *   columns        right = height − 56, left = the rest
+ *   square         min(height − 120, the size drawn for the breakpoint)
+ *   columns        right = square + 64, left = the rest
  *
  * Verified to fail, not assumed to: put the Admin header back (subtract 88
  * from the viewport height) and every one of the five rows goes red.
@@ -42,6 +44,7 @@ interface Layout {
   frameHeight: number
   previewSide: number
   rightPaneWidth: number
+  rightPaneHeight: number
   leftPaneWidth: number
 }
 
@@ -61,13 +64,17 @@ function layoutForViewport(viewportWidth: number, viewportHeight: number): Layou
     ? Math.min(contentHeight - WIZARD_FRAME_INSET * 2, WIZARD_FRAME_MAX_HEIGHT)
     : contentHeight
 
-  const { previewSide, rightPaneWidth } = resolveWizardPaneGeometry(frameHeight, { capped })
+  const { previewSide, rightPaneWidth, rightPaneHeight } = resolveWizardPaneGeometry(
+    frameHeight,
+    { capped, maxSide: resolvePreviewMaxSide(frameWidth) }
+  )
 
   return {
     wizardWidth,
     frameHeight,
     previewSide,
     rightPaneWidth,
+    rightPaneHeight,
     leftPaneWidth: frameWidth - rightPaneWidth,
   }
 }
@@ -154,5 +161,65 @@ describe('what the Admin header used to cost', () => {
     // Without it, the same window lands exactly on the drawn frame.
     expect(layoutForViewport(1280, 720).rightPaneWidth).toBe(591)
     expect(layoutForViewport(1280, 720).leftPaneWidth).toBe(479)
+  })
+})
+
+
+/**
+ * The regression this whole file exists for, twice over.
+ *
+ * The first shipped version had no ceiling on the square, so the columns moved
+ * with the WINDOW HEIGHT: at 1440×900 the left column came out 459 against the
+ * 591 the kit draws, and at 1920×1080 it was 719 against 879. The owner found
+ * it by setting sizes by hand.
+ *
+ * The 29 screens are what settles it, and each row below is one of them: same
+ * 1440 width, five different content heights, one answer.
+ */
+describe('a taller window must not move the columns', () => {
+  const TALLER = [
+    { name: '1440×768  — the frame she drew', viewport: [1440, 768] },
+    { name: '1440×786  — step 4 `5382:48408`, content 713', viewport: [1440, 786] },
+    { name: '1440×900  — the size the owner tested', viewport: [1440, 900] },
+    { name: '1440×858  — step 4 in the edit flow, content 785', viewport: [1440, 858] },
+    { name: '1440×1200 — taller than anything drawn', viewport: [1440, 1200] },
+  ] as const
+
+  it.each(TALLER)('$name keeps 591 · 639 and a 575 square', ({ viewport }) => {
+    const layout = layoutForViewport(viewport[0], viewport[1])
+    expect(layout.previewSide).toBe(575)
+    expect(layout.rightPaneWidth).toBe(639)
+    expect(layout.leftPaneWidth).toBe(591)
+  })
+
+  it('leaves the extra height as white space, not as a stretched panel', () => {
+    // `5382:48440` is 639×695 inside a 713-tall row; `5387:105207` the same
+    // inside 785. The panel stops at the square plus its 120 of chrome.
+    expect(layoutForViewport(1440, 768).rightPaneHeight).toBe(695)
+    expect(layoutForViewport(1440, 1200).rightPaneHeight).toBe(695)
+  })
+
+  it('holds 879 · 791 at 1920 whatever the window height', () => {
+    for (const height of [920, 1000, 1080, 1440]) {
+      const layout = layoutForViewport(1920, height)
+      expect(layout.previewSide).toBe(727)
+      expect(layout.leftPaneWidth).toBe(879)
+      expect(layout.rightPaneWidth).toBe(791)
+    }
+  })
+
+  it('still shrinks when the window is SHORTER than the one she drew', () => {
+    // Downward is the one direction height moves the layout, and it is the
+    // only one the sticker describes.
+    const short = layoutForViewport(1440, 600)
+    expect(short.previewSide).toBe(600 - 73 - 120)
+    expect(short.previewSide).toBeLessThan(575)
+  })
+
+  it('carries the ceilings the designer drew, and no invented ones', () => {
+    expect(resolvePreviewMaxSide(1070)).toBe(527) // 1280 − 210
+    expect(resolvePreviewMaxSide(1230)).toBe(575) // 1440 − 210
+    expect(resolvePreviewMaxSide(1670)).toBe(727) // 1920 − 250
+    expect(resolvePreviewMaxSide(1700)).toBe(840) // the capped frame
   })
 })

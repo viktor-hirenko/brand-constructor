@@ -64,15 +64,20 @@ export const LEFT_PANE_SCROLL_GUTTER_CLASS = 'pl-8 pr-[1.375rem]'
 export const LEFT_PANE_SCROLL_INNER_CLASS = ''
 
 /**
- * Left column width.
+ * Left column width, and the rule between the columns.
  *
  * `flex-1` — the remainder, which is exactly what the kit does: the RIGHT
- * column is the driver (`right = pane height − 56`, see
- * `constants/wizardResponsive.ts`) and the left one takes what is left.
- * Checked on all five drawn frames; the old `w-[42%]` matched none of them.
+ * column is the driver (see `constants/wizardResponsive.ts`) and the left one
+ * takes what is left. Checked on all five drawn frames; the old `w-[42%]`
+ * matched none of them.
+ *
+ * The kit's vertical `Divider` rides HERE rather than on the right pane,
+ * because it is drawn full height while the panel is not: on `5382:48413` the
+ * divider is 713 tall next to a 695-tall panel. Dropped when the right column
+ * is hidden (steps 5 and 6), where there is nothing to divide.
  */
 export function leftPanelWidthClass(fullWidth: boolean): string {
-  return fullWidth ? 'w-full' : 'min-w-0 flex-1'
+  return fullWidth ? 'w-full' : 'min-w-0 flex-1 border-r border-ink-300'
 }
 
 /**
@@ -115,26 +120,27 @@ interface RightPaneOptions {
 }
 
 /**
- * Outer right column: bg and the kit's 32 padding. The WIDTH is not a class —
- * it is measured, because the kit derives it from the pane height
- * (`useWizardPaneMetrics` + `constants/wizardResponsive.ts`). Everything here
- * keeps `min-w-0` so the measured width, not the content, decides.
+ * Outer right column: bg and the kit's 32 padding. Neither the WIDTH nor the
+ * HEIGHT is a class — both are measured, because the kit derives them from the
+ * square inside (`useWizardPaneMetrics` + `constants/wizardResponsive.ts`).
+ * Everything here keeps `min-w-0` / `min-h-0` so the measured box, not the
+ * content, decides.
+ *
+ * No `h-full`: once the square reaches the size drawn for the breakpoint the
+ * panel stops with it and sits at the top of a taller column, white space
+ * underneath — `5382:48440` is 639×695 in a 713-tall row, `5387:105207` the
+ * same in a 785-tall one. Stretching it was the defect.
  *
  * Padding is `spacing/32` on all four sides in every drawn frame — the mixed
- * 48 / 20 / 44 / 100 this function used to hand out matched no kit node, and
- * the vertical pair is what made the square come out rectangular.
+ * 48 / 20 / 44 / 100 this function used to hand out matched no kit node.
  *
  * The pane scrolls rather than squashing the square: that is bullet four of
- * the designer's sticker `5395:118367`.
- *
- * `border-l` is the kit's vertical `Divider` — a 1px `divider/default` #eaeaeb
- * between the columns on every breakpoint frame. It is drawn as its own
- * zero-width node there; here it rides the right pane, so the measured width
- * stays the outer box.
+ * the designer's sticker `5395:118367`. The divider between the columns is on
+ * the LEFT pane, because it is drawn full height and this one is not.
  */
 export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): string {
   const base =
-    'constructor-dual-pane-shell__right wizard-scrollbar min-h-0 min-w-0 shrink-0 border-l border-ink-300 bg-card p-8'
+    'constructor-dual-pane-shell__right wizard-scrollbar min-h-0 min-w-0 shrink-0 bg-card p-8'
 
   if (mode === 'review') {
     return `${base} flex flex-col overflow-y-auto`
@@ -150,5 +156,5 @@ export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): s
   // at all (divergences row 29), so there is no measurement arguing the other
   // way — and this exception predates the responsive work.
   const overflow = (opts.wizardStep ?? 1) === 1 ? 'overflow-hidden' : 'overflow-y-auto'
-  return `${base} flex h-full min-h-0 flex-col ${overflow}`
+  return `${base} flex min-h-0 flex-col ${overflow}`
 }

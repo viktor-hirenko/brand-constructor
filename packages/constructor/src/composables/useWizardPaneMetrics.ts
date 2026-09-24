@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import {
   WIZARD_CAPPED_MIN_WIDTH,
+  resolvePreviewMaxSide,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
 
@@ -46,19 +47,31 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
   const isCapped = computed(() => paneWidth.value >= WIZARD_CAPPED_MIN_WIDTH)
 
   const geometry = computed(() =>
-    resolveWizardPaneGeometry(paneHeight.value, { capped: isCapped.value })
+    resolveWizardPaneGeometry(paneHeight.value, {
+      capped: isCapped.value,
+      // The ceiling for this breakpoint. Without it the square grows with the
+      // window and the left column shrinks — see `wizardResponsive.ts`.
+      maxSide: resolvePreviewMaxSide(paneWidth.value),
+    })
   )
 
   /**
    * Inline style for the right column. Empty until the first measurement, so a
    * server-rendered or not-yet-painted shell keeps whatever the CSS says rather
    * than collapsing to zero.
+   *
+   * The HEIGHT is here for the same reason as the width: once the square stops
+   * growing, the panel must stop with it and leave white space under itself
+   * rather than stretch. That is how every drawn screen sits — `5382:48440` is
+   * 639×695 in a 713-tall row, `5387:105207` the same in a 785-tall one.
    */
   const rightPaneStyle = computed(() =>
     geometry.value.rightPaneWidth > 0
       ? {
           width: `${geometry.value.rightPaneWidth}px`,
+          height: `${geometry.value.rightPaneHeight}px`,
           flex: '0 0 auto',
+          alignSelf: 'flex-start',
         }
       : {}
   )
