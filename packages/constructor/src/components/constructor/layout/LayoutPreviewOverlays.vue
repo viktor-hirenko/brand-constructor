@@ -66,7 +66,7 @@ function handleRequestEdit() {
     <div
       v-if="store.conceptPreviewOpen && overlayConcept"
       class="absolute right-0 top-0 h-full z-[29] overflow-hidden"
-      :class="isNarrowEmbed ? 'w-full' : 'w-[58%]'"
+      :class="isNarrowEmbed ? 'w-full' : 'w-[var(--wizard-right-pane-width,58%)]'"
     >
       <ConceptPreviewPopup :concept="overlayConcept" />
     </div>

@@ -63,5 +63,16 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
       : {}
   )
 
-  return { paneHeight, paneWidth, isCapped, geometry, rightPaneStyle }
+  /**
+   * The same width as a custom property, for things that sit OUTSIDE the row
+   * and still have to line up with the right column — today that is the
+   * concept-preview drawer in `LayoutPreviewOverlays`, which used to hardcode
+   * the old 58%. Falls back to 58% until the first measurement.
+   */
+  const rightPaneVarStyle = computed(() => ({
+    '--wizard-right-pane-width':
+      geometry.value.rightPaneWidth > 0 ? `${geometry.value.rightPaneWidth}px` : '58%',
+  }))
+
+  return { paneHeight, paneWidth, isCapped, geometry, rightPaneStyle, rightPaneVarStyle }
 }

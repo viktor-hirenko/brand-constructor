@@ -36,15 +36,31 @@ const props = withDefaults(defineProps<ConstructorDualPaneShellProps>(), {
 
 const shellBase = computed(() => shellBaseClass(props.embed))
 
+/**
+ * The kit sizes the RIGHT column from the available height — `right = height −
+ * 56`, so the square preview inside it keeps its 32 padding on all four sides
+ * (`constants/wizardResponsive.ts`). CSS cannot express that: an
+ * `aspect-ratio` child of a column flexbox would have to resolve its own
+ * height before the parent can take a width from it. So the row is measured.
+ *
+ * In drawer mode the right column is a full-width overlay, so the measured
+ * width must not apply.
+ */
+const bodyRef = ref<HTMLElement | null>(null)
+const { rightPaneStyle, rightPaneVarStyle } = useWizardPaneMetrics(bodyRef)
+
 // Embedded mode fills the panel and scales via root font-size — no transform.
-const shellStyle = computed(() =>
-  props.embed
+const shellStyle = computed(() => ({
+  ...(props.embed
     ? {}
     : {
         transform: `scale(${props.scale})`,
         transformOrigin: 'center center',
-      }
-)
+      }),
+  // Published for the overlays slot, which is outside the measured row but has
+  // to line up with the right column all the same.
+  ...rightPaneVarStyle.value,
+}))
 
 // Narrow embedded panels (portrait tablets and below) can't fit the 42/58 split.
 // There the right preview column collapses into an off-canvas drawer opened via a
@@ -103,20 +119,9 @@ const rightColumnClass = computed(() =>
   rightPaneClass(props.layoutMode, { wizardStep: props.wizardStep })
 )
 
-/**
- * The kit sizes the RIGHT column from the available height — `right = height −
- * 56`, so the square preview inside it keeps its 32 padding on all four sides
- * (`constants/wizardResponsive.ts`). CSS cannot express that: an
- * `aspect-ratio` child of a column flexbox would have to resolve its own
- * height before the parent can take a width from it. So the row is measured.
- *
- * In drawer mode the right column is a full-width overlay, so the measured
- * width must not apply.
- */
-const bodyRef = ref<HTMLElement | null>(null)
-const { rightPaneStyle } = useWizardPaneMetrics(bodyRef)
-
+/** Drawer mode makes the right column a full-width overlay — no measured width. */
 const rightColumnStyle = computed(() => (isDrawerMode.value ? {} : rightPaneStyle.value))
+
 </script>
 
 <template>
