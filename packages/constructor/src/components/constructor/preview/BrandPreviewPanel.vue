@@ -13,6 +13,10 @@ import { computed, onMounted, watch } from 'vue'
 import { useBrandPreviewLayers, type PreviewSlice } from '@/composables/useBrandPreviewLayers'
 import { useConstructorStore } from '@/stores/constructor'
 import { MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS } from '@/constants/previewLayout'
+import {
+  PREVIEW_REVIEW_PHONE_BOX,
+  PREVIEW_REVIEW_PHONE_GAP_CLASS,
+} from '@/constants/visualPreviewLayout'
 import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCanvas.vue'
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
@@ -64,12 +68,24 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
     </div>
 
     <!-- Normal: the screen, and the screen with the sidebar open.
-         Dual phones gap 40px → 2.5rem @16. -->
+         Kit `5387:91764`: the two phones are 239.18×520, 32 apart, inside the
+         575 preview square — 510.36 of it. They are the step-7 phone at four
+         fifths, and the size has to be stated now that the root no longer
+         shrinks with the panel. `overflow-x-auto` is the fallback for a panel
+         shorter than any the designer drew, so the pair is never clipped. -->
     <div
       v-else
-      class="brand-preview-panel__dual-phones flex items-start justify-center gap-[2.5rem] flex-1 min-h-0"
+      :class="[
+        'brand-preview-panel__dual-phones wizard-scrollbar flex flex-1 min-h-0 items-start justify-center overflow-x-auto',
+        PREVIEW_REVIEW_PHONE_GAP_CLASS,
+      ]"
     >
-      <PhonePreviewCanvas v-for="phone in phones" :key="phone.key">
+      <PhonePreviewCanvas
+        v-for="phone in phones"
+        :key="phone.key"
+        :box-width-rem="PREVIEW_REVIEW_PHONE_BOX.widthRem"
+        :box-height-rem="PREVIEW_REVIEW_PHONE_BOX.heightRem"
+      >
         <template v-if="composition.top" #top>
           <PhonePreviewSlice :slice="composition.top" />
         </template>

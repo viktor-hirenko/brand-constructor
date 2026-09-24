@@ -3,6 +3,7 @@ import { COMPONENT_TYPE_ASPECT_RATIOS } from '@brand-constructor/shared/constant
 import {
   PREVIEW_CANVAS,
   PREVIEW_PHONE_BOX,
+  PREVIEW_REVIEW_PHONE_BOX,
   PREVIEW_PLACEMENT,
   PREVIEW_SIDEBAR_BANDS,
   getPreviewPlacement,
@@ -75,6 +76,29 @@ describe('resolveCanvasUnitRem', () => {
     const unit = resolveCanvasUnitRem(PREVIEW_PHONE_BOX.widthRem, PREVIEW_PHONE_BOX.heightRem)
 
     expect(unit * PREVIEW_CANVAS.heightPx).toBeLessThanOrEqual(PREVIEW_PHONE_BOX.heightRem)
+  })
+
+  it('never clips the tabbar at the review phone size either', () => {
+    const unit = resolveCanvasUnitRem(
+      PREVIEW_REVIEW_PHONE_BOX.widthRem,
+      PREVIEW_REVIEW_PHONE_BOX.heightRem
+    )
+
+    expect(unit * PREVIEW_CANVAS.heightPx).toBeLessThanOrEqual(PREVIEW_REVIEW_PHONE_BOX.heightRem)
+  })
+
+  it('fits the review pair inside the kit preview square', () => {
+    // `5387:91764`: the square is 575, the two phones are 239.1761932373047
+    // wide at x=32.32 and x=303.5 — 32 apart, kit `spacing/32`. The pair is
+    // 510.36, and it has to stay inside the square on every breakpoint, since
+    // the square is the one thing that shrinks with the panel.
+    const pair = PREVIEW_REVIEW_PHONE_BOX.widthRem * 2 + 32 / 16
+    expect(pair * 16).toBeCloseTo(510.35, 1)
+    expect(pair * 16).toBeLessThanOrEqual(527) // the narrowest drawn square, at 1280
+
+    // Four fifths of the step-7 phone, not a different device.
+    expect(PREVIEW_REVIEW_PHONE_BOX.widthRem / PREVIEW_PHONE_BOX.widthRem).toBeCloseTo(0.8, 5)
+    expect(PREVIEW_REVIEW_PHONE_BOX.heightRem * 16).toBe(520)
   })
 
   it('collapses to zero for a host with no size', () => {

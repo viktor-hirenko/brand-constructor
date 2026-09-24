@@ -66,6 +66,28 @@ export const PREVIEW_PHONE_BOX = {
   heightRem: 650 / 16,
 } as const
 
+/**
+ * On-screen size of the phone on the step-8 review, where TWO of them stand
+ * side by side inside the preview square.
+ *
+ * Measured on the drawn review `5387:91764`: the `Preview` slot is the 575
+ * square, and the two `Preview` frames inside it are 239.1761932373047 × 520
+ * at x=32.32 and x=303.5 — i.e. 32 apart, which is kit `spacing/32`, not the
+ * 40 this panel used. 239.18 / 298.97 = 0.8 exactly, and 650 × 0.8 = 520, so
+ * this is the step-7 phone at four fifths, not a different device.
+ *
+ * Why it had to be stated: until the responsive work the whole wizard shrank
+ * with the Admin panel, so the step-7 box happened to come out near this size.
+ * With the root fixed at 16 it does not, and the pair would outgrow the square.
+ */
+export const PREVIEW_REVIEW_PHONE_BOX = {
+  widthRem: 239.1761932373047 / 16,
+  heightRem: 520 / 16,
+} as const
+
+/** Kit `spacing/32` between the two review phones — `5387:91764`. */
+export const PREVIEW_REVIEW_PHONE_GAP_CLASS = 'gap-8'
+
 export type PreviewPlacement = 'top-fixed' | 'body' | 'bottom-fixed' | 'overlay'
 
 export interface PreviewTypePlacement {
