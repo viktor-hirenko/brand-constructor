@@ -159,33 +159,35 @@ const phoneBox = computed(() =>
 <template>
   <div class="relative flex flex-col flex-1 min-h-0 w-full h-full">
     <!-- Step 1 Preview.
-         The kit draws no step-1 screen at all (open question 5), so the layout
-         is ours and stays ours. What is NOT ours is the recipe the cards were
-         drawn with — radius 14, a two-layer shadow, a `black/10` frame, a 48
-         icon square on `bg-primary/10`, 18/24 at −0.44 and a 24 value at +0.07,
-         none of which is in any kit section (divergences row 96).
+         **This screen IS drawn, and the drawing was found after the panel was
+         rebuilt.** `Brand Basics (step 1)` `5409:35822` lives on the canvas
+         `UXUI-2651` — a task nobody had linked to DP-15258 — so for the whole
+         project step 1 counted as "the designer drew nothing" (open question 5,
+         divergences row 29). That reading is now false for the fourth time.
 
-         They are not redrawn from the kit either, because there is nothing to
-         redraw from. They are assembled from the recipes the product already
-         stands on — exactly what phase 19 did with the sign-in page — and the
-         proof that this is assembly rather than invention is that the SAME
-         three values, with the SAME three glyphs, are already `UiProperty`
-         rows inside a `UiSectionCard` two screens over, on the step-8 review
-         (`ReviewUnifiedView`).
+         What the drawn screen settles, measured off its `Right panel`:
 
-         The «Превʼю» header above them is the kit's: `Type=UI preview`
-         `3839:9514` carries it on every screen that has no concept to name, and
-         step 1 had none (divergences row 95).
+           no header at all   the first card opens at y=32; there is no
+                              «Превʼю» row. The one added here on the strength
+                              of "the panel type always carries it" is removed
+                              again — a drawn screen beats an inference from a
+                              component (divergences row 95).
+           card 543 x 124     padding 26, gap 24 between cards
+           icon tile 36       a 20 glyph inside it, label 8 to its right
+           value              on its own line, 16/24, full width
+
+         The cards below are NOT yet those numbers: they are the kit
+         `UiSectionCard` + `UiProperty` the shadowed pre-kit recipe was replaced
+         with, which is right about the surface (no shadow, kit radius, kit
+         border — and it closes the bug board's "remove the shadows") and wrong
+         about the internals. Redoing them against this node is its own work,
+         recorded as divergences row 96 rather than half-done here.
 
          The scroll area is here for the padding as much as the scrolling: the
          pane gave up its horizontal 32 so the drawn scrollbar could float in
          it, so every branch carries its own. -->
     <template v-if="currentStep === 1">
       <div :class="PREVIEW_PANEL_ROOT_CLASS">
-      <header :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_HEADER_GAP_CLASS]">
-        <SparklesIcon :class="PREVIEW_PANEL_ICON_CLASS" />
-        <h2 :class="PREVIEW_PANEL_TITLE_CLASS">Превʼю</h2>
-      </header>
 
       <div :class="PREVIEW_PANEL_SCROLL_CLASS">
       <!-- `spacing/16` between neighbouring cards — the kit's gap on the drawn

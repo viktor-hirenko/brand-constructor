@@ -242,27 +242,24 @@ describe('only the square scrolls — the header stays put (row 94)', () => {
   })
 })
 
-describe('step 1 carries the panel the kit gives it — rows 95 and 96', () => {
+describe('step 1 has NO preview header — its drawn screen says so', () => {
   const markup = templateOf(
     withoutComments(read('components/constructor/layout/StepPreviewRightPanel.vue'))
   )
   /** Everything up to the step-2 branch, i.e. the step-1 branch alone. */
   const stepOne = markup.slice(0, markup.indexOf("currentStep === 2"))
 
-  it('opens with the «Превʼю» header this panel type always carries', () => {
-    // `Type=UI preview` `3839:9514` — a 24 Sparkle, `spacing/8`, `header/l`
-    // 24/32. Step 1 opened straight into cards, with no header at all.
-    expect(stepOne).toContain('PREVIEW_PANEL_HEADER_CLASS')
-    expect(stepOne).toContain('PREVIEW_PANEL_ICON_CLASS')
-    expect(stepOne).toContain('Превʼю')
-    // And the header must sit ABOVE the scroll area, not inside it — the same
-    // ordering the rest of this file pins for the other branches.
-    expect(stepOne.indexOf('PREVIEW_PANEL_HEADER_CLASS')).toBeLessThan(
-      stepOne.indexOf('PREVIEW_PANEL_SCROLL_CLASS')
-    )
+  it('opens straight into the cards, with no «Превʼю» row', () => {
+    // `Brand Basics (step 1)` `5409:35822`, found on the UXUI-2651 canvas after
+    // this panel had already been rebuilt: its Right panel opens with the first
+    // card at y=32 and carries no header at all. A header was added here on the
+    // strength of "the `UI preview` type always has one" — an inference from a
+    // component, which a drawn screen outranks. Divergences row 95.
+    expect(stepOne).not.toContain('Превʼю')
+    expect(stepOne).not.toContain('PREVIEW_PANEL_HEADER_CLASS')
   })
 
-  it('builds its cards out of the two kit maps, not a recipe of its own', () => {
+  it('still builds its cards out of the two kit maps, not a recipe of its own', () => {
     expect(stepOne).toContain('STEP_ONE_CARD_CLASS')
     expect(stepOne.match(/<UiProperty/g) ?? []).toHaveLength(3)
   })
@@ -273,9 +270,6 @@ describe('step 1 carries the panel the kit gives it — rows 95 and 96', () => {
     expect(source).not.toContain('shadow-[0px_10px_15px')
     expect(source).not.toContain('border-black/10')
     expect(source).not.toContain('bg-primary/10')
-    // The two letter-spacing values this branch carried are covered by the
-    // tree-wide sweep in `styles/legacyScss.test.ts`, which is deliberately
-    // the only place in the tree that may name them.
   })
 })
 
