@@ -134,8 +134,25 @@ const rightColumnClass = computed(() =>
   rightPaneClass(props.layoutMode, { wizardStep: props.wizardStep })
 )
 
-/** Drawer mode makes the right column a full-width overlay — no measured box. */
-const rightColumnStyle = computed(() => (isDrawerMode.value ? {} : rightPaneStyle.value))
+/**
+ * Drawer mode makes the right column a full-width overlay — no measured box.
+ *
+ * Step 0 takes the measured WIDTH and nothing else. The height and the
+ * `align-self: flex-start` in `rightPaneStyle` exist so the preview PANEL stops
+ * at the square it was sized for and leaves white space under itself — which is
+ * what the kit draws on every screen that has a square. Step 0 has no square:
+ * `Right panel` `5409:35332` is 639 × **695**, the full height of `Wizard
+ * content`, filled edge to edge with the picture. Handing it the panel height
+ * ended the picture early and left a white band under it.
+ */
+const rightColumnStyle = computed(() => {
+  if (isDrawerMode.value) return {}
+  if (props.layoutMode === 'landing') {
+    const { width, flex } = rightPaneStyle.value as { width?: string; flex?: string }
+    return width ? { width, flex } : {}
+  }
+  return rightPaneStyle.value
+})
 
 /**
  * Publishes the measured square as `--wizard-preview-side`, which the square

@@ -163,3 +163,23 @@ describe('the call to action is the kit button, not a recipe of its own', () => 
     expect(ctaBody).not.toContain('text-lg')
   })
 })
+
+describe('the picture fills the pane, top to bottom', () => {
+  const shell = readFileSync(
+    fileURLToPath(
+      new URL('../../../../src/components/constructor/layout/ConstructorDualPaneShell.vue', import.meta.url),
+    ),
+    'utf8',
+  )
+
+  it('gives step 0 the measured WIDTH only, never the panel height', () => {
+    // `rightPaneStyle` also carries a height and `align-self: flex-start`, so
+    // that a preview PANEL stops at the square it was sized for and leaves
+    // white space under itself — right for every screen with a square, wrong
+    // here. `Right panel` `5409:35332` is 639 × 695, the full height of
+    // `Wizard content`. With the height applied the picture ended early and a
+    // white band showed under it, which is what the owner saw first.
+    expect(shell).toContain("props.layoutMode === 'landing'")
+    expect(shell).toMatch(/return width \? \{ width, flex \} : \{\}/)
+  })
+})
