@@ -116,31 +116,48 @@ html.wizard-embed {
 }
 
 /*
- * Concept grid — 3 / 4 / 5 columns, read off the four breakpoint frames:
+ * Concept grid — the card size, per breakpoint, read off the four frames:
  * 1280 `5395:119372` 3×133, 1440 `5395:118745` 4×125.75, 1920 `5395:119192`
- * 5×156.6, 2560 `5395:119545` 5×140. The card shrinks as the count grows, so
- * the driver is the viewport, not the container — an `auto-fill` formula
- * cannot express it and has been replaced by this variable in both the grid
- * and its skeleton (they must never disagree).
+ * 5×156.6, 2560 `5395:119545` 5×140.
  *
- * The thresholds are the wizard's own width: inside the Admin that is the
- * browser viewport minus the sidebar (1440−210 = 1230, 1920−250 = 1670).
+ * ── Why a card size and not a column count ──────────────────────────────────
+ * A fixed count is what the designer's file uses, and it reproduces her four
+ * frames — but only AT those four widths. Between them the count is frozen and
+ * the cards stretch without limit: at a 660-wide container four cards grew to
+ * 159 and no fifth appeared, although one fits at 680.
+ *
+ * `auto-fill` with her card size as the minimum fixes that and still lands on
+ * her numbers exactly: 415 → 3×133, 527 → 4×125.75, 815 → 5×156.6, 732 →
+ * 5×140, 832 → 5×160. Between breakpoints a column is added as soon as one
+ * fits, and the stretch before that is bounded by the next column instead of
+ * running away.
+ *
+ * One size for all four does NOT exist, which is why the minimum stays per
+ * breakpoint: 1440 needs ≤125.75 and 1920 needs >129.17, and those two do not
+ * intersect. Thresholds are the wizard's own width — inside the Admin that is
+ * the browser viewport minus the sidebar (1440−210 = 1230, 1920−250 = 1670).
  * Declared on bare `:root` so the measuring stand at /wizard/ follows the same
  * breakpoints as the panel.
  */
 :root {
-  --wizard-concept-columns: 3;
+  --wizard-concept-card-min: 133px;
 }
 
 @media (min-width: 1230px) {
   :root {
-    --wizard-concept-columns: 4;
+    --wizard-concept-card-min: 125.75px;
   }
 }
 
 @media (min-width: 1670px) {
   :root {
-    --wizard-concept-columns: 5;
+    --wizard-concept-card-min: 156.6px;
+  }
+}
+
+@media (min-width: 1671px) {
+  :root {
+    --wizard-concept-card-min: 140px;
   }
 }
 
@@ -165,7 +182,13 @@ html.wizard-embed {
   html.wizard-embed .constructor-dual-pane-shell__frame {
     max-width: 1700px;
     max-height: 960px;
-    border: 1px solid var(--color-ink-300);
+    /* `outline`, not `border`: in Figma the 1px rule is drawn INSIDE the 960
+       box, and a CSS border with `box-sizing: border-box` eats 2px of content
+       — enough to put a scrollbar on a layout the kit draws without one, since
+       the square needs exactly 896 inside a 960 frame. An outline at -1px
+       paints the same line and costs no layout. */
+    outline: 1px solid var(--color-ink-300);
+    outline-offset: -1px;
     border-radius: 24px;
     overflow: hidden;
   }

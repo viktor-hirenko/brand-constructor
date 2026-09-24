@@ -7,7 +7,6 @@ import {
   WIZARD_FRAME_MAX_HEIGHT,
   WIZARD_FRAME_MAX_WIDTH,
   WIZARD_PANE_PADDING,
-  WIZARD_PREVIEW_MIN_SIDE,
   WIZARD_PREVIEW_VERTICAL_CHROME,
   WIZARD_RIGHT_PANE_MIN_WIDTH,
   resolveWizardPaneGeometry,
@@ -32,12 +31,14 @@ const FRAMES = [
   { name: '1440×768  `5395:118730`', paneHeight: 695, wizard: 1230, right: 639, preview: 575, maxSide: 575 },
   { name: '1920×920  `5395:119180`', paneHeight: 847, wizard: 1670, right: 791, preview: 727, maxSide: 727 },
   { name: '2560×1300 `5395:119533`', paneHeight: 960, wizard: 1700, right: 904, preview: 840, maxSide: 840, capped: true },
-  { name: '2560×884  `5395:119983`', paneHeight: 715, wizard: 1700, right: 804, preview: 740, maxSide: 840, capped: true },
+  // Her short 2560 frame draws 804/740; we draw 904/840 and scroll instead.
+  // Deliberate divergence, see the block below and divergences row 90.
+  { name: '2560×884  `5395:119983`', paneHeight: 715, wizard: 1700, right: 904, preview: 840, maxSide: 840, capped: true },
 ] as const
 
 describe('the right column is the driver, and it comes from the height', () => {
-  it.each(FRAMES)('$name', ({ paneHeight, right, preview, capped, maxSide }) => {
-    const geometry = resolveWizardPaneGeometry(paneHeight, { capped: Boolean(capped), maxSide })
+  it.each(FRAMES)('$name', ({ paneHeight, right, preview, maxSide }) => {
+    const geometry = resolveWizardPaneGeometry(paneHeight, { maxSide })
     expect(geometry.previewSide).toBe(preview)
     expect(geometry.rightPaneWidth).toBe(right)
   })
@@ -46,45 +47,58 @@ describe('the right column is the driver, and it comes from the height', () => {
     // The kit gives the left column `flex: 1 0 0`; these are the widths that
     // fall out of it, and they are the ones drawn.
     const lefts = FRAMES.map(frame => frame.wizard - frame.right)
-    expect(lefts).toEqual([479, 591, 879, 796, 896])
+    expect(lefts).toEqual([479, 591, 879, 796, 796])
   })
 
   it('spends the 120 on padding, header and gap — nothing else', () => {
     expect(WIZARD_PREVIEW_VERTICAL_CHROME).toBe(120)
     expect(WIZARD_PANE_PADDING).toBe(32)
-    // right = preview + the two horizontal paddings = height − 56, as long as
-    // the height is exactly the one the breakpoint was drawn at.
-    expect(resolveWizardPaneGeometry(695, { maxSide: 575 }).rightPaneWidth).toBe(695 - 56)
+    // right = square + the two horizontal paddings.
+    expect(resolveWizardPaneGeometry(695, { maxSide: 575 }).rightPaneWidth).toBe(575 + 64)
+    // And the content box above the square is header 32 + gap 24 + the square,
+    // never capped by the row — that is what keeps the square a square.
+    expect(resolveWizardPaneGeometry(300, { maxSide: 575 }).rightPaneContentHeight).toBe(631)
   })
 })
 
-describe('the 740 floor belongs to the capped regime only', () => {
-  it('holds the square at 740 and lets the column scroll above 1920', () => {
-    // `5395:119983`: 715 − 120 = 595, and the designer kept the square at 740.
-    expect(resolveWizardPaneGeometry(715, { capped: true, maxSide: 840 }).previewSide).toBe(
-      WIZARD_PREVIEW_MIN_SIDE
-    )
+describe('the window height moves nothing — it only decides scroll', () => {
+  it('keeps the square at the size drawn for the breakpoint, however short', () => {
+    // Her short 2560 frame `5395:119983` draws 804/740, and 740 is
+    // `min-height: 860` of the container minus the 120 of chrome. That
+    // `min-height` was already rejected (divergences row 86) because her own
+    // frame draws the container 715, below her stated minimum. Keeping 740
+    // while rejecting 860 is the same number twice, so neither is honoured.
+    for (const height of [960, 860, 715, 500]) {
+      expect(resolveWizardPaneGeometry(height, { maxSide: 840 }).previewSide).toBe(840)
+      expect(resolveWizardPaneGeometry(height, { maxSide: 840 }).rightPaneWidth).toBe(904)
+    }
   })
 
-  it('does not shrink the square below 1920 at all — it scrolls', () => {
-    // Below 1920 the drawn size is both the ceiling AND the floor: a short
-    // window leaves the column exactly where it was and scrolls inside it,
-    // which is what it already does to the left column. Letting the square
-    // shrink there made the right column narrow and the concept tiles grow.
+  it('does not shrink the square below 1920 either', () => {
     expect(resolveWizardPaneGeometry(715, { maxSide: 575 }).previewSide).toBe(575)
     expect(resolveWizardPaneGeometry(400, { maxSide: 575 }).previewSide).toBe(575)
-    // And the panel never claims more height than the row it sits in.
+  })
+
+  it('lets the PANEL shrink to the row, so the overflow scrolls', () => {
+    // The panel never claims more height than the row it sits in…
     expect(resolveWizardPaneGeometry(400, { maxSide: 575 }).rightPaneHeight).toBe(400)
+    // …while the content inside keeps its full height and overflows it. That
+    // difference is the scrollbar the kit draws in BOTH columns of the short
+    // frame, and the reason the square stops squashing into a rectangle.
+    expect(resolveWizardPaneGeometry(400, { maxSide: 575 }).rightPaneContentHeight).toBe(631)
   })
 })
 
 describe('bad input never collapses a column', () => {
-  it.each([0, -50, Number.NaN, Number.POSITIVE_INFINITY, WIZARD_PREVIEW_VERTICAL_CHROME])(
-    'returns 0 for %s so the caller keeps the CSS default',
-    height => {
-      expect(resolveWizardPaneGeometry(height, { maxSide: 575 }).rightPaneWidth).toBe(0)
-    }
-  )
+  it.each([0, -50, Number.NaN])('returns 0 for %s so the caller keeps the CSS default', height => {
+    expect(resolveWizardPaneGeometry(height, { maxSide: 575 }).rightPaneWidth).toBe(0)
+  })
+
+  it('returns 0 when the breakpoint size is missing, rather than guessing one', () => {
+    expect(
+      resolveWizardPaneGeometry(695, { maxSide: Number.POSITIVE_INFINITY }).rightPaneWidth
+    ).toBe(0)
+  })
 
   it('never returns a column narrower than the floor once it returns one', () => {
     expect(resolveWizardPaneGeometry(130, { maxSide: 1 }).rightPaneWidth).toBe(

@@ -48,7 +48,8 @@ const shellBase = computed(() => shellBaseClass(props.embed))
  * width must not apply.
  */
 const bodyRef = ref<HTMLElement | null>(null)
-const { geometry, rightPaneStyle, rightPaneVarStyle } = useWizardPaneMetrics(bodyRef)
+const { geometry, rightPaneStyle, rightPaneVarStyle, rightPaneContentStyle } =
+  useWizardPaneMetrics(bodyRef)
 
 // The square is measured only here. Everything that has to fit inside it —
 // the phone previews — reads it from this provide rather than re-deriving it.
@@ -124,8 +125,23 @@ const rightColumnClass = computed(() =>
   rightPaneClass(props.layoutMode, { wizardStep: props.wizardStep })
 )
 
-/** Drawer mode makes the right column a full-width overlay — no measured width. */
+/** Drawer mode makes the right column a full-width overlay — no measured box. */
 const rightColumnStyle = computed(() => (isDrawerMode.value ? {} : rightPaneStyle.value))
+
+/**
+ * The slot box gets a DEFINITE height, and that is what makes the preview a
+ * real square instead of a `flex-1` box that squashes. Every right-slot
+ * component is a column flex with `h-full`, a 32 header, a 24 gap and a
+ * `flex-1` picture, so a definite height here resolves the picture to exactly
+ * `previewSide` — and when the row is shorter, this box overflows and the
+ * panel scrolls, which is what the kit draws (`5395:119983`: a 740×740
+ * `Preview` inside a 651-tall `Content`).
+ *
+ * Not applied in drawer mode, where the panel is a full-height overlay.
+ */
+const rightContentStyle = computed(() =>
+  isDrawerMode.value ? {} : rightPaneContentStyle.value
+)
 
 </script>
 
@@ -193,7 +209,9 @@ const rightColumnStyle = computed(() => (isDrawerMode.value ? {} : rightPaneStyl
             <CloseIcon :class="iconClass" />
           </template>
         </UiIconButton>
-        <slot name="right" />
+        <div class="constructor-dual-pane-shell__right-content w-full shrink-0" :style="rightContentStyle">
+          <slot name="right" />
+        </div>
       </div>
 
       <button

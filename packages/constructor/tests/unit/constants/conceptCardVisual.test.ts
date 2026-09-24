@@ -92,22 +92,29 @@ describe('the grid asks for the Preview state', () => {
     )
   })
 
-  it('keeps the grid and its skeleton on one column count', () => {
-    // The named invariant used to be `9rem` under `auto-fill`. The responsive
-    // work replaced it: the kit counts columns by breakpoint — 3 / 4 / 5,
-    // measured on `5395:119372`, `5395:118745`, `5395:119192`, `5395:119545` —
-    // and the card gets smaller as the count grows, which `auto-fill` cannot
-    // do. What the invariant protected is unchanged: ONE handle, and the
+  it('keeps the grid and its skeleton on one card size', () => {
+    // The named invariant used to be `9rem` under `auto-fill`, then a fixed
+    // column count per breakpoint. Both were wrong in the same way: a fixed
+    // count freezes the number of cards between breakpoints and lets them
+    // stretch on and on — at a 660-wide container four cards had grown to 159
+    // while a fifth already fits at 680.
+    //
+    // Now it is `auto-fill` with HER card size as the minimum, which lands on
+    // her four frames exactly (415→3×133, 527→4×125.75, 815→5×156.6,
+    // 732→5×140) and adds a column as soon as one fits. One size for all four
+    // does not exist: 1440 needs ≤125.75 and 1920 needs >129.17.
+    //
+    // What the invariant always protected is unchanged: ONE handle, and the
     // skeleton never diverging from the grid it stands in for.
-    const FORMULA = 'repeat(var(--wizard-concept-columns),minmax(0,1fr))'
+    const FORMULA = 'repeat(auto-fill,minmax(var(--wizard-concept-card-min),1fr))'
     expect(grid).toContain(FORMULA)
     const skeleton = read('components/constructor/skeletons/ConceptGridSkeleton.vue')
     expect(skeleton).toContain(FORMULA)
-    // `minmax(0,1fr)` is what now keeps a wide card from overflowing a narrow
-    // column — the job `min(…,100%)` used to do. Match the TEMPLATE, not the
-    // file: both components name the old formula in their prose, and a bare
-    // grep reads that comment as a live class (the `my-10` lesson of phase 18).
-    expect(grid).not.toContain('repeat(auto-fill')
-    expect(skeleton).not.toContain('repeat(auto-fill')
+
+    // Match the TEMPLATE, not the file: both components name the older
+    // formulas in their prose, and a bare grep reads a comment as a live class
+    // (the `my-10` lesson of phase 18).
+    expect(grid).not.toContain('repeat(var(--wizard-concept-columns)')
+    expect(skeleton).not.toContain('repeat(var(--wizard-concept-columns)')
   })
 })

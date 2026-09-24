@@ -66,7 +66,13 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
 
 <template>
   <aside
-    :class="['relative w-full h-full flex flex-col overflow-y-auto bg-white', MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS]"
+    :class="[
+      // No `overflow-y-auto` here: the scroll belongs to the column, the same
+      // as on every other step. With it, this panel scrolled inside itself and
+      // the column never knew the content was too tall.
+      'relative w-full h-full flex flex-col bg-white',
+      MOBILE_PHONE_PREVIEW_TITLE_GAP_CLASS,
+    ]"
   >
     <header class="space-y-1">
       <h2

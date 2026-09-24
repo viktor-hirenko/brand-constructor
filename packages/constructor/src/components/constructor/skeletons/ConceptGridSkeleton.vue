@@ -8,9 +8,9 @@ withDefaults(defineProps<Props>(), { count: 6 })
 </script>
 
 <template>
-  <!-- Same `--wizard-concept-columns` as `ConceptGrid`; the two must agree. -->
+  <!-- Same `--wizard-concept-card-min` as `ConceptGrid`; the two must agree. -->
   <div
-    class="concept-grid-skeleton grid gap-2 [grid-template-columns:repeat(var(--wizard-concept-columns),minmax(0,1fr))]"
+    class="concept-grid-skeleton grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(var(--wizard-concept-card-min),1fr))]"
     aria-hidden="true"
   >
     <div

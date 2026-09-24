@@ -86,14 +86,24 @@ export const WIZARD_PREVIEW_VERTICAL_CHROME =
 export const WIZARD_RIGHT_PANE_HORIZONTAL_CHROME = WIZARD_PANE_PADDING * 2
 
 /**
- * Floor of the square inside the capped container — `5395:119983`.
+ * **There is no floor any more, and that is deliberate.**
  *
- * Above 1920 the square has a band, not a single size: the kit's own container
- * is `min-height: 860` / `max-height: 960`, and 860 − 120 = 740, 960 − 120 =
- * 840. Both drawn 2560 frames sit on an end of that band — 840 at 1300 tall,
- * 740 at 884 — so there, and only there, the square moves with the height.
+ * It used to be 740, read off the short 2560 frame `5395:119983`. But 740 is
+ * not an independent number: it is `min-height: 860` of the container
+ * `5395:119538` minus the 120 of chrome. And that `min-height` was already
+ * rejected (divergences row 86) because the designer's own short frame draws
+ * the container 715 — below her stated minimum — and honouring 860 would push
+ * the container out of the wizard area and take the sticky footer with it.
+ *
+ * Keeping 740 while rejecting 860 is incoherent: it is the same number twice.
+ * So neither is honoured. Above 1920 the square is simply 840, the size drawn
+ * on `5395:119533`, and a window too short for it scrolls — which is what a
+ * short window already does to the left column, and what the designer draws in
+ * BOTH columns of the short frame.
+ *
+ * The result is one rule that holds at every breakpoint: one square size per
+ * breakpoint, never moved by the window height. Divergence recorded.
  */
-export const WIZARD_PREVIEW_MIN_SIDE = 740
 
 /**
  * Ceiling of the square, per breakpoint — the size the designer drew for it.
@@ -163,13 +173,20 @@ export interface WizardPaneGeometry {
   /** Width the right column must take so the square fits its padding. */
   rightPaneWidth: number
   /**
-   * Height the right column must take. Normally the square plus its chrome,
-   * so a window taller than the designed one leaves white space under the
-   * panel instead of stretching it — which is what every drawn screen shows.
-   * Never taller than the row itself: when the square is at its floor and does
-   * not fit (`5395:119983`), the panel stays row-height and scrolls inside.
+   * Height the right column takes. The square plus its chrome, so a window
+   * taller than the designed one leaves white space under the panel instead of
+   * stretching it — which is what every drawn screen shows. Never taller than
+   * the row: a window too short makes the panel row-height and scroll inside.
    */
   rightPaneHeight: number
+  /**
+   * Height the CONTENT inside the panel claims — header 32 + gap 24 + the
+   * square — and it is deliberately not capped by the row. This is the number
+   * that makes the square a real square: every preview box in the tree is
+   * `flex-1`, so without a definite height above it the box squashes instead
+   * of overflowing, and the column silently stops matching its own width.
+   */
+  rightPaneContentHeight: number
 }
 
 /**
@@ -182,42 +199,26 @@ export interface WizardPaneGeometry {
  * does to the left column. Growing with the height ate the left column;
  * shrinking with it made the concept tiles grow. Both were defects.
  *
- * `capped` is the ">1920" regime, where the kit gives the square a real band
- * (740…840, i.e. the container's own `min-height` / `max-height` minus the 120
- * of chrome). Below the band it stops and the column scrolls.
- *
  * A non-finite or absurd height (first paint, a detached node) returns zeroes,
  * which the caller reads as "not measured yet" and leaves the column on its CSS
  * default — never as "collapse the column to nothing".
  *
- * `maxSide` is **required**: since it is also the floor below 1920, a call that
- * omits it has no meaning any more. Every caller has to say which breakpoint
- * it is asking about.
+ * `maxSide` is **required** and is the whole answer: the square IS that number.
+ * The height only decides whether the panel fits or scrolls.
  */
 export function resolveWizardPaneGeometry(
   paneHeight: number,
-  { capped = false, maxSide }: { capped?: boolean; maxSide: number }
+  { maxSide }: { maxSide: number }
 ): WizardPaneGeometry {
-  if (!Number.isFinite(paneHeight) || paneHeight <= WIZARD_PREVIEW_VERTICAL_CHROME) {
-    return { previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0 }
+  if (!Number.isFinite(paneHeight) || paneHeight <= 0 || !Number.isFinite(maxSide)) {
+    return { previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0, rightPaneContentHeight: 0 }
   }
 
-  // The floor matters as much as the ceiling, and leaving it out below 1920 was
-  // the second defect of this work: the square was free to shrink with the
-  // window, the right column narrowed behind it and the left column swallowed
-  // the difference — so a shorter window made the concept tiles BIGGER.
-  //
-  // A short window must do to the right column exactly what it does to the
-  // left one: nothing to its width, and a scrollbar inside it. So below 1920
-  // the floor IS the ceiling — the square is simply the size drawn for that
-  // breakpoint. Above 1920 the kit gives a real band (`min-height: 860` /
-  // `max-height: 960` on `5395:119538` = 740…840), and both drawn 2560 frames
-  // sit on its ends, so there the square does move with the height.
-  const floor = capped ? WIZARD_PREVIEW_MIN_SIDE : maxSide
-  const previewSide = Math.min(
-    Math.max(paneHeight - WIZARD_PREVIEW_VERTICAL_CHROME, floor),
-    maxSide
-  )
+  // The square is the size drawn for this breakpoint, full stop. The window
+  // height moves nothing: too short simply means the panel scrolls, exactly as
+  // the left column already does, and exactly as `5395:119983` draws it — a
+  // 740×740 `Preview` inside a 651-tall `Content`, overflowing by 145.
+  const previewSide = maxSide
 
   return {
     previewSide,
@@ -225,7 +226,13 @@ export function resolveWizardPaneGeometry(
       WIZARD_RIGHT_PANE_MIN_WIDTH,
       previewSide + WIZARD_RIGHT_PANE_HORIZONTAL_CHROME
     ),
+    // What the panel claims: never more than the row, so a short row scrolls.
     rightPaneHeight: Math.min(previewSide + WIZARD_PREVIEW_VERTICAL_CHROME, paneHeight),
+    // What the content inside the panel claims, and it is NOT capped by the
+    // row — this is the definite height that makes the square a real square
+    // instead of a `flex-1` box that squashes. Header 32 + gap 24 + the square.
+    rightPaneContentHeight:
+      previewSide + WIZARD_PREVIEW_HEADER_HEIGHT + WIZARD_PREVIEW_GAP,
   }
 }
 

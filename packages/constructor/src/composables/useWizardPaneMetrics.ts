@@ -25,10 +25,14 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
   const paneWidth = ref(0)
   let observer: ResizeObserver | null = null
 
+  // `clientWidth`/`clientHeight`, not `getBoundingClientRect()`: the rect is
+  // the BORDER box, and above 1920 the frame carries a 1px rule, so the row
+  // read 2 more than it actually offers. At 2560 that put a scrollbar on a
+  // layout the kit draws without one — the square needs 896 of content inside
+  // a 960 frame, and the border box said 960 while only 958 was there.
   function measure(element: HTMLElement): void {
-    const box = element.getBoundingClientRect()
-    paneHeight.value = box.height
-    paneWidth.value = box.width
+    paneHeight.value = element.clientHeight
+    paneWidth.value = element.clientWidth
   }
 
   onMounted(() => {
@@ -46,11 +50,10 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
 
   const isCapped = computed(() => paneWidth.value >= WIZARD_CAPPED_MIN_WIDTH)
 
+  // The square is the size drawn for this breakpoint and nothing else moves
+  // it; the height only decides whether the panel fits or scrolls.
   const geometry = computed(() =>
     resolveWizardPaneGeometry(paneHeight.value, {
-      capped: isCapped.value,
-      // The ceiling for this breakpoint. Without it the square grows with the
-      // window and the left column shrinks — see `wizardResponsive.ts`.
       maxSide: resolvePreviewMaxSide(paneWidth.value),
     })
   )
@@ -60,10 +63,10 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
    * server-rendered or not-yet-painted shell keeps whatever the CSS says rather
    * than collapsing to zero.
    *
-   * The HEIGHT is here for the same reason as the width: once the square stops
-   * growing, the panel must stop with it and leave white space under itself
-   * rather than stretch. That is how every drawn screen sits — `5382:48440` is
-   * 639×695 in a 713-tall row, `5387:105207` the same in a 785-tall one.
+   * The HEIGHT is here for the same reason as the width: the panel is the
+   * square plus its chrome and leaves white space under itself rather than
+   * stretching. That is how every drawn screen sits — `5382:48440` is 639×695
+   * in a 713-tall row, `5387:105207` the same in a 785-tall one.
    */
   const rightPaneStyle = computed(() =>
     geometry.value.rightPaneWidth > 0
@@ -87,5 +90,24 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
       geometry.value.rightPaneWidth > 0 ? `${geometry.value.rightPaneWidth}px` : '58%',
   }))
 
-  return { paneHeight, paneWidth, isCapped, geometry, rightPaneStyle, rightPaneVarStyle }
+  /**
+   * Definite height for the box the `right` slot renders into. Not capped by
+   * the row: that is the point — when the row is shorter, this box overflows
+   * and the panel scrolls, instead of the preview squashing into a rectangle.
+   */
+  const rightPaneContentStyle = computed(() =>
+    geometry.value.rightPaneContentHeight > 0
+      ? { height: `${geometry.value.rightPaneContentHeight}px` }
+      : {}
+  )
+
+  return {
+    paneHeight,
+    paneWidth,
+    isCapped,
+    geometry,
+    rightPaneStyle,
+    rightPaneVarStyle,
+    rightPaneContentStyle,
+  }
 }

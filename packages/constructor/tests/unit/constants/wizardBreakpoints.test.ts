@@ -45,6 +45,7 @@ interface Layout {
   previewSide: number
   rightPaneWidth: number
   rightPaneHeight: number
+  rightPaneContentHeight: number
   leftPaneWidth: number
 }
 
@@ -64,10 +65,8 @@ function layoutForViewport(viewportWidth: number, viewportHeight: number): Layou
     ? Math.min(contentHeight - WIZARD_FRAME_INSET * 2, WIZARD_FRAME_MAX_HEIGHT)
     : contentHeight
 
-  const { previewSide, rightPaneWidth, rightPaneHeight } = resolveWizardPaneGeometry(
-    frameHeight,
-    { capped, maxSide: resolvePreviewMaxSide(frameWidth) }
-  )
+  const { previewSide, rightPaneWidth, rightPaneHeight, rightPaneContentHeight } =
+    resolveWizardPaneGeometry(frameHeight, { maxSide: resolvePreviewMaxSide(frameWidth) })
 
   return {
     wizardWidth,
@@ -75,6 +74,7 @@ function layoutForViewport(viewportWidth: number, viewportHeight: number): Layou
     previewSide,
     rightPaneWidth,
     rightPaneHeight,
+    rightPaneContentHeight,
     leftPaneWidth: frameWidth - rightPaneWidth,
   }
 }
@@ -114,12 +114,17 @@ const FRAMES = [
     preview: 840,
   },
   {
-    name: 'Wizard 2560 px, low viewport `5395:119983`',
+    // She draws 896 · 804 with a 740 square here. We draw 796 · 904 with an
+    // 840 square that overflows and scrolls: 740 is `min-height: 860` minus
+    // the 120 of chrome, and that `min-height` is already rejected
+    // (divergences row 86) because her own frame draws the container 715.
+    // Keeping one while rejecting the other is the same number twice.
+    name: 'Wizard 2560 px, low viewport `5395:119983` — deliberate divergence',
     viewport: [2560, 884],
     wizardWidth: 2310,
-    left: 896,
-    right: 804,
-    preview: 740,
+    left: 796,
+    right: 904,
+    preview: 840,
   },
 ] as const
 
@@ -234,14 +239,23 @@ describe('a taller window must not move the columns', () => {
     }
   })
 
-  it('above 1920 the square DOES move, because the kit gives it a band', () => {
-    // `min-height: 860` / `max-height: 960` on `5395:119538` — minus the 120 of
-    // chrome that is 740…840, and both drawn 2560 frames sit on its ends.
-    expect(layoutForViewport(2560, 1300).previewSide).toBe(840)
-    expect(layoutForViewport(2560, 884).previewSide).toBe(740)
-    // Below the band it stops and the column scrolls rather than narrowing.
-    expect(layoutForViewport(2560, 757).previewSide).toBe(740)
-    expect(layoutForViewport(2560, 757).rightPaneWidth).toBe(804)
+  it('holds 796 · 904 above 1920 whatever the window height', () => {
+    for (const height of [1440, 1300, 1129, 1029, 884, 757]) {
+      const layout = layoutForViewport(2560, height)
+      expect(layout.previewSide).toBe(840)
+      expect(layout.rightPaneWidth).toBe(904)
+      expect(layout.leftPaneWidth).toBe(796)
+      // And the content box above the square never shrinks, so the overflow
+      // becomes a scrollbar instead of squashing the square into a rectangle.
+      expect(layout.rightPaneContentHeight).toBe(896)
+    }
+  })
+
+  it('shrinks only the PANEL when the row is short, never the square', () => {
+    // 884 − 73 header − 96 inset = 715 of frame, and the panel takes all of it
+    // while its content still claims 896 — the 181 difference is the scroll.
+    expect(layoutForViewport(2560, 884).rightPaneHeight).toBe(715)
+    expect(layoutForViewport(2560, 884).rightPaneContentHeight).toBe(896)
   })
 
   it('carries the ceilings the designer drew, and no invented ones', () => {

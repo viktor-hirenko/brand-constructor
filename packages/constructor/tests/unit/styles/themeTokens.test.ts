@@ -172,11 +172,32 @@ describe('embed scale rule', () => {
     expect(withoutComments).not.toMatch(/font-size:[^;]*\b(vw|vh|dvh)\b/)
   })
 
-  it('counts the concept columns 3 / 4 / 5 at the kit breakpoints', () => {
-    // Wizard width = viewport − sidebar: 1440−210 = 1230, 1920−250 = 1670.
-    expect(withoutComments).toContain('--wizard-concept-columns: 3;')
-    expect(withoutComments).toMatch(/@media \(min-width: 1230px\)[\s\S]*?--wizard-concept-columns: 4;/)
-    expect(withoutComments).toMatch(/@media \(min-width: 1670px\)[\s\S]*?--wizard-concept-columns: 5;/)
+  it('carries the kit card size at each breakpoint, not a column count', () => {
+    // Wizard width = viewport − sidebar: 1440−210 = 1230, 1920−250 = 1670, and
+    // one past that is the capped frame. The four values are the cards she
+    // draws: 1280 3×133, 1440 4×125.75, 1920 5×156.6, 2560 5×140.
+    expect(withoutComments).toContain('--wizard-concept-card-min: 133px;')
+    expect(withoutComments).toMatch(
+      /@media \(min-width: 1230px\)[\s\S]*?--wizard-concept-card-min: 125\.75px;/
+    )
+    expect(withoutComments).toMatch(
+      /@media \(min-width: 1670px\)[\s\S]*?--wizard-concept-card-min: 156\.6px;/
+    )
+    expect(withoutComments).toMatch(
+      /@media \(min-width: 1671px\)[\s\S]*?--wizard-concept-card-min: 140px;/
+    )
+    // The old fixed-count variable is gone, comments included.
+    expect(withoutComments).not.toContain('--wizard-concept-columns')
+  })
+
+  it('draws the frame rule as an outline, so it costs no content height', () => {
+    // In Figma the 1px rule sits INSIDE the 960 box. A CSS border with
+    // `box-sizing: border-box` eats 2px of content, which is enough to put a
+    // scrollbar on a layout the kit draws without one: the square needs
+    // exactly 896 inside a 960 frame.
+    expect(withoutComments).toContain('outline: 1px solid var(--color-ink-300);')
+    expect(withoutComments).toContain('outline-offset: -1px;')
+    expect(withoutComments).not.toMatch(/__frame\s*\{[^}]*\bborder:\s*1px/)
   })
 
   it('caps the wizard frame above 1920 the way `5395:119538` does', () => {

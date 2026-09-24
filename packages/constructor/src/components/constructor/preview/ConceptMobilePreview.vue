@@ -34,7 +34,11 @@ const mobileSrc = computed(() => {
 
 <template>
   <div class="flex flex-col gap-6 h-full">
-    <h3 class="py-2 text-[1.5rem] font-medium leading-8 text-ink-900 shrink-0">
+    <!-- Kit header is 32 — the 24/32 name row and nothing else (`3839:9516`).
+         The `py-2` that stood here made it 48, and the square below is sized by
+         what is left, so it came out 16 short of square on steps 3 and 4.
+         Divergences row 51, missed on this component the first time. -->
+    <h3 class="text-[1.5rem] font-medium leading-8 text-ink-900 shrink-0">
       Обраний концепт
     </h3>
 

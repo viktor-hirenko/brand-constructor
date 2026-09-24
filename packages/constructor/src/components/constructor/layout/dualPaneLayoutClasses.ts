@@ -119,6 +119,7 @@ interface RightPaneOptions {
   wizardStep?: number
 }
 
+
 /**
  * Outer right column: bg and the kit's 32 padding. Neither the WIDTH nor the
  * HEIGHT is a class — both are measured, because the kit derives them from the
@@ -150,11 +151,11 @@ export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): s
     return `${base} relative overflow-y-auto`
   }
 
-  // Step 1 keeps `overflow-hidden`: its pane holds the brand-basics cards and
-  // an empty state that has to fill the column height, and `overflow-y-auto`
-  // shrinks a flex child to its content. The kit does not draw steps 1, 5 or 6
-  // at all (divergences row 29), so there is no measurement arguing the other
-  // way — and this exception predates the responsive work.
-  const overflow = (opts.wizardStep ?? 1) === 1 ? 'overflow-hidden' : 'overflow-y-auto'
-  return `${base} flex min-h-0 flex-col ${overflow}`
+  // Every step scrolls, step 1 included. The `overflow-hidden` it used to carry
+  // existed so its empty state could fill the column height, and `flex-1` in a
+  // scroll container would not do that — but the slot box now has a definite
+  // height (`rightPaneContentStyle`), so the empty state fills it either way.
+  // Left as `overflow-hidden`, a square too tall for a short window would be
+  // CLIPPED instead of scrolled, which is the one outcome the kit never shows.
+  return `${base} flex min-h-0 flex-col overflow-y-auto`
 }
