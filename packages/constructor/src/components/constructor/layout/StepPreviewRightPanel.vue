@@ -199,13 +199,20 @@ const phoneBox = computed(() =>
             >
               <!--
                 Same use case as the step 1 field this card mirrors — mapping
-                table row "Звʼязок з іншим продуктом | → Link, Regular". The
-                card's heading reads "Опис бренду" while it shows
-                `linkedProduct`; that wording is divergence row 81, not this.
+                table row "Звʼязок з іншим продуктом | → Link, Regular".
               -->
               <LinkIcon class="size-6 text-primary" />
             </div>
-            <h3 class="text-lg font-medium tracking-[-0.44px]">Опис бренду</h3>
+            <!--
+              The heading read "Опис бренду" while the card shows
+              `linkedProduct`, i.e. the value of the step-1 field labelled
+              "Звʼязок з іншим продуктом (якщо є)". Three places show this one
+              value and two of them already called it by that name — the field
+              itself and the review screen (`ReviewUnifiedView`) — so this was
+              the odd one out rather than a naming choice. Owner's call.
+              Divergences row 81.
+            -->
+            <h3 class="text-lg font-medium tracking-[-0.44px]">Звʼязок з іншим продуктом</h3>
           </div>
           <p class="text-2xl tracking-[0.07px]">
             {{ brandBasics.linkedProduct }}
