@@ -82,13 +82,22 @@ const routes: RouteRecordRaw[] = [
     path: '/constructor/brand/:id',
     name: 'brand-view',
     component: () => import('@/views/BriefShellView.vue'),
-    meta: { requiresAuth: true, step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
+    meta: {
+      requiresAuth: true,
+      step: 8,
+      title: 'Final review',
+      subtitle: 'Перевірте всі дані перед відправкою.',
+    },
     children: [
       {
         path: '',
         name: 'brand-view-review',
         component: () => import('@/views/wizard/BriefReviewView.vue'),
-        meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
+        meta: {
+          step: 8,
+          title: 'Final review',
+          subtitle: 'Перевірте всі дані перед відправкою.',
+        },
       },
       {
         path: 'ceo-reselect/concept',
@@ -328,7 +337,11 @@ const routes: RouteRecordRaw[] = [
         path: 'step/8',
         name: 'step-8',
         component: () => import('@/views/wizard/BriefReviewView.vue'),
-        meta: { step: 8, title: 'Save', subtitle: 'Фінальний огляд' },
+        meta: {
+          step: 8,
+          title: 'Final review',
+          subtitle: 'Перевірте всі дані перед відправкою.',
+        },
       },
     ],
   },

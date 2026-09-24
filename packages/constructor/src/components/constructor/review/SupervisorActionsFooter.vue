@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import CheckIcon from '@/components/icons/CheckIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
-import RefreshIcon from '@/components/icons/RefreshIcon.vue'
 import UiFooter from '@/components/ui/UiFooter.vue'
 
 /**
@@ -9,10 +7,21 @@ import UiFooter from '@/components/ui/UiFooter.vue'
  * Figma `4378:16948`: primary on top, secondary below, note under both.
  *
  * Approve maps onto the footer's primary action and revise onto its cancel one,
- * so this file carries no button markup — only the two icons and the warning.
- * The warning keeps its current 16/24 amber rendering; the mockup draws it red
- * 14/16 with a 16px icon, which is written up in the task document rather than
- * changed here, because it is an alert, not footer geometry.
+ * so this file carries no button markup — only the warning under them.
+ *
+ * ── Measured on `5387:83845`, the drawn "comments required" screen ───────────
+ * **The buttons carry no icon.** Both instances (`5387:83847`, `5387:83848`)
+ * have `Icon left` *and* `Icon right` switched off; the check mark and the
+ * return arrow that used to sit here were ours. Same lesson as step 7's magic
+ * wand: the mapping table says what a glyph becomes, never whether a slot on a
+ * screen holds one.
+ *
+ * **The warning is red, not amber.** `5387:83849` is a 16-tall centred row:
+ * icon 16, `spacing/4` to the label, label `caption/l/regular` 14/16 with
+ * letter-spacing 0, and one colour for both — `alert/icon/error` /
+ * `badge/content/red` `#ce2c31`, which is `--color-red-content`. It used to be
+ * 16/24 at `rgba(10,10,10,0.8)` with a 20px `#DCA100` glyph, and `#DCA100` is
+ * in no kit palette. The 12 above the row is `UiFooter`'s own root gap.
  */
 interface SupervisorActionsFooterProps {
   loading?: boolean
@@ -54,21 +63,13 @@ const emit = defineEmits<{
     @primary="emit('approve')"
     @cancel="emit('revise')"
   >
-    <template #primary-icon="{ iconClass }">
-      <CheckIcon :class="iconClass" />
-    </template>
-
-    <template #cancel-icon="{ iconClass }">
-      <RefreshIcon :class="iconClass" />
-    </template>
-
     <template #note>
       <p
         v-if="warning"
-        class="ceo-actions-footer__warning flex items-center justify-center gap-2 text-[1rem] font-normal leading-6 tracking-[-0.312px] text-[rgba(10,10,10,0.80)]"
+        class="ceo-actions-footer__warning flex items-center justify-center gap-1 text-sm/4 font-normal text-red-content"
         role="alert"
       >
-        <InfoCircleFilledIcon class="size-5 shrink-0 text-[#DCA100]" />
+        <InfoCircleFilledIcon class="size-4 shrink-0" />
         <span>{{ warning }}</span>
       </p>
     </template>

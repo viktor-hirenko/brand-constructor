@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import SupervisorCommentCard from '@/components/constructor/review/SupervisorCommentCard.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
 import { isSectionCommentBlockVisible } from '@/utils/sectionCommentBlockVisibility'
+import UiButton from '@/components/ui/UiButton.vue'
 import UiComment from '@/components/ui/UiComment.vue'
 import UiTextarea from '@/components/ui/UiTextarea.vue'
 
@@ -26,6 +27,17 @@ import UiTextarea from '@/components/ui/UiTextarea.vue'
  * The amber highlight is validation, not a kit state: the kit's Input has no
  * Warning. It keeps its meaning and takes the kit's own `amber/border`
  * (#e9c162) in place of the hand-written #C97D00.
+ *
+ * ── The "+ Коментар CEO" affordance has a kit, measured 2026-09-24 ───────────
+ * Row 9 of the divergences file said it had none. It does: the drawn CEO screen
+ * `5387:83810` puts a `Button` under every Comment — `3760:2310`, full width,
+ * 40 tall, `button/secondary/bg/default` #ffffff on `button/secondary/border`
+ * #eaeaeb, `radius/button` 8, label `caption/l/medium` 14/16 in
+ * `button/secondary/content/default` #393947, a 16 icon with `spacing/4` to it,
+ * and 8 below the Comment above. That is `UiButton` Secondary M, so the dashed
+ * 1px frame and the two hand-written #373737 are gone. The kit gives the button
+ * no invalid state, so the validation highlight stays ours and borrows the same
+ * `amber/border` the editor below it already uses.
  */
 const CEO_SECTION_COMMENT_MAX_ROWS = 5
 const CEO_GENERAL_COMMENT_MIN_ROWS = 6
@@ -197,22 +209,18 @@ defineExpose({ isVisible })
 
     <!-- CEO comment block -->
     <template v-if="supervisorEditable">
-      <button
+      <UiButton
         v-if="!alwaysExpanded && !isExpanded && !hasSupervisorComment"
-        type="button"
-        :class="[
-          'section-comment__ceo-cta w-full inline-flex items-center justify-center gap-1 rounded-lg border border-dashed p-3 transition-colors',
-          highlighted
-            ? 'border-[#C97D00] hover:bg-black/[0.02]'
-            : 'border-[rgba(0,0,0,0.2)] hover:bg-black/[0.02]',
-        ]"
+        variant="secondary"
+        size="M"
+        :class="['section-comment__ceo-cta w-full', highlighted ? 'border-amber-border!' : '']"
         @click="openEditor"
       >
-        <PlusIcon class="size-4 shrink-0 text-[#373737]" />
-        <span class="text-[0.875rem] font-medium leading-4 tracking-[-0.3125px] text-[#373737]">
-          {{ emptyLabel }}
-        </span>
-      </button>
+        <template #icon-left="{ iconClass }">
+          <PlusIcon :class="iconClass" />
+        </template>
+        {{ emptyLabel }}
+      </UiButton>
 
       <UiTextarea
         v-else

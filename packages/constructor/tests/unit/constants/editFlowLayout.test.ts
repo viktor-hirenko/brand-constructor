@@ -173,13 +173,16 @@ describe('the nine edit-flow screens read the scale instead of writing numbers',
   })
 })
 
-describe('the review screen the flow starts on keeps the same 32', () => {
-  it('stands the section list, the comment and the footer 32 apart', () => {
-    // `4492:16845`: step header ends at 160 and the list opens at 192; the list
-    // ends at 2588 and the Input opens at 2620; the Input ends at 2748 and the
-    // navigation bar at 2780. It was 24 before this phase.
+describe('the review screen the flow starts on', () => {
+  it('stands the section list, the comment and the footer 24 apart', () => {
+    // Phase 18 put 32 here off `4492:16845` — the canvas the nineteen-phase
+    // plan was measured against. The current one says 24 on both step-8
+    // screens: `5387:91764` header ends 192 / list opens 216, and `5387:83810`
+    // header ends 160 / list opens 184, list ends 2583.5 / Input 2607.5, Input
+    // ends 2735.5 / navigation bar 2759.5. Re-measured with the review work.
     const source = read('components/constructor/review/ReviewUnifiedView.vue')
-    expect(source).toContain('review-unified-view__scroll-inner flex flex-col gap-8')
+    expect(source).toContain('review-unified-view__scroll-inner flex flex-col gap-6')
+    expect(source).not.toContain('review-unified-view__scroll-inner flex flex-col gap-8')
   })
 
   it('keeps the cards themselves 16 apart', () => {

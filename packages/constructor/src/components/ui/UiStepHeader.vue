@@ -16,9 +16,9 @@ import { resolveUiStepHeaderClasses } from '@/components/ui/uiStepHeader'
  * and `progressPercent` are given — the review shell shows it for the PO draft
  * and hides it for everyone else.
  *
- * The `alert` slot is the kit's Alert instance. Phase 3 only opens the slot;
- * `UiAlert` itself arrives in phase 5, so the review shell still passes its own
- * info block through untouched.
+ * The `alert` slot is the kit's Alert instance: on the drawn step-8 screens it
+ * is an `Alert` at 16 below the text block, and since the review work the review
+ * shell fills it with `UiAlert` rather than a block of its own.
  */
 interface UiStepHeaderProps {
   title: string
@@ -65,7 +65,7 @@ const progressLabel = computed(() =>
 
     <UiProgressBar
       v-if="showProgress"
-      class="ui-step-header__progress"
+      :class="classes.progress"
       :percent="progressPercent ?? 0"
       :label="progressLabel"
     />

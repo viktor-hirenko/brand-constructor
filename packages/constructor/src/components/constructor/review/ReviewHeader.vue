@@ -1,9 +1,31 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BrandBriefStatusBadge from '@/components/constructor/review/BrandBriefStatusBadge.vue'
+import UiAlert from '@/components/ui/UiAlert.vue'
 import UiStepHeader from '@/components/ui/UiStepHeader.vue'
 import CheckBadgeIcon from '@/components/icons/CheckBadgeIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
+
+/**
+ * Review step header — the kit's `Step header` `3984:8226` with its Alert slot
+ * filled, drawn on both step-8 screens of the current canvas:
+ * `5387:91772` (author) and `5387:78997` (CEO).
+ *
+ * The info block used to be a hand-built white box: radius 16 on `#EDEDED`,
+ * padding 24, title 18/24 with -0.45px tracking, description 14/20 indented to
+ * 36, and a `#DCA100` icon that exists nowhere in the kit. The kit draws an
+ * `Alert` there (`3461:5237`): padding 16, icon 24, 12 to the text column, 8
+ * between title and description, description 16/24 — every one of which
+ * `UiAlert` already carries, so this file hands over the glyph and the tone and
+ * writes no geometry of its own.
+ *
+ * Tone: the two drawn states are Type = Default (white on `alert/border/default`
+ * `#eaeaeb`, icon `alert/icon/default` `#1f1f2e`) with Phosphor `CheckCircle`
+ * Regular — the glyph is read off the render, not off the layer name. The
+ * attention states (PO returned from CEO, brief in work, CEO frozen view) have
+ * no drawn screen at all, so they take the kit's own Warning tone instead of
+ * inventing a white box with an off-palette amber icon.
+ */
 
 interface InfoOverride {
   title: string
@@ -113,30 +135,25 @@ const showProgress = computed(
         <BrandBriefStatusBadge class="review-header__badge shrink-0" :status="status" />
       </template>
 
-      <!--
-        The kit's Alert slot. `UiAlert` lands in phase 5; until then the review
-        shell's own info block rides through the slot unchanged, so phase 3
-        moves no pixel inside it.
-      -->
+      <!-- The kit's Alert slot — `3461:5237`, geometry owned by `ui/uiAlert.ts`. -->
       <template v-if="displayInfo" #alert>
-        <div class="review-header__info rounded-[16px] border border-[#EDEDED] bg-white px-6 py-6">
-          <div class="review-header__info-header flex items-start gap-3 mb-2">
+        <UiAlert
+          class="review-header__info"
+          :type="displayInfo.iconVariant === 'warning' ? 'warning' : 'default'"
+          :title="displayInfo.title"
+          :description="displayInfo.description"
+        >
+          <template #icon="{ iconClass }">
             <InfoCircleFilledIcon
               v-if="displayInfo.iconVariant === 'warning'"
-              class="review-header__info-icon review-header__info-icon--warning size-6 shrink-0 text-[#DCA100]"
+              :class="[iconClass, 'review-header__info-icon review-header__info-icon--warning']"
             />
             <CheckBadgeIcon
               v-else
-              class="review-header__info-icon review-header__info-icon--check size-6 shrink-0 text-foreground/80"
+              :class="[iconClass, 'review-header__info-icon review-header__info-icon--check']"
             />
-            <h3 class="review-header__info-title text-lg font-medium tracking-[-0.45px] text-foreground">
-              {{ displayInfo.title }}
-            </h3>
-          </div>
-          <p class="review-header__info-description text-sm text-muted-foreground leading-5 pl-9">
-            {{ displayInfo.description }}
-          </p>
-        </div>
+          </template>
+        </UiAlert>
       </template>
     </UiStepHeader>
   </header>

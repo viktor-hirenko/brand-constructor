@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   UI_STEP_HEADER_DESCRIPTION_CLASS,
+  UI_STEP_HEADER_PROGRESS_CLASS,
   UI_STEP_HEADER_ROOT_CLASS,
   UI_STEP_HEADER_TEXT_CLASS,
   UI_STEP_HEADER_TITLE_CLASS,
@@ -28,13 +29,23 @@ const ALL = [
   UI_STEP_HEADER_TITLE_ROW_CLASS,
   UI_STEP_HEADER_TITLE_CLASS,
   UI_STEP_HEADER_DESCRIPTION_CLASS,
+  UI_STEP_HEADER_PROGRESS_CLASS,
 ]
 
 describe('kit geometry — Figma 3984:8226', () => {
-  it('puts 24 between the text block, the progress and the alert', () => {
-    // Symbol measurements: Text ends at y=64, Progress starts at y=88 (24);
-    // Progress ends at y=120, Alert starts at y=144 (24).
-    expect(UI_STEP_HEADER_ROOT_CLASS).toBe('ui-step-header flex w-full flex-col gap-6')
+  it('puts 16 between the text block and the alert', () => {
+    // Symbol is 440×168: Text ends at y=64, Alert opens at y=80. Both drawn
+    // step-8 screens agree — `5387:91772` 64 → 80, `5387:78997` 32 → 48.
+    expect(UI_STEP_HEADER_ROOT_CLASS).toBe('ui-step-header flex w-full flex-col gap-4')
+  })
+
+  it('leaves the progress row at 24, because the kit has no progress row here', () => {
+    // There is no progress node in the symbol — not even hidden — and none on
+    // any drawn screen (step 7 `5382:57234` is 88 = 32 + 8 + a two-line 48).
+    // In the kit it is the 1px line at the bottom of `Wizard header`
+    // `5382:30951`, which is not built yet. So the row we draw keeps the 24 it
+    // shipped with: root 16 plus its own 8.
+    expect(UI_STEP_HEADER_PROGRESS_CLASS).toBe('ui-step-header__progress mt-2')
   })
 
   it('puts 8 between the title row and the description', () => {
@@ -63,13 +74,14 @@ describe('kit geometry — Figma 3984:8226', () => {
 })
 
 describe('the three shells now share one header', () => {
-  it('hands every caller the same five strings', () => {
+  it('hands every caller the same six strings', () => {
     expect(resolveUiStepHeaderClasses()).toEqual({
       root: UI_STEP_HEADER_ROOT_CLASS,
       text: UI_STEP_HEADER_TEXT_CLASS,
       titleRow: UI_STEP_HEADER_TITLE_ROW_CLASS,
       title: UI_STEP_HEADER_TITLE_CLASS,
       description: UI_STEP_HEADER_DESCRIPTION_CLASS,
+      progress: UI_STEP_HEADER_PROGRESS_CLASS,
     })
   })
 
@@ -101,7 +113,7 @@ describe('embed scale — the header may not opt out of the root font-size', () 
   })
 
   it('spaces the header on the rem scale, not on arbitrary values', () => {
-    expect(UI_STEP_HEADER_ROOT_CLASS).toContain('gap-6')
+    expect(UI_STEP_HEADER_ROOT_CLASS).toContain('gap-4')
     expect(UI_STEP_HEADER_TEXT_CLASS).toContain('gap-2')
     expect(UI_STEP_HEADER_TITLE_ROW_CLASS).toContain('gap-2')
     for (const value of ALL) {

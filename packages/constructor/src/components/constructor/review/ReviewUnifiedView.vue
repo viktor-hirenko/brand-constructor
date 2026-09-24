@@ -187,10 +187,13 @@ function formatDate(dateStr: string): string {
     .replace(/\s*р\.$/, '')
 }
 
+/**
+ * Read off the render of `5387:91772`, not off the layer name — the description
+ * node is still *named* after the sentence it carried before the redraw.
+ */
 const poDraftInfoOverride = {
-  title: 'Бриф готовий!',
-  description:
-    'Перегляньте всю інформацію справа. Ви можете поділитися брифом або зберегти його для подальшої роботи.',
+  title: 'Бриф готовий',
+  description: 'Ви можете повернутись та змінити будь-який розділ перед відправкою.',
   iconVariant: 'check' as const,
 } as const
 
@@ -206,8 +209,8 @@ function sectionWord(n: number): string {
 
 /**
  * ReviewHeader info-block override — varies by reviewMode:
- *  - po-draft     → "Бриф готовий!" (check icon)
- *  - po-returned  → "N секцій потребують уваги" (warning icon) — Figma 1973:7893
+ *  - po-draft     → "Бриф готовий" (check icon) — Figma 5387:91772
+ *  - po-returned  → "N секцій потребують уваги" (warning icon), no drawn screen
  *  - ceo          → no override (status-driven default "Бриф на розгляді")
  */
 const reviewHeaderInfoOverride = computed(() => {
@@ -271,7 +274,7 @@ const unifiedReviewTitle = computed(() => {
 })
 
 const unifiedReviewSubtitle = computed(() =>
-  props.reviewMode === 'po-draft' ? 'Перевірте всі дані перед відправкою' : undefined
+  props.reviewMode === 'po-draft' ? 'Перевірте всі дані перед відправкою.' : undefined
 )
 
 /**
@@ -402,9 +405,18 @@ defineExpose({
         LEFT_PANE_SCROLL_GUTTER_CLASS,
       ]"
     >
+      <!--
+        24 between the step header, the card list, the general comment and the
+        footer. Phase 18 set 32 here off `4492:16845` — the old canvas. Both
+        step-8 screens of the current one say 24: on `5387:91764` the header
+        ends at 192 and the list opens at 216, on `5387:83810` the header ends
+        at 160 and the list opens at 184, the list ends at 2583.5 with the Input
+        at 2607.5, and the Input ends at 2735.5 with the Navigation bar at
+        2759.5. Cards stay 16 apart (`space-y-4`), which both canvases agree on.
+      -->
       <div
         :class="[
-          'review-unified-view__scroll-inner flex flex-col gap-8 pt-12 pb-12',
+          'review-unified-view__scroll-inner flex flex-col gap-6 pt-12 pb-12',
           LEFT_PANE_SCROLL_INNER_CLASS,
         ]"
       >
