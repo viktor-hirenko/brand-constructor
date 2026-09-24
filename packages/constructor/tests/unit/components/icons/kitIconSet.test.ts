@@ -74,7 +74,17 @@ const KIT_ICONS: ReadonlyArray<
   ['CloseIcon', 'X', 'Regular', '3261:877', 1078, 'M19.2807 18.2194C19.3504'],
   ['DeliverablesScopeIcon', 'Scales', 'Regular', '3262:4495', 1485, 'M22.4466 12.4688L19.4466'],
   ['EyeIcon', 'Eye', 'Regular', '3262:4487', 1729, 'M23.1853 11.6962C23.1525'],
+  ['EyeSlashIcon', 'EyeSlash', 'Regular', '5353:24585', 3564, 'M5.05499 3.24563C4.98913'],
+  ['FigmaLogoIcon', 'FigmaLogo', 'Regular', '5658:39709', 2541, 'M18 9C18.6297 8.52776 19'],
   ['GlobeIcon', 'Globe', 'Regular', '3262:4208', 1767, 'M12 2.25C10.0716 2.25 8.'],
+  [
+    'GlobeHemisphereWestIcon',
+    'GlobeHemisphereWest',
+    'Regular',
+    '5658:38632',
+    2348,
+    'M12 2.25C10.0716 2.25 8.',
+  ],
   ['HandshakeIcon', 'Handshake', 'Regular', '5658:39240', 2406, 'M23.8406 10.1165L21.4481'],
   ['ImagePlaceholderIcon', 'ImageSquare', 'Regular', '4492:12024', 1425, 'M19.5 3H4.5C4.10218 3 3.'],
   ['MagicWandIcon', 'MagicWand', 'Regular', '3298:4228', 3006, 'M4.50004 6C4.50004 5.801'],
@@ -82,14 +92,26 @@ const KIT_ICONS: ReadonlyArray<
   ['LinkIcon', 'Link', 'Regular', '3298:3429', 2917, 'M22.5 8.27155C22.4624 9.'],
   ['MaximizeIcon', 'ArrowsOutSimple', 'Regular', '3262:4471', 1318, 'M20.25 4.5V9C20.25 9.198'],
   ['MegaphoneIcon', 'Megaphone', 'Regular', '3262:4491', 1394, 'M23.25 11.25C23.2488 10.'],
+  [
+    'NewspaperClippingIcon',
+    'NewspaperClipping',
+    'Regular',
+    '5658:38633',
+    2323,
+    'M20.25 3.75H3.75C3.35218',
+  ],
   ['PaletteIcon', 'Palette', 'Regular', '3262:4191', 3195, 'M18.8222 5.05219C17.0069'],
   ['PencilIcon', 'PencilSimple', 'Regular', '3262:4181', 859, 'M21.3103 6.87845L17.1216'],
   ['PlusIcon', 'Plus', 'Regular', '3261:875', 689, 'M21 12C21 12.1989 20.921'],
   ['RefreshIcon', 'ArrowsClockwise', 'Regular', '3262:4480', 1744, 'M21 4.50001V9.00001C21 9'],
+  ['ShieldCheckIcon', 'ShieldCheck', 'Regular', '5658:38636', 1425, 'M19.5 3.75H4.5C4.10218 3'],
   ['SparklesIcon', 'Sparkle', 'Regular', '3262:4312', 2821, 'M18.5232 12.0994L13.6875'],
   ['StarIcon', 'Star', 'Regular', '5658:38634', 2315, 'M22.4231 9.11812C22.3294'],
+  ['SwatchesIcon', 'Swatches', 'Regular', '5658:39710', 1722, 'M8.24999 16.875C8.24999 '],
+  ['TextAaIcon', 'TextAa', 'Regular', '5637:24130', 1831, 'M8.17876 4.9303C8.11819 '],
   ['TrendingUpIcon', 'TrendUp', 'Regular', '5658:39677', 1085, 'M22.5 5.25V11.25C22.5 11'],
   ['TrophyIcon', 'Trophy', 'Regular', '5658:38635', 1524, 'M21.75 6H19.5V4.5C19.5 4'],
+  ['UsersThreeIcon', 'UsersThree', 'Regular', '5658:38631', 5274, 'M22.95 14.1C22.8712 14.1'],
 ]
 
 /**
@@ -106,9 +128,15 @@ const KIT_ICON_ON_16_GRID = 'CaretDownIcon'
  * download, share, send, target, bolt, warning triangle, panel-layout or
  * return arrow, and no filled weight for sparkle or image placeholder.
  *
- * `BriefcaseIcon` and `TagIcon` are dead files — zero references anywhere in
- * `src`. They are listed here rather than deleted because removing them is
- * phase 20's job, not this one's.
+ * **Membership did not change in the icons pass, but eleven of these are now
+ * dead files.** The pass matched the table by USE CASE, so the slots these
+ * drawings stood in got kit glyphs from new files rather than these files being
+ * converted: `AlertTriangleIcon`, `BriefcaseIcon`, `ColumnsLayoutIcon`,
+ * `CrownIcon`, `MoonIcon`, `RocketIcon`, `SparklesFilledIcon`, `SunIcon`,
+ * `TagIcon`, `TargetIcon` and `ZapIcon` have zero references anywhere in `src`.
+ * They are listed here rather than deleted because removing them is the
+ * clean-up work's job, not this one's. `FileIcon` is still live — one slot, the
+ * "Бриф нового концепту" placeholder, which the kit does not draw.
  */
 const ICONS_WITHOUT_A_KIT_PAIR: readonly string[] = [
   'AlertTriangleIcon',

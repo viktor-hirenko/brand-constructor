@@ -8,14 +8,14 @@ import StepCommentField from '@/components/constructor/fields/StepCommentField.v
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import ClockIcon from '@/components/icons/ClockIcon.vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
-import CrownIcon from '@/components/icons/CrownIcon.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
+import GlobeHemisphereWestIcon from '@/components/icons/GlobeHemisphereWestIcon.vue'
+import NewspaperClippingIcon from '@/components/icons/NewspaperClippingIcon.vue'
 import PackageIcon from '@/components/icons/PackageIcon.vue'
-import RocketIcon from '@/components/icons/RocketIcon.vue'
-import SparklesIcon from '@/components/icons/SparklesIcon.vue'
+import ShieldCheckIcon from '@/components/icons/ShieldCheckIcon.vue'
 import StarIcon from '@/components/icons/StarIcon.vue'
 import TrophyIcon from '@/components/icons/TrophyIcon.vue'
-import ZapIcon from '@/components/icons/ZapIcon.vue'
+import UsersThreeIcon from '@/components/icons/UsersThreeIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiModal from '@/components/ui/UiModal.vue'
 import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
@@ -123,28 +123,40 @@ onMounted(loadPackages)
           @click="selectPackage(pkg)"
         >
           <div class="p-6 flex flex-col min-h-[280px] h-full">
-            <!-- Header: Icon + Name -->
+            <!--
+              Header: Icon + Name.
+
+              The designer's mapping table (`5658:39246`, section
+              WIZARD — SEMANTIC ICONS) assigns these six glyphs by PACKAGE NAME,
+              not by ours: Trust Focus → ShieldCheck, Social Trust → UsersThree,
+              Full Reputation → Star, Media Reputation → NewspaperClipping,
+              Brand Excellence → Trophy, Total Market Presence →
+              GlobeHemisphereWest. Names map to `number` 1..6 in the packages
+              table, so the switch stays on `number` — that is the field the
+              wizard actually receives. Rename a package in admin and the glyph
+              follows the slot, not the name; see divergence row 31.
+            -->
             <div class="flex items-start gap-3 mb-4">
               <div
                 class="size-12 rounded-[10px] flex items-center justify-center shrink-0"
                 :class="selectedId === pkg.id ? 'bg-primary/10' : 'bg-[rgba(3,2,19,0.1)]'"
               >
-                <ZapIcon
+                <ShieldCheckIcon
                   v-if="pkg.number === 1"
                   class="size-6"
                   :class="selectedId === pkg.id ? 'text-primary' : 'text-muted-foreground'"
                 />
-                <RocketIcon
+                <UsersThreeIcon
                   v-else-if="pkg.number === 2"
                   class="size-6"
                   :class="selectedId === pkg.id ? 'text-primary' : 'text-muted-foreground'"
                 />
-                <CrownIcon
+                <StarIcon
                   v-else-if="pkg.number === 3"
                   class="size-6"
                   :class="selectedId === pkg.id ? 'text-primary' : 'text-muted-foreground'"
                 />
-                <StarIcon
+                <NewspaperClippingIcon
                   v-else-if="pkg.number === 4"
                   class="size-6"
                   :class="selectedId === pkg.id ? 'text-primary' : 'text-muted-foreground'"
@@ -154,7 +166,7 @@ onMounted(loadPackages)
                   class="size-6"
                   :class="selectedId === pkg.id ? 'text-primary' : 'text-muted-foreground'"
                 />
-                <SparklesIcon
+                <GlobeHemisphereWestIcon
                   v-else-if="pkg.number === 6"
                   class="size-6"
                   :class="selectedId === pkg.id ? 'text-primary' : 'text-muted-foreground'"

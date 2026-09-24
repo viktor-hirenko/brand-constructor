@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SparklesFilledIcon from '@/components/icons/SparklesFilledIcon.vue'
+import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import UiProperty from '@/components/ui/UiProperty.vue'
 
 interface ReviewVisualComponentsBlockProps {
@@ -17,8 +17,14 @@ defineProps<ReviewVisualComponentsBlockProps>()
     label="Components"
     :value="summary"
   >
+    <!--
+      Regular weight, not Fill: all three drawn review screens — author
+      `5387:91764`, CEO `5387:78989` and Brief Revision `5387:105225` — put the
+      hollow `Sparkle` in this slot. The kit has no filled weight for Sparkle at
+      all (divergence row 40), so the filled star we drew was ours alone.
+    -->
     <template #icon="{ iconClass }">
-      <SparklesFilledIcon :class="iconClass" />
+      <SparklesIcon :class="iconClass" />
     </template>
   </UiProperty>
 </template>

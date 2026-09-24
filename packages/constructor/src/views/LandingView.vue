@@ -8,8 +8,9 @@ import { useLandingDrafts } from '@/composables/useLandingDrafts'
 import LandingDraftCta from '@/components/landing/LandingDraftCta.vue'
 import LandingCtaButton from '@/components/landing/LandingCtaButton.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
-import PaletteIcon from '@/components/icons/PaletteIcon.vue'
-import TargetIcon from '@/components/icons/TargetIcon.vue'
+import SwatchesIcon from '@/components/icons/SwatchesIcon.vue'
+import TextAaIcon from '@/components/icons/TextAaIcon.vue'
+import FigmaLogoIcon from '@/components/icons/FigmaLogoIcon.vue'
 import TrendingUpIcon from '@/components/icons/TrendingUpIcon.vue'
 import type { Brand, BrandListItem } from '@brand-constructor/shared/types'
 import {
@@ -25,10 +26,16 @@ const store = useConstructorStore()
 const COVER_IMAGE =
   'https://raw.githubusercontent.com/lukaguzenko/brand-constructor-assets/a61fff81678850a0ead1e39a7a3770237d50ef5a/others/cover_1.png'
 
+/**
+ * All four labels are use cases in the designer's Icon mapping table
+ * (`5658:39246`), which assigns each one a glyph by name:
+ * Креативні концепти → Swatches, Неймінги → TextAa, UI рішення → FigmaLogo,
+ * Маркетінговий розвіток → TrendUp. Only the last one matched before.
+ */
 const features = [
-  { label: 'Креативні концепти', icon: 'sparkles' },
-  { label: 'Неймінги', icon: 'palette' },
-  { label: 'UI рішення', icon: 'target' },
+  { label: 'Креативні концепти', icon: 'swatches' },
+  { label: 'Неймінги', icon: 'text-aa' },
+  { label: 'UI рішення', icon: 'figma' },
   { label: 'Маркетінговий розвіток', icon: 'trending' },
 ] as const
 
@@ -150,9 +157,9 @@ async function createNewBrand() {
               <div
                 class="size-10 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
               >
-                <SparklesIcon v-if="feature.icon === 'sparkles'" class="size-5 text-primary" />
-                <PaletteIcon v-else-if="feature.icon === 'palette'" class="size-5 text-primary" />
-                <TargetIcon v-else-if="feature.icon === 'target'" class="size-5 text-primary" />
+                <SwatchesIcon v-if="feature.icon === 'swatches'" class="size-5 text-primary" />
+                <TextAaIcon v-else-if="feature.icon === 'text-aa'" class="size-5 text-primary" />
+                <FigmaLogoIcon v-else-if="feature.icon === 'figma'" class="size-5 text-primary" />
                 <TrendingUpIcon v-else-if="feature.icon === 'trending'" class="size-5 text-primary" />
               </div>
               <h4 class="font-medium text-foreground text-base tracking-[-0.31px]">

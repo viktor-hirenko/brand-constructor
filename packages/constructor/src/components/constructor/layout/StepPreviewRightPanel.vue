@@ -18,10 +18,10 @@ import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/Con
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
-import CloseIcon from '@/components/icons/CloseIcon.vue'
-import ColumnsLayoutIcon from '@/components/icons/ColumnsLayoutIcon.vue'
-import FileIcon from '@/components/icons/FileIcon.vue'
+import EyeIcon from '@/components/icons/EyeIcon.vue'
+import EyeSlashIcon from '@/components/icons/EyeSlashIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
+import LinkIcon from '@/components/icons/LinkIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import type { PreviewComposition, PreviewSlice } from '@/composables/useBrandPreviewLayers'
@@ -160,7 +160,13 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
             <div
               class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
             >
-              <FileIcon class="size-6 text-primary" />
+              <!--
+                Same use case as the step 1 field this card mirrors — mapping
+                table row "Звʼязок з іншим продуктом | → Link, Regular". The
+                card's heading reads "Опис бренду" while it shows
+                `linkedProduct`; that wording is divergence row 81, not this.
+              -->
+              <LinkIcon class="size-6 text-primary" />
             </div>
             <h3 class="text-lg font-medium tracking-[-0.44px]">Опис бренду</h3>
           </div>
@@ -281,9 +287,19 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
               :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
               @click="emit('toggle-sidebar')"
             >
+              <!--
+                Two rows of the mapping table, matched by what the button does
+                rather than by what it looked like: "Приховати | eye-off →
+                EyeSlash" when the sidebar is showing, "Переглянути / Показати |
+                eye → Eye" when it is hidden. Found on the screen, not in the
+                table — `5382:64114` puts exactly this crossed eye in the
+                Sidebar accordion header, which is the kit's own place for the
+                same toggle. Before this it was a cross and a panel-layout glyph
+                the kit has never drawn.
+              -->
               <template #default="{ iconClass }">
-                <CloseIcon v-if="step9SidebarVisible" :class="iconClass" />
-                <ColumnsLayoutIcon v-else :class="iconClass" />
+                <EyeSlashIcon v-if="step9SidebarVisible" :class="iconClass" />
+                <EyeIcon v-else :class="iconClass" />
               </template>
             </UiIconButton>
           </div>

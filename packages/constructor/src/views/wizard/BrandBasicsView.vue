@@ -5,7 +5,7 @@ import GeoMultiSelect from '@/components/constructor/fields/GeoMultiSelect.vue'
 import DatePicker from '@/components/constructor/fields/DatePicker.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
-import FileIcon from '@/components/icons/FileIcon.vue'
+import LinkIcon from '@/components/icons/LinkIcon.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import UiFieldHint from '@/components/ui/UiFieldHint.vue'
 import UiFieldLabel from '@/components/ui/UiFieldLabel.vue'
@@ -76,7 +76,8 @@ const comment = computed({
     <div>
       <UiFieldLabel class="mb-2">
         <template #icon="{ iconClass }">
-          <FileIcon :class="iconClass" />
+          <!-- Mapping table row "Звʼязок з іншим продуктом | → Link, Regular". -->
+          <LinkIcon :class="iconClass" />
         </template>
         Звʼязок з іншим продуктом (якщо є)
       </UiFieldLabel>

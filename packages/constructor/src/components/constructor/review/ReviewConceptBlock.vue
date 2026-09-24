@@ -9,8 +9,7 @@ import UiProperty from '@/components/ui/UiProperty.vue'
 import ReviewChoiceGroup from './ReviewChoiceGroup.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
 import FileIcon from '@/components/icons/FileIcon.vue'
-import MoonIcon from '@/components/icons/MoonIcon.vue'
-import SunIcon from '@/components/icons/SunIcon.vue'
+import PaletteIcon from '@/components/icons/PaletteIcon.vue'
 
 // Concept cards: 230×230px → 14.375rem @16 design base (fluid in embed).
 //
@@ -104,9 +103,15 @@ const singlePoLabel = 'Вибір Замовника'
       label="Mode"
       :value="modeLabel"
     >
+      <!--
+        One glyph for both values, on purpose. The mapping table's row
+        "Тема | sun → Palette, Regular" is this slot, and all four drawn review
+        screens (`5387:91764`, `5387:78989`, `5395:107395`, `5387:105225`) show
+        Palette against "Mode / Light" — the kit never swaps it for the dark
+        value. Sun and moon were ours; the kit has no moon at all.
+      -->
       <template #icon="{ iconClass }">
-        <MoonIcon v-if="mode === 'dark'" :class="iconClass" />
-        <SunIcon v-else :class="iconClass" />
+        <PaletteIcon :class="iconClass" />
       </template>
     </UiProperty>
 
