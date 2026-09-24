@@ -43,7 +43,7 @@
  * idiom as `ui/uiButton.ts`.
  *
  * ── Geometry is rem-only ─────────────────────────────────────────────────────
- * `gap-6` (1.5rem), `gap-2` (0.5rem), `text-2xl` (1.5rem) and `text-base` (1rem)
+ * `gap-4` (1rem), `gap-2` (0.5rem), `text-2xl` (1.5rem) and `text-base` (1rem)
  * all follow the single embed knob (`app.css` `html.wizard-embed`). A `px`
  * length here would silently stop scaling with the Admin panel.
  *
