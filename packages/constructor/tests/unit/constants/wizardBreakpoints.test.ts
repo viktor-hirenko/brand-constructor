@@ -152,18 +152,19 @@ describe('what the Admin header used to cost', () => {
   const ADMIN_HEADER_HEIGHT = 88 // padding 24 + the 39 back button + 24 + the 1px rule
 
   it('took 88 off the right column at every size, which is what the owner saw', () => {
-    const withHeader = resolveWizardPaneGeometry(720 - ADMIN_HEADER_HEIGHT - WIZARD_HEADER_HEIGHT)
-    // 720 − 88 − 73 = 559 → 503, against the 591 the mockup draws. And the left
-    // column swallowed the difference: 1070 − 503 = 567, against 479.
-    expect(withHeader.rightPaneWidth).toBe(503)
-    expect(1070 - withHeader.rightPaneWidth).toBe(567)
+    // Spelled out rather than called: the shipped arithmetic of that day had
+    // neither a ceiling nor a floor, and the function no longer accepts that.
+    const rowHeight = 720 - ADMIN_HEADER_HEIGHT - WIZARD_HEADER_HEIGHT // 559
+    const thenRight = rowHeight - 56
 
-    // Without it, the same window lands exactly on the drawn frame.
+    expect(thenRight).toBe(503) // against the 591 the mockup draws
+    expect(1070 - thenRight).toBe(567) // and the left column swallowed the rest
+
+    // Without the header, the same window lands exactly on the drawn frame.
     expect(layoutForViewport(1280, 720).rightPaneWidth).toBe(591)
     expect(layoutForViewport(1280, 720).leftPaneWidth).toBe(479)
   })
 })
-
 
 /**
  * The regression this whole file exists for, twice over.
@@ -208,12 +209,39 @@ describe('a taller window must not move the columns', () => {
     }
   })
 
-  it('still shrinks when the window is SHORTER than the one she drew', () => {
-    // Downward is the one direction height moves the layout, and it is the
-    // only one the sticker describes.
-    const short = layoutForViewport(1440, 600)
-    expect(short.previewSide).toBe(600 - 73 - 120)
-    expect(short.previewSide).toBeLessThan(575)
+  it('does NOT shrink when the window is shorter either — it scrolls', () => {
+    // The second defect, and the one the owner spotted by dragging the window
+    // shorter: the square shrank, the right column narrowed behind it and the
+    // left column swallowed the difference, so the concept tiles GREW as the
+    // window got smaller. A short window must do to the right column exactly
+    // what it already does to the left one: nothing to its width, and a
+    // scrollbar inside. Both drawn columns of `5395:119983` carry a scrollbar.
+    for (const height of [646, 560, 505, 443]) {
+      const short = layoutForViewport(1440, height)
+      expect(short.previewSide).toBe(575)
+      expect(short.rightPaneWidth).toBe(639)
+      expect(short.leftPaneWidth).toBe(591)
+      // The panel can no longer be taller than the row: it scrolls inside.
+      expect(short.rightPaneHeight).toBe(height - 73)
+    }
+  })
+
+  it('keeps 1280 at 479 · 591 however short the window gets', () => {
+    for (const height of [720, 600, 500]) {
+      const layout = layoutForViewport(1280, height)
+      expect(layout.previewSide).toBe(527)
+      expect(layout.leftPaneWidth).toBe(479)
+    }
+  })
+
+  it('above 1920 the square DOES move, because the kit gives it a band', () => {
+    // `min-height: 860` / `max-height: 960` on `5395:119538` — minus the 120 of
+    // chrome that is 740…840, and both drawn 2560 frames sit on its ends.
+    expect(layoutForViewport(2560, 1300).previewSide).toBe(840)
+    expect(layoutForViewport(2560, 884).previewSide).toBe(740)
+    // Below the band it stops and the column scrolls rather than narrowing.
+    expect(layoutForViewport(2560, 757).previewSide).toBe(740)
+    expect(layoutForViewport(2560, 757).rightPaneWidth).toBe(804)
   })
 
   it('carries the ceilings the designer drew, and no invented ones', () => {

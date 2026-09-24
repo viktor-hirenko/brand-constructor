@@ -85,7 +85,14 @@ export const WIZARD_PREVIEW_VERTICAL_CHROME =
 /** What the right column adds to the square: the two horizontal paddings. */
 export const WIZARD_RIGHT_PANE_HORIZONTAL_CHROME = WIZARD_PANE_PADDING * 2
 
-/** Floor of the square inside the capped container — `5395:119983`. */
+/**
+ * Floor of the square inside the capped container — `5395:119983`.
+ *
+ * Above 1920 the square has a band, not a single size: the kit's own container
+ * is `min-height: 860` / `max-height: 960`, and 860 − 120 = 740, 960 − 120 =
+ * 840. Both drawn 2560 frames sit on an end of that band — 840 at 1300 tall,
+ * 740 at 884 — so there, and only there, the square moves with the height.
+ */
 export const WIZARD_PREVIEW_MIN_SIDE = 740
 
 /**
@@ -168,27 +175,49 @@ export interface WizardPaneGeometry {
 /**
  * Right-column geometry for a given row height.
  *
- * `maxSide` is the ceiling for the current breakpoint (`resolvePreviewMaxSide`)
- * — without it the square grows with the window forever and the left column
- * shrinks, which is the defect this parameter was added to fix.
+ * `maxSide` is the size drawn for the current breakpoint
+ * (`resolvePreviewMaxSide`), and below 1920 it is BOTH the ceiling and the
+ * floor: the square does not move with the window at all, and a window too
+ * short for it makes the column scroll — the same thing a short window already
+ * does to the left column. Growing with the height ate the left column;
+ * shrinking with it made the concept tiles grow. Both were defects.
  *
- * `capped` is the ">1920" regime: there and only there the square stops
- * shrinking at 740 and the column scrolls instead.
+ * `capped` is the ">1920" regime, where the kit gives the square a real band
+ * (740…840, i.e. the container's own `min-height` / `max-height` minus the 120
+ * of chrome). Below the band it stops and the column scrolls.
  *
  * A non-finite or absurd height (first paint, a detached node) returns zeroes,
  * which the caller reads as "not measured yet" and leaves the column on its CSS
  * default — never as "collapse the column to nothing".
+ *
+ * `maxSide` is **required**: since it is also the floor below 1920, a call that
+ * omits it has no meaning any more. Every caller has to say which breakpoint
+ * it is asking about.
  */
 export function resolveWizardPaneGeometry(
   paneHeight: number,
-  { capped = false, maxSide = Number.POSITIVE_INFINITY }: { capped?: boolean; maxSide?: number } = {}
+  { capped = false, maxSide }: { capped?: boolean; maxSide: number }
 ): WizardPaneGeometry {
   if (!Number.isFinite(paneHeight) || paneHeight <= WIZARD_PREVIEW_VERTICAL_CHROME) {
     return { previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0 }
   }
 
-  const fitted = Math.min(paneHeight - WIZARD_PREVIEW_VERTICAL_CHROME, maxSide)
-  const previewSide = capped ? Math.max(fitted, WIZARD_PREVIEW_MIN_SIDE) : fitted
+  // The floor matters as much as the ceiling, and leaving it out below 1920 was
+  // the second defect of this work: the square was free to shrink with the
+  // window, the right column narrowed behind it and the left column swallowed
+  // the difference — so a shorter window made the concept tiles BIGGER.
+  //
+  // A short window must do to the right column exactly what it does to the
+  // left one: nothing to its width, and a scrollbar inside it. So below 1920
+  // the floor IS the ceiling — the square is simply the size drawn for that
+  // breakpoint. Above 1920 the kit gives a real band (`min-height: 860` /
+  // `max-height: 960` on `5395:119538` = 740…840), and both drawn 2560 frames
+  // sit on its ends, so there the square does move with the height.
+  const floor = capped ? WIZARD_PREVIEW_MIN_SIDE : maxSide
+  const previewSide = Math.min(
+    Math.max(paneHeight - WIZARD_PREVIEW_VERTICAL_CHROME, floor),
+    maxSide
+  )
 
   return {
     previewSide,
