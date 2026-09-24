@@ -34,7 +34,26 @@ function closeSidebar() {
       <div class="app-layout__overlay" @click="closeSidebar" />
       <AppSidebar :is-open="isSidebarOpen" @close="closeSidebar" />
       <div class="app-layout__main">
-        <AppHeader @toggle-sidebar="toggleSidebar" />
+        <!--
+          On the wizard workspace the Admin header is hidden wherever the
+          sidebar is permanent (>= $bp-sidebar). The kit draws the wizard
+          without it: all 29 screens of `5382:36911` and all four breakpoints
+          of `5395:118197` are `Sidebar` + `Wizard` filling the viewport
+          height, and the way out of a brand is the cross in the wizard header,
+          not a "← Brands" button above it. Keeping it cost 88px of height —
+          padding 24 + the 39 back button + 24 + the rule — and 88 of height is
+          88 of the RIGHT column, because the kit derives that column from the
+          available height. Divergences row 87.
+
+          Below $bp-sidebar the header stays: there the sidebar is off-canvas
+          and its burger lives in this header, so hiding it would make the
+          sidebar unreachable. 1280 is also the narrowest size the designer
+          drew, so nothing below it is specified anyway.
+        -->
+        <AppHeader
+          :class="{ 'app-header--wizard-workspace': isFlushContent }"
+          @toggle-sidebar="toggleSidebar"
+        />
         <main class="app-layout__content" :class="{ 'app-layout__content--flush': isFlushContent }">
           <RouterView />
         </main>

@@ -132,7 +132,7 @@ interface RightPaneOptions {
  * zero-width node there; here it rides the right pane, so the measured width
  * stays the outer box.
  */
-export function rightPaneClass(mode: LayoutMode, _opts: RightPaneOptions = {}): string {
+export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): string {
   const base =
     'constructor-dual-pane-shell__right wizard-scrollbar min-h-0 min-w-0 shrink-0 border-l border-ink-300 bg-card p-8'
 
@@ -144,5 +144,11 @@ export function rightPaneClass(mode: LayoutMode, _opts: RightPaneOptions = {}): 
     return `${base} relative overflow-y-auto`
   }
 
-  return `${base} flex h-full min-h-0 flex-col overflow-y-auto`
+  // Step 1 keeps `overflow-hidden`: its pane holds the brand-basics cards and
+  // an empty state that has to fill the column height, and `overflow-y-auto`
+  // shrinks a flex child to its content. The kit does not draw steps 1, 5 or 6
+  // at all (divergences row 29), so there is no measurement arguing the other
+  // way — and this exception predates the responsive work.
+  const overflow = (opts.wizardStep ?? 1) === 1 ? 'overflow-hidden' : 'overflow-y-auto'
+  return `${base} flex h-full min-h-0 flex-col ${overflow}`
 }

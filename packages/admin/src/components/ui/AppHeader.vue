@@ -69,6 +69,15 @@ function goToBrands() {
     padding: $spacing-4;
   }
 
+  // See the comment at the call site in `App.vue`: the wizard workspace drops
+  // this bar wherever the sidebar is permanent, because the kit draws no bar
+  // above the wizard and its 88px come straight out of the right column.
+  &--wizard-workspace {
+    @include mq($bp-sidebar) {
+      display: none;
+    }
+  }
+
   &__burger {
     display: none;
     flex-direction: column;
