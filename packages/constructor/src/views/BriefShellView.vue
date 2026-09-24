@@ -36,6 +36,7 @@ import SupervisorBriefGateView from '@/components/constructor/review/SupervisorB
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ImagePlaceholderFilledIcon from '@/components/icons/ImagePlaceholderFilledIcon.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
+import { PREVIEW_HEADER_RESERVE_CLASS } from '@/constants/previewLayout'
 import { wizardStepLocation } from '@/utils/brandHydration'
 import type { Concept } from '@brand-constructor/shared/types'
 
@@ -701,8 +702,8 @@ watch(currentStep, step => {
               hide-primary-action
             />
 
-            <div v-else class="constructor-layout__ceo-reselect-empty flex flex-col h-full">
-              <div class="shrink-0 h-[56px]" aria-hidden="true" />
+            <div v-else class="constructor-layout__ceo-reselect-empty flex h-full flex-col gap-6">
+              <div :class="['shrink-0', PREVIEW_HEADER_RESERVE_CLASS]" aria-hidden="true" />
               <div
                 class="flex-1 bg-[#f9f9fb] border border-dashed border-[rgba(0,0,0,0.1)] rounded-[24px] flex flex-col items-center justify-center gap-6"
               >

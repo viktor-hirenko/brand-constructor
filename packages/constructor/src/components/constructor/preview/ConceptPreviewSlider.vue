@@ -13,6 +13,7 @@ import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiPagination from '@/components/ui/UiPagination.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
+import { PREVIEW_HEADER_RESERVE_CLASS } from '@/constants/previewLayout'
 
 // `radius/concept-preview` 24 — the kit keeps it on every breakpoint frame
 // (`I5395:118764;3717:1816` and siblings), so the radius no longer depends on
@@ -247,7 +248,7 @@ onUnmounted(() => {
   <div class="flex flex-col gap-6 h-full">
     <!-- Empty state — header area reserved (matches ConceptPreviewEmptySkeleton). -->
     <template v-if="!concept">
-      <div class="shrink-0 h-[56px]" aria-hidden="true" />
+      <div :class="['shrink-0', PREVIEW_HEADER_RESERVE_CLASS]" aria-hidden="true" />
       <div
         class="flex-1 min-h-0 flex flex-col items-center justify-center rounded-[24px] text-center text-muted-foreground border border-dashed border-[rgba(0,0,0,0.1)] bg-[#f9f9fb]"
       >
@@ -264,7 +265,12 @@ onUnmounted(() => {
            `spacing/8` between them, title `header/l` 24/32 weight 500 on
            `preview-panel/content/title` #1f1f2e (= --color-ink-900). -->
       <div v-if="!props.hideHeader" class="flex items-center justify-between gap-4 shrink-0">
-        <div class="min-w-0 flex items-center gap-2 py-2">
+        <!-- Kit header is 32 — the 24/32 name row and nothing else. The `py-2`
+             that stood here made it 48, reserving room for the "Обрати
+             концепт" button, which no call site renders (all four pass
+             `hide-primary-action` or `hide-header`). Divergences row 51, and
+             the responsive square needs the 32 to come out square. -->
+        <div class="min-w-0 flex items-center gap-2">
           <h3
             class="min-w-0 flex-1 text-2xl font-medium leading-8 truncate text-ink-900"
           >
