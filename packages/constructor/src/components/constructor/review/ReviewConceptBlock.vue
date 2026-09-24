@@ -175,7 +175,7 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-ink-700 w-full"
+          class="review-concept-block__placeholder rounded-2xl border border-ink-300 px-4 py-6 text-[0.875rem] text-ink-700 w-full"
         >
           {{ conceptName }}
         </div>
@@ -246,7 +246,7 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-ink-700"
+          class="review-concept-block__placeholder rounded-2xl border border-ink-300 px-4 py-6 text-[0.875rem] text-ink-700"
         >
           {{ conceptName }}
         </div>
@@ -300,7 +300,7 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="conceptName"
-          class="review-concept-block__placeholder rounded-2xl border border-dashed border-black/15 px-4 py-6 text-[0.875rem] text-ink-700"
+          class="review-concept-block__placeholder rounded-2xl border border-ink-300 px-4 py-6 text-[0.875rem] text-ink-700"
         >
           {{ conceptName }}
         </div>

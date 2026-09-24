@@ -35,12 +35,17 @@ export const UI_BADGE_ROOT_CLASS =
   'ui-badge inline-flex shrink-0 items-center justify-center rounded-full p-1'
 
 /**
- * `caption m` — 12/16, weight 500. `tracking` stays at the product's current
- * −0.3125px rather than the kit's 0: open question 7 keeps the rendering of
- * carry-over phases untouched, and this is one of them.
+ * `caption m` — 12/16, weight 500, letter-spacing **0**: `3453:1619` states it
+ * outright, and the kit states the same zero for all five of its type styles.
+ * The −0.3125px that stood here since phase 7 was open question 7's default,
+ * and the owner has now closed it (divergences row 48).
+ *
+ * One line, six places: the country chips on step 1, «Обраний концепт» on step
+ * 2, «Обраний пакет» on step 5, the variant name on step 7, and both the brief
+ * status and the section marker on step 8.
  */
 export const UI_BADGE_LABEL_CLASS =
-  'ui-badge__label inline-flex items-center justify-center px-1 text-xs font-medium leading-4 tracking-[-0.3125px] whitespace-nowrap'
+  'ui-badge__label inline-flex items-center justify-center px-1 text-xs font-medium leading-4 whitespace-nowrap'
 
 /** Kit icon size inside a badge is 16 — the caption row, not the alert's 24. */
 export const UI_BADGE_ICON_CLASS = 'ui-badge__icon inline-flex size-4 shrink-0 items-center justify-center'

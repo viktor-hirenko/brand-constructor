@@ -116,7 +116,7 @@ function handleSelectAll() {
     </div>
     <p
       v-else
-      class="author-namings-row__empty text-[1rem] leading-6 tracking-[-0.3125px] text-[#717182] italic"
+      class="author-namings-row__empty text-[1rem] leading-6 tracking-[-0.3125px] text-ink-700 italic"
     >
       Назви не обрано
     </p>

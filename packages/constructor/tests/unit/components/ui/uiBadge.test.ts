@@ -86,20 +86,23 @@ describe('kit badge — Figma 3453:1619', () => {
     expect(UI_BADGE_ICON_CLASS).not.toContain('size-6')
   })
 
-  it('keeps every geometry length rem-based — no px opts out of the embed knob', () => {
+  it('keeps every geometry length rem-based — no px at all, tracking included', () => {
     // The wizard scales through one root font-size; a px length here would
-    // silently stop following it. Two documented exemptions from "Железные
-    // правила адаптива": `tracking-[…px]`, and the 6px dot, which lives in its
-    // own constant rather than in these three.
-    const geometry = [UI_BADGE_ROOT_CLASS, UI_BADGE_LABEL_CLASS, UI_BADGE_ICON_CLASS].map(
-      (value) => value.replace(/tracking-\[[^\]]+\]/g, '')
-    )
-    for (const value of geometry) {
+    // silently stop following it. The one exemption this file used to carry
+    // was `tracking-[-0.3125px]`, and it is gone: the kit states letter-spacing
+    // 0 for `caption/m/medium` (`3453:1619`) and the owner closed divergences
+    // row 48. The 6px dot is the only px left, and it lives in its own
+    // constant rather than in these three.
+    for (const value of [UI_BADGE_ROOT_CLASS, UI_BADGE_LABEL_CLASS, UI_BADGE_ICON_CLASS]) {
       expect(value).not.toMatch(/\[[^\]]*\d(?:px)\]/)
     }
-    // …and the exemption really is only about tracking: nothing else in the
-    // label carries a bracketed px value.
-    expect(UI_BADGE_LABEL_CLASS).toMatch(/tracking-\[-0\.3125px\]/)
+  })
+
+  it('sets no letter-spacing — one line, six places on the screen', () => {
+    // Country chips on step 1, «Обраний концепт» on step 2, «Обраний пакет» on
+    // step 5, the variant name on step 7, and the brief status and the section
+    // marker on step 8 all render this one class.
+    expect(UI_BADGE_LABEL_CLASS).not.toContain('tracking-')
   })
 
   it('resolves a tone into root + label + icon, tone last so it wins', () => {

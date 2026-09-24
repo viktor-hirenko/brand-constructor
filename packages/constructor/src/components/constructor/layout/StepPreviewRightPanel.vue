@@ -43,12 +43,29 @@ import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSi
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
+import UiProperty from '@/components/ui/UiProperty.vue'
+import {
+  UI_SECTION_CARD_BODY_CLASS,
+  UI_SECTION_CARD_BORDER_CLASS,
+  UI_SECTION_CARD_CLASS,
+} from '@/components/ui/uiSectionCard'
 import VisualComponentsPhoneEmptyState from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import type { VisualComponentsPhoneEmptyVariant } from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import {
   SIDEBAR_HIDDEN_CALLOUT_DURATION_MS,
   SIDEBAR_TEMPORARILY_HIDDEN_MESSAGE,
 } from '@/constants/visualComponentPreviewMessages'
+
+/**
+ * The surface of a step-1 preview card: the kit `Section card` `3761:2273`
+ * with no header — radius 16, a 1px `section card/border` #eaeaeb, white, and
+ * the kit's `spacing/16` of content padding. Nothing here is new; it is the
+ * same two class maps the step-8 review renders these very values with.
+ *
+ * Replaces a recipe that was in no kit section at all: radius 14, a two-layer
+ * shadow and a `black/10` frame (divergences row 96).
+ */
+const STEP_ONE_CARD_CLASS = `${UI_SECTION_CARD_CLASS} ${UI_SECTION_CARD_BORDER_CLASS} ${UI_SECTION_CARD_BODY_CLASS}`
 
 interface BrandBasics {
   geo: string[]
@@ -142,89 +159,87 @@ const phoneBox = computed(() =>
 <template>
   <div class="relative flex flex-col flex-1 min-h-0 w-full h-full">
     <!-- Step 1 Preview.
-         The kit draws no step-1 screen at all (open question 5), so the cards
-         below are ours and are left alone. Two things about this branch ARE
-         divergences and are written down rather than invented away: the kit's
-         `Type=UI preview` always carries the 32 «Превʼю» header and this branch
-         has none, and the cards are a pre-kit recipe — radius 14, a two-layer
-         shadow, `bg-primary/10`, 18/24 at −0.44. Divergences rows 95 and 96.
+         The kit draws no step-1 screen at all (open question 5), so the layout
+         is ours and stays ours. What is NOT ours is the recipe the cards were
+         drawn with — radius 14, a two-layer shadow, a `black/10` frame, a 48
+         icon square on `bg-primary/10`, 18/24 at −0.44 and a 24 value at +0.07,
+         none of which is in any kit section (divergences row 96).
+
+         They are not redrawn from the kit either, because there is nothing to
+         redraw from. They are assembled from the recipes the product already
+         stands on — exactly what phase 19 did with the sign-in page — and the
+         proof that this is assembly rather than invention is that the SAME
+         three values, with the SAME three glyphs, are already `UiProperty`
+         rows inside a `UiSectionCard` two screens over, on the step-8 review
+         (`ReviewUnifiedView`).
+
+         The «Превʼю» header above them is the kit's: `Type=UI preview`
+         `3839:9514` carries it on every screen that has no concept to name, and
+         step 1 had none (divergences row 95).
 
          The scroll area is here for the padding as much as the scrolling: the
          pane gave up its horizontal 32 so the drawn scrollbar could float in
          it, so every branch carries its own. -->
     <template v-if="currentStep === 1">
+      <div :class="PREVIEW_PANEL_ROOT_CLASS">
+      <header :class="[PREVIEW_PANEL_HEADER_CLASS, PREVIEW_PANEL_HEADER_GAP_CLASS]">
+        <SparklesIcon :class="PREVIEW_PANEL_ICON_CLASS" />
+        <h2 :class="PREVIEW_PANEL_TITLE_CLASS">Превʼю</h2>
+      </header>
+
       <div :class="PREVIEW_PANEL_SCROLL_CLASS">
-      <div v-if="brandBasics && hasAnyBasics()" class="flex flex-col gap-8">
-        <div
-          v-if="hasGeo()"
-          class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
-        >
-          <div class="flex items-center gap-3 mb-4">
-            <div
-              class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
-            >
-              <GlobeIcon class="size-6 text-primary" />
-            </div>
-            <h3 class="text-lg font-medium tracking-[-0.44px]">Географія бренду</h3>
-          </div>
-          <p class="text-2xl tracking-[0.07px]">
-            {{ brandBasics.geo.join(', ') }}
-          </p>
+      <!-- `spacing/16` between neighbouring cards — the kit's gap on the drawn
+           review `5387:91779`, and what the review screen already uses. -->
+      <div v-if="brandBasics && hasAnyBasics()" class="flex flex-col gap-4">
+        <div v-if="hasGeo()" :class="STEP_ONE_CARD_CLASS">
+          <UiProperty label="Географія бренду" :value="brandBasics.geo.join(', ')">
+            <template #icon="{ iconClass }">
+              <GlobeIcon :class="iconClass" />
+            </template>
+          </UiProperty>
         </div>
 
-        <div
-          v-if="hasDate()"
-          class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
-        >
-          <div class="flex items-center gap-3 mb-4">
-            <div
-              class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
-            >
-              <CalendarIcon class="size-6 text-primary" />
-            </div>
-            <h3 class="text-lg font-medium tracking-[-0.44px]">Плануєма дата запуску</h3>
-          </div>
-          <p class="text-2xl tracking-[0.07px]">
-            {{ formatDate(brandBasics.launchDate) }}
-          </p>
+        <div v-if="hasDate()" :class="STEP_ONE_CARD_CLASS">
+          <UiProperty
+            label="Плануєма дата запуску"
+            :value="formatDate(brandBasics.launchDate)"
+          >
+            <template #icon="{ iconClass }">
+              <CalendarIcon :class="iconClass" />
+            </template>
+          </UiProperty>
         </div>
 
-        <div
-          v-if="hasLinkedProduct()"
-          class="bg-white border border-black/10 rounded-[14px] shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] p-8"
-        >
-          <div class="flex items-center gap-3 mb-4">
-            <div
-              class="size-12 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0"
-            >
-              <!--
-                Same use case as the step 1 field this card mirrors — mapping
-                table row "Звʼязок з іншим продуктом | → Link, Regular".
-              -->
-              <LinkIcon class="size-6 text-primary" />
-            </div>
-            <!--
-              The heading read "Опис бренду" while the card shows
-              `linkedProduct`, i.e. the value of the step-1 field labelled
-              "Звʼязок з іншим продуктом (якщо є)". Three places show this one
-              value and two of them already called it by that name — the field
-              itself and the review screen (`ReviewUnifiedView`) — so this was
-              the odd one out rather than a naming choice. Owner's call.
-              Divergences row 81.
-            -->
-            <h3 class="text-lg font-medium tracking-[-0.44px]">Звʼязок з іншим продуктом</h3>
-          </div>
-          <p class="text-2xl tracking-[0.07px]">
-            {{ brandBasics.linkedProduct }}
-          </p>
+        <div v-if="hasLinkedProduct()" :class="STEP_ONE_CARD_CLASS">
+          <!--
+            The heading read "Опис бренду" while the card shows `linkedProduct`,
+            i.e. the value of the step-1 field labelled "Звʼязок з іншим
+            продуктом (якщо є)". Three places show this one value and two of
+            them already called it by that name — the field itself and the
+            review screen — so this was the odd one out rather than a naming
+            choice. Owner's call. Divergences row 81.
+
+            The glyph is the mapping table's: "Звʼязок з іншим продуктом | →
+            Link, Regular".
+          -->
+          <UiProperty label="Звʼязок з іншим продуктом" :value="brandBasics.linkedProduct">
+            <template #icon="{ iconClass }">
+              <LinkIcon :class="iconClass" />
+            </template>
+          </UiProperty>
         </div>
       </div>
 
+      <!-- Still ours and still pre-kit — a 64 glyph at 30% over
+           `text-muted-foreground`. The kit's Placeholder type writes about
+           concepts, which is not what step 1 is waiting for, so its copy does
+           not transfer. Recorded rather than invented away. -->
       <div v-else class="flex h-full w-full items-center justify-center">
         <div class="flex flex-col items-center text-center text-muted-foreground">
           <GlobeIcon class="size-16 mb-4 opacity-30" />
           <p>Почніть заповнювати інформацію про бренд</p>
         </div>
+      </div>
       </div>
       </div>
     </template>

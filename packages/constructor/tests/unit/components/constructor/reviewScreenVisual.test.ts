@@ -85,6 +85,29 @@ describe('CEO warning row — Figma 5387:83849', () => {
   })
 })
 
+describe('the concept tiles are framed the way the kit frames an empty box', () => {
+  it('draws a solid 1px #eaeaeb, never a dashed rule — row 104', () => {
+    // Visible only where a concept has no picture: the tile draws a rectangle
+    // with the name in it instead. Three of them, all in one file. The only
+    // empty state the kit draws (`Type=Placeholder` `4492:11680`) is a SOLID
+    // 1px `#eaeaeb`, so the dashed `black/15` frame was in no kit section.
+    const block = read('components/constructor/review/ReviewConceptBlock.vue')
+    expect(body(block)).not.toContain('border-dashed')
+    expect(body(block).match(/border border-ink-300 px-4 py-6/g) ?? []).toHaveLength(3)
+  })
+
+  it('leaves no dashed rule anywhere else in the wizard either', () => {
+    const files = [
+      'components/constructor/review/ReviewConceptBlock.vue',
+      'components/constructor/preview/ConceptMobilePreview.vue',
+      'components/constructor/preview/ConceptPreviewSlider.vue',
+    ]
+    for (const file of files) {
+      expect(body(read(file))).not.toContain('border-dashed')
+    }
+  })
+})
+
 describe('"+ Коментар CEO" is the kit Secondary M — Figma 3760:2310', () => {
   it('is a UiButton, not a dashed frame with two #373737', () => {
     expect(comment).toContain('<UiButton')

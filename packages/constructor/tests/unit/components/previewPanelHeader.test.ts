@@ -241,3 +241,56 @@ describe('only the square scrolls — the header stays put (row 94)', () => {
     expect(scrolls.length).toBe(3)
   })
 })
+
+describe('step 1 carries the panel the kit gives it — rows 95 and 96', () => {
+  const markup = templateOf(
+    withoutComments(read('components/constructor/layout/StepPreviewRightPanel.vue'))
+  )
+  /** Everything up to the step-2 branch, i.e. the step-1 branch alone. */
+  const stepOne = markup.slice(0, markup.indexOf("currentStep === 2"))
+
+  it('opens with the «Превʼю» header this panel type always carries', () => {
+    // `Type=UI preview` `3839:9514` — a 24 Sparkle, `spacing/8`, `header/l`
+    // 24/32. Step 1 opened straight into cards, with no header at all.
+    expect(stepOne).toContain('PREVIEW_PANEL_HEADER_CLASS')
+    expect(stepOne).toContain('PREVIEW_PANEL_ICON_CLASS')
+    expect(stepOne).toContain('Превʼю')
+    // And the header must sit ABOVE the scroll area, not inside it — the same
+    // ordering the rest of this file pins for the other branches.
+    expect(stepOne.indexOf('PREVIEW_PANEL_HEADER_CLASS')).toBeLessThan(
+      stepOne.indexOf('PREVIEW_PANEL_SCROLL_CLASS')
+    )
+  })
+
+  it('builds its cards out of the two kit maps, not a recipe of its own', () => {
+    expect(stepOne).toContain('STEP_ONE_CARD_CLASS')
+    expect(stepOne.match(/<UiProperty/g) ?? []).toHaveLength(3)
+  })
+
+  it('keeps none of the pre-kit card recipe', () => {
+    const source = withoutComments(read('components/constructor/layout/StepPreviewRightPanel.vue'))
+    expect(source).not.toContain('rounded-[14px]')
+    expect(source).not.toContain('shadow-[0px_10px_15px')
+    expect(source).not.toContain('border-black/10')
+    expect(source).not.toContain('bg-primary/10')
+    expect(source).not.toContain('tracking-[-0.44px]')
+    expect(source).not.toContain('tracking-[0.07px]')
+  })
+})
+
+describe('the empty preview writes the kit sentence — row 103', () => {
+  it('steps 3 and 4 say what step 2 already says', () => {
+    const source = withoutComments(
+      read('components/constructor/preview/ConceptMobilePreview.vue')
+    )
+    expect(source).toContain('PREVIEW_PANEL_PLACEHOLDER_TEXT')
+    expect(source).not.toContain('Спочатку оберіть концепт')
+  })
+
+  it('leaves the ordered-concept case ours, because the kit draws none', () => {
+    const source = withoutComments(
+      read('components/constructor/preview/ConceptMobilePreview.vue')
+    )
+    expect(source).toContain('Для замовленого концепту превʼю поки недоступне.')
+  })
+})

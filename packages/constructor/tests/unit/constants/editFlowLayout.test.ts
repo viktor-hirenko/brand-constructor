@@ -201,3 +201,39 @@ describe('the review screen the flow starts on', () => {
     expect(generalComment).toBeGreaterThan(listEnd)
   })
 })
+
+describe('the edit-flow greys are the kit greys — rows 46 and 67', () => {
+  it('the section label is content/primary, not the grey it was', () => {
+    // «Вибір замовника» and its siblings. `#717182` is in no kit section at
+    // all; the label the kit measures (`5387:105116`) is `content/primary`
+    // #1f1f2e = `--color-ink-900`. One component, nine screens.
+    const label = read('components/constructor/edit-flow/EditFlowSectionLabel.vue')
+    expect(label).toContain('text-ink-900')
+    expect(label).not.toContain('#717182')
+  })
+
+  it('and the hex is gone from the whole wizard, counted by CLASS', () => {
+    // A bare grep for the digits also finds the comments that explain what the
+    // hex used to be — the `my-10` trap of phase 18. Count bracketed classes.
+    const files = [
+      'components/constructor/edit-flow/EditFlowSectionLabel.vue',
+      'components/constructor/alternative-selection/AuthorInternalNamingPreview.vue',
+      'components/constructor/alternative-selection/AuthorNamingsRow.vue',
+      'views/revision-response/RevisionInternalNamingView.vue',
+    ]
+    for (const file of files) {
+      expect(read(file)).not.toMatch(/\[#717182\]/i)
+    }
+  })
+
+  it('the empty-state lines took content/secondary #6f6f7d', () => {
+    // "Назву не обрано" / "Назви не обрано" — four of them across three files.
+    const sources = [
+      'components/constructor/alternative-selection/AuthorInternalNamingPreview.vue',
+      'components/constructor/alternative-selection/AuthorNamingsRow.vue',
+      'views/revision-response/RevisionInternalNamingView.vue',
+    ].map(read)
+    const hits = sources.join('\n').match(/text-ink-700 italic/g) ?? []
+    expect(hits).toHaveLength(4)
+  })
+})

@@ -18,6 +18,7 @@ import {
   PREVIEW_PANEL_PLACEHOLDER_BODY_CLASS,
   PREVIEW_PANEL_PLACEHOLDER_CLASS,
   PREVIEW_PANEL_PLACEHOLDER_ICON_CLASS,
+  PREVIEW_PANEL_PLACEHOLDER_TEXT,
   PREVIEW_PANEL_PLACEHOLDER_TEXT_CLASS,
   PREVIEW_PANEL_ROOT_CLASS,
   PREVIEW_PANEL_SCROLL_CLASS,
@@ -39,10 +40,19 @@ const props = withDefaults(defineProps<ConceptMobilePreviewProps>(), {
   emptyMode: 'select-first',
 })
 
+/**
+ * `select-first` is the kit's own sentence — `4492:11745`, trailing stop and
+ * all, the same one step 2 already writes (divergences row 103). Ours read
+ * «Спочатку оберіть концепт».
+ *
+ * `ordered-concept` stays ours: the kit draws no case for a concept that has
+ * been ordered but not yet delivered, and inventing its copy is the same
+ * forbidden move as inventing a glyph.
+ */
 const emptyMessage = computed(() =>
   props.emptyMode === 'ordered-concept'
     ? 'Для замовленого концепту превʼю поки недоступне.'
-    : 'Спочатку оберіть концепт',
+    : PREVIEW_PANEL_PLACEHOLDER_TEXT,
 )
 
 /** Admin: gallery_url_1 = "Gallery Image 1 (Mobile Preview)" — same as CEO reselect naming step. */
