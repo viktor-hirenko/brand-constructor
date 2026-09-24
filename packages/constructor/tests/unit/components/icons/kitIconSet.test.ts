@@ -77,6 +77,7 @@ const KIT_ICONS: ReadonlyArray<
   ['GlobeIcon', 'Globe', 'Regular', '3262:4208', 1767, 'M12 2.25C10.0716 2.25 8.'],
   ['HandshakeIcon', 'Handshake', 'Regular', '5658:39240', 2406, 'M23.8406 10.1165L21.4481'],
   ['ImagePlaceholderIcon', 'ImageSquare', 'Regular', '4492:12024', 1425, 'M19.5 3H4.5C4.10218 3 3.'],
+  ['MagicWandIcon', 'MagicWand', 'Regular', '3298:4228', 3006, 'M4.50004 6C4.50004 5.801'],
   ['InfoCircleFilledIcon', 'WarningCircle', 'Fill', '3262:4504', 1278, 'M12 2.25C10.0716 2.25 8.'],
   ['LinkIcon', 'Link', 'Regular', '3298:3429', 2917, 'M22.5 8.27155C22.4624 9.'],
   ['MaximizeIcon', 'ArrowsOutSimple', 'Regular', '3262:4471', 1318, 'M20.25 4.5V9C20.25 9.198'],

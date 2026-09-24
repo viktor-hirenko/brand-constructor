@@ -16,7 +16,7 @@ import VisualComponentsAccordionSkeleton from '@/components/constructor/skeleton
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
-import SparklesIcon from '@/components/icons/SparklesIcon.vue'
+import MagicWandIcon from '@/components/icons/MagicWandIcon.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiAccordion from '@/components/ui/UiAccordion.vue'
@@ -254,7 +254,7 @@ onMounted(loadComponentTypes)
         @click="handleDelegateToggle"
       >
         <span class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-ink-300">
-          <SparklesIcon class="size-6 text-ink-900" />
+          <MagicWandIcon class="size-6 text-ink-900" />
         </span>
         <span class="flex-1 text-left text-base font-medium text-ink-900">
           Довірити вибір дизайнерам
