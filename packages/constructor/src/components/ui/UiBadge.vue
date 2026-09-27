@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed, useSlots } from 'vue'
-import { resolveUiBadgeClasses, type UiBadgeTone } from '@/components/ui/uiBadge'
+import {
+  resolveUiBadgeClasses,
+  type UiBadgeShape,
+  type UiBadgeTone,
+} from '@/components/ui/uiBadge'
 
 /**
  * Kit badge — Figma `3453:1619`, six tones, no border.
@@ -13,6 +17,12 @@ import { resolveUiBadgeClasses, type UiBadgeTone } from '@/components/ui/uiBadge
  */
 interface UiBadgeProps {
   tone?: UiBadgeTone
+  /**
+   * `pill` is the kit symbol; `chip` is the square-cornered country token drawn
+   * inside the GEO field on step 1. See `UiBadgeShape` in `uiBadge.ts` for the
+   * two numbers that differ and for why only `neutral` has one.
+   */
+  shape?: UiBadgeShape
   /** Plain-text label. For markup use the default slot instead. */
   label?: string
   class?: HTMLAttributes['class']
@@ -20,13 +30,14 @@ interface UiBadgeProps {
 
 const props = withDefaults(defineProps<UiBadgeProps>(), {
   tone: 'neutral',
+  shape: 'pill',
   label: '',
   class: undefined,
 })
 
 const slots = useSlots()
 
-const classes = computed(() => resolveUiBadgeClasses(props.tone))
+const classes = computed(() => resolveUiBadgeClasses(props.tone, props.shape))
 </script>
 
 <template>

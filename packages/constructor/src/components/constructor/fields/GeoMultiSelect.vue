@@ -4,6 +4,7 @@ import { GEO_COUNTRIES, type GeoOption } from '@/data/geo-countries';
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue';
 import UiBadge from '@/components/ui/UiBadge.vue'
+import { UI_BADGE_CHIP_GROUP_CLASS } from '@/components/ui/uiBadge'
 import UiListItem from '@/components/ui/UiListItem.vue'
 import UiPopover from '@/components/ui/UiPopover.vue'
 import { UI_POPOVER_HEADER_CLASS } from '@/components/ui/uiListItem'
@@ -105,23 +106,36 @@ onBeforeUnmount(() => {
     <!-- Kit Input surface, Type = fluid — see the note in <script>. -->
     <div :class="[triggerClass, 'cursor-text']" @click="openDropdown(); searchInputRef?.focus()">
       <!--
-        Kit badge `3453:1619`, neutral tone, with the remove control riding the
-        kit's own `Icon right` slot. Was a rounded-6 `bg-primary/10` chip at
-        14/16 — the one badge recipe in the wizard that was neither a pill nor
-        a kit colour.
+        Kit badge `3453:1619` in its chip shape, with the remove control riding
+        the kit's own `Icon right` slot.
+
+        The chip is NOT the pill the other five call sites draw: the drawn step
+        1 measures `5409:36376` at 50×24 with radius **4** on `bg/alt-4`
+        #dfdfe2, where the badge symbol is radius 1000 on #eaeaeb. Found by the
+        owner on acceptance — both numbers were in the first read of the screen
+        and were never compared, because the chips were not on the list of
+        things being checked.
+
+        The group carries `spacing/4`; the field's own `spacing/8` is what
+        separates it from the search input. The chips sit at x = 0 and 54 in a
+        102-wide group of 50 and 48, and the placeholder opens at 114.
       -->
-      <UiBadge v-for="code in model" :key="code" tone="neutral" :label="code">
-        <template #trailing>
-          <button
-            type="button"
-            class="geo-multi-select__chip-remove inline-flex size-4 items-center justify-center text-ink-700 transition-colors hover:text-ink-900"
-            :aria-label="`Прибрати ${code}`"
-            @click.stop="removeGeo(code)"
-          >
-            <CloseIcon class="size-3.5" />
-          </button>
-        </template>
-      </UiBadge>
+      <div v-if="model.length" :class="UI_BADGE_CHIP_GROUP_CLASS">
+        <UiBadge v-for="code in model" :key="code" shape="chip" :label="code">
+          <template #trailing>
+            <button
+              type="button"
+              class="geo-multi-select__chip-remove inline-flex size-4 items-center justify-center text-ink-800 transition-colors hover:text-ink-900"
+              :aria-label="`Прибрати ${code}`"
+              @click.stop="removeGeo(code)"
+            >
+              <!-- The kit's `Icon right` box is 16 and the glyph fills it; this
+                   was a 14 glyph floating in a 16 box. -->
+              <CloseIcon class="size-4" />
+            </button>
+          </template>
+        </UiBadge>
+      </div>
       <input
         ref="searchInputRef"
         v-model="search"

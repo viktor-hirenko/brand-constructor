@@ -23,6 +23,29 @@
 export type UiBadgeTone = 'neutral' | 'green' | 'amber' | 'red' | 'blue' | 'purple'
 
 /**
+ * `pill` is the kit symbol above, and five of the six call sites draw it.
+ *
+ * `chip` is the sixth: the country tokens inside the GEO field, and it is a
+ * different paint on purpose. `5409:36376` on the drawn step 1 measures 50×24
+ * with **`radius` 4, not the badge's 1000**, on `bg/alt-4` **#dfdfe2**, not
+ * `badge/bg/neutral` #eaeaeb. Everything else is the symbol's: `spacing/4` on
+ * the box, another on the label, `caption/m/medium` 12/16 in
+ * `badge/content/neutral` #393947, a 16 glyph in the `Icon right` slot.
+ *
+ * The owner found this on acceptance, and the reason it was missed is worth
+ * keeping: these two numbers came back in the very first read of the screen and
+ * were never compared against the code, because the chips were not on the list
+ * of things being checked. A screen is walked, not sampled.
+ *
+ * Only `neutral` has a chip — the kit draws no coloured one — so the shape
+ * replaces the tone's fill rather than layering over it. Two `background-color`
+ * utilities on one element are resolved by Tailwind's own output order, not by
+ * the order they are written; that is how the accordion lost its selected
+ * border.
+ */
+export type UiBadgeShape = 'pill' | 'chip'
+
+/**
  * Kit geometry: `radius/badge` 1000 (`rounded-full`), `spacing/4` padding on
  * the box, another `spacing/4` on the label. 4 + 16 + 4 = the 24 height the
  * symbols are drawn at.
@@ -33,6 +56,23 @@ export type UiBadgeTone = 'neutral' | 'green' | 'amber' | 'red' | 'blue' | 'purp
  */
 export const UI_BADGE_ROOT_CLASS =
   'ui-badge inline-flex shrink-0 items-center justify-center rounded-full p-1'
+
+/**
+ * The GEO chip's own box: same 4 of padding and the same 24 height, but
+ * `rounded-sm` (0.25rem = the drawn 4) and `bg/alt-4` — see `UiBadgeShape`.
+ * The fill rides `ink-400`, which is `#dfdfe2` in the theme already; no new
+ * value is introduced here.
+ */
+export const UI_BADGE_CHIP_ROOT_CLASS =
+  'ui-badge ui-badge--chip inline-flex shrink-0 items-center justify-center rounded-sm bg-ink-400 p-1 text-ink-800'
+
+/**
+ * `spacing/4` between neighbouring chips — the chips sit at x = 0 and x = 54 in
+ * a 102-wide group of 50 and 48. The field's own `spacing/8` stays between that
+ * group and the search placeholder, which opens at 114 against a group ending
+ * at 106.
+ */
+export const UI_BADGE_CHIP_GROUP_CLASS = 'ui-badge-chip-group flex items-center gap-1'
 
 /**
  * `caption m` — 12/16, weight 500, letter-spacing **0**: `3453:1619` states it
@@ -72,9 +112,17 @@ export interface UiBadgeClasses {
   icon: string
 }
 
-export function resolveUiBadgeClasses(tone: UiBadgeTone = 'neutral'): UiBadgeClasses {
+export function resolveUiBadgeClasses(
+  tone: UiBadgeTone = 'neutral',
+  shape: UiBadgeShape = 'pill'
+): UiBadgeClasses {
+  // The chip carries its own fill and its own text colour, so the tone is not
+  // appended — one `background-color` utility on the element, never two.
   return {
-    root: `${UI_BADGE_ROOT_CLASS} ${UI_BADGE_TONES[tone]}`,
+    root:
+      shape === 'chip'
+        ? UI_BADGE_CHIP_ROOT_CLASS
+        : `${UI_BADGE_ROOT_CLASS} ${UI_BADGE_TONES[tone]}`,
     label: UI_BADGE_LABEL_CLASS,
     icon: UI_BADGE_ICON_CLASS,
   }

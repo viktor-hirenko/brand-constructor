@@ -12,6 +12,14 @@ import {
 } from '@/constants/stepOnePreviewCard'
 import { UI_PROPERTY_LABEL_CLASS, UI_PROPERTY_VALUE_CLASS } from '@/components/ui/uiProperty'
 import { UI_SECTION_CARD_BODY_CLASS } from '@/components/ui/uiSectionCard'
+import {
+  UI_BADGE_CHIP_GROUP_CLASS,
+  UI_BADGE_CHIP_ROOT_CLASS,
+  UI_BADGE_ROOT_CLASS,
+  UI_BADGE_TONES,
+  resolveUiBadgeClasses,
+} from '@/components/ui/uiBadge'
+import { UI_FIELD_TYPE_FLUID_CLASS } from '@/components/ui/uiField'
 
 /**
  * Step 1 against the drawn screen — `Brand Basics (step 1)` `5409:35822`.
@@ -81,6 +89,62 @@ describe('left column — four Inputs at a flat spacing/16', () => {
     // output order, not by the order they are written — the way the accordion
     // lost its selected border. So the class is chosen, not layered.
     expect(commentField).not.toContain('pt-0')
+  })
+})
+
+describe('the GEO chips — the part of this screen that was never compared', () => {
+  // The owner found these on acceptance. Both numbers came back in the very
+  // first read of `5409:35822` and were never checked against the code,
+  // because the chips were not on the list of things being checked. The list
+  // was the defect, so the chips are pinned here rather than anywhere else.
+  const geo = body(read('components/constructor/fields/GeoMultiSelect.vue'))
+
+  it('draws them square-cornered on bg/alt-4, not as the badge pill', () => {
+    // `5409:36376` — 50×24, radius 4, #dfdfe2. The badge symbol `3453:1619` is
+    // radius 1000 on `badge/bg/neutral` #eaeaeb and stays that way for the
+    // other five call sites.
+    expect(UI_BADGE_CHIP_ROOT_CLASS).toContain('rounded-sm')
+    expect(UI_BADGE_CHIP_ROOT_CLASS).toContain('bg-ink-400')
+    expect(UI_BADGE_CHIP_ROOT_CLASS).not.toContain('rounded-full')
+    expect(UI_BADGE_CHIP_ROOT_CLASS).not.toContain('bg-ink-300')
+    expect(geo).toContain('shape="chip"')
+  })
+
+  it('keeps the pill for everything that is still drawn as one', () => {
+    expect(UI_BADGE_ROOT_CLASS).toContain('rounded-full')
+    expect(UI_BADGE_TONES.neutral).toContain('bg-ink-300')
+    expect(resolveUiBadgeClasses('neutral').root).toContain('rounded-full')
+    expect(resolveUiBadgeClasses('neutral', 'chip').root).toContain('rounded-sm')
+  })
+
+  it('never puts two fills on the one chip', () => {
+    // Which of `bg-ink-300` and `bg-ink-400` wins is Tailwind's output order,
+    // not the order they are written — the accordion lesson. So the shape
+    // replaces the tone's fill instead of layering over it.
+    const chip = resolveUiBadgeClasses('neutral', 'chip').root
+    expect(chip.match(/\bbg-ink-\d00\b/g) ?? []).toHaveLength(1)
+  })
+
+  it('spaces the chips at 4 and leaves the field its 8 to the search input', () => {
+    // Chips at x = 0 and 54 in a 102-wide group of 50 and 48; the placeholder
+    // opens at 114 against a group ending at 106.
+    expect(UI_BADGE_CHIP_GROUP_CLASS).toContain('gap-1')
+    // Bound in the template, not merely imported: the import line names the
+    // constant too, so a plain `toContain` stayed green with the group ripped
+    // out and a bare `flex` in its place. Caught by breaking this on purpose.
+    expect(geo).toContain(':class="UI_BADGE_CHIP_GROUP_CLASS"')
+    expect(UI_FIELD_TYPE_FLUID_CLASS).toContain('gap-2')
+  })
+
+  it('fills the kit 16 icon slot instead of floating a 14 glyph in it', () => {
+    expect(geo).toContain('<CloseIcon class="size-4" />')
+    expect(geo).not.toContain('size-3.5')
+  })
+
+  it('paints the remove glyph in badge/content/neutral', () => {
+    // #393947 — the badge's own content token, which the label already used.
+    expect(geo).toContain('text-ink-800')
+    expect(geo).not.toContain('text-ink-700 transition-colors')
   })
 })
 
