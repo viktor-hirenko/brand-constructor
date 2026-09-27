@@ -39,7 +39,14 @@ const comment = computed({
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <!--
+    `spacing/16` between neighbouring fields — the drawn step 1 `5409:35822`
+    stacks its four Inputs at y = 0, 96, 192, 288 inside a 527-wide column, and
+    an Input is 80 tall (Title 24 + 8 + field 48). 96 − 80 = 16. It was 24,
+    which was nobody's number: the screen counted as "the designer drew
+    nothing" until the `UXUI-2651` canvas turned up.
+  -->
+  <div class="flex flex-col gap-4">
     <!-- GEO -->
     <div>
       <UiFieldLabel class="mb-2" required>
@@ -84,7 +91,17 @@ const comment = computed({
       <UiTextField v-model="linkedProduct" placeholder="Thor, Alpa..." />
     </div>
 
-    <!-- Comment -->
-    <StepCommentField v-model="comment" optional />
+    <!--
+      Comment.
+
+      `flush` because the drawn screen spaces this field like the other three —
+      16, not 16 + the component's own 8. Its 8 is load-bearing on the fifteen
+      edit-flow and wizard screens phase 18 measured at 32, so it stays their
+      default and step 1 opts out.
+
+      No `optional`: the drawn Title reads «Коментар» and nothing else. The
+      "(необов'язково)" suffix was ours.
+    -->
+    <StepCommentField v-model="comment" flush />
   </div>
 </template>

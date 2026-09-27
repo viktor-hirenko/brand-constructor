@@ -259,9 +259,18 @@ describe('step 1 has NO preview header — its drawn screen says so', () => {
     expect(stepOne).not.toContain('PREVIEW_PANEL_HEADER_CLASS')
   })
 
-  it('still builds its cards out of the two kit maps, not a recipe of its own', () => {
+  it('builds its three cards from the drawn screen, not from UiProperty', () => {
+    // This assertion used to read the other way round — three `UiProperty`
+    // rows, because the same drawn screen had only settled the header at the
+    // time and the cards were left on the kit components work 6 reached for.
+    // Measuring the cards themselves settled it: `5409:36419` and its siblings
+    // are plain frames, and their shape is not Property's — the value sits at
+    // the card's own left edge, not in the column beside the glyph. Step 8's
+    // review IS drawn with Property and keeps it.
     expect(stepOne).toContain('STEP_ONE_CARD_CLASS')
-    expect(stepOne.match(/<UiProperty/g) ?? []).toHaveLength(3)
+    expect(stepOne).toContain('STEP_ONE_CARD_TILE_CLASS')
+    expect(stepOne).toContain('STEP_ONE_CARD_VALUE_CLASS')
+    expect(stepOne.match(/<UiProperty/g) ?? []).toHaveLength(0)
   })
 
   it('keeps none of the pre-kit card recipe', () => {

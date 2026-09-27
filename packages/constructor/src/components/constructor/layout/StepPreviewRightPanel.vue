@@ -43,29 +43,21 @@ import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSi
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
-import UiProperty from '@/components/ui/UiProperty.vue'
 import {
-  UI_SECTION_CARD_BODY_CLASS,
-  UI_SECTION_CARD_BORDER_CLASS,
-  UI_SECTION_CARD_CLASS,
-} from '@/components/ui/uiSectionCard'
+  STEP_ONE_CARD_CLASS,
+  STEP_ONE_CARD_ICON_CLASS,
+  STEP_ONE_CARD_LABEL_CLASS,
+  STEP_ONE_CARD_LIST_CLASS,
+  STEP_ONE_CARD_ROW_CLASS,
+  STEP_ONE_CARD_TILE_CLASS,
+  STEP_ONE_CARD_VALUE_CLASS,
+} from '@/constants/stepOnePreviewCard'
 import VisualComponentsPhoneEmptyState from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import type { VisualComponentsPhoneEmptyVariant } from '@/components/constructor/preview/VisualComponentsPhoneEmptyState.vue'
 import {
   SIDEBAR_HIDDEN_CALLOUT_DURATION_MS,
   SIDEBAR_TEMPORARILY_HIDDEN_MESSAGE,
 } from '@/constants/visualComponentPreviewMessages'
-
-/**
- * The surface of a step-1 preview card: the kit `Section card` `3761:2273`
- * with no header — radius 16, a 1px `section card/border` #eaeaeb, white, and
- * the kit's `spacing/16` of content padding. Nothing here is new; it is the
- * same two class maps the step-8 review renders these very values with.
- *
- * Replaces a recipe that was in no kit section at all: radius 14, a two-layer
- * shadow and a `black/10` frame (divergences row 96).
- */
-const STEP_ONE_CARD_CLASS = `${UI_SECTION_CARD_CLASS} ${UI_SECTION_CARD_BORDER_CLASS} ${UI_SECTION_CARD_BODY_CLASS}`
 
 interface BrandBasics {
   geo: string[]
@@ -172,16 +164,25 @@ const phoneBox = computed(() =>
                               of "the panel type always carries it" is removed
                               again — a drawn screen beats an inference from a
                               component (divergences row 95).
-           card 543 x 124     padding 26, gap 24 between cards
+           card 543 x 124     inset 26 = padding 24 + a 2px border,
+                              gap 24 between cards
            icon tile 36       a 20 glyph inside it, label 8 to its right
-           value              on its own line, 16/24, full width
+           value              on its own line, 18/24, at the CARD's left edge
 
-         The cards below are NOT yet those numbers: they are the kit
-         `UiSectionCard` + `UiProperty` the shadowed pre-kit recipe was replaced
-         with, which is right about the surface (no shadow, kit radius, kit
-         border — and it closes the bug board's "remove the shadows") and wrong
-         about the internals. Redoing them against this node is its own work,
-         recorded as divergences row 96 rather than half-done here.
+         The cards below are those numbers now. Their recipe is
+         `constants/stepOnePreviewCard.ts`, which also names the two places
+         where this screen is deliberately not followed — its fixed 543 width
+         and the untokened black of its value.
+
+         They used to be the kit `UiSectionCard` + `UiProperty`: right about the
+         surface (no shadow, kit radius, kit border — which is what closed the
+         bug board's "прибрати тіні з карток") and wrong about everything
+         inside, because the designer did not build these two cards out of those
+         components at all. Hers are plain frames, and the shape differs where
+         it counts: Property hangs label and value in one column beside the
+         glyph, while she puts the glyph row in one band and the value in a
+         second one, full width. Step 8's review IS drawn with those components,
+         so they stay as they are.
 
          The scroll area is here for the padding as much as the scrolling: the
          pane gave up its horizontal 32 so the drawn scrollbar could float in
@@ -190,45 +191,51 @@ const phoneBox = computed(() =>
       <div :class="PREVIEW_PANEL_ROOT_CLASS">
 
       <div :class="PREVIEW_PANEL_SCROLL_CLASS">
-      <!-- `spacing/16` between neighbouring cards — the kit's gap on the drawn
-           review `5387:91779`, and what the review screen already uses. -->
-      <div v-if="brandBasics && hasAnyBasics()" class="flex flex-col gap-4">
+      <div v-if="brandBasics && hasAnyBasics()" :class="STEP_ONE_CARD_LIST_CLASS">
         <div v-if="hasGeo()" :class="STEP_ONE_CARD_CLASS">
-          <UiProperty label="Географія бренду" :value="brandBasics.geo.join(', ')">
-            <template #icon="{ iconClass }">
-              <GlobeIcon :class="iconClass" />
-            </template>
-          </UiProperty>
+          <div :class="STEP_ONE_CARD_ROW_CLASS">
+            <span :class="STEP_ONE_CARD_TILE_CLASS">
+              <GlobeIcon :class="STEP_ONE_CARD_ICON_CLASS" />
+            </span>
+            <p :class="STEP_ONE_CARD_LABEL_CLASS">Географія бренду</p>
+          </div>
+          <p :class="STEP_ONE_CARD_VALUE_CLASS">{{ brandBasics.geo.join(', ') }}</p>
         </div>
 
         <div v-if="hasDate()" :class="STEP_ONE_CARD_CLASS">
-          <UiProperty
-            label="Плануєма дата запуску"
-            :value="formatDate(brandBasics.launchDate)"
-          >
-            <template #icon="{ iconClass }">
-              <CalendarIcon :class="iconClass" />
-            </template>
-          </UiProperty>
+          <div :class="STEP_ONE_CARD_ROW_CLASS">
+            <span :class="STEP_ONE_CARD_TILE_CLASS">
+              <CalendarIcon :class="STEP_ONE_CARD_ICON_CLASS" />
+            </span>
+            <p :class="STEP_ONE_CARD_LABEL_CLASS">Плануєма дата запуску</p>
+          </div>
+          <p :class="STEP_ONE_CARD_VALUE_CLASS">{{ formatDate(brandBasics.launchDate) }}</p>
         </div>
 
-        <div v-if="hasLinkedProduct()" :class="STEP_ONE_CARD_CLASS">
-          <!--
-            The heading read "Опис бренду" while the card shows `linkedProduct`,
-            i.e. the value of the step-1 field labelled "Звʼязок з іншим
-            продуктом (якщо є)". Three places show this one value and two of
-            them already called it by that name — the field itself and the
-            review screen — so this was the odd one out rather than a naming
-            choice. Owner's call. Divergences row 81.
+        <!--
+          The drawn screen has no third card: its «Звʼязок з іншим продуктом»
+          field is empty, so the card for it is simply absent. This one is
+          therefore ours in existence but hers in shape, and it keeps the two
+          decisions already taken on it.
 
-            The glyph is the mapping table's: "Звʼязок з іншим продуктом | →
-            Link, Regular".
-          -->
-          <UiProperty label="Звʼязок з іншим продуктом" :value="brandBasics.linkedProduct">
-            <template #icon="{ iconClass }">
-              <LinkIcon :class="iconClass" />
-            </template>
-          </UiProperty>
+          The heading read "Опис бренду" while the card shows `linkedProduct`,
+          i.e. the value of the step-1 field labelled "Звʼязок з іншим
+          продуктом (якщо є)". Three places show this one value and two of them
+          already called it by that name — the field itself and the review
+          screen — so this was the odd one out rather than a naming choice.
+          Owner's call. Divergences row 81.
+
+          The glyph is the mapping table's: "Звʼязок з іншим продуктом | →
+          Link, Regular".
+        -->
+        <div v-if="hasLinkedProduct()" :class="STEP_ONE_CARD_CLASS">
+          <div :class="STEP_ONE_CARD_ROW_CLASS">
+            <span :class="STEP_ONE_CARD_TILE_CLASS">
+              <LinkIcon :class="STEP_ONE_CARD_ICON_CLASS" />
+            </span>
+            <p :class="STEP_ONE_CARD_LABEL_CLASS">Звʼязок з іншим продуктом</p>
+          </div>
+          <p :class="STEP_ONE_CARD_VALUE_CLASS">{{ brandBasics.linkedProduct }}</p>
         </div>
       </div>
 
