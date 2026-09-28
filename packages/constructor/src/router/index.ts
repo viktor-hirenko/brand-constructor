@@ -308,13 +308,27 @@ const routes: RouteRecordRaw[] = [
         path: 'step/5',
         name: 'step-5',
         component: () => import('@/views/wizard/MarketingPackageView.vue'),
-        meta: { step: 5, title: 'Marketing Package', subtitle: 'PR пакет для запуску' },
+        // Kit `Step header` `5411:37230` on the drawn `Marketing Package
+        // (step 5)` `5411:37221`. The title already matched; the caption did
+        // not, and the view printed a second near-copy of it underneath, so the
+        // screen said it twice. One sentence, hers, with her full stop.
+        meta: {
+          step: 5,
+          title: 'Marketing Package',
+          subtitle: 'Оберіть пакет для запуску вашого бренду.',
+        },
       },
       {
         path: 'step/6',
         name: 'step-6',
         component: () => import('@/views/wizard/DeliverablesView.vue'),
-        meta: { step: 6, title: 'Deliverables', subtitle: 'Додаткові опції' },
+        // Kit `Step header` `5411:37960` on the drawn `Deliverables (step 6)`
+        // `5411:37951` — same double-caption fix as step 5 above.
+        meta: {
+          step: 6,
+          title: 'Deliverables',
+          subtitle: 'Додаткові опції для вашого проєкту.',
+        },
       },
       {
         path: 'step/7',
