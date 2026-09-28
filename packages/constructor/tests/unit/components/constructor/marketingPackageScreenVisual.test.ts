@@ -80,6 +80,29 @@ describe('the grid and the card box', () => {
     expect(stepView).toContain('MARKETING_PACKAGE_GRID_CLASS')
   })
 
+  it('fits as many columns as the PANEL holds, never counting on the window', () => {
+    // This shipped as a column count keyed to `xl`, and the owner saw two
+    // columns on a 1440 monitor. The class was not wrong about 1440 — it was
+    // wrong about whose. A breakpoint inside the wizard resolves against the
+    // WIZARD's viewport, and the wizard is an iframe 1230 wide at a 1440
+    // window, so `xl` 1280 never fires there. The stand at /wizard/, whose
+    // viewport IS the window, showed three and looked correct.
+    expect(MARKETING_PACKAGE_GRID_CLASS).toContain('auto-fill')
+    expect(MARKETING_PACKAGE_GRID_CLASS).toContain('var(--wizard-package-card-min)')
+    expect(MARKETING_PACKAGE_GRID_CLASS).not.toMatch(/\b(?:sm|md|lg|xl|2xl):grid-cols-/)
+    expect(MARKETING_PACKAGE_GRID_CLASS).not.toMatch(/\bgrid-cols-\d/)
+  })
+
+  it('declares that card size where the concept grid declares its own', () => {
+    // Bare `:root`, so the stand and the panel behave alike. 23rem renders her
+    // three columns at exactly 378 in her 1166 container and leaves 10 of
+    // slack, because three of her 378 plus two gaps come to 1166 EXACTLY and a
+    // minimum of 378 would put the third column on a knife edge.
+    const css = read('styles/app.css')
+    expect(css).toContain('--wizard-package-card-min: 23rem;')
+    expect(css).toContain('--wizard-concept-card-min')
+  })
+
   it('gives the card 16 of padding inside a 1px border at radius 16', () => {
     // The inset reads 17 in `get_metadata` because the frame sits inside the
     // card's own stroke — the same trap step 1 fell into with its "26".
@@ -291,6 +314,29 @@ describe('the selected card — a state the kit does not draw', () => {
     expect(stepView).toContain("variant: 'solid'")
     expect(stepView).toContain('decorative: true')
     expect(stepView).not.toContain('rounded-full bg-[')
+  })
+
+  it('hangs the mark in the glyph row instead of over the package icon', () => {
+    // It first went at the card's top-left corner, copying the concept card —
+    // but the concept card overlays a photograph, and here what is underneath
+    // is the package's own 32 tile, which the mark covered completely. The
+    // owner saw a tick where the shield should be.
+    expect(stepView).not.toContain('absolute top-2 left-2')
+    expect(stepView).not.toContain('class="relative"')
+    // Bound inside the header block, not merely present in the file.
+    //
+    // `lastIndexOf`, because the first occurrence of either name is the IMPORT
+    // line, where they stand alphabetically — and `BODY` sorts before `HEADER`,
+    // so slicing on `indexOf` produced an empty string that passed nothing.
+    // Same trap as the GEO chip group: a guard reading source as text must
+    // land on the markup, not on the import.
+    const header = stepView.slice(
+      stepView.lastIndexOf('MARKETING_PACKAGE_CARD_HEADER_CLASS'),
+      stepView.lastIndexOf('MARKETING_PACKAGE_CARD_BODY_CLASS'),
+    )
+    expect(header.length).toBeGreaterThan(0)
+    expect(header).toContain('selectedMarkClasses.root')
+    expect(header).toContain('MARKETING_PACKAGE_CARD_TILE_CLASS')
   })
 })
 

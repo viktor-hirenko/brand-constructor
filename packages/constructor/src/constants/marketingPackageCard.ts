@@ -83,14 +83,23 @@
  */
 
 /**
- * The grid — `spacing/16` between cards, where it was 24.
+ * The grid — `spacing/16` between cards, where it was 24, and as many columns
+ * as fit rather than a count keyed to the window.
  *
- * The column counts are left exactly as they were. At 1440 the drawn three
- * columns are what `xl` already gives, and the responsive behaviour of this
- * step was not part of the measurement.
+ * **It shipped as a fixed three-column count behind the `xl` breakpoint, and
+ * the owner saw two columns on a 1440 monitor.** (The class itself is not
+ * written out here: Tailwind reads comments as source and prints a live rule
+ * from anything shaped like a utility, which is how the retired class came
+ * back into the stylesheet on the first build after this fix.)
+ * A Tailwind breakpoint inside the wizard resolves against the
+ * WIZARD's viewport, and the wizard is an iframe 1230 wide at a 1440 window, so
+ * `xl` 1280 never fires there — while the measuring stand at /wizard/, whose
+ * viewport is the window, showed three and looked correct. The card size and
+ * the reasoning live in `styles/app.css` next to `--wizard-concept-card-min`,
+ * which has solved this same problem for the concept grid since work 4.
  */
 export const MARKETING_PACKAGE_GRID_CLASS =
-  'marketing-package-grid grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3'
+  'marketing-package-grid grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(var(--wizard-package-card-min),100%),1fr))]'
 
 /**
  * The comment field under the grid — the drawn 583 in a 1166 container, i.e.

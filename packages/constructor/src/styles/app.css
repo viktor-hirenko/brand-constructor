@@ -162,6 +162,43 @@ html.wizard-embed {
 }
 
 /*
+ * ── The step 5 package card, and why it is a card size and not a column count
+ *
+ * `Marketing Package (step 5)` `5411:37221` draws six cards of 378 three to a
+ * row, `spacing/16` apart, in a 1166 container.
+ *
+ * It shipped as `xl:grid-cols-3` and the owner saw TWO columns on a 1440
+ * monitor. The class was not wrong about 1440 — it was wrong about whose 1440.
+ * **A Tailwind breakpoint inside the wizard resolves against the wizard's own
+ * viewport, and the wizard is an iframe 1230 wide at a 1440 window** (the note
+ * above `--wizard-concept-card-min` says exactly this). 1230 never reaches
+ * `xl` 1280, so the third column could not appear — and the measuring stand at
+ * /wizard/, where the viewport IS the window, showed three. A column count
+ * that reads the window cannot describe a grid that lives in the panel.
+ *
+ * So the count is not declared at all: `auto-fill` over her card size adds a
+ * column as soon as one fits, exactly as the concept grid has done since work
+ * 4. At her 1166 container that is 3 × 378 — her frame, to the pixel.
+ *
+ * ── Why 23rem and not her 378
+ *
+ * Three of her cards plus two gaps come to 1166 **exactly**, so a minimum of
+ * 378 would put the third column on a knife edge: one sub-pixel of rounding,
+ * or a classic scrollbar taking its width on a non-Mac, and the row silently
+ * drops to two — the very defect this replaces. 23rem (368) is the largest
+ * round value below her card, it still renders her three columns at exactly
+ * 378 each, and it leaves 10 of slack. A fourth column appears at a container
+ * of 1520, against the 1560 where a fourth of HER cards would fit; between
+ * those two the cards sit at 368 rather than stretching, which is the same
+ * bounded stretch `--wizard-concept-card-min` was chosen for.
+ *
+ * Declared on bare `:root`, so the stand and the panel behave alike.
+ */
+:root {
+  --wizard-package-card-min: 23rem;
+}
+
+/*
  * Above 1920 the wizard stops filling the panel and gets its own frame —
  * `5395:119538`: max-width 1700, max-height 960, radius 24, a 1px
  * `section-card/border` rule, sitting 48 from the top and bottom of the

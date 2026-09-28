@@ -167,7 +167,6 @@ onMounted(loadPackages)
         <div
           v-for="pkg in packages"
           :key="pkg.id"
-          class="relative"
           :class="[
             MARKETING_PACKAGE_CARD_CLASS,
             selectedId === pkg.id
@@ -221,6 +220,22 @@ onMounted(loadPackages)
               <h3 :class="MARKETING_PACKAGE_CARD_TITLE_CLASS">
                 {{ pkg.name }}
               </h3>
+
+              <!--
+                Selected mark — see `selectedMarkClasses`. It rides at the END
+                of the glyph row, not over the card's top-left corner: the
+                concept card can overlay its mark because what is underneath is
+                a photograph, and here what is underneath is the package's own
+                32 icon tile, which the mark covered completely. The row is 32
+                tall and the mark is 32, so it costs the row nothing.
+              -->
+              <span
+                v-if="selectedId === pkg.id"
+                :class="selectedMarkClasses.root"
+                class="shrink-0"
+              >
+                <CheckIcon :class="selectedMarkClasses.icon" />
+              </span>
             </div>
 
             <div :class="MARKETING_PACKAGE_CARD_BODY_CLASS">
@@ -276,15 +291,6 @@ onMounted(loadPackages)
             </template>
             Переглянути
           </UiButton>
-
-          <!-- Selected mark — see `selectedMarkClasses`. -->
-          <span
-            v-if="selectedId === pkg.id"
-            :class="selectedMarkClasses.root"
-            class="pointer-events-none absolute top-2 left-2"
-          >
-            <CheckIcon :class="selectedMarkClasses.icon" />
-          </span>
         </div>
       </div>
 
