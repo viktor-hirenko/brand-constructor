@@ -12,14 +12,12 @@
  * Do not re-add a step-8 branch to this component.
  */
 
-import { ref, computed, inject } from 'vue'
+import { computed, inject } from 'vue'
 import ConceptPreviewSlider from '@/components/constructor/preview/ConceptPreviewSlider.vue'
 import ConceptPreviewSliderSkeleton from '@/components/constructor/skeletons/ConceptPreviewSliderSkeleton.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
 import ConceptMobilePreview from '@/components/constructor/preview/ConceptMobilePreview.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
-import EyeIcon from '@/components/icons/EyeIcon.vue'
-import EyeSlashIcon from '@/components/icons/EyeSlashIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
 import LinkIcon from '@/components/icons/LinkIcon.vue'
 import SparklesIcon from '@/components/icons/SparklesIcon.vue'
@@ -42,7 +40,6 @@ import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCan
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
-import UiIconButton from '@/components/ui/UiIconButton.vue'
 import {
   STEP_ONE_CARD_CLASS,
   STEP_ONE_CARD_ICON_CLASS,
@@ -74,9 +71,12 @@ interface Props {
   step7Composition: PreviewComposition
   step7OverlaySlice: PreviewSlice | null
   hasStep9Selections: boolean
-  hasSidebarSelected: boolean
+  /**
+   * Whether the Sidebar layer is drawn over the phone. The control that flips
+   * it is NOT here any more — the designer's `5382:33712` puts the eye inside
+   * the «Sidebar» accordion row in the left column, so this panel only obeys.
+   */
   step9SidebarVisible: boolean
-  step9SidebarSlideAnimated: boolean
   sidebarHiddenCalloutVisible: boolean
   delegateToDesigners: boolean
   /** True while concept library is loading — prevents empty-state flash on step 2. */
@@ -89,10 +89,8 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
+defineEmits<{
   'confirm-concept': []
-  'toggle-sidebar': []
-  'sidebar-slide-leave-complete': []
 }>()
 
 function formatDate(dateStr: string): string {
@@ -110,23 +108,6 @@ const hasGeo = (): boolean => (props.brandBasics?.geo?.length ?? 0) > 0
 const hasDate = (): boolean => (props.brandBasics?.launchDate ?? '') !== ''
 const hasLinkedProduct = (): boolean => (props.brandBasics?.linkedProduct ?? '').trim() !== ''
 const hasAnyBasics = (): boolean => hasGeo() || hasDate() || hasLinkedProduct()
-
-const sidebarTransitionLocked = ref(false)
-
-function lockSidebarTransition() {
-  if (props.step9SidebarSlideAnimated) {
-    sidebarTransitionLocked.value = true
-  }
-}
-
-function unlockSidebarTransition() {
-  sidebarTransitionLocked.value = false
-}
-
-function handleSidebarAfterLeave() {
-  unlockSidebarTransition()
-  emit('sidebar-slide-leave-complete')
-}
 
 const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
   props.delegateToDesigners ? 'delegated' : 'pick-components',
@@ -334,57 +315,30 @@ const phoneBox = computed(() =>
                 <PhonePreviewSlice :slice="step7Composition.bottom" />
               </template>
 
+              <!-- **No `<Transition>` — DP-15450 `visual components 2`.**
+                   The layer used to slide up from the bottom edge of the phone
+                   over 0.3s; her note is «Поточна анімація появи Sidebar
+                   (знизу вгору) може плутати. → Прибрати анімацію появи
+                   Sidebar». It is now simply drawn or not drawn. -->
               <template #overlay="{ unitRem }">
-                <Transition
-                  name="sidebar-slide"
-                  :css="step9SidebarSlideAnimated"
-                  @before-enter="lockSidebarTransition"
-                  @after-enter="unlockSidebarTransition"
-                  @before-leave="lockSidebarTransition"
-                  @after-leave="handleSidebarAfterLeave"
+                <div
+                  v-if="step7OverlaySlice && step9SidebarVisible"
+                  :key="step7OverlaySlice.url"
+                  class="absolute inset-0 overflow-hidden"
                 >
-                  <div
-                    v-if="step7OverlaySlice && step9SidebarVisible"
-                    :key="step7OverlaySlice.url"
-                    class="absolute inset-0 overflow-hidden"
-                  >
-                    <PhonePreviewSidebar :slice="step7OverlaySlice" :unit-rem="unitRem" />
-                  </div>
-                </Transition>
+                  <PhonePreviewSidebar :slice="step7OverlaySlice" :unit-rem="unitRem" />
+                </div>
               </template>
             </PhonePreviewCanvas>
 
-            <!-- Sidebar toggle: 8px right, 42px top → 0.5rem / 2.625rem @16.
-                 The inline `right`/`top` stay `rem` — named invariant of this
-                 file in "Железные правила адаптива".
-                 Kit icon button `3333:5541`, Glass S: it floats over the phone
-                 render, which is the glass case, and the 16 glyph it already
-                 carried is the S size. The box grows 28 → 32, the kit's S. -->
-            <UiIconButton
-              v-if="hasSidebarSelected"
-              variant="glass"
-              size="S"
-              class="absolute disabled:pointer-events-none"
-              :style="{ right: '0.5rem', top: '2.625rem', zIndex: 35 }"
-              :disabled="sidebarTransitionLocked"
-              :title="step9SidebarVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
-              @click="emit('toggle-sidebar')"
-            >
-              <!--
-                Two rows of the mapping table, matched by what the button does
-                rather than by what it looked like: "Приховати | eye-off →
-                EyeSlash" when the sidebar is showing, "Переглянути / Показати |
-                eye → Eye" when it is hidden. Found on the screen, not in the
-                table — `5382:64114` puts exactly this crossed eye in the
-                Sidebar accordion header, which is the kit's own place for the
-                same toggle. Before this it was a cross and a panel-layout glyph
-                the kit has never drawn.
-              -->
-              <template #default="{ iconClass }">
-                <EyeSlashIcon v-if="step9SidebarVisible" :class="iconClass" />
-                <EyeIcon v-else :class="iconClass" />
-              </template>
-            </UiIconButton>
+            <!-- **Nothing floats over the phone any more — DP-15450 `visual
+                 components 4`.** A glass icon button used to sit 8 from the
+                 right of the render and 42 down, and her note is «Прибрати
+                 інтерактивний хрестик і окрему кнопку в preview. Додати eye /
+                 eye-off біля рядка Sidebar». The eye now lives in the «Sidebar»
+                 accordion row — `views/wizard/VisualComponentsView.vue` — and
+                 the × in the PNG stays what it always was here: part of the
+                 image, with nothing listening to it. -->
           </div>
         </div>
         </div>
@@ -403,22 +357,3 @@ const phoneBox = computed(() =>
     </template>
   </div>
 </template>
-
-<style scoped>
-.sidebar-slide-enter-active,
-.sidebar-slide-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar-slide-enter-from,
-.sidebar-slide-leave-to {
-  transform: translateY(100%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-slide-enter-active,
-  .sidebar-slide-leave-active {
-    transition: none;
-  }
-}
-</style>

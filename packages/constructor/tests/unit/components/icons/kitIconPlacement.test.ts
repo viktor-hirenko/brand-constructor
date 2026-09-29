@@ -122,21 +122,29 @@ const PLACEMENTS: readonly Placement[] = [
     expect: 'TrendingUpIcon',
   },
 
-  // The sidebar preview toggle on step 7. Two rows of the table, matched by
-  // what the control does. Found on screen `5382:64114`, where the kit puts the
-  // crossed eye in the Sidebar accordion header — the table alone never says
-  // where "Приховати" lives.
-  {
-    useCase: 'Приховати',
-    file: 'components/constructor/layout/StepPreviewRightPanel.vue',
-    at: /<(\w+Icon)\s+v-if="step9SidebarVisible"/,
-    expect: 'EyeSlashIcon',
-  },
+  // The sidebar preview toggle on step 7. Two rows of the table — and both the
+  // WHERE and the WHICH changed with DP-15450 `visual components 4`.
+  //
+  // Where: it used to float over the phone in the right column. Her screen
+  // `5382:33712` puts it in the «Sidebar» accordion row on the left, in the
+  // kit's own `Visibility Icon` slot, so the anchors read the step's view.
+  //
+  // Which: the glyph names the STATE, not the action. `5382:33712` draws the
+  // layer over the phone beside a plain eye; `5382:64114` draws the phone
+  // without it beside a crossed one. The floating button had it the other way
+  // round — crossed while the sidebar was visible — so this pair is inverted
+  // on purpose and must not be "fixed" back.
   {
     useCase: 'Переглянути / Показати',
-    file: 'components/constructor/layout/StepPreviewRightPanel.vue',
-    at: /<(\w+Icon)\s+v-else\s+:class="iconClass"\s*\/>\s*<\/template>\s*<\/UiIconButton>/,
+    file: 'views/wizard/VisualComponentsView.vue',
+    at: /<(\w+Icon)\s+v-if="isSidebarPreviewVisible"/,
     expect: 'EyeIcon',
+  },
+  {
+    useCase: 'Приховати',
+    file: 'views/wizard/VisualComponentsView.vue',
+    at: /<(\w+Icon)\s+v-else\s+:class="UI_ACCORDION_ICON_SIZE_CLASS"\s*\/>/,
+    expect: 'EyeSlashIcon',
   },
 ]
 

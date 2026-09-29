@@ -462,24 +462,25 @@ const {
   loadVariants: loadStep9Variants,
   buildComposition,
   getOverlaySlice,
-  buildOverlaySliceForVariant,
   hasSelections: hasStep9Selections,
-  hasSidebarSelected,
 } = useBrandPreviewLayers()
 
 const step9SidebarVisible = ref(true)
-const step9SidebarSlideAnimated = ref(false)
-const pinnedSidebarSlice = ref<PreviewSlice | null>(null)
 const sidebarHiddenCalloutVisible = ref(false)
 let sidebarHiddenCalloutTimer: ReturnType<typeof setTimeout> | null = null
 
-// Overlay is driven separately so it can outlive the selection during the
-// slide-out animation (see `pinnedSidebarSlice`).
 const step7Composition = computed(() => buildComposition(false))
-const step7OverlaySlice = computed(() => getOverlaySlice() ?? pinnedSidebarSlice.value)
+const step7OverlaySlice = computed(() => getOverlaySlice())
 
-function setSidebarPreviewVisible(visible: boolean, animate: boolean) {
-  step9SidebarSlideAnimated.value = animate
+/**
+ * **There is no `animate` argument any more — DP-15450 `visual components 2`.**
+ * The Sidebar layer used to slide in from the bottom of the phone, and every
+ * call here had to say whether this particular change should be animated. The
+ * designer removed the animation («Прибрати анімацію появи Sidebar»), so the
+ * layer simply is or is not there, and with it went the slice that had to
+ * outlive its own selection long enough to slide back out.
+ */
+function setSidebarPreviewVisible(visible: boolean) {
   step9SidebarVisible.value = visible
 }
 
@@ -501,16 +502,12 @@ function showSidebarHiddenCallout() {
 }
 
 function restoreSidebarPreview() {
-  setSidebarPreviewVisible(true, true)
+  setSidebarPreviewVisible(true)
   dismissSidebarHiddenCallout()
 }
 
-function clearPinnedSidebarLayer() {
-  pinnedSidebarSlice.value = null
-}
-
 function toggleSidebarPreview() {
-  setSidebarPreviewVisible(!step9SidebarVisible.value, true)
+  setSidebarPreviewVisible(!step9SidebarVisible.value)
   if (step9SidebarVisible.value) {
     dismissSidebarHiddenCallout()
   }
@@ -518,6 +515,8 @@ function toggleSidebarPreview() {
 
 provide(VISUAL_COMPONENT_PREVIEW_KEY, {
   restoreSidebarPreview,
+  sidebarVisible: step9SidebarVisible,
+  toggleSidebarPreview,
 })
 
 onUnmounted(dismissSidebarHiddenCallout)
@@ -533,21 +532,10 @@ watch(
     const sidebarKey = Object.keys(sel).find(k => k.includes('sidebar'))
     const prevSidebarKey = Object.keys(prevSelections.value).find(k => k.includes('sidebar'))
 
+    // Sidebar deselected: there is no layer left to draw, so the only thing
+    // to settle is what the NEXT pick should find — and that is "shown".
     if (prevSidebarKey && !sidebarKey) {
-      const prevVariantId = prevSelections.value[prevSidebarKey]
-      if (prevVariantId && step9SidebarVisible.value) {
-        const pinned = buildOverlaySliceForVariant(prevSidebarKey, prevVariantId)
-        if (pinned) {
-          pinnedSidebarSlice.value = pinned
-          setSidebarPreviewVisible(false, true)
-        } else {
-          clearPinnedSidebarLayer()
-          setSidebarPreviewVisible(true, false)
-        }
-      } else {
-        clearPinnedSidebarLayer()
-        setSidebarPreviewVisible(true, false)
-      }
+      setSidebarPreviewVisible(true)
     }
 
     const sidebarChanged = sidebarKey && sel[sidebarKey] !== prevSelections.value[sidebarKey ?? '']
@@ -558,14 +546,13 @@ watch(
       )
 
     if (sidebarChanged) {
-      clearPinnedSidebarLayer()
-      setSidebarPreviewVisible(true, true)
+      setSidebarPreviewVisible(true)
       dismissSidebarHiddenCallout()
     } else if (nonSidebarChanged) {
       const sidebarStillSelected = Boolean(sidebarKey && sel[sidebarKey])
       const wasSidebarVisible = step9SidebarVisible.value
       if (sidebarStillSelected) {
-        setSidebarPreviewVisible(false, wasSidebarVisible)
+        setSidebarPreviewVisible(false)
         if (wasSidebarVisible && currentStep.value === 7) {
           window.setTimeout(showSidebarHiddenCallout, 100)
         }
@@ -726,17 +713,13 @@ watch(currentStep, step => {
           :step7-composition="step7Composition"
           :step7-overlay-slice="step7OverlaySlice"
           :has-step9-selections="hasStep9Selections"
-          :has-sidebar-selected="hasSidebarSelected"
           :step9-sidebar-visible="step9SidebarVisible"
-          :step9-sidebar-slide-animated="step9SidebarSlideAnimated"
           :sidebar-hidden-callout-visible="sidebarHiddenCalloutVisible"
           :delegate-to-designers="store.stepData.visualComponents.delegateToDesigners"
           :libraries-loading="librariesStore.isLoading"
           :has-stored-concept-selection="step2HasStoredConceptSelection"
           :has-ordered-new-concept="hasOrderedNewConcept"
           @confirm-concept="confirmConceptFromSlider"
-          @toggle-sidebar="toggleSidebarPreview"
-          @sidebar-slide-leave-complete="clearPinnedSidebarLayer"
         />
       </template>
 

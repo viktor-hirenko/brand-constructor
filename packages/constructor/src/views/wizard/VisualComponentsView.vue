@@ -15,6 +15,8 @@ import {
 import VisualComponentsAccordionSkeleton from '@/components/constructor/skeletons/VisualComponentsAccordionSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
+import EyeIcon from '@/components/icons/EyeIcon.vue'
+import EyeSlashIcon from '@/components/icons/EyeSlashIcon.vue'
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
 import MagicWandIcon from '@/components/icons/MagicWandIcon.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
@@ -24,6 +26,10 @@ import UiAccordionItem from '@/components/ui/UiAccordionItem.vue'
 import UiAccordionOption from '@/components/ui/UiAccordionOption.vue'
 import UiBadge from '@/components/ui/UiBadge.vue'
 import UiToggle from '@/components/ui/UiToggle.vue'
+import {
+  UI_ACCORDION_HEADER_ACTION_CLASS,
+  UI_ACCORDION_ICON_SIZE_CLASS,
+} from '@/components/ui/uiAccordion'
 
 const store = useConstructorStore()
 const previewContext = useVisualComponentPreviewContext()
@@ -143,6 +149,34 @@ function getSelectedVariantLabel(typeId: string): string | null {
   if (!variantId) return null
   return getVariantDisplay(typeId, variantId)?.label ?? null
 }
+
+/**
+ * The Sidebar row's eye — DP-15450 `visual components 4`.
+ *
+ * «Прибрати інтерактивний хрестик і окрему кнопку в preview. Додати eye /
+ * eye-off біля рядка Sidebar для показу/приховування компонента. Хрестик у PNG
+ * лишити неінтерактивним.» The control used to float over the phone in the
+ * right column; `5382:33712` draws it in this row, between the `Type A` badge
+ * and the chevron.
+ *
+ * It appears only once a Sidebar variant is picked, which is the same
+ * condition the floating button had: with nothing picked there is no layer to
+ * show or hide. The preview itself lives in `BriefShellView`, so the state
+ * comes through the injected context — see `visualComponentPreviewContext.ts`.
+ */
+const canToggleSidebarPreview = computed(
+  () => previewContext !== null && !isDelegated.value && Boolean(selections.value[SIDEBAR_TYPE_ID]),
+)
+
+/**
+ * **The glyph names the STATE, not the action, and that is her drawing rather
+ * than our inference.** Both of her step-7 screens agree: `5382:33712` shows
+ * the Sidebar layer over the phone with a plain eye in this row, and
+ * `5382:64114` shows the phone without it and a crossed eye. The floating
+ * button this replaces read the other way round — it showed a crossed eye
+ * while the sidebar WAS visible, i.e. it named what clicking would do.
+ */
+const isSidebarPreviewVisible = computed(() => previewContext?.sidebarVisible.value ?? true)
 
 function isTypeInConflict(typeId: string): boolean {
   return typeHasConflict(conflicts.value, typeId)
@@ -305,6 +339,26 @@ onMounted(loadComponentTypes)
                 <InfoCircleFilledIcon class="size-4 shrink-0" />
               </template>
             </UiBadge>
+          </template>
+
+          <!-- Kit slot `Visibility Icon` `I5382:33737;5352:37363` — a bare 16
+               glyph 8 from the badge and 8 from the chevron. Its own button,
+               because the row's header is no longer one. -->
+          <template v-if="type.id === SIDEBAR_TYPE_ID && canToggleSidebarPreview" #actions>
+            <button
+              type="button"
+              :class="UI_ACCORDION_HEADER_ACTION_CLASS"
+              :aria-pressed="isSidebarPreviewVisible"
+              :title="isSidebarPreviewVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
+              :aria-label="isSidebarPreviewVisible ? 'Сховати сайдбар' : 'Показати сайдбар'"
+              @click="previewContext?.toggleSidebarPreview()"
+            >
+              <EyeIcon
+                v-if="isSidebarPreviewVisible"
+                :class="UI_ACCORDION_ICON_SIZE_CLASS"
+              />
+              <EyeSlashIcon v-else :class="UI_ACCORDION_ICON_SIZE_CLASS" />
+            </button>
           </template>
 
           <UiAccordionOption

@@ -124,6 +124,13 @@ export const UI_ACCORDION_ITEM_CLASS =
 /**
  * Header: `spacing/16` on all four sides with a 24 line box between them.
  * Numbers 5–6 of the eight (`p-4`, and the 24 pinned by the title below).
+ *
+ * **This is a row, not a button, and that is DP-15450 `visual components 4`.**
+ * The kit's header holds three slots side by side — `Title + Badge`, an
+ * optional `Visibility Icon` and `Chevron Icon` (`5382:33737`) — and the
+ * middle one is a control of its own: the eye that shows/hides the Sidebar in
+ * the preview. A button cannot contain another button, so the row gives up
+ * being one and hands the toggle to the two slots that open the section.
  */
 export const UI_ACCORDION_HEADER_CLASS =
   'ui-accordion-item__header flex w-full items-center gap-2 p-4 text-left transition-colors'
@@ -131,9 +138,15 @@ export const UI_ACCORDION_HEADER_CLASS =
 /** State = Hovered — `accordion/bg/hovered` #f3f3f5, the kit's only hover here. */
 export const UI_ACCORDION_HEADER_INTERACTIVE_CLASS = 'hover:bg-ink-200'
 
-/** `Title + Badge` frame: `spacing/8` between the two, title truncates first. */
+/**
+ * `Title + Badge` frame: `spacing/8` between the two, title truncates first.
+ *
+ * Also the shape of the button that opens the section: it is `flex-1`, so it
+ * covers every pixel of the row left of the action slot, which is what the
+ * whole-row button used to cover.
+ */
 export const UI_ACCORDION_HEADER_TITLE_GROUP_CLASS =
-  'ui-accordion-item__title-group flex min-w-0 flex-1 items-center gap-2'
+  'ui-accordion-item__title-group flex min-w-0 flex-1 items-center gap-2 text-left'
 
 /**
  * `body/medium` 16/24 in `accordion/content/title` #1f1f2e. `text-base` is
@@ -173,6 +186,27 @@ export const UI_ACCORDION_ICON_SIZE_CLASS = 'size-4'
  * this glyph mirrored in the same colour.
  */
 export const UI_ACCORDION_CHEVRON_CLASS = `ui-accordion-item__chevron ${UI_ACCORDION_ICON_SIZE_CLASS} shrink-0 text-ink-700 transition-transform duration-200`
+
+/**
+ * The chevron's own button. It opens the section like the title does, so it is
+ * not a second stop for the keyboard — the title button already carries
+ * `aria-expanded` and the accessible name.
+ */
+export const UI_ACCORDION_CHEVRON_BUTTON_CLASS =
+  'ui-accordion-item__chevron-button flex shrink-0 items-center justify-center'
+
+/**
+ * The header's action slot — the kit's `Visibility Icon` (`I5382:33737;5352:37363`),
+ * a bare 16 glyph in the chevron's own `#6f6f7d`, `spacing/8` from both
+ * neighbours. No tile, no fill: the kit draws the glyph alone.
+ *
+ * The box is 24 with the 16 glyph centred in it, and `-mx-1` gives the four
+ * spare pixels back on each side — so the glyph still stands 8 from the badge
+ * and 8 from the chevron, exactly as drawn, while the pointer gets a target
+ * half again as wide. The negative margin is 4 and the gap is 8, so the box
+ * cannot reach into the chevron's.
+ */
+export const UI_ACCORDION_HEADER_ACTION_CLASS = `ui-accordion-item__action -mx-1 flex size-6 shrink-0 items-center justify-center text-ink-700`
 
 /** Content frame under the divider: `spacing/12` inset, `spacing/4` between rows. */
 export const UI_ACCORDION_CONTENT_CLASS =
