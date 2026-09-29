@@ -12,6 +12,8 @@ export interface PrPackage {
   status: string
   created_by: string
   used_in_brand_id: string | null
+  /** Briefs (any status) that picked this package; sent by the list endpoint. */
+  brands_count?: number
   created_at: string
   updated_at: string
 }

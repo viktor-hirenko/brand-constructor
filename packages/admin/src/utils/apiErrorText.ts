@@ -110,10 +110,11 @@ function describeKnown(f: FailureLike): Omit<ErrorText, 'detail'> | null {
         'Його вже використано в затвердженому бренді, тому редагування закрите — щоб затверджений бриф не змінився. Для нової версії створіть новий концепт.',
     }
   }
-  if (/PR package is (used in an approved brand|referenced by a brand)/.test(msg)) {
+  // A PR package stays editable; only deletion is refused while a brief picks it.
+  if (/PR package is referenced by a brand/.test(msg)) {
     return {
-      title: 'Пакет не можна змінити',
-      body: 'Його вже використано в затвердженому бренді. Для змін створіть новий пакет.',
+      title: 'Пакет не можна видалити',
+      body: 'Пакет вибрано в брифах, тому видалити його не можна — інакше бриф залишиться без пакета. Змінювати пакет можна.',
     }
   }
 

@@ -143,6 +143,13 @@ function openCreate() {
   showCreateModal.value = true
 }
 
+// A package is a shared option (owner, 29.09): editable always, deletable
+// only while no brief has picked it.
+function briefsLabel(n: number): string {
+  const one = n % 10 === 1 && n % 100 !== 11
+  return `Вибрано в ${n} ${one ? 'брифі' : 'брифах'}`
+}
+
 function handleDelete(id: string, name: string) {
   deleteTarget.value = { id, name }
 }
@@ -209,7 +216,17 @@ async function confirmDelete() {
           </div>
           <div v-if="canWrite" class="package-card__actions">
             <BaseButton variant="secondary" size="sm" @click.stop="openEdit(pkg)">Edit</BaseButton>
-            <BaseButton variant="danger" size="sm" @click.stop="handleDelete(pkg.id, pkg.name)"
+            <span
+              v-if="pkg.brands_count"
+              class="package-card__in-briefs"
+              title="Пакет вибрано в брифах, тому видалити його не можна. Змінювати пакет можна."
+              >{{ briefsLabel(pkg.brands_count) }}</span
+            >
+            <BaseButton
+              v-else
+              variant="danger"
+              size="sm"
+              @click.stop="handleDelete(pkg.id, pkg.name)"
               >Delete</BaseButton
             >
           </div>
@@ -604,7 +621,13 @@ button.team-chip {
 
   &__actions {
     display: flex;
+    align-items: center;
     gap: $spacing-2;
+  }
+
+  &__in-briefs {
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
   }
 }
 </style>

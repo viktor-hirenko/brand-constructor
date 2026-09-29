@@ -14,8 +14,7 @@ describe('describeApiError — known worker messages', () => {
   it.each([
     ['Cannot modify a concept that is used in a brand', 409, 'Концепт не можна змінити'],
     ['Cannot delete a concept used in a brand. Archive it instead.', 409, 'Концепт не можна змінити'],
-    ['Cannot edit: PR package is used in an approved brand', 409, 'Пакет не можна змінити'],
-    ['Cannot delete: PR package is referenced by a brand', 409, 'Пакет не можна змінити'],
+    ['Cannot delete: PR package is referenced by a brand', 409, 'Пакет не можна видалити'],
     ['Forbidden', 403, 'Немає прав'],
     ['Forbidden: insufficient permissions for this library', 403, 'Немає прав'],
     ['Forbidden: you can only delete your own assets', 403, 'Немає прав'],

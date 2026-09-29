@@ -355,14 +355,6 @@ status.patch('/:id/status', async c => {
       )
     }
 
-    if (existing.pr_package_id) {
-      batchStatements.push(
-        c.env.DB.prepare(
-          "UPDATE pr_packages SET used_in_brand_id = ?, updated_at = datetime('now') WHERE id = ?"
-        ).bind(id, existing.pr_package_id)
-      )
-    }
-
     try {
       await c.env.DB.batch(batchStatements)
     } catch (err) {

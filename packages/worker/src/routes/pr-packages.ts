@@ -30,9 +30,12 @@ const updateSchema = z.object({
   status: z.enum(['active', 'archived', 'draft']).optional(),
 })
 
+// `brands_count` — how many briefs (any status) picked the package. The Admin
+// offers Delete only at 0; the DELETE handler refuses the rest on its own.
 app.get('/', async c => {
   const packages = await c.env.DB.prepare(
-    `SELECT p.*, u.name as author_name
+    `SELECT p.*, u.name as author_name,
+       (SELECT COUNT(*) FROM brands b WHERE b.pr_package_id = p.id) AS brands_count
      FROM pr_packages p
      LEFT JOIN users u ON p.created_by = u.id
      ORDER BY p.number ASC`
@@ -125,13 +128,6 @@ app.put('/:id', requireLibraryAccess('pr_packages'), async c => {
     return c.json({ success: false, error: 'PR package not found' }, 404)
   }
 
-  if (existing.used_in_brand_id) {
-    return c.json(
-      { success: false, error: 'Cannot edit: PR package is used in an approved brand' },
-      409
-    )
-  }
-
   const updates: string[] = []
   const values: (string | null)[] = []
 
@@ -165,13 +161,9 @@ app.delete('/:id', requireLibraryAccess('pr_packages'), async c => {
     return c.json({ success: false, error: 'PR package not found' }, 404)
   }
 
-  if (existing.used_in_brand_id) {
-    return c.json(
-      { success: false, error: 'Cannot delete: PR package is used in an approved brand' },
-      409
-    )
-  }
-
+  // A package is a shared option, like a SaaS plan: many brands pick the same
+  // one and it stays editable. Only deletion is refused while a brief still
+  // points at it, otherwise that brief would lose its package.
   const usedInBrand = await c.env.DB.prepare(
     'SELECT id FROM brands WHERE pr_package_id = ? LIMIT 1'
   )

@@ -12,7 +12,8 @@ import { describe, expect, it } from 'vitest'
  * package, had no error handling at all and now uses it too.
  *
  * Also pinned: a concept used by an approved brand offers no way to change it,
- * and says why up front. PR packages are deliberately NOT locked on screen:
+ * and says why up front. PR packages are deliberately NOT locked on screen (only Delete
+ * is swapped for a note while briefs pick the package — `prPackagesDelete.test.ts`):
  * they are a reusable service option, not a one-brand asset (owner, 29.09).
  */
 
