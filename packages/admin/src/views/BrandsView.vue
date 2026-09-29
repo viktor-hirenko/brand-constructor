@@ -400,6 +400,23 @@ async function confirmDeleteBrand() {
 @use '@/styles/mixins' as *;
 
 .brands-view {
+  // Only the rows scroll: everything above the table and the column titles
+  // stay in view (owner, 29.09 — on a 16" MacBook the titles scrolled away).
+  // The table box is the scroller because it already scrolls sideways, and a
+  // sticky header can only stick inside its nearest scrolling box. Phones keep
+  // the whole page scrolling: a pinned top would eat half the screen there.
+  @include mq($bp-md) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    // Only the table gives up height; the tab rows scroll sideways, so they
+    // would otherwise shrink to nothing.
+    > :not(.brands-view__table-wrap) {
+      flex-shrink: 0;
+    }
+  }
+
   &__header {
     display: flex;
     align-items: center;
@@ -461,6 +478,12 @@ async function confirmDeleteBrand() {
     overflow: hidden;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+
+    @include mq($bp-md) {
+      flex: 0 1 auto;
+      min-height: 240px;
+      overflow: auto;
+    }
   }
 
   &__table {
@@ -490,6 +513,12 @@ async function confirmDeleteBrand() {
       text-transform: uppercase;
       letter-spacing: 0.05em;
       background-color: $color-bg;
+
+      @include mq($bp-md) {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
 
       &.sortable-th {
         cursor: pointer;
