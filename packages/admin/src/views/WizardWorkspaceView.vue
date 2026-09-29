@@ -11,11 +11,18 @@
 // requests, so the Wizard resolves the current user with no extra login. The
 // only cross-frame contract is `postMessage` (see useEmbedBridge in the
 // constructor package): `ready`, `done`, `auth-required`.
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { buildWizardIframeSrc } from '@/utils/wizardLink'
 import { useAuthStore } from '@/stores/auth'
 import { handleSessionExpired } from '@/utils/sessionExpiry'
+import {
+  parseWizardDim,
+  wizardDimClipPath,
+  WIZARD_DIM_OFF,
+  type FrameRect,
+  type WizardDimState,
+} from '@/utils/wizardDim'
 
 interface WizardNavigatedPayload {
   brandId?: string | null
@@ -25,7 +32,7 @@ interface WizardNavigatedPayload {
 
 interface WizardBridgeMessage {
   source?: string
-  type?: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close'
+  type?: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close' | 'dim'
   payload?: unknown
 }
 
@@ -63,6 +70,36 @@ const iframeSrc = ref(buildInitialSrc())
 // the new -> brand URL transition; we now want that transition (our own sync
 // replace) to leave the mounted iframe untouched.
 const iframeKey = 'wizard-frame'
+
+// ── The wizard's dim, carried over the Admin — DP-15450, Concept Selection 6 ──
+// While a wizard modal, drawer or full-screen view is open, the same black lies
+// over this Admin's menu and bar, with a hole exactly where the frame is.
+// A click on it is sent back to the wizard as a click on its own dark area.
+const frameRef = ref<HTMLIFrameElement | null>(null)
+const dim = ref<WizardDimState>(WIZARD_DIM_OFF)
+const frameRect = ref<FrameRect>({ left: 0, top: 0, right: 0, bottom: 0 })
+let frameObserver: ResizeObserver | null = null
+
+function measureFrame() {
+  const el = frameRef.value
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  frameRect.value = { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+}
+
+const dimStyle = computed(() => ({
+  backgroundColor: `rgba(0, 0, 0, ${dim.value.alpha})`,
+  transition: `background-color ${dim.value.fadeMs}ms ease`,
+  clipPath: wizardDimClipPath(frameRect.value),
+  pointerEvents: dim.value.alpha > 0 ? ('auto' as const) : ('none' as const),
+}))
+
+function forwardDimClick() {
+  frameRef.value?.contentWindow?.postMessage(
+    { source: 'brand-admin', type: 'backdrop-click' },
+    window.location.origin,
+  )
+}
 
 function syncAdminUrl(payload: WizardNavigatedPayload) {
   const brandId = payload.brandId
@@ -115,6 +152,10 @@ function handleMessage(event: MessageEvent<WizardBridgeMessage>) {
       // restores the same place. Does not touch the running iframe.
       syncAdminUrl((data.payload ?? {}) as WizardNavigatedPayload)
       break
+    case 'dim':
+      measureFrame()
+      dim.value = parseWizardDim(data.payload)
+      break
     case 'close':
       // The kit's Wizard header (`5382:30951`) draws a close cross at the right
       // edge of every wizard screen. The mockup has no Admin header, so there
@@ -130,14 +171,24 @@ function handleIframeLoad() {
   // Fallback in case the bridge `ready` message is missed (e.g. legacy build
   // without the bridge): the raw load event still clears the loader.
   isLoading.value = false
+  // A frame that (re)loaded has no modal open, whatever it reported before.
+  dim.value = WIZARD_DIM_OFF
 }
 
 onMounted(() => {
   window.addEventListener('message', handleMessage)
+  window.addEventListener('resize', measureFrame)
+  if (frameRef.value && typeof ResizeObserver !== 'undefined') {
+    frameObserver = new ResizeObserver(measureFrame)
+    frameObserver.observe(frameRef.value)
+  }
+  measureFrame()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('message', handleMessage)
+  window.removeEventListener('resize', measureFrame)
+  frameObserver?.disconnect()
 })
 </script>
 
@@ -149,12 +200,21 @@ onBeforeUnmount(() => {
     </div>
     <iframe
       v-show="!isSessionEnding"
+      ref="frameRef"
       :key="iframeKey"
       :src="iframeSrc"
       class="wizard-workspace__frame"
       title="Brand Wizard"
       @load="handleIframeLoad"
     />
+    <Teleport to="body">
+      <div
+        class="wizard-workspace__dim"
+        :style="dimStyle"
+        aria-hidden="true"
+        @click="forwardDimClick"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -186,6 +246,14 @@ onBeforeUnmount(() => {
     background-color: $color-bg;
     color: $color-text-secondary;
     font-size: $font-size-sm;
+  }
+
+  // Above everything the Admin draws (its sidebar, bar and off-canvas menu);
+  // the clip-path leaves the frame itself uncovered.
+  &__dim {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
   }
 
   &__spinner {

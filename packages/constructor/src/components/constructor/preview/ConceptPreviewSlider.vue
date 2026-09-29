@@ -12,6 +12,7 @@ import SelectionPillBadge from '@/components/ui/SelectionPillBadge.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiPagination from '@/components/ui/UiPagination.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
+import { useAdminDimWhile } from '@/composables/useAdminDim'
 import {
   PREVIEW_IMAGE_BACKDROP_CLASS,
   PREVIEW_IMAGE_CLASS,
@@ -212,6 +213,13 @@ const expandedFit = computed(() => expandedFitFor(currentSlideUrl.value))
 function closeExpanded() {
   showExpanded.value = false
 }
+
+// The full-screen view darkens the Admin's menu and bar too, with its own
+// black 60% — DP-15450, Concept Selection 6.
+useAdminDimWhile(() => showExpanded.value && !!currentSlideUrl.value && !!props.concept, {
+  alpha: 0.6,
+  onBackdrop: closeExpanded,
+})
 
 /**
  * `hideHeader` is the concept-gallery drawer (`ConceptPreviewPopup`), which is

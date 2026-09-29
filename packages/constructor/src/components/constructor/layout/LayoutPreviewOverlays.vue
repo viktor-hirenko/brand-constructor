@@ -7,6 +7,7 @@ import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
 import { isEmbedded } from '@/composables/useEmbedMode'
+import { useAdminDimWhile } from '@/composables/useAdminDim'
 
 const store = useConstructorStore()
 const librariesStore = useLibrariesStore()
@@ -21,6 +22,14 @@ const overlayConcept = computed(() => {
   const id = store.conceptPreviewConceptId
   if (!id) return null
   return librariesStore.concepts.find(item => item.id === id) ?? null
+})
+
+// The concept drawer's backdrop darkens the Admin's menu too, with the same
+// black and the same 0.25s fade — DP-15450, Concept Selection 6.
+useAdminDimWhile(() => store.conceptPreviewOpen && overlayConcept.value !== null, {
+  alpha: 0.5,
+  fadeMs: 250,
+  onBackdrop: () => store.closeConceptPreview(),
 })
 
 const conceptBrief = computed(() => store.stepData.concept.newConceptBrief)

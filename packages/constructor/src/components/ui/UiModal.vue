@@ -2,7 +2,12 @@
 import { computed, useId, useSlots } from 'vue'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
-import { resolveUiModalClasses, type UiModalSize } from '@/components/ui/uiModal'
+import {
+  resolveUiModalClasses,
+  UI_MODAL_BACKDROP_ALPHA,
+  type UiModalSize,
+} from '@/components/ui/uiModal'
+import { useAdminDim } from '@/composables/useAdminDim'
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import { useEscapeClose } from '@/composables/useEscapeClose'
 
@@ -52,6 +57,9 @@ const slots = useSlots()
 
 useEscapeClose(() => emit('close'))
 useBodyScrollLock()
+// The Admin's menu and bar go dark with this backdrop, and a click there is a
+// click on it — DP-15450, Concept Selection 6.
+useAdminDim({ alpha: UI_MODAL_BACKDROP_ALPHA, onBackdrop: handleBackdrop })
 
 const titleId = `ui-modal-title-${useId()}`
 

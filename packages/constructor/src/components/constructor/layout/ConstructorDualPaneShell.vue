@@ -10,6 +10,7 @@ import {
   rightPaneClass,
 } from './dualPaneLayoutClasses'
 import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
+import { useAdminDimWhile } from '@/composables/useAdminDim'
 import { useWizardPaneMetrics } from '@/composables/useWizardPaneMetrics'
 import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
@@ -87,6 +88,15 @@ function closePreview(): void {
 }
 
 // Leaving drawer mode (panel widened) must not leave the drawer stuck open.
+// The narrow-embed preview drawer darkens the Admin's menu and bar with it —
+// the same rgba(0,0,0,0.45) and 0.25s as its backdrop below (DP-15450,
+// Concept Selection 6).
+useAdminDimWhile(() => isDrawerMode.value && isPreviewOpen.value, {
+  alpha: 0.45,
+  fadeMs: 250,
+  onBackdrop: closePreview,
+})
+
 watch(isDrawerMode, mode => {
   if (!mode) isPreviewOpen.value = false
 })

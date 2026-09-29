@@ -71,6 +71,13 @@ export const UI_MODAL_OVERLAY_CLASS =
 export const UI_MODAL_BACKDROP_CLASS = 'ui-modal__backdrop absolute inset-0 bg-black/50'
 
 /**
+ * The same `/50` as a number, for the Admin's half of the dim (DP-15450,
+ * Concept Selection 6 — see `composables/useAdminDim.ts`). A test keeps the two
+ * in step.
+ */
+export const UI_MODAL_BACKDROP_ALPHA = 0.5
+
+/**
  * Radius 16 (`rounded-2xl`) is the kit card radius. `overflow-hidden` is what
  * makes the scrolling body respect those corners. `max-h-[85vh]` — see the unit
  * note above.

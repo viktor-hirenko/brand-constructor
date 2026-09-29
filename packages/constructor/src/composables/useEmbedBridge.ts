@@ -18,7 +18,7 @@ interface NavigatedPayload {
 
 interface EmbedMessage {
   source: 'brand-wizard';
-  type: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close';
+  type: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close' | 'dim';
   payload?: unknown;
 }
 
@@ -56,6 +56,31 @@ export function postAuthRequired(): void {
 export function postClose(): void {
   if (!isEmbedded()) return;
   post('close');
+}
+
+/**
+ * Tell the Admin how dark the wizard is right now, so it can lay the same black
+ * over its own menu and bar — DP-15450, Concept Selection 6. `alpha` 0 clears
+ * it. The single sender is `useAdminDim.ts`, which combines every open backdrop.
+ */
+export function postDim(payload: { alpha: number; fadeMs: number }): void {
+  if (!isEmbedded()) return;
+  post('dim', payload);
+}
+
+/**
+ * The Admin forwards a click on its dark area here, so that it does what a
+ * click on the wizard's own dark area does. Same origin and the Admin's own
+ * `source` only.
+ */
+export function onAdminBackdropClick(handler: () => void): void {
+  if (!isEmbedded()) return;
+  window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data as { source?: string; type?: string } | null;
+    if (!data || data.source !== 'brand-admin' || data.type !== 'backdrop-click') return;
+    handler();
+  });
 }
 
 /**
