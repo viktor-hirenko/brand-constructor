@@ -32,6 +32,21 @@ export const LIBRARY_WRITE_PERMISSIONS: Record<string, string[]> = {
 export const ADMIN_ROLES = [USER_ROLES.ADMIN, USER_ROLES.HEAD_DHC] as const;
 
 /**
+ * Roles that see the library tabs of the Admin (Concepts, Namings, PR Packages,
+ * UI Components). Product Owner and CPO/CEO work only with briefs — they still
+ * pick library items inside the brief itself, which reads the API directly.
+ * Team request, 29.09.2026: docs/design-audit/admin-role-tabs.md.
+ */
+export const LIBRARY_TAB_ROLES = [
+  USER_ROLES.ADMIN,
+  USER_ROLES.HEAD_DHC,
+  USER_ROLES.STRATEGY_IDENTITY,
+  USER_ROLES.UI_DESIGNER,
+  USER_ROLES.PR_MARKETING,
+  USER_ROLES.PRODUCT_DESIGNER,
+] as const;
+
+/**
  * Roles that can approve / send back a submitted brief.
  * Per PRD v2 §2 (Етап 2: CEO Approval) — ONLY CPO/CEO. Admin and Head of DHC
  * are library administrators and do not act on briefs.

@@ -9,6 +9,7 @@ import textAa from '@phosphor-icons/core/regular/text-aa.svg?raw'
 import users from '@phosphor-icons/core/regular/users.svg?raw'
 import close from '@phosphor-icons/core/regular/x.svg?raw'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
+import { LIBRARY_TAB_ROLES } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 
 interface Props {
@@ -34,6 +35,8 @@ interface NavItem {
   /** A Phosphor SVG file, as text. */
   icon: string
   adminOnly?: boolean
+  /** Only these roles see the item; the router refuses the page to the rest. */
+  roles?: readonly string[]
 }
 
 // Glyphs — DP-15859, the designer's mapping table `5658:39246`, "Admin sidebar"
@@ -42,15 +45,19 @@ interface NavItem {
 // `Users` for it.
 const navItems: NavItem[] = [
   { label: 'Brands', path: '/brands', icon: tag },
-  { label: 'Concepts', path: '/concepts', icon: lightbulb },
-  { label: 'Namings', path: '/namings', icon: textAa },
-  { label: 'PR Packages', path: '/pr-packages', icon: megaphone },
-  { label: 'UI Components', path: '/components', icon: squaresFour },
+  { label: 'Concepts', path: '/concepts', icon: lightbulb, roles: LIBRARY_TAB_ROLES },
+  { label: 'Namings', path: '/namings', icon: textAa, roles: LIBRARY_TAB_ROLES },
+  { label: 'PR Packages', path: '/pr-packages', icon: megaphone, roles: LIBRARY_TAB_ROLES },
+  { label: 'UI Components', path: '/components', icon: squaresFour, roles: LIBRARY_TAB_ROLES },
   { label: 'Users', path: '/users', icon: users, adminOnly: true },
 ]
 
 const visibleItems = computed(() =>
-  navItems.filter(item => !item.adminOnly || authStore.isStrictAdmin)
+  navItems.filter(
+    item =>
+      (!item.adminOnly || authStore.isStrictAdmin) &&
+      (!item.roles || item.roles.includes(authStore.user?.role ?? ''))
+  )
 )
 
 function isActive(path: string): boolean {

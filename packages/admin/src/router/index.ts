@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { USER_ROLES } from '@brand-constructor/shared'
+import { LIBRARY_TAB_ROLES, USER_ROLES } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 
 function getRequiredRoles(
@@ -30,31 +30,37 @@ const router = createRouter({
       path: '/concepts',
       name: 'concepts',
       component: () => import('@/views/ConceptsView.vue'),
+      meta: { roles: LIBRARY_TAB_ROLES },
     },
     {
       path: '/concepts/:id',
       name: 'concept-detail',
       component: () => import('@/views/ConceptDetailView.vue'),
+      meta: { roles: LIBRARY_TAB_ROLES },
     },
     {
       path: '/namings',
       name: 'namings',
       component: () => import('@/views/NamingsView.vue'),
+      meta: { roles: LIBRARY_TAB_ROLES },
     },
     {
       path: '/pr-packages',
       name: 'pr-packages',
       component: () => import('@/views/PrPackagesView.vue'),
+      meta: { roles: LIBRARY_TAB_ROLES },
     },
     {
       path: '/components',
       name: 'components',
       component: () => import('@/views/ComponentsView.vue'),
+      meta: { roles: LIBRARY_TAB_ROLES },
     },
     {
       path: '/components/:typeId',
       name: 'component-variants',
       component: () => import('@/views/ComponentVariantsView.vue'),
+      meta: { roles: LIBRARY_TAB_ROLES },
     },
     {
       path: '/brands',
