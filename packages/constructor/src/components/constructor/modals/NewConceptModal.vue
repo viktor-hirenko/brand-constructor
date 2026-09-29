@@ -73,6 +73,11 @@ const isEditMode = !!init
 const todayISO = new Date().toISOString().split('T')[0]
 const budgetStr = ref(init?.domainBudget != null ? String(init.domainBudget) : '')
 
+/** What the form opened with — `Concept Selection 7` asks before discarding anything else. */
+const formFingerprint = () => JSON.stringify({ form, budget: budgetStr.value })
+const openedWith = formFingerprint()
+const isDirty = computed(() => formFingerprint() !== openedWith)
+
 const isValid = computed(
   () =>
     form.conceptFeedback.trim() !== '' &&
@@ -108,6 +113,7 @@ const title = computed(() => {
   <BriefModalShell
     :title="title"
     :is-valid="isValid"
+    :dirty="isDirty"
     :readonly="readonly"
     :show-edit-action="showEditAction"
     @cancel="emit('cancel')"

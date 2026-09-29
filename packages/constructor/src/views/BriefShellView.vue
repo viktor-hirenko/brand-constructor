@@ -37,6 +37,12 @@ import SupervisorBriefGateView from '@/components/constructor/review/SupervisorB
 import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
 import { wizardStepLocation } from '@/utils/brandHydration'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
+import {
+  BRIEF_EXIT_CONFIRM_COPY,
+  resolveBriefExitConfirmBody,
+  useBriefExitConfirm,
+} from '@/composables/useBriefExitConfirm'
 import type { Concept } from '@brand-constructor/shared/types'
 
 const route = useRoute()
@@ -98,14 +104,52 @@ const totalSteps = 8
  * The kit's close control (`Wizard header` `5382:30951`): in the Admin it does
  * what the Admin's own "← Brands" button does, because that is the only way out
  * of a brand the product has; standalone it returns to the wizard landing.
- * The wizard saves as it goes, so there is nothing to discard here.
  */
-function handleWizardClose(): void {
+function leaveWizard(): void {
   if (embedded) {
     postClose()
     return
   }
   void router.push('/')
+}
+
+/**
+ * DP-15450 `Concept Selection 8` / `CEO view 6`: the × asks first, but only
+ * once the brief was changed — see `useBriefExitConfirm`.
+ *
+ * «Вийти» has to make her «Усі зміни збережено» true. The wizard writes to the
+ * server on «Далі» only, so an author on a plain step gets the same save «Далі»
+ * does. Everywhere else there is nothing to add: the CEO's comments are kept
+ * locally as they are typed and an applied pick is saved when it is applied,
+ * and a section being re-edited from the final review is not committed behind
+ * the user's back — that is the half-done cascade of `Final review 5`.
+ */
+function persistBeforeExit(): Promise<boolean> {
+  const plainAuthorStep =
+    !authStore.isCeo &&
+    store.brandStatus === 'draft' &&
+    !isViewMode.value &&
+    !store.editingSection
+  return plainAuthorStep ? store.saveBrand() : Promise.resolve(true)
+}
+
+const exitConfirm = useBriefExitConfirm({
+  source: () => ({
+    stepData: store.stepData,
+    ceoComments: store.brandCeoComments,
+    ceoSelections: store.brandCeoSelections,
+  }),
+  briefId: () => store.brandId,
+  persist: persistBeforeExit,
+  leave: leaveWizard,
+})
+
+const exitConfirmBody = computed(() =>
+  resolveBriefExitConfirmBody({ isCeo: authStore.isCeo, brandStatus: store.brandStatus }),
+)
+
+function handleWizardClose(): void {
+  exitConfirm.requestExit()
 }
 
 const isFirstStep = computed(() => currentStep.value === 1)
@@ -731,6 +775,16 @@ watch(currentStep, step => {
       <template #overlays>
         <LayoutPreviewOverlays />
         <ConceptGalleryDrawer />
+        <ConfirmationModal
+          v-if="exitConfirm.open.value"
+          :title="BRIEF_EXIT_CONFIRM_COPY.title"
+          :body="exitConfirmBody"
+          :cancel-label="BRIEF_EXIT_CONFIRM_COPY.cancelLabel"
+          :primary-label="BRIEF_EXIT_CONFIRM_COPY.primaryLabel"
+          :primary-loading="exitConfirm.leaving.value"
+          @cancel="exitConfirm.stay"
+          @primary="exitConfirm.confirmExit"
+        />
       </template>
     </ConstructorDualPaneShell>
   </div>

@@ -23,6 +23,8 @@ const emit = defineEmits<{
 
 const isEditMode = !!props.initialFeedback
 const feedback = ref(props.initialFeedback ?? '')
+/** `Concept Selection 7`: typed text is what a stray click would throw away. */
+const isDirty = computed(() => feedback.value !== (props.initialFeedback ?? ''))
 
 const isValid = computed(() => feedback.value.trim() !== '')
 
@@ -41,6 +43,7 @@ const title = computed(() => {
   <BriefModalShell
     :title="title"
     :is-valid="isValid"
+    :dirty="isDirty"
     :readonly="readonly"
     :show-edit-action="showEditAction"
     @cancel="emit('cancel')"
