@@ -176,3 +176,81 @@ export const PREVIEW_IMAGE_BACKDROP_CLASS =
 export function previewImageFitClass(fit: 'cover' | 'contain'): string {
   return fit === 'contain' ? 'object-contain' : 'object-cover'
 }
+
+/**
+ * ── The concept-gallery DRAWER, and why its box is NOT the kit's square ──────
+ *
+ * The drawer is `ConceptPreviewPopup`: the panel that slides in over the right
+ * column when the eye beside a concept is pressed on the final review. It is
+ * not a screen the designer drew — the board carries five mock-ups and none of
+ * them is this one, and the kit's `Preview panel` `3839:9513` knows three types,
+ * all of them a header above a square. So the shape of this box is ours.
+ *
+ * **What it used to be, measured off the owner's screenshots:** the box was
+ * handed whatever height was left in a full-height panel — 591 × 780 at a
+ * 1440 × 900 window — while the pictures are SQUARE. A square picture shown
+ * whole in a 780-tall box leaves (780 − 591) ÷ 2 = 94.5 of blurred backdrop
+ * above it and the same below. Nothing was broken; the box simply had no shape.
+ *
+ * **What it is now (the owner's call, variant B):** the box takes the
+ * proportion of the picture inside it, so there is nothing left over to fill.
+ * For the square gallery pictures that IS a square — and a square is what every
+ * other place in the product already draws: `aspect-ratio: 1` on the Admin's
+ * concept cards and `aspect-square` on the wizard's.
+ *
+ * **Why the pictures are square is not an assumption.** The gallery slots
+ * upload with `aspect_ratio` 1:1 and the worker refuses anything off by more
+ * than 1% (`packages/worker/src/utils/asset-validation.ts`). The proportion is
+ * still read from the decoded picture rather than assumed, because a box that
+ * follows the picture cannot be wrong about it, and old assets predate that
+ * check.
+ *
+ * **Why the wizard's square is left alone.** There the number is the designer's
+ * (575 at 1440) and the whole column is sized from it — the responsive section
+ * publishes it as `--wizard-preview-side`. Under the drawer's box there is
+ * nothing at all, which is exactly why the box may follow the picture here and
+ * nowhere else.
+ */
+
+/**
+ * The area the drawer gives its box: the leftover height, with the box centred
+ * in whatever it does not use.
+ */
+export const PREVIEW_DRAWER_AREA_CLASS =
+  'flex min-h-0 flex-1 items-center justify-center overflow-hidden'
+
+/**
+ * The box itself. `w-full` + `max-h-full` + an inline `aspect-ratio` is the fit
+ * pattern Tailwind's own aspect utilities rely on: a max size on one axis is
+ * transferred through the ratio to the other (CSS Sizing 4), so a box too tall
+ * for the area gives up width instead of breaking its shape.
+ */
+export const PREVIEW_DRAWER_BOX_CLASS = 'w-full max-h-full'
+
+/** The empty state keeps the whole area — there is no picture to take a shape from. */
+export const PREVIEW_DRAWER_PLACEHOLDER_BOX_CLASS = 'h-full w-full'
+
+/** Used until the picture has decoded: square, which is what the uploads are. */
+export const PREVIEW_BOX_ASPECT_FALLBACK = 1
+
+/**
+ * How far from square the box is allowed to follow a picture. A panorama or a
+ * strip uploaded before the 1:1 check existed would otherwise collapse the box
+ * to a sliver, and the arrows and dots inside it stand 48 tall on a 20 inset.
+ * At 2.5 the box is still 236 tall at a 591 width.
+ */
+export const PREVIEW_BOX_ASPECT_MIN = 0.4
+export const PREVIEW_BOX_ASPECT_MAX = 2.5
+
+/**
+ * The drawer's box shape, as arithmetic — pinned by
+ * `tests/unit/composables/adaptiveImageFit.test.ts` for the same reason
+ * `resolveImageFit` is: a composable with a `ResizeObserver` cannot be mounted
+ * in this package's node test environment.
+ */
+export function resolvePreviewBoxAspect(imageAspect: number | null | undefined): number {
+  if (!imageAspect || !Number.isFinite(imageAspect) || imageAspect <= 0) {
+    return PREVIEW_BOX_ASPECT_FALLBACK
+  }
+  return Math.min(PREVIEW_BOX_ASPECT_MAX, Math.max(PREVIEW_BOX_ASPECT_MIN, imageAspect))
+}

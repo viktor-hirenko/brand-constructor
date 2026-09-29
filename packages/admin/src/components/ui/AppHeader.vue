@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 
 const emit = defineEmits<{
@@ -7,7 +7,6 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const router = useRouter()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
@@ -25,13 +24,21 @@ const pageTitle = computed(() => {
   return titles[route.name as string] || 'Brand Constructor'
 })
 
-// On the embedded Wizard routes, show a "back to Brands" affordance since the
-// Wizard fills the content area and has no Admin breadcrumb of its own.
-const isWorkspace = computed(() => route.path.startsWith('/workspace'))
-
-function goToBrands() {
-  router.push({ name: 'brands' })
-}
+/*
+ * There was a "← Brands" button here on the wizard routes, and it is gone —
+ * DP-15450, the owner's call.
+ *
+ * It only ever showed BELOW `$bp-sidebar` (1280): from 1280 up, `App.vue`
+ * hides this whole bar on the wizard workspace, because the kit draws no bar
+ * above the wizard at all. So the button was a leftover of the one place the
+ * designer never drew, and in that place it duplicated two controls that are
+ * both on screen: the wizard's own × in its header and the burger beside it.
+ * It was also drawn with an HTML arrow entity rather than a glyph from the
+ * icon set, which is the reason the same button was taken out above 1280.
+ *
+ * The burger stays. Below 1280 the sidebar is off-canvas and this is the only
+ * thing that opens it.
+ */
 </script>
 
 <template>
@@ -40,14 +47,6 @@ function goToBrands() {
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />
-    </button>
-    <button
-      v-if="isWorkspace"
-      class="app-header__back"
-      type="button"
-      @click="goToBrands"
-    >
-      &larr; Brands
     </button>
     <h1 class="app-header__title">{{ pageTitle }}</h1>
   </header>
@@ -101,24 +100,6 @@ function goToBrands() {
     background-color: $color-text;
     border-radius: 2px;
     transition: background-color $transition-fast;
-  }
-
-  &__back {
-    flex-shrink: 0;
-    padding: $spacing-2 $spacing-3;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-primary;
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-      background-color: $color-bg;
-      border-color: $color-primary;
-    }
   }
 
   &__title {

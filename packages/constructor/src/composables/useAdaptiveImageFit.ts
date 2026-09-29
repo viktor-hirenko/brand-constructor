@@ -107,5 +107,17 @@ export function useAdaptiveImageFit() {
     return resolveImageFit(containerAspect.value, imageAspect.value.get(url))
   }
 
-  return { containerRef, recordAspect, fitModeFor }
+  /**
+   * The picture's own proportion, once it has decoded — `null` until then.
+   *
+   * The concept-gallery drawer sizes its BOX from this instead of asking how to
+   * fit a picture into a box that was handed to it (DP-15450, the owner's call).
+   * Everywhere else the box is the kit's square and only `fitModeFor` matters.
+   */
+  function aspectFor(url: string | null | undefined): number | null {
+    if (!url) return null
+    return imageAspect.value.get(url) ?? null
+  }
+
+  return { containerRef, recordAspect, fitModeFor, aspectFor }
 }

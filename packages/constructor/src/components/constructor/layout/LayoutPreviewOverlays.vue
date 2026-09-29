@@ -2,20 +2,14 @@
 import { computed } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import { useLibrariesStore } from '@/stores/libraries'
-import ConceptPreviewPopup from '@/components/constructor/preview/ConceptPreviewPopup.vue'
 import PrPackagePreviewPopup from '@/components/constructor/preview/PrPackagePreviewPopup.vue'
 import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
-import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
 import { isEmbedded } from '@/composables/useEmbedMode'
 
 const store = useConstructorStore()
 const librariesStore = useLibrariesStore()
-
-// On narrow embedded panels the concept gallery drawer spans the full width
-// (same rationale as the shell preview drawer); wide/standalone keeps 58%.
-const { isNarrowEmbed } = useNarrowEmbed()
 
 // The backdrop's `rounded-[14px]` matches the standalone card's own corner
 // radius (`SHELL_BASE_CLASS`). The embedded shell is a square, edge-to-edge
@@ -50,9 +44,16 @@ function handleRequestEdit() {
 
 <template>
   <!--
-    Concept gallery preview: existing slider opens as a right-side drawer
-    above the right column. The brief preview is what was switched to a
-    centered modal — the gallery preview keeps its drawer behaviour.
+    Concept gallery preview: the slider opens as a right-side drawer over the
+    right column. The brief preview is what was switched to a centered modal —
+    the gallery preview keeps its drawer behaviour.
+
+    Only the BACKDROP is here. It is mounted at the shell root on purpose: the
+    dimming has to cover the wizard header too (DP-15450 · Concept Selection 6,
+    «Overlay модалки має затемнювати весь viewport, включно з header»), and the
+    header is not inside the row. The panel itself is `ConceptGalleryDrawer`,
+    mounted in the row so that it lands exactly on the right column — at the
+    root it ran the full window height and past the 1700 frame on a wide screen.
   -->
   <Transition name="concept-backdrop">
     <div
@@ -61,15 +62,6 @@ function handleRequestEdit() {
       :class="embedded ? '' : 'rounded-[14px]'"
       @click="store.closeConceptPreview()"
     />
-  </Transition>
-  <Transition name="concept-panel">
-    <div
-      v-if="store.conceptPreviewOpen && overlayConcept"
-      class="absolute right-0 top-0 h-full z-[29] overflow-hidden"
-      :class="isNarrowEmbed ? 'w-full' : 'w-[var(--wizard-right-pane-width,58%)]'"
-    >
-      <ConceptPreviewPopup :concept="overlayConcept" />
-    </div>
   </Transition>
 
   <!--
@@ -123,12 +115,5 @@ function handleRequestEdit() {
   opacity: 0;
 }
 
-.concept-panel-enter-active,
-.concept-panel-leave-active {
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.concept-panel-enter-from,
-.concept-panel-leave-to {
-  transform: translateX(100%);
-}
+/* The panel's own slide lives with the panel, in `ConceptGalleryDrawer.vue`. */
 </style>

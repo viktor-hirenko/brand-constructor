@@ -137,7 +137,12 @@ describe('only the square scrolls — the header stays put (row 94)', () => {
       withoutComments(read('components/constructor/preview/ConceptPreviewSlider.vue'))
     )
     expect((markup.match(/scrollAreaClass/g) ?? []).length).toBe(2)
-    expect((markup.match(/squareClass/g) ?? []).length).toBe(2)
+    // One box per branch, and since DP-15450 they are no longer the same box:
+    // the picture's box takes the shape of the picture inside the gallery
+    // drawer, while the empty state has no picture and keeps the whole area.
+    // What the count guards is unchanged — neither branch may lose its box.
+    expect((markup.match(/\bsquareClass\b/g) ?? []).length).toBe(1)
+    expect((markup.match(/\bplaceholderBoxClass\b/g) ?? []).length).toBe(1)
   })
 
   it('lets the slider swap those two only for the drawer, and for nothing else', () => {

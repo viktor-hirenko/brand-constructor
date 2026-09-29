@@ -63,8 +63,9 @@ const shellStyle = computed(() => ({
         transform: `scale(${props.scale})`,
         transformOrigin: 'center center',
       }),
-  // Published for the overlays slot, which is outside the measured row but has
-  // to line up with the right column all the same.
+  // Published on the ROOT, where the overlays slot is: the concept drawer is
+  // anchored to the window rather than to the row, and still has to come out
+  // the width of the right column.
   ...rightPaneVarStyle.value,
 }))
 
@@ -251,6 +252,7 @@ const rightContentStyle = computed(() =>
         Прев'ю
       </button>
     </template>
+
     </div>
     </div>
 

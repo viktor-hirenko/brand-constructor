@@ -6,9 +6,16 @@ import {
   resolveImageFit,
 } from '@/composables/useAdaptiveImageFit'
 import {
+  PREVIEW_BOX_ASPECT_FALLBACK,
+  PREVIEW_BOX_ASPECT_MAX,
+  PREVIEW_BOX_ASPECT_MIN,
+  PREVIEW_DRAWER_AREA_CLASS,
+  PREVIEW_DRAWER_BOX_CLASS,
   PREVIEW_IMAGE_BACKDROP_CLASS,
   PREVIEW_IMAGE_CLASS,
+  PREVIEW_PANEL_SQUARE_CLASS,
   previewImageFitClass,
+  resolvePreviewBoxAspect,
 } from '@/constants/previewLayout'
 
 /**
@@ -129,5 +136,80 @@ describe('both preview squares ask the same question', () => {
     expect(slider).toContain('PREVIEW_IMAGE_BACKDROP_CLASS')
     // No hand-written ternary picking the fit any more.
     expect(slider).not.toMatch(/'object-contain'\s*:\s*'object-cover'/)
+  })
+})
+
+/**
+ * ── The gallery drawer's box, DP-15450, the owner's variant B ────────────────
+ *
+ * The drawer used to hand the picture the whole leftover height — 591 × 780 at
+ * a 1440 × 900 window — while the gallery pictures are square, which left 94.5
+ * of blurred backdrop above the picture and the same below. The box now takes
+ * the picture's own proportion instead, so there is nothing left to fill.
+ *
+ * What can regress silently: the box going back to `h-full`, and the wizard's
+ * square being "unified" with it. The second would be worse than the first —
+ * that square is the designer's number and the whole right column is sized from
+ * it, which is precisely why only the drawer may follow its picture.
+ */
+describe('resolvePreviewBoxAspect — the drawer box follows the picture', () => {
+  it('gives a square box to the square pictures the library uploads', () => {
+    // Gallery slots upload at 1:1 and the worker refuses more than 1% off
+    // (`asset-validation.ts`), so this is the everyday case.
+    expect(resolvePreviewBoxAspect(1)).toBe(1)
+    expect(resolvePreviewBoxAspect(0.995)).toBeCloseTo(0.995, 5)
+  })
+
+  it('follows a picture that is not square, which is the whole point', () => {
+    expect(resolvePreviewBoxAspect(1.5)).toBe(1.5)
+    expect(resolvePreviewBoxAspect(9 / 16)).toBeCloseTo(0.5625, 5)
+  })
+
+  it('falls back to square while nothing has decoded yet', () => {
+    expect(resolvePreviewBoxAspect(null)).toBe(PREVIEW_BOX_ASPECT_FALLBACK)
+    expect(resolvePreviewBoxAspect(undefined)).toBe(PREVIEW_BOX_ASPECT_FALLBACK)
+    expect(resolvePreviewBoxAspect(0)).toBe(PREVIEW_BOX_ASPECT_FALLBACK)
+    expect(resolvePreviewBoxAspect(-2)).toBe(PREVIEW_BOX_ASPECT_FALLBACK)
+    expect(resolvePreviewBoxAspect(Number.NaN)).toBe(PREVIEW_BOX_ASPECT_FALLBACK)
+    expect(resolvePreviewBoxAspect(Number.POSITIVE_INFINITY)).toBe(PREVIEW_BOX_ASPECT_FALLBACK)
+    expect(PREVIEW_BOX_ASPECT_FALLBACK).toBe(1)
+  })
+
+  it('refuses to collapse into a sliver on a stray panorama', () => {
+    expect(resolvePreviewBoxAspect(12)).toBe(PREVIEW_BOX_ASPECT_MAX)
+    expect(resolvePreviewBoxAspect(0.05)).toBe(PREVIEW_BOX_ASPECT_MIN)
+    // At the widest allowed shape the box is still tall enough to hold the
+    // 48 arrows on their 20 inset: 591 ÷ 2.5 = 236.
+    expect(591 / PREVIEW_BOX_ASPECT_MAX).toBeGreaterThan(200)
+  })
+})
+
+describe('the drawer sizes its box, the wizard keeps the designer’s square', () => {
+  const slider = read('components/constructor/preview/ConceptPreviewSlider.vue')
+
+  it('the drawer box is the fit pattern, not a full-height block', () => {
+    expect(PREVIEW_DRAWER_BOX_CLASS.split(' ')).toContain('max-h-full')
+    expect(PREVIEW_DRAWER_BOX_CLASS.split(' ')).toContain('w-full')
+    // A stated height is exactly what made the box 780 tall; `max-h-full` is
+    // the ceiling the ratio is allowed to shrink against, and it must not be
+    // read as a height by this check.
+    expect(PREVIEW_DRAWER_BOX_CLASS.split(' ')).not.toContain('h-full')
+    // Without this the box would keep its shape but sit at the top.
+    expect(PREVIEW_DRAWER_AREA_CLASS).toContain('items-center')
+    expect(PREVIEW_DRAWER_AREA_CLASS).toContain('justify-center')
+  })
+
+  it('the slider binds a shape to the box and reads it from the picture', () => {
+    expect(slider).toContain('resolvePreviewBoxAspect')
+    expect(slider).toContain('slideAspectFor')
+    expect(slider).toContain(':style="squareStyle"')
+    expect(slider).toMatch(/aspectRatio/)
+  })
+
+  it('the shape is the drawer’s alone — the wizard square stays the kit’s', () => {
+    expect(slider).toContain('PREVIEW_PANEL_SQUARE_CLASS')
+    expect(PREVIEW_PANEL_SQUARE_CLASS).toContain('wizard-preview-square')
+    // `squareStyle` must bail out when the panel is the wizard's column.
+    expect(slider).toMatch(/if \(!props\.hideHeader\) return undefined/)
   })
 })

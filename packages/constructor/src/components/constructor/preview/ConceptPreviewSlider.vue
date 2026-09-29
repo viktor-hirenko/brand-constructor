@@ -28,6 +28,10 @@ import {
   PREVIEW_PANEL_SQUARE_CLASS,
   PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
   PREVIEW_PANEL_TITLE_CLASS,
+  PREVIEW_DRAWER_AREA_CLASS,
+  PREVIEW_DRAWER_BOX_CLASS,
+  PREVIEW_DRAWER_PLACEHOLDER_BOX_CLASS,
+  resolvePreviewBoxAspect,
 } from '@/constants/previewLayout'
 
 // `radius/concept-preview` 24 — the kit keeps it on every breakpoint frame
@@ -189,8 +193,12 @@ function onFgLoaded() {
 // Adaptive cover/contain — see useAdaptiveImageFit for the rationale. Separate
 // instances for the inline canvas and the expanded (Teleport) modal since they
 // have independent container sizes.
-const { containerRef: sliderCanvasRef, recordAspect: recordSlideAspect, fitModeFor: slideFitFor } =
-  useAdaptiveImageFit()
+const {
+  containerRef: sliderCanvasRef,
+  recordAspect: recordSlideAspect,
+  fitModeFor: slideFitFor,
+  aspectFor: slideAspectFor,
+} = useAdaptiveImageFit()
 const bgFit = computed(() => slideFitFor(bgUrl.value))
 const fgFit = computed(() => slideFitFor(fgUrl.value))
 
@@ -208,16 +216,33 @@ function closeExpanded() {
 /**
  * `hideHeader` is the concept-gallery drawer (`ConceptPreviewPopup`), which is
  * not the wizard's right column: it brings its own header and its own padding,
- * and it is not the box the responsive section measures. There the picture goes
- * back to filling whatever it is given, with no square and no scroll of its own.
+ * and it is not the box the responsive section measures. There the box takes
+ * the shape of the picture instead of the kit's square — see the drawer section
+ * of `constants/previewLayout.ts` for the measurements behind that.
  */
 const scrollAreaClass = computed(() =>
-  props.hideHeader ? 'min-h-0 flex-1 overflow-hidden' : PREVIEW_PANEL_SCROLL_CLASS
+  props.hideHeader ? PREVIEW_DRAWER_AREA_CLASS : PREVIEW_PANEL_SCROLL_CLASS
 )
 
 const squareClass = computed(() =>
-  props.hideHeader ? 'h-full w-full' : PREVIEW_PANEL_SQUARE_CLASS
+  props.hideHeader ? PREVIEW_DRAWER_BOX_CLASS : PREVIEW_PANEL_SQUARE_CLASS
 )
+
+/** The empty state has no picture to take a shape from, so it keeps the area. */
+const placeholderBoxClass = computed(() =>
+  props.hideHeader ? PREVIEW_DRAWER_PLACEHOLDER_BOX_CLASS : PREVIEW_PANEL_SQUARE_CLASS
+)
+
+/**
+ * The drawer's box shape. The visible picture is what it follows, so while a
+ * new slide is still decoding the box holds the shape of the one on screen
+ * rather than snapping to the fallback and back.
+ */
+const squareStyle = computed(() => {
+  if (!props.hideHeader) return undefined
+  const measured = slideAspectFor(currentSlideUrl.value) ?? slideAspectFor(bgUrl.value)
+  return { aspectRatio: String(resolvePreviewBoxAspect(measured)) }
+})
 
 function onKeydownEscape(e: KeyboardEvent) {
   if (e.key === 'Escape' && showExpanded.value) {
@@ -248,7 +273,7 @@ onUnmounted(() => {
       <div :class="scrollAreaClass">
         <div
           :class="[
-            squareClass,
+            placeholderBoxClass,
             PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
             PREVIEW_PANEL_PLACEHOLDER_CLASS,
           ]"
@@ -306,6 +331,7 @@ onUnmounted(() => {
           PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
           'relative overflow-hidden bg-muted/30',
         ]"
+        :style="squareStyle"
       >
         <!-- Crossfade: background layer — currently visible image, always fully opaque.
              When the canvas aspect ratio drifts too far from the slide's own (a

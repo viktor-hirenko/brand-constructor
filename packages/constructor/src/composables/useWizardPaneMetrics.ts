@@ -81,10 +81,15 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
   )
 
   /**
-   * The same width as a custom property, for things that sit OUTSIDE the row
-   * and still have to line up with the right column — today that is the
-   * concept-preview drawer in `LayoutPreviewOverlays`, which used to hardcode
-   * the old 58%. Falls back to 58% until the first measurement.
+   * The same width as a custom property, for overlays that have to line up with
+   * the right column — today the concept-gallery drawer
+   * (`preview/ConceptGalleryDrawer.vue`), which used to hardcode the old 58%.
+   * Falls back to 58% until the first measurement.
+   *
+   * It is declared on the shell ROOT and inherited, so it reaches that panel
+   * where it is mounted — at the root, beside the backdrop, because the drawer
+   * is anchored to the window: it slides in from the window's right edge and
+   * takes the window's full height (DP-15450, the owner's call).
    */
   const rightPaneVarStyle = computed(() => ({
     '--wizard-right-pane-width':

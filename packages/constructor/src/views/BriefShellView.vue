@@ -22,6 +22,7 @@ import BrandPreviewPanel from '@/components/constructor/preview/BrandPreviewPane
 import ConstructorDualPaneShell from '@/components/constructor/layout/ConstructorDualPaneShell.vue'
 import StepPreviewRightPanel from '@/components/constructor/layout/StepPreviewRightPanel.vue'
 import LayoutPreviewOverlays from '@/components/constructor/layout/LayoutPreviewOverlays.vue'
+import ConceptGalleryDrawer from '@/components/constructor/preview/ConceptGalleryDrawer.vue'
 import {
   SIDEBAR_HIDDEN_CALLOUT_DURATION_MS,
 } from '@/constants/visualComponentPreviewMessages'
@@ -739,8 +740,14 @@ watch(currentStep, step => {
         />
       </template>
 
+      <!-- Both at the shell ROOT, and that is the owner's call: the concept
+           preview is a DRAWER — it slides in from the right edge of the window
+           and takes the full height of it, at every width. Mounted inside the
+           row it became a card floating inside the 1700 frame on a 2560 screen,
+           which reads as a modal, and a modal is not what this is. -->
       <template #overlays>
         <LayoutPreviewOverlays />
+        <ConceptGalleryDrawer />
       </template>
     </ConstructorDualPaneShell>
   </div>
