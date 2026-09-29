@@ -82,17 +82,20 @@ Figma пишет координаты с пятью знаками после з
 ```
 grep -cE '^\| [0-9]+ \|' docs/design-audit/dp-15859-icons.md          # 48 = 47 + Users
 grep -cE '^\| [0-9]+ \|.*\| \*\*закрыто' docs/design-audit/dp-15859-icons.md
-grep -cE '^\| [0-9]+ \|.*\| \*\*рисунок вручную' docs/design-audit/dp-15859-icons.md
 grep -cE '^\| [0-9]+ \|.*\| \*\*места нет' docs/design-audit/dp-15859-icons.md
 ```
 
-На 29.09 после шага 1: **6 закрыто** (5 строк меню + Users, принято владельцем) ·
-**36 рисунок вручную** (визард: Phosphor есть, пакета нет) · **6 места нет**.
-6 + 36 + 6 = 48.
+На 29.09, задача закрыта: **42 закрыто** (5 строк меню + Users, 36 строк
+визарда) · **6 места нет**. 42 + 6 = 48.
 
-Сколько файлов визарда уже нарисовано Phosphor —
+Сколько файлов визарда нарисовано Phosphor —
 `grep -rln 'Phosphor \`' packages/constructor/src/components/icons/*.vue | wc -l`
 → **36** из `ls packages/constructor/src/components/icons/*.vue | wc -l` → **45**.
+Из них берут рисунок из пакета —
+`grep -l "@phosphor-icons/core/" packages/constructor/src/components/icons/*.vue | wc -l`
+→ **36**; вклеенных путей в них —
+`grep -l ' d="' $(grep -l "@phosphor-icons/core/" packages/constructor/src/components/icons/*.vue) | wc -l`
+→ **0**.
 Девять без пары в ките: `ClockIcon`, `CornerUpLeftIcon`, `DownloadIcon`,
 `FileIcon`, `LoaderIcon`, `PackageIcon`, `RevisionReturnIcon`, `SendIcon`,
 `ShareIcon` (список ведёт `kitIconSet.test.ts`).
@@ -119,63 +122,65 @@ grep -cE '^\| [0-9]+ \|.*\| \*\*места нет' docs/design-audit/dp-15859-ic
 
 ### Wizard — semantic icons
 
-«Файл» — наша обёртка в `packages/constructor/src/components/icons/`; её рисунок
-вклеен DP-15258 из экспорта Figma, привязку к месту пинит `kitIconPlacement.test.ts`.
+«Файл» — наша обёртка в `packages/constructor/src/components/icons/`. До шага 2
+её рисунок был вклеен DP-15258 из экспорта Figma, теперь он берётся файлом
+пакета; привязку к месту пинит `kitIconPlacement.test.ts`, файл и вес —
+`kitIconSet.test.ts`.
 
 | # | Вариант использования | Было | Phosphor | Вес | Размер и цвет по макету | Где у нас в коде | Состояние |
 |---|---|---|---|---|---|---|---|
-| 7 | Креативні концепти | свой рисунок | `Swatches` | Regular | задан экраном, сверен DP-15258 | `SwatchesIcon` — `LandingView` | **рисунок вручную**, на пакет — шаг 2 |
-| 8 | Неймінги | свой рисунок | `TextAa` | Regular | то же | `TextAaIcon` — `LandingView` | **рисунок вручную**, на пакет — шаг 2 |
-| 9 | UI рішення | свой рисунок | `FigmaLogo` | Regular | то же | `FigmaLogoIcon` — `LandingView` | **рисунок вручную**, на пакет — шаг 2 |
-| 10 | Маркетінговий розвіток | свой рисунок | `TrendUp` | Regular | то же | `TrendingUpIcon` — `LandingView` | **рисунок вручную**, на пакет — шаг 2 |
-| 11 | GEO | свой рисунок | `Globe` | Regular | то же | `GlobeIcon` — `BrandBasicsView`, `UiFieldLabel`, `UiProperty`, `StepPreviewRightPanel`, `ReviewUnifiedView` | **рисунок вручную**, на пакет — шаг 2 |
-| 12 | Date | `date` | `CalendarBlank` | Regular | то же | `CalendarIcon` — `DatePicker`, `BrandBasicsView`, `DeliverablesView`, `StepPreviewRightPanel`, `ReviewUnifiedView`, `ReviewDeliverablesBlock` | **рисунок вручную**, на пакет — шаг 2 |
-| 13 | Звʼязок з іншим продуктом | свой рисунок | `Link` | Regular | то же | `LinkIcon` — `BrandBasicsView`, `StepPreviewRightPanel`, `ReviewUnifiedView` | **рисунок вручную**, на пакет — шаг 2 |
-| 14 | Коментар | `comment` | `ChatCircleText` | Regular | то же | `ChatBubbleIcon` — `StepCommentField`, `ReviewUnifiedView` | **рисунок вручную**, на пакет — шаг 2 |
-| 15 | Тема | `sun` | `Palette` | Regular | то же | `PaletteIcon` — `ReviewConceptBlock` | **рисунок вручную**, на пакет — шаг 2 |
-| 16 | PR Packages | `pr-package` | `Megaphone` | Regular | то же | `MegaphoneIcon` — `UiProperty`, `ReviewPrPackageBlock` | **рисунок вручную**, на пакет — шаг 2 |
-| 17 | Trust Focus | свой рисунок | `ShieldCheck` | Regular | то же | `ShieldCheckIcon` — `MarketingPackageView`, пакет 1 | **рисунок вручную**, на пакет — шаг 2 |
-| 18 | Social Trust | свой рисунок | `UsersThree` | Regular | то же | `UsersThreeIcon` — `MarketingPackageView`, пакет 2 | **рисунок вручную**, на пакет — шаг 2 |
-| 19 | Full Reputation | свой рисунок | `Star` | Regular | то же | `StarIcon` — `MarketingPackageView`, пакет 3 | **рисунок вручную**, на пакет — шаг 2 |
-| 20 | Media Reputation | свой рисунок | `NewspaperClipping` | Regular | то же | `NewspaperClippingIcon` — `MarketingPackageView`, пакет 4 | **рисунок вручную**, на пакет — шаг 2 |
-| 21 | Brand Excellence | свой рисунок | `Trophy` | Regular | то же | `TrophyIcon` — `MarketingPackageView`, пакет 5 | **рисунок вручную**, на пакет — шаг 2 |
-| 22 | Total Market Presence | свой рисунок | `GlobeHemisphereWest` | Regular | то же | `GlobeHemisphereWestIcon` — `MarketingPackageView`, пакет 6 | **рисунок вручную**, на пакет — шаг 2 |
-| 23 | Legal Landing | `deliverables` | `Scales` | Regular | то же | `DeliverablesScopeIcon` — `DeliverablesView`, `ReviewDeliverablesBlock` | **рисунок вручную**, на пакет — шаг 2 |
-| 24 | Partner Landing | свой рисунок | `Handshake` | Regular | то же | `HandshakeIcon` — `DeliverablesView` | **рисунок вручную**, на пакет — шаг 2 |
-| 25 | Placeholder | свой рисунок | `ImageSquare` | Regular | то же | `ImagePlaceholderIcon` — `ConceptPreviewSlider`, `ConceptMobilePreview`, `ConceptCard` | **рисунок вручную**, на пакет — шаг 2 |
-| 26 | Sparkles | свой рисунок | `Sparkle` | Regular | то же | `SparklesIcon` — `LandingView`, `LandingDraftCta`, `StepPreviewRightPanel`, `ReviewVisualComponentsBlock`, `BrandPreviewPanel` | **рисунок вручную**, на пакет — шаг 2 |
-| 27 | Magic wand | `magic-wand` | `MagicWand` | Regular | то же | `MagicWandIcon` — `VisualComponentsView` | **рисунок вручную**, на пакет — шаг 2 |
+| 7 | Креативні концепти | свой рисунок | `Swatches` | Regular | задан экраном, сверен DP-15258 | `SwatchesIcon` — `LandingView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 8 | Неймінги | свой рисунок | `TextAa` | Regular | то же | `TextAaIcon` — `LandingView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 9 | UI рішення | свой рисунок | `FigmaLogo` | Regular | то же | `FigmaLogoIcon` — `LandingView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 10 | Маркетінговий розвіток | свой рисунок | `TrendUp` | Regular | то же | `TrendingUpIcon` — `LandingView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 11 | GEO | свой рисунок | `Globe` | Regular | то же | `GlobeIcon` — `BrandBasicsView`, `UiFieldLabel`, `UiProperty`, `StepPreviewRightPanel`, `ReviewUnifiedView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 12 | Date | `date` | `CalendarBlank` | Regular | то же | `CalendarIcon` — `DatePicker`, `BrandBasicsView`, `DeliverablesView`, `StepPreviewRightPanel`, `ReviewUnifiedView`, `ReviewDeliverablesBlock` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 13 | Звʼязок з іншим продуктом | свой рисунок | `Link` | Regular | то же | `LinkIcon` — `BrandBasicsView`, `StepPreviewRightPanel`, `ReviewUnifiedView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 14 | Коментар | `comment` | `ChatCircleText` | Regular | то же | `ChatBubbleIcon` — `StepCommentField`, `ReviewUnifiedView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 15 | Тема | `sun` | `Palette` | Regular | то же | `PaletteIcon` — `ReviewConceptBlock` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 16 | PR Packages | `pr-package` | `Megaphone` | Regular | то же | `MegaphoneIcon` — `UiProperty`, `ReviewPrPackageBlock` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 17 | Trust Focus | свой рисунок | `ShieldCheck` | Regular | то же | `ShieldCheckIcon` — `MarketingPackageView`, пакет 1 | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 18 | Social Trust | свой рисунок | `UsersThree` | Regular | то же | `UsersThreeIcon` — `MarketingPackageView`, пакет 2 | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 19 | Full Reputation | свой рисунок | `Star` | Regular | то же | `StarIcon` — `MarketingPackageView`, пакет 3 | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 20 | Media Reputation | свой рисунок | `NewspaperClipping` | Regular | то же | `NewspaperClippingIcon` — `MarketingPackageView`, пакет 4 | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 21 | Brand Excellence | свой рисунок | `Trophy` | Regular | то же | `TrophyIcon` — `MarketingPackageView`, пакет 5 | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 22 | Total Market Presence | свой рисунок | `GlobeHemisphereWest` | Regular | то же | `GlobeHemisphereWestIcon` — `MarketingPackageView`, пакет 6 | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 23 | Legal Landing | `deliverables` | `Scales` | Regular | то же | `DeliverablesScopeIcon` — `DeliverablesView`, `ReviewDeliverablesBlock` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 24 | Partner Landing | свой рисунок | `Handshake` | Regular | то же | `HandshakeIcon` — `DeliverablesView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 25 | Placeholder | свой рисунок | `ImageSquare` | Regular | то же | `ImagePlaceholderIcon` — `ConceptPreviewSlider`, `ConceptMobilePreview`, `ConceptCard` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 26 | Sparkles | свой рисунок | `Sparkle` | Regular | то же | `SparklesIcon` — `LandingView`, `LandingDraftCta`, `StepPreviewRightPanel`, `ReviewVisualComponentsBlock`, `BrandPreviewPanel` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 27 | Magic wand | `magic-wand` | `MagicWand` | Regular | то же | `MagicWandIcon` — `VisualComponentsView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
 
 ### Controls
 
 | # | Вариант использования | Было | Phosphor | Вес | Размер и цвет по макету | Где у нас в коде | Состояние |
 |---|---|---|---|---|---|---|---|
-| 28 | Chevron right | `chevron-right` | `CaretRight` | Regular | задан экраном | `ChevronRightIcon` — `DatePicker` | **рисунок вручную**, на пакет — шаг 2 |
-| 29 | Chevron left | `chevron-left` | `CaretLeft` | Regular | то же | `ChevronLeftIcon` — `DatePicker` | **рисунок вручную**, на пакет — шаг 2 |
+| 28 | Chevron right | `chevron-right` | `CaretRight` | Regular | задан экраном | `ChevronRightIcon` — `DatePicker` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 29 | Chevron left | `chevron-left` | `CaretLeft` | Regular | то же | `ChevronLeftIcon` — `DatePicker` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
 | 30 | Chevron up | `chevron-up` | `CaretUp` | Regular | — | файла нет | **места нет** в визарде: шеврон аккордеона — `CaretDown`, повёрнутый. В админке — см. опись ниже |
 | 31 | Caret up | `chevron-up-solid` | `CaretUp` | **Fill** | — | файла нет | **места нет** в визарде (строка 83 `dp-15258-divergences.md`). В админке — см. опись |
-| 32 | Chevron down | `chevron-down` | `CaretDown` | Regular | то же | `CaretDownIcon` — `UiAccordionItem`, `LandingDraftCta`, `BriefOrderButton` | **рисунок вручную**, на пакет — шаг 2 |
+| 32 | Chevron down | `chevron-down` | `CaretDown` | Regular | то же | `CaretDownIcon` — `UiAccordionItem`, `LandingDraftCta`, `BriefOrderButton` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
 | 33 | Caret down | `chevron-down-solid` | `CaretDown` | **Fill** | — | файла нет | **места нет** в визарде (строка 83). В админке — см. опись |
-| 34 | Arrow right | `arrow-right` | `ArrowRight` | Regular | то же | `ArrowRightIcon` — `ConceptPreviewSlider` | **рисунок вручную**, на пакет — шаг 2 |
-| 35 | Arrow left | `arrow-left` | `ArrowLeft` | Regular | то же | `ArrowLeftIcon` — `UiIconButton`, `ConceptPreviewSlider` | **рисунок вручную**, на пакет — шаг 2 |
-| 36 | Check | `check` | `Check` | Regular | то же | `CheckIcon` — 12 файлов (`UiCheckbox`, `UiListItem`, `GeoMultiSelect`, `ConceptCard`, …) | **рисунок вручную**, на пакет — шаг 2 |
-| 37 | Plus | `plus` | `Plus` | Regular | то же | `PlusIcon` — `BriefOrderButton`, `SectionCommentBlock` | **рисунок вручную**, на пакет — шаг 2 |
-| 38 | Close | `close` | `X` | Regular | то же | `CloseIcon` — `UiModal`, `UiWizardHeader`, `ConceptPreviewPopup`, `PrPackagePreviewPopup`, … | **рисунок вручную**, на пакет — шаг 2 |
-| 39 | Редагувати | `pen` | `PencilSimple` | Regular | то же | `PencilIcon` — `ReviewSection` | **рисунок вручную**, на пакет — шаг 2 |
-| 40 | Expand | `expand` | `ArrowsOutSimple` | Regular | то же | `MaximizeIcon` — `ConceptPreviewSlider` | **рисунок вручную**, на пакет — шаг 2 |
-| 41 | Змінити вибір | `change` | `ArrowsClockwise` | Regular | то же | `RefreshIcon` — `ReviewSection` | **рисунок вручную**, на пакет — шаг 2 |
-| 42 | Переглянути / Показати | `eye` | `Eye` | Regular | то же | `EyeIcon` — `UiLink`, блоки ревью, `ConceptCard`, `VisualComponentsView` | **рисунок вручную**, на пакет — шаг 2 |
+| 34 | Arrow right | `arrow-right` | `ArrowRight` | Regular | то же | `ArrowRightIcon` — `ConceptPreviewSlider` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 35 | Arrow left | `arrow-left` | `ArrowLeft` | Regular | то же | `ArrowLeftIcon` — `UiIconButton`, `ConceptPreviewSlider` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 36 | Check | `check` | `Check` | Regular | то же | `CheckIcon` — 12 файлов (`UiCheckbox`, `UiListItem`, `GeoMultiSelect`, `ConceptCard`, …) | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 37 | Plus | `plus` | `Plus` | Regular | то же | `PlusIcon` — `BriefOrderButton`, `SectionCommentBlock` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 38 | Close | `close` | `X` | Regular | то же | `CloseIcon` — `UiModal`, `UiWizardHeader`, `ConceptPreviewPopup`, `PrPackagePreviewPopup`, … | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 39 | Редагувати | `pen` | `PencilSimple` | Regular | то же | `PencilIcon` — `ReviewSection` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 40 | Expand | `expand` | `ArrowsOutSimple` | Regular | то же | `MaximizeIcon` — `ConceptPreviewSlider` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 41 | Змінити вибір | `change` | `ArrowsClockwise` | Regular | то же | `RefreshIcon` — `ReviewSection` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
+| 42 | Переглянути / Показати | `eye` | `Eye` | Regular | то же | `EyeIcon` — `UiLink`, блоки ревью, `ConceptCard`, `VisualComponentsView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
 | 43 | Переглянути hovered | `filled/eye` | `Eye` | **Fill** | — | файла нет | **места нет** в визарде (строка 83): глаз на карточке при наведении не меняется. Проверить на шаге 2 по макету карточки |
-| 44 | Приховати | `eye-off` | `EyeSlash` | Regular | то же | `EyeSlashIcon` — `VisualComponentsView` | **рисунок вручную**, на пакет — шаг 2 |
+| 44 | Приховати | `eye-off` | `EyeSlash` | Regular | то же | `EyeSlashIcon` — `VisualComponentsView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
 
 ### Status icons
 
 | # | Вариант использования | Было | Phosphor | Вес | Размер и цвет по макету | Где у нас в коде | Состояние |
 |---|---|---|---|---|---|---|---|
-| 45 | Check circle | `check-circle` | `CheckCircle` | Regular | задан экраном | `CheckBadgeIcon` — `ReviewHeader` | **рисунок вручную**, на пакет — шаг 2 |
+| 45 | Check circle | `check-circle` | `CheckCircle` | Regular | задан экраном | `CheckBadgeIcon` — `ReviewHeader` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
 | 46 | Check circle filled | `filled/check-circle` | `CheckCircle` | **Fill** | — | файла нет | **места нет** в визарде (строка 83). В админке — см. опись |
 | 47 | Exclamation circle | `exclamation-circle` | `WarningCircle` | Regular | — | файла нет | **места нет** в визарде: все алерты визарда — Fill. В админке — см. опись |
-| 48 | Exclamation circle filled | `filled/exclamation-circle` | `WarningCircle` | **Fill** | то же | `InfoCircleFilledIcon` — `UiAlert`, `StatusPillBadge`, `PreviewPanelToast`, `ReviewHeader`, `SupervisorActionsFooter`, `SupervisorBriefGateView`, `VisualComponentsView` | **рисунок вручную**, на пакет — шаг 2 |
+| 48 | Exclamation circle filled | `filled/exclamation-circle` | `WarningCircle` | **Fill** | то же | `InfoCircleFilledIcon` — `UiAlert`, `StatusPillBadge`, `PreviewPanelToast`, `ReviewHeader`, `SupervisorActionsFooter`, `SupervisorBriefGateView`, `VisualComponentsView` | **закрыто** (шаг 2, Pages `e896196f`, `aa84510`) — рисунок из пакета |
 
 Номера — наши, сквозные; строка 6 (Users) в таблице дизайнера отсутствует,
 поэтому строк 48 при 47 у неё.
@@ -202,12 +207,13 @@ grep -cE '^\| [0-9]+ \|.*\| \*\*места нет' docs/design-audit/dp-15859-ic
 
 | Место | Экран | Сейчас | Строка таблицы | Разбор |
 |---|---|---|---|---|
-| Крестик закрытия любого окна (`BaseModal.vue`) | все окна админки, 9 экранов | `&times;` шрифтом | Close → `X` Regular | однозначно |
-| Крестик окошка «Role permissions» (`UsersView.vue`) | Users, окно пользователя | `✕` шрифтом | Close → `X` Regular | однозначно |
-| Шеврон раскрытия карточки истории, 4 места (`BrandWorkflowHistoryModal.vue`) | Brands → окно истории | свой `<svg>` обводкой 2, 20 и 16 | Chevron down → `CaretDown` Regular | однозначно |
-| Пустая картинка варианта (`ComponentVariantsView.vue`) | UI Components → варианты | `<svg>` Heroicons «photo», обводка 1,5, 32 | Placeholder → `ImageSquare` Regular | однозначно |
-| «← Back to Components», «← Back to Concepts» | варианты компонента, карточка концепта | `&larr;` в тексте кнопки | Arrow left → `ArrowLeft` Regular | однозначно по смыслу; стрелка — текст внутри надписи, станет иконкой |
-| Плитка типа компонента `▦` (`ComponentsView.vue`) | UI Components | `&#9638;` шрифтом 40 | UI Components → `SquaresFour` Regular (строка меню) | однозначно: тот же символ и тот же раздел, что пункт меню |
+| Крестик закрытия любого окна (`BaseModal.vue`) | все окна админки, 9 экранов | `&times;` шрифтом | Close → `X` Regular | **закрыто** (шаг 3, `aa84510`): 1em кнопки — 20, на телефоне 24 |
+| Крестик окошка «Role permissions» (`UsersView.vue`) | Users, окно пользователя | `✕` шрифтом | Close → `X` Regular | **закрыто** (шаг 3, `aa84510`): 14 |
+| Шеврон раскрытия карточки истории, 4 места (`BrandWorkflowHistoryModal.vue`) | Brands → окно истории | свой `<svg>` обводкой 2, 20 и 16 | Chevron down → `CaretDown` Regular | **закрыто** (шаг 3, `aa84510`): 20 и 16, как были |
+| Пустая картинка варианта (`ComponentVariantsView.vue`) | UI Components → варианты | `<svg>` Heroicons «photo», обводка 1,5, 32 | Placeholder → `ImageSquare` Regular | **закрыто** (шаг 3, `aa84510`): 32, цвет и прозрачность как были |
+| «← Back to Components», «← Back to Concepts» | варианты компонента, карточка концепта | `&larr;` в тексте кнопки | Arrow left → `ArrowLeft` Regular | **закрыто** (шаг 3, `aa84510`): иконка 16 перед текстом, зазор кнопки 8 |
+| Плитка типа компонента `▦` (`ComponentsView.vue`) | UI Components | `&#9638;` шрифтом 40 | UI Components → `SquaresFour` Regular (строка меню) | **закрыто** (шаг 3, `aa84510`): 40, цвет как был |
+| Крестик закрытия выезжающего меню (`AppSidebar.vue`) — **в опись не попал**: обход исключал файл меню | все экраны уже 1280 | `✕` шрифтом 18 | Close → `X` Regular | **закрыто** (шаг 3, `aa84510`): 1em = 18 |
 | Стрелки сортировки ↑/↓ в заголовках таблиц, 21 место | Brands 7, Users 4, Namings 10 | `↑`/`↓` шрифтом 12 | Caret up / Caret down → `CaretUp`/`CaretDown` **Fill**? | **спросить**: в визарде этим двум строкам места нет вовсе, таблица не говорит, где они |
 | Корзина «Delete» (`BrandsView.vue`) | Brands, колонка Actions | `<svg>` Lucide, обводка 2, 16 | нет строки | **спросить**: в наборе `3261:907` корзины нет |
 | «i» в круге у поля Role (`UsersView.vue`) | Users, окно пользователя | `<svg>` Heroicons mini, заливка, 14 | нет строки (Exclamation circle — другое значение) | **спросить** |
@@ -231,12 +237,78 @@ grep -cE '^\| [0-9]+ \|.*\| \*\*места нет' docs/design-audit/dp-15859-ic
 | Шаг | Что делаем | Файлы | Что увидит владелец | Состояние |
 |---|---|---|---|---|
 | Ш1 | Меню админки по `5382:30672`: пять иконок из таблицы + Users; иконка 20, подпись в 8 от неё; пакет подключён | `admin/…/AppSidebar.vue`, `admin/…/PhosphorIcon.vue`, `shared/…/phosphorGlyph.ts`, `package.json` обоих пакетов | Новые иконки в левом меню | **закрыто** — прод `976603cb`, коммит `016e752` |
-| Ш2 | Визард: 36 обёрток берут рисунок из пакета, а не из вклеенного пути | `constructor/src/components/icons/*.vue`, `kitIconSet.test.ts` | Внешне ничего — рисунок тот же. Поэтому склеивается с шагом 3 (AGENTS §8.3) | не начато |
-| Ш3 | Админка: только места «однозначно» из описи (крестик окон, шеврон истории, пустая картинка варианта, «← Back», плитка UI Components) | по описи | Новые иконки в окнах, истории, вариантах компонентов, кнопках «Back», плитках UI Components | не начато; макетов админки нет (владелец 29.09), места «спросить» не трогаются |
+| Ш2 | Визард: 36 обёрток берут рисунок из пакета, а не из вклеенного пути | `constructor/src/components/icons/*.vue`, `kitIconSet.test.ts` | Внешне ничего — рисунок тот же. Поэтому склеен с шагом 3 (AGENTS §8.3) | **закрыто** — прод `e896196f`, коммит `aa84510` |
+| Ш3 | Админка: только места «однозначно» из описи (крестик окон, шеврон истории, пустая картинка варианта, «← Back», плитка UI Components) | по описи | Новые иконки в окнах, истории, вариантах компонентов, кнопках «Back», плитках UI Components | **закрыто** — прод `e896196f`, коммит `aa84510`; места «спросить» не тронуты |
 
 ---
 
 ## Progress log
+
+### Шаги 2 и 3 — визард на пакет, однозначные места админки · 29.09 · ЗАКРЫТО
+
+**Приёмка.** Владелец 29.09 после выкладки `e896196f`, дословно: «комить».
+Код — коммит `aa84510`.
+
+**Задача закрыта.** Открытым остаётся одно — места «спросить» описи админки.
+Это не долг задачи: по слову владельца они ждут макетов админки.
+
+**Источник дословно.** Jira: «Потрібно підключити Phosphor Icons … як
+стандартний набір іконок … Та замінити поточні іконки новими (в Admin та
+Wizard) відповідно до підготовленого мапінгу у Figma». Строки таблицы
+`5658:39246`, по которым сделан шаг 3: «Close → X, Regular», «Chevron down →
+CaretDown, Regular», «Placeholder → ImageSquare, Regular», «Arrow left →
+ArrowLeft, Regular», «UI Components → SquaresFour, Regular». Ответ владельца о
+макетах админки: «Экранов адмикни в фигме пока нет. Админка делалась нейронкой
+и будет потом улучшаться.»
+
+**Шаг 2 — визард.** 36 обёрток в `constructor/src/components/icons/` импортируют
+один файл пакета (`regular/…` или `fill/…-fill.svg`) и рисуют его через
+`phosphorPaths()`; классы по умолчанию, доступность и все вызовы не тронуты.
+**Совпадение рисунка проверено до замены**: каждая вклеенная иконка и файл
+пакета отрисованы в 96×96 и сравнены попиксельно — разница от 0,00 до 0,41 %
+(сглаживание краёв), пикселей с расхождением больше половины — 0 во всех 36.
+Контроль, что сравнение ловит подмену: вклеенный `TextAa` против пакетного
+`Palette` — 88,12 % и 2455 пикселей.
+
+**Шаг 3 — админка.** Сделаны только однозначные места описи: крестик всех окон,
+крестик окошка ролей, четыре шеврона окна истории, пустая картинка варианта,
+две кнопки «Back», плитка UI Components — и **крестик выезжающего меню, который
+в опись не попал** (обход исключал `AppSidebar.vue`, а шаг 1 менял там только
+пункты меню). Найден сверкой выложенного js: символ `✕` остался в нём один.
+Размер и цвет везде оставлены прежними — макета нет; где был символ шрифтом,
+иконка занимает его кегль (`1em`) или близкий размер, записанный в таблице
+описи.
+
+**Чем проверено.**
+- `kitIconSet.test.ts` уточнён, не ослаблен: вместо начала и длины вклеенного
+  пути пинит (1) импорт — ровно один файл пакета, имя `glyph`, ожидаемый путь;
+  (2) вес — папка файла и суффикс `-fill`; (3) рисунок в самом пакете — начало и
+  длина первого пути, замерены из пакета, так что обновление пакета, меняющее
+  рисунок, будет замечено; (4) разметку — `:viewBox="PHOSPHOR_VIEW_BOX"`,
+  `v-for` по путям, ни одного `d="`; (5) отсутствие обводки. `CaretDownIcon`
+  больше не особый случай на боксе 16 — он в общей таблице.
+  **Показан красным четыре раза**: импорты `ArrowLeftIcon`/`PlusIcon` поменяны
+  местами → 2 падения; `InfoCircleFilledIcon` на `regular/warning-circle.svg` → 1;
+  в `CheckIcon` вернули файл из HEAD с вклеенным путём → 2; `stroke` в
+  `StarIcon` → 1. После каждой подмены все 45 файлов сверены с копией — равны.
+- `kitIconPlacement.test.ts` не менялся и зелёный.
+- Новый `admin/tests/unit/components/adminKitIcons.test.ts` (21 тест): для
+  каждого места — импорт из своего файла пакета, число вызовов, отсутствие
+  прежнего символа или рисунка. **Красный трижды**: `&times;` в окне → 2;
+  шеврон на `fill/caret-down-fill.svg` → 1; `▦` в плитке → 2.
+- `appSidebarIcons.test.ts` дополнен крестиком меню; красный, если вернуть `✕`.
+- По **выложенному** js визарда: первые пути всех 36 файлов пакета есть, ни
+  одного прежнего вклеенного пути нет (скрипт сверки по HEAD-версиям файлов).
+- **Стилевой файл визарда совпал байт в байт** с тем, что был до шага
+  (`wizard/assets/index-CVop-QGz.css`): новые комментарии правил не породили.
+- Вес визарда, все `.js` и `.css`, gzip -9: **1 065 583 → 1 045 256 (−20 327)**;
+  главный файл 54 943 → 54 979. Админка с шагами 1–3: 100 214 → 102 660.
+- По **выложенному** js админки: `m6 9 6 6 6-6`, `&larr;`, `←`, `9638`, `▦`,
+  `&times;`, `✕` — 0 вхождений. Правила размеров иконок в выложенном css —
+  все семь на месте.
+- `pnpm type-check` и `pnpm test` зелёные: admin 58, constructor 1178, worker 77.
+- Выкладка — **Pages Production `e896196f`**; прод отдаёт `assets/index-ULS-oD4Q.js`
+  и `wizard/assets/index-BQO8ydbg.js`, те же, что собраны локально.
 
 ### Шаг 1 — меню админки · 29.09 · ЗАКРЫТО
 
