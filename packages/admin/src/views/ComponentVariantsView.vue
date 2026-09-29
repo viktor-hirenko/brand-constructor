@@ -10,9 +10,12 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { useErrorDialog } from '@/composables/useErrorDialog'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import arrowLeft from '@phosphor-icons/core/regular/arrow-left.svg?raw'
 import imageSquare from '@phosphor-icons/core/regular/image-square.svg?raw'
+
+const { showError } = useErrorDialog()
 
 const route = useRoute()
 const router = useRouter()
@@ -180,7 +183,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     await apiUpload('/api/assets/upload', formData)
     fetchVariants()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Upload failed')
+    showError(err, 'upload')
   } finally {
     input.value = ''
     uploadingIds.value = new Set([...uploadingIds.value].filter(id => id !== variantId))

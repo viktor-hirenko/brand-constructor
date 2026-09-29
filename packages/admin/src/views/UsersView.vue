@@ -8,8 +8,11 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { useErrorDialog } from '@/composables/useErrorDialog'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import close from '@phosphor-icons/core/regular/x.svg?raw'
+
+const { showError } = useErrorDialog()
 
 const authStore = useAuthStore()
 const { data: users, loading, fetchData: fetchUsers } = useApiList<User>('/api/users')
@@ -104,7 +107,7 @@ async function handleSubmit() {
     closeModal()
     fetchUsers()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Operation failed')
+    showError(err, 'save')
   }
 }
 
@@ -120,7 +123,7 @@ async function confirmDelete() {
     deleteTarget.value = null
     fetchUsers()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Failed to delete user')
+    showError(err, 'delete')
   } finally {
     deleting.value = false
   }

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Concept, ExternalNaming } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
+import { describeApiError } from '@/utils/apiErrorText'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
@@ -122,7 +123,8 @@ async function confirmDelete() {
     showDeleteConfirm.value = false
     refreshConcepts()
   } catch (e) {
-    deleteError.value = e instanceof Error ? e.message : 'Failed to delete concept'
+    const text = describeApiError(e, 'delete')
+    deleteError.value = `${text.title}. ${text.body}`
   }
 }
 </script>

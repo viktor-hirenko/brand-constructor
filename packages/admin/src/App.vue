@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from '@/components/ui/AppSidebar.vue'
 import AppHeader from '@/components/ui/AppHeader.vue'
+import ErrorDialog from '@/components/ui/ErrorDialog.vue'
 
 const route = useRoute()
 
@@ -60,6 +61,8 @@ function closeSidebar() {
       </div>
     </div>
   </template>
+
+  <ErrorDialog />
 </template>
 
 <style lang="scss" scoped>

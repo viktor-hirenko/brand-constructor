@@ -10,13 +10,19 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { useErrorDialog } from '@/composables/useErrorDialog'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import arrowLeft from '@phosphor-icons/core/regular/arrow-left.svg?raw'
+import lock from '@phosphor-icons/core/regular/lock.svg?raw'
+
+const { showError } = useErrorDialog()
 
 interface ConceptDetail extends Concept {
   namings: ExternalNaming[]
   assets: Asset[]
   author_name: string
+  /** The approved brand this concept is locked to, when it is. */
+  brand_name?: string | null
 }
 
 interface GallerySlot {
@@ -57,6 +63,20 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('concepts'))
+
+/**
+ * A concept picked by an approved brand is frozen: the worker refuses to
+ * change its text or its images, so the page does not offer to. The owner,
+ * 29.09: once it is used, nothing on it is to be changed — title, text, theme
+ * or images.
+ */
+const isUsedInBrand = computed(
+  () => concept.value?.status === 'used' || Boolean(concept.value?.used_in_brand_id),
+)
+const canEdit = computed(() => canWrite.value && !isUsedInBrand.value)
+const lockedBrandLabel = computed(() =>
+  concept.value?.brand_name ? ` «${concept.value.brand_name}»` : '',
+)
 
 const {
   data: concept,
@@ -128,9 +148,7 @@ async function saveChanges() {
     isEditing.value = false
     await reloadConcept()
   } catch (err) {
-    alert(
-      `Save failed: ${err instanceof Error ? err.message : 'Unknown error'}\n\nPayload sent: ${JSON.stringify(payload)}`
-    )
+    showError(err, 'save')
   }
 }
 
@@ -156,7 +174,7 @@ async function handleFileUpload(event: Event, entityType: string) {
     await apiUpload<Asset>('/api/assets/upload', formData)
     reloadConcept()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Upload failed')
+    showError(err, 'upload')
   } finally {
     uploadingType.value = null
     input.value = ''
@@ -212,7 +230,7 @@ async function confirmAssetDelete() {
     deleteAssetTarget.value = null
     await reloadConcept()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Delete failed')
+    showError(err, 'delete')
   } finally {
     deletingType.value = null
   }
@@ -247,13 +265,22 @@ async function confirmAssetDelete() {
             {{ new Date(concept.created_at).toLocaleDateString() }}
           </p>
         </div>
-        <div v-if="canWrite" class="concept-detail__actions">
+        <div v-if="canEdit" class="concept-detail__actions">
           <template v-if="isEditing">
             <BaseButton variant="secondary" @click="isEditing = false">Cancel</BaseButton>
             <BaseButton @click="saveChanges">Save</BaseButton>
           </template>
           <BaseButton v-else variant="secondary" @click="startEditing">Edit</BaseButton>
         </div>
+      </div>
+
+      <div v-if="isUsedInBrand" class="concept-detail__locked" role="status">
+        <PhosphorIcon :svg="lock" class="concept-detail__locked-icon" />
+        <p>
+          <strong>Використано в затвердженому бренді{{ lockedBrandLabel }}.</strong>
+          Назву, опис, тему і картинки змінити не можна — щоб бриф бренду залишився таким, яким
+          його затвердили. Для нової версії створіть новий концепт.
+        </p>
       </div>
 
       <div class="concept-detail__section">
@@ -300,7 +327,7 @@ async function confirmAssetDelete() {
             </div>
             <div class="asset-slot__body">
               <span class="asset-slot__label">Visual</span>
-              <template v-if="canWrite">
+              <template v-if="canEdit">
                 <BaseInput
                   v-model="visualAspectRatio"
                   label="Співвідношення сторін"
@@ -359,7 +386,7 @@ async function confirmAssetDelete() {
             </div>
             <div class="asset-slot__body">
               <span class="asset-slot__label">{{ slot.label }}</span>
-              <template v-if="canWrite">
+              <template v-if="canEdit">
                 <BaseInput
                   v-model="galleryRatios[slot.entityType]"
                   label="Співвідношення сторін"
@@ -456,6 +483,34 @@ async function confirmAssetDelete() {
   &__back-icon {
     width: 16px;
     height: 16px;
+  }
+
+  // The lock notice of a concept used in an approved brand. No Admin mock-up;
+  // amber, the Admin's `$color-warning` family, so it reads as "note", not
+  // as an error.
+  &__locked {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-3;
+    margin-bottom: $spacing-6;
+    padding: $spacing-3 $spacing-4;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    line-height: 1.5;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  &__locked-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    color: #b45309;
   }
 
   &__loading {

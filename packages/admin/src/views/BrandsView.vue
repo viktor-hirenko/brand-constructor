@@ -19,7 +19,10 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { useErrorDialog } from '@/composables/useErrorDialog'
 import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryModal.vue'
+
+const { showError } = useErrorDialog()
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -182,7 +185,7 @@ async function confirmDeleteBrand() {
     deleteTarget.value = null
     loadBrands()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Delete failed')
+    showError(err, 'delete')
   }
 }
 </script>

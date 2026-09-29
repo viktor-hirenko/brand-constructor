@@ -5,6 +5,23 @@ import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-cons
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
+/**
+ * What `request` throws when the worker answers with an error. It is still an
+ * `Error` whose `message` is the worker's `error` text, so every existing
+ * `err.message` reader keeps working; `status` and `details` are what
+ * `utils/apiErrorText.ts` needs to say it in plain words.
+ */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly details?: Record<string, string[]>,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 // HTTP methods that do not require a CSRF token (no side effects).
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
@@ -73,7 +90,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
       handleSessionExpired()
     }
     const errorData = json as ApiErrorResponse
-    throw new Error(errorData.error || `HTTP ${response.status}`)
+    throw new ApiError(errorData.error || `HTTP ${response.status}`, response.status, errorData.details)
   }
 
   return json as T

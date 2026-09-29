@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { isConceptLocked, CONCEPT_LOCKED_ERROR } from '../utils/asset-upload-auth'
 import { z } from 'zod'
 import type { Env, Variables } from '../types'
 import { requireLibraryAccess } from '../middleware/auth'
@@ -87,9 +88,10 @@ app.get('/:id', async c => {
   const id = c.req.param('id')
 
   const concept = await c.env.DB.prepare(
-    `SELECT c.*, u.name as author_name
+    `SELECT c.*, u.name as author_name, b.internal_name as brand_name
      FROM concepts c
      LEFT JOIN users u ON c.created_by = u.id
+     LEFT JOIN brands b ON c.used_in_brand_id = b.id
      WHERE c.id = ?`
   )
     .bind(id)
@@ -183,8 +185,8 @@ app.put('/:id', requireLibraryAccess('concepts'), async c => {
     return c.json({ success: false, error: 'Concept not found' }, 404)
   }
 
-  if (existing.status === 'used') {
-    return c.json({ success: false, error: 'Cannot modify a concept that is used in a brand' }, 409)
+  if (isConceptLocked(existing)) {
+    return c.json({ success: false, error: CONCEPT_LOCKED_ERROR }, 409)
   }
 
   const updates: string[] = []

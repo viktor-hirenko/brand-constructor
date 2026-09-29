@@ -1,6 +1,12 @@
 import { Hono } from 'hono'
 import { generateId } from '../utils/id'
-import { libraryKeyForAssetUpload, canUserUploadAsset } from '../utils/asset-upload-auth'
+import {
+  libraryKeyForAssetUpload,
+  canUserUploadAsset,
+  conceptIdForAsset,
+  isConceptLocked,
+  CONCEPT_LOCKED_ERROR,
+} from '../utils/asset-upload-auth'
 import {
   detectFileType,
   extractPngDimensions,
@@ -47,6 +53,18 @@ app.post('/upload', async c => {
       { success: false, error: 'Forbidden: insufficient permissions for this library' },
       403
     )
+  }
+
+  const lockedConceptId = conceptIdForAsset(entityType, entityId)
+  if (lockedConceptId) {
+    const concept = await c.env.DB.prepare(
+      'SELECT status, used_in_brand_id FROM concepts WHERE id = ?'
+    )
+      .bind(lockedConceptId)
+      .first()
+    if (isConceptLocked(concept)) {
+      return c.json({ success: false, error: CONCEPT_LOCKED_ERROR }, 409)
+    }
   }
 
   const buffer = await file.arrayBuffer()
@@ -173,6 +191,18 @@ app.delete('/:id', async c => {
   const asset = await c.env.DB.prepare('SELECT * FROM assets WHERE id = ?').bind(id).first()
   if (!asset) {
     return c.json({ success: false, error: 'Asset not found' }, 404)
+  }
+
+  const assetConceptId = conceptIdForAsset(asset.entity_type as string, asset.entity_id as string)
+  if (assetConceptId) {
+    const concept = await c.env.DB.prepare(
+      'SELECT status, used_in_brand_id FROM concepts WHERE id = ?'
+    )
+      .bind(assetConceptId)
+      .first()
+    if (isConceptLocked(concept)) {
+      return c.json({ success: false, error: CONCEPT_LOCKED_ERROR }, 409)
+    }
   }
 
   const isAdmin = (['admin', 'head_dhc'] as string[]).includes(user.role)

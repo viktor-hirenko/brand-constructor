@@ -9,6 +9,9 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { useErrorDialog } from '@/composables/useErrorDialog'
+
+const { showError } = useErrorDialog()
 
 const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('pr_packages'))
@@ -129,7 +132,7 @@ async function handleSave() {
     resetForm()
     reloadPackages()
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Failed to save package')
+    showError(err, 'save')
   }
 }
 
@@ -151,6 +154,10 @@ async function confirmDelete() {
     await apiDelete(`/api/pr-packages/${deleteTarget.value.id}`)
     deleteTarget.value = null
     reloadPackages()
+  } catch (err) {
+    // Used to have no catch at all: a refused delete closed nothing and said
+    // nothing.
+    showError(err, 'delete')
   } finally {
     deleting.value = false
   }
@@ -470,6 +477,7 @@ button.team-chip {
   display: flex;
   flex-direction: column;
   gap: $spacing-4;
+
 
   &__field {
     p {
