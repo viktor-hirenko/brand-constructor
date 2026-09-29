@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { PHOSPHOR_VIEW_BOX, phosphorPaths } from '@brand-constructor/shared'
+import glyph from '@phosphor-icons/core/regular/x.svg?raw'
 import type { IconProps } from './types'
 
 /**
  * Phosphor `X`, Regular weight — the kit's own glyph, node `3261:877`.
+ *
+ * DP-15859: the drawing comes from `@phosphor-icons/core`, file `regular/x.svg`,
+ * not from the Figma export described below. The two were compared as
+ * rasters at 96 px and match within anti-aliasing.
  *
  * Source: icon set `3261:907`, exported at 24x24. The designer's Icon mapping
  * table (`5658:39246`) names it outright: "Close | close → X, Regular".
@@ -15,21 +21,20 @@ import type { IconProps } from './types'
  * here — see `uiProperty.ts`, `uiButton.ts`, `uiIconButton.ts`, `uiLink.ts`.
  */
 const props = defineProps<IconProps>()
+
+const paths = phosphorPaths(glyph)
 </script>
 
 <template>
   <svg
     :class="props.class ?? 'size-4 shrink-0'"
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
+    :viewBox="PHOSPHOR_VIEW_BOX"
+    fill="currentColor"
     :role="props.title ? 'img' : undefined"
     :aria-label="props.title"
     :aria-hidden="props.title ? undefined : true"
   >
-    <path
-      d="M19.2807 18.2194C19.3504 18.289 19.4056 18.3718 19.4433 18.4628C19.4811 18.5539 19.5005 18.6514 19.5005 18.75C19.5005 18.8485 19.4811 18.9461 19.4433 19.0372C19.4056 19.1282 19.3504 19.2109 19.2807 19.2806C19.211 19.3503 19.1283 19.4056 19.0372 19.4433C18.9462 19.481 18.8486 19.5004 18.7501 19.5004C18.6515 19.5004 18.5539 19.481 18.4629 19.4433C18.3718 19.4056 18.2891 19.3503 18.2194 19.2806L12.0001 13.0603L5.78068 19.2806C5.63995 19.4213 5.44907 19.5004 5.25005 19.5004C5.05103 19.5004 4.86016 19.4213 4.71943 19.2806C4.5787 19.1399 4.49963 18.949 4.49963 18.75C4.49963 18.551 4.5787 18.3601 4.71943 18.2194L10.9397 12L4.71943 5.78061C4.5787 5.63988 4.49963 5.44901 4.49963 5.24999C4.49963 5.05097 4.5787 4.8601 4.71943 4.71936C4.86016 4.57863 5.05103 4.49957 5.25005 4.49957C5.44907 4.49957 5.63995 4.57863 5.78068 4.71936L12.0001 10.9397L18.2194 4.71936C18.3602 4.57863 18.551 4.49957 18.7501 4.49957C18.9491 4.49957 19.1399 4.57863 19.2807 4.71936C19.4214 4.8601 19.5005 5.05097 19.5005 5.24999C19.5005 5.44901 19.4214 5.63988 19.2807 5.78061L13.0604 12L19.2807 18.2194Z"
-      fill="currentColor"
-    />
+    <path v-for="(d, i) in paths" :key="i" :d="d" />
   </svg>
 </template>

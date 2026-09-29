@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import close from '@phosphor-icons/core/regular/x.svg?raw';
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue';
 
 interface ModalProps {
   title: string;
@@ -54,7 +56,9 @@ onUnmounted(() => {
         <div class="modal" :style="{ maxWidth: width }">
           <div class="modal__header">
             <h3 class="modal__title">{{ title }}</h3>
-            <button class="modal__close" @click="handleClose">&times;</button>
+            <button class="modal__close" aria-label="Close" @click="handleClose">
+              <PhosphorIcon :svg="close" class="modal__close-icon" />
+            </button>
           </div>
           <div class="modal__body">
             <slot />
@@ -190,6 +194,14 @@ onUnmounted(() => {
       height: 40px;
       font-size: $font-size-2xl;
     }
+  }
+
+  // DP-15859: mapping table `5658:39246` "Close → X, Regular". The Admin has
+  // no mock-up, so the glyph keeps the size the `×` character had: one em of
+  // the button's font, 20 on desktop and 24 on a phone.
+  &__close-icon {
+    width: 1em;
+    height: 1em;
   }
 
   &__body {

@@ -3,7 +3,9 @@
  * Grouped timeline: CEO autosaves + PO comment resolves → collapsible groups.
  * Logic: composables/useWorkflowTimeline.ts. Rollback: *.LEGACY-FLAT.md
  */
+import caretDown from '@phosphor-icons/core/regular/caret-down.svg?raw'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import { useWorkflowTimeline } from '@/composables/useWorkflowTimeline'
 
 const props = defineProps<{
@@ -115,19 +117,7 @@ const {
                     :class="{ 'workflow-modal__chevron--open': expandedIds.has(row.id) }"
                     aria-hidden="true"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    <PhosphorIcon :svg="caretDown" class="workflow-modal__chevron-icon" />
                   </span>
                 </button>
 
@@ -184,19 +174,10 @@ const {
                               }"
                               aria-hidden="true"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              >
-                                <path d="m6 9 6 6 6-6" />
-                              </svg>
+                              <PhosphorIcon
+                                :svg="caretDown"
+                                class="workflow-modal__chevron-icon workflow-modal__chevron-icon--sm"
+                              />
                             </span>
                           </component>
                           <ul
@@ -267,19 +248,7 @@ const {
                     :class="{ 'workflow-modal__chevron--open': expandedIds.has(row.id) }"
                     aria-hidden="true"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    <PhosphorIcon :svg="caretDown" class="workflow-modal__chevron-icon" />
                   </span>
                 </button>
 
@@ -356,19 +325,7 @@ const {
                     :class="{ 'workflow-modal__chevron--open': expandedIds.has(row.event.id) }"
                     aria-hidden="true"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    <PhosphorIcon :svg="caretDown" class="workflow-modal__chevron-icon" />
                   </span>
                 </component>
 
@@ -755,6 +712,20 @@ const {
 
     &--sm {
       margin-top: 2px;
+    }
+  }
+
+  // DP-15859: mapping table `5658:39246` "Chevron down → CaretDown, Regular".
+  // No Admin mock-up, so the sizes stay what the stroked chevrons had: 20, and
+  // 16 on a CEO step inside a group.
+  &__chevron-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+
+    &--sm {
+      width: 16px;
+      height: 16px;
     }
   }
 

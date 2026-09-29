@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { PHOSPHOR_VIEW_BOX, phosphorPaths } from '@brand-constructor/shared'
+import glyph from '@phosphor-icons/core/regular/text-aa.svg?raw'
 import type { IconProps } from './types'
 
 /**
  * Phosphor `TextAa`, Regular weight — the kit's own glyph, node `5637:24130`.
+ *
+ * DP-15859: the drawing comes from `@phosphor-icons/core`, file `regular/text-aa.svg`,
+ * not from the Figma export described below. The two were compared as
+ * rasters at 96 px and match within anti-aliasing.
  *
  * Source: icon set `3261:907`, exported at 24x24. The designer's Icon mapping
  * table (`5658:39246`) names it outright: "Неймінги | → TextAa, Regular".
@@ -18,21 +24,20 @@ import type { IconProps } from './types'
  * here — see `uiProperty.ts`, `uiButton.ts`, `uiIconButton.ts`, `uiLink.ts`.
  */
 const props = defineProps<IconProps>()
+
+const paths = phosphorPaths(glyph)
 </script>
 
 <template>
   <svg
     :class="props.class ?? 'size-4 shrink-0'"
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
+    :viewBox="PHOSPHOR_VIEW_BOX"
+    fill="currentColor"
     :role="props.title ? 'img' : undefined"
     :aria-label="props.title"
     :aria-hidden="props.title ? undefined : true"
   >
-    <path
-      d="M8.17876 4.9303C8.11819 4.80145 8.0222 4.69251 7.90201 4.61619C7.78181 4.53988 7.64238 4.49936 7.50001 4.49936C7.35763 4.49936 7.2182 4.53988 7.09801 4.61619C6.97781 4.69251 6.88182 4.80145 6.82126 4.9303L0.821257 17.6803C0.779337 17.7694 0.755383 17.866 0.750764 17.9643C0.746145 18.0627 0.760951 18.1611 0.794337 18.2537C0.861762 18.4409 1.00077 18.5936 1.18079 18.6783C1.3608 18.7629 1.56708 18.7726 1.75423 18.7052C1.94139 18.6378 2.0941 18.4988 2.17876 18.3187L3.74063 15H11.2594L12.8213 18.3187C12.8632 18.4079 12.9222 18.4879 12.9951 18.5542C13.0679 18.6205 13.1531 18.6718 13.2458 18.7052C13.3385 18.7386 13.4368 18.7534 13.5352 18.7488C13.6336 18.7441 13.7301 18.7202 13.8192 18.6783C13.9084 18.6363 13.9884 18.5773 14.0547 18.5044C14.121 18.4316 14.1723 18.3464 14.2057 18.2537C14.2391 18.1611 14.2539 18.0627 14.2493 17.9643C14.2446 17.866 14.2207 17.7694 14.1788 17.6803L8.17876 4.9303ZM4.44657 13.5L7.50001 7.01155L10.5534 13.5H4.44657ZM18.75 8.99999C17.5538 8.99999 16.6191 9.3253 15.9722 9.96749C15.8368 10.1087 15.7619 10.2972 15.7635 10.4928C15.7651 10.6884 15.843 10.8757 15.9808 11.0147C16.1185 11.1536 16.3051 11.2332 16.5007 11.2366C16.6963 11.2399 16.8854 11.1667 17.0278 11.0325C17.3841 10.6791 17.9653 10.5 18.75 10.5C19.9903 10.5 21 11.3437 21 12.375V12.6769C20.3344 12.2316 19.5508 11.9958 18.75 12C16.6819 12 15 13.5141 15 15.375C15 17.2359 16.6819 18.75 18.75 18.75C19.5511 18.7535 20.3348 18.5167 21 18.0703C21.0093 18.2692 21.0973 18.4563 21.2445 18.5903C21.3918 18.7244 21.5863 18.7945 21.7852 18.7851C21.9841 18.7758 22.1711 18.6879 22.3052 18.5406C22.4393 18.3934 22.5093 18.1989 22.5 18V12.375C22.5 10.5141 20.8181 8.99999 18.75 8.99999ZM18.75 17.25C17.5097 17.25 16.5 16.4062 16.5 15.375C16.5 14.3437 17.5097 13.5 18.75 13.5C19.9903 13.5 21 14.3437 21 15.375C21 16.4062 19.9903 17.25 18.75 17.25Z"
-      fill="currentColor"
-    />
+    <path v-for="(d, i) in paths" :key="i" :d="d" />
   </svg>
 </template>

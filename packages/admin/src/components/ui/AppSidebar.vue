@@ -7,6 +7,7 @@ import squaresFour from '@phosphor-icons/core/regular/squares-four.svg?raw'
 import tag from '@phosphor-icons/core/regular/tag.svg?raw'
 import textAa from '@phosphor-icons/core/regular/text-aa.svg?raw'
 import users from '@phosphor-icons/core/regular/users.svg?raw'
+import close from '@phosphor-icons/core/regular/x.svg?raw'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -80,7 +81,7 @@ async function handleLogout() {
     <div class="sidebar__header">
       <span class="sidebar__logo-text">BC Admin</span>
       <button class="sidebar__close" aria-label="Close menu" @click="emit('close')">
-        ✕
+        <PhosphorIcon :svg="close" class="sidebar__close-icon" />
       </button>
     </div>
 
@@ -180,6 +181,14 @@ async function handleLogout() {
     @include sidebar-collapsed {
       display: block;
     }
+  }
+
+  // DP-15859: "Close → X, Regular" (`5658:39246`). The collapsed menu has no
+  // mock-up, so the glyph keeps the size the `✕` character had: one em.
+  &__close-icon {
+    display: block;
+    width: 1em;
+    height: 1em;
   }
 
   &__nav {

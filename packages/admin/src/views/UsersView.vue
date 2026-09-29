@@ -8,6 +8,8 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
+import close from '@phosphor-icons/core/regular/x.svg?raw'
 
 const authStore = useAuthStore()
 const { data: users, loading, fetchData: fetchUsers } = useApiList<User>('/api/users')
@@ -230,9 +232,10 @@ async function confirmDelete() {
                       <button
                         type="button"
                         class="roles-popover__close"
+                        aria-label="Close"
                         @click="showRolesInfo = false"
                       >
-                        ✕
+                        <PhosphorIcon :svg="close" class="roles-popover__close-icon" />
                       </button>
                     </div>
                     <table class="roles-popover__table">
@@ -540,6 +543,14 @@ async function confirmDelete() {
     @include mobile {
       display: none;
     }
+  }
+
+  // DP-15859: "Close → X, Regular" (`5658:39246`). No Admin mock-up, so the
+  // glyph keeps the footprint the `✕` character had at this font size.
+  &__close-icon {
+    display: block;
+    width: 14px;
+    height: 14px;
   }
 
   &__table {

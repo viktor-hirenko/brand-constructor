@@ -10,6 +10,9 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
+import arrowLeft from '@phosphor-icons/core/regular/arrow-left.svg?raw'
+import imageSquare from '@phosphor-icons/core/regular/image-square.svg?raw'
 
 const route = useRoute()
 const router = useRouter()
@@ -189,7 +192,8 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
   <div class="variants-view">
     <div class="variants-view__back">
       <BaseButton variant="ghost" size="sm" @click="router.push('/components')">
-        &larr; Back to Components
+        <PhosphorIcon :svg="arrowLeft" class="variants-view__back-icon" />
+        Back to Components
       </BaseButton>
     </div>
 
@@ -251,20 +255,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             @click="openVariantLightbox(v.thumbnail_url, v.name)"
           />
           <div v-else class="variant-card__placeholder">
-            <svg
-              class="variant-card__placeholder-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
+            <PhosphorIcon :svg="imageSquare" class="variant-card__placeholder-icon" />
             <span class="variant-card__placeholder-text">No image yet</span>
           </div>
         </div>
@@ -392,6 +383,14 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     margin-bottom: $spacing-4;
   }
 
+  // DP-15859: "Arrow left → ArrowLeft, Regular" (`5658:39246`) in place of the
+  // `&larr;` that was part of the label. No Admin mock-up: 16 draws the arrow
+  // as wide as that character was at this button's font size.
+  &__back-icon {
+    width: 16px;
+    height: 16px;
+  }
+
   &__header {
     display: flex;
     align-items: center;
@@ -482,6 +481,8 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     font-size: $font-size-sm;
   }
 
+  // DP-15859: "Placeholder → ImageSquare, Regular" (`5658:39246`); size,
+  // colour and fade kept from the drawing it replaces — no Admin mock-up.
   &__placeholder-icon {
     width: 32px;
     height: 32px;

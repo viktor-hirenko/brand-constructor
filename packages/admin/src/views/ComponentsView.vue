@@ -9,6 +9,8 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
+import squaresFour from '@phosphor-icons/core/regular/squares-four.svg?raw'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -77,7 +79,7 @@ useListPolling(() => reloadTypes({ silent: true }), { paused: pollingPaused })
         class="type-card"
         @click="router.push(`/components/${type.id}`)"
       >
-        <div class="type-card__icon">&#9638;</div>
+        <PhosphorIcon :svg="squaresFour" class="type-card__icon" />
         <h3 class="type-card__name">{{ type.name }}</h3>
         <p class="type-card__description">{{ type.description || 'No description' }}</p>
         <span class="type-card__count">{{ type.variant_count }} variants</span>
@@ -180,8 +182,13 @@ useListPolling(() => reloadTypes({ silent: true }), { paused: pollingPaused })
     border-color: $color-primary;
   }
 
+  // DP-15859: the same glyph as the menu's UI Components row — "UI Components
+  // → SquaresFour, Regular" (`5658:39246`) — in place of the `▦` character.
+  // No Admin mock-up: the box is the 40 that character's font size was.
   &__icon {
-    font-size: 2.5rem;
+    display: block;
+    width: 2.5rem;
+    height: 2.5rem;
     margin-bottom: $spacing-3;
     color: $color-primary;
   }

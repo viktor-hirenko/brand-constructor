@@ -82,6 +82,13 @@ describe('AppSidebar — Phosphor glyphs from the mapping table', () => {
     }
   })
 
+  it('closes the collapsed menu with Phosphor X Regular, not the ✕ character', () => {
+    // "Close → X, Regular" of `5658:39246`; the button only shows below 1280.
+    expect(imports.get('close')).toBe('regular/x.svg')
+    expect(TEMPLATE).toMatch(/<PhosphorIcon\s+:svg="close"\s+class="sidebar__close-icon"/)
+    expect(TEMPLATE).not.toContain('✕')
+  })
+
   it('carries no HTML-entity glyph and no v-html any more', () => {
     expect(SOURCE).not.toMatch(/icon:\s*'/)
     expect(SOURCE).not.toMatch(/&#\d+;/)

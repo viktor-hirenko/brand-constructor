@@ -10,6 +10,8 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
+import arrowLeft from '@phosphor-icons/core/regular/arrow-left.svg?raw'
 
 interface ConceptDetail extends Concept {
   namings: ExternalNaming[]
@@ -221,7 +223,8 @@ async function confirmAssetDelete() {
   <div class="concept-detail">
     <div class="concept-detail__back">
       <BaseButton variant="ghost" size="sm" @click="router.push('/concepts')">
-        &larr; Back to Concepts
+        <PhosphorIcon :svg="arrowLeft" class="concept-detail__back-icon" />
+        Back to Concepts
       </BaseButton>
     </div>
 
@@ -445,6 +448,14 @@ async function confirmAssetDelete() {
 
   &__back {
     margin-bottom: $spacing-4;
+  }
+
+  // DP-15859: "Arrow left → ArrowLeft, Regular" (`5658:39246`) in place of the
+  // `&larr;` that was part of the label. No Admin mock-up: 16 draws the arrow
+  // as wide as that character was at this button's font size.
+  &__back-icon {
+    width: 16px;
+    height: 16px;
   }
 
   &__loading {
