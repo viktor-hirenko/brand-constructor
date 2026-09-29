@@ -5,6 +5,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
 import type {
   Concept,
+  NewConceptBrief,
   BrandConceptData,
   BrandExternalNamingData,
 } from '@brand-constructor/shared/types'
@@ -13,7 +14,9 @@ import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridS
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import UiFooter from '@/components/ui/UiFooter.vue'
-import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
+import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
+import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
@@ -68,6 +71,27 @@ const selectedMode = computed(() => store.stepData.mode)
 const isSaving = ref(false)
 const primaryDisabled = computed(() => !selectedId.value && !hasBrief.value)
 
+/**
+ * Ordering a new concept, exactly as step 2 offers it — DP-15450, Final review 4
+ * («При переході з Final Review у редагування Concept Selection відсутня
+ * можливість замовити новий концепт»).
+ *
+ * The designer drew this screen: `4463:15952`, in her section `4463:14684`
+ * («Product view / Edit Concept & External name»), where a red arrow runs from
+ * the review's «Редагувати» straight into it. The order button is a 222×40
+ * instance under the grid, and there is no CEO pair above — that pair belongs to
+ * `4492:27189`, which is the OTHER edit screen (the one entered after the CEO
+ * proposed a concept) and stays as it is.
+ *
+ * The rest of the cascade already handled a brief: `primaryDisabled` counts it
+ * and `goDali` skips the external-naming hop when the pick is a brief.
+ */
+const isCreatingNew = ref(false)
+const showNewModal = ref(false)
+const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingConceptId = ref<string | null>(null)
+
 const hasFetched = ref(false)
 /**
  * Skeleton on the FIRST load only — a theme switch keeps the cards it has and
@@ -110,12 +134,73 @@ onMounted(() => {
 
 watch(selectedMode, loadConcepts)
 
-function handleSelect(conceptId: string) {
+watch(hasBrief, val => { isCreatingNew.value = val }, { immediate: true })
+
+/**
+ * The read-only brief modal raises a one-shot edit request when «Редагувати» is
+ * pressed inside it; reuse the same `showNewModal` flow, as step 2 does.
+ */
+watch(
+  () => store.briefPreviewEditRequested,
+  kind => {
+    if (kind !== 'concept') return
+    showNewModal.value = true
+    store.consumeBriefPreviewEditRequest()
+  },
+)
+
+function applyConceptSelection(conceptId: string) {
   if (conceptId === selectedId.value) {
     store.setConcept({ selectedId: null, previewId: null })
   } else {
     store.setConcept({ selectedId: conceptId, previewId: conceptId })
   }
+}
+
+function handleSelect(conceptId: string) {
+  if (hasBrief.value) {
+    pendingConceptId.value = conceptId
+    showSwitchConfirm.value = true
+    return
+  }
+  applyConceptSelection(conceptId)
+}
+
+function confirmSwitchSelection() {
+  const conceptId = pendingConceptId.value
+  if (conceptId == null) return
+  store.setNewConceptBrief(null)
+  isCreatingNew.value = false
+  showSwitchConfirm.value = false
+  pendingConceptId.value = null
+  applyConceptSelection(conceptId)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingConceptId.value = null
+}
+
+function handleCreateBrief() {
+  showNewModal.value = true
+}
+
+function handleBriefSave(brief: NewConceptBrief) {
+  store.setNewConceptBrief(brief)
+  store.setConcept({ selectedId: null, previewId: null })
+  showNewModal.value = false
+  isCreatingNew.value = true
+}
+
+function handleBriefCancel() {
+  showNewModal.value = false
+  if (!hasBrief.value) isCreatingNew.value = false
+}
+
+function confirmDeleteBrief() {
+  store.setNewConceptBrief(null)
+  isCreatingNew.value = false
+  showDeleteConfirm.value = false
 }
 
 function goCancel() {
@@ -171,21 +256,57 @@ async function goDali() {
     subtitle="Оберіть концепт та перегляньте прев'ю праворуч."
   >
     <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <!--
+        Same block, in the same order, as `views/wizard/ConceptSelectionView.vue`
+        — DP-15450, Final review 3 («Незалежно від точки входу сторінка
+        редагування має мати той самий лейаут і пропорції колонок, що й при
+        звичайному переході на цей крок»), and her drawing `4463:15952` shows
+        exactly that: the theme switch on its own row, the grid, the order
+        button, the comment.
+
+        What was here instead: a «Концепти» label sharing the row with the
+        switch, and that row held to a fixed 506 by a max-width utility while
+        the grid below took the whole column — so the switch never reached the
+        grid's right edge, and the further the window grew the wider the step
+        became (content is 527 at 1440 and 815 at 1920). Neither the label nor
+        that cap is on her drawing or on step 2. The utility's name is spelled
+        out in `tests/unit/components/draftConceptEditScreen.test.ts` and
+        nowhere in `src`: Tailwind v4 reads comments and prints live rules from
+        anything that looks like a class.
+
+        Column widths and card size needed no change at all: both screens size
+        the panes through `useWizardPaneMetrics` (blind to `layoutMode`) and
+        draw the cards with the same `ConceptGrid`.
+      -->
       <div :class="EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS">
-        <div class="flex items-center justify-between max-w-[31.625rem]">
-          <EditFlowSectionLabel>Концепти</EditFlowSectionLabel>
-          <SegmentedControl v-model="themeMode" :options="[...themeOptions]" aria-label="Тема інтерфейсу" />
-        </div>
+        <SegmentedControl
+          v-model="themeMode"
+          :options="[...themeOptions]"
+          aria-label="Тема інтерфейсу"
+        />
 
         <ConceptGridSkeleton v-if="showSkeleton" />
         <UiAsyncState v-else-if="error" :message="error" @retry="loadConcepts" />
         <ConceptGrid
-          v-else
+          v-else-if="concepts.length > 0"
           :concepts="concepts"
           :selected-id="selectedId"
           :preview-id="previewId"
           :selection-ring="true"
           @select="handleSelect"
+        />
+        <div v-else class="text-center py-8 text-muted-foreground">
+          <p>Концептів поки немає. Створіть новий.</p>
+        </div>
+
+        <BriefOrderButton
+          create-label="Замовити новий концепт"
+          created-label="Бриф концепту створено"
+          :is-created="isCreatingNew"
+          @create="handleCreateBrief"
+          @view="store.openBriefPreview('concept')"
+          @edit="showNewModal = true"
+          @delete="showDeleteConfirm = true"
         />
       </div>
 
@@ -206,5 +327,32 @@ async function goDali() {
         @primary="goDali"
       />
     </template>
+
+    <NewConceptModal
+      v-if="showNewModal"
+      :initial-data="store.stepData.concept.newConceptBrief"
+      @save="handleBriefSave"
+      @cancel="handleBriefCancel"
+    />
+
+    <ConfirmationModal
+      v-if="showDeleteConfirm"
+      title="Видалити бриф?"
+      body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Видалити"
+      @cancel="showDeleteConfirm = false"
+      @primary="confirmDeleteBrief"
+    />
+
+    <ConfirmationModal
+      v-if="showSwitchConfirm"
+      title="Обрати цей концепт?"
+      body="При виборі концепту створений бриф буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Обрати концепт"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmSwitchSelection"
+    />
   </EditFlowStepShell>
 </template>
