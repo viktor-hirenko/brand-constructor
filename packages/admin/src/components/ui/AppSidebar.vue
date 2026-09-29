@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import lightbulb from '@phosphor-icons/core/regular/lightbulb.svg?raw'
+import megaphone from '@phosphor-icons/core/regular/megaphone.svg?raw'
+import squaresFour from '@phosphor-icons/core/regular/squares-four.svg?raw'
+import tag from '@phosphor-icons/core/regular/tag.svg?raw'
+import textAa from '@phosphor-icons/core/regular/text-aa.svg?raw'
+import users from '@phosphor-icons/core/regular/users.svg?raw'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 
 interface Props {
@@ -23,17 +30,22 @@ const isProductionMode = import.meta.env.VITE_ENVIRONMENT === 'production'
 interface NavItem {
   label: string
   path: string
+  /** A Phosphor SVG file, as text. */
   icon: string
   adminOnly?: boolean
 }
 
+// Glyphs — DP-15859, the designer's mapping table `5658:39246`, "Admin sidebar"
+// rows, all weight Regular. `Users` has no row there and is not drawn on any
+// screen (the mock-ups show a product owner's menu); the owner chose Phosphor
+// `Users` for it.
 const navItems: NavItem[] = [
-  { label: 'Brands', path: '/brands', icon: '&#9830;' },
-  { label: 'Concepts', path: '/concepts', icon: '&#9672;' },
-  { label: 'Namings', path: '/namings', icon: '&#9998;' },
-  { label: 'PR Packages', path: '/pr-packages', icon: '&#9733;' },
-  { label: 'UI Components', path: '/components', icon: '&#9638;' },
-  { label: 'Users', path: '/users', icon: '&#9823;', adminOnly: true },
+  { label: 'Brands', path: '/brands', icon: tag },
+  { label: 'Concepts', path: '/concepts', icon: lightbulb },
+  { label: 'Namings', path: '/namings', icon: textAa },
+  { label: 'PR Packages', path: '/pr-packages', icon: megaphone },
+  { label: 'UI Components', path: '/components', icon: squaresFour },
+  { label: 'Users', path: '/users', icon: users, adminOnly: true },
 ]
 
 const visibleItems = computed(() =>
@@ -81,7 +93,7 @@ async function handleLogout() {
         :class="{ 'sidebar__link--active': isActive(item.path) }"
         @click="handleNavClick"
       >
-        <span class="sidebar__link-icon" v-html="item.icon" />
+        <PhosphorIcon :svg="item.icon" class="sidebar__link-icon" />
         <span class="sidebar__link-label">{{ item.label }}</span>
       </RouterLink>
     </nav>
@@ -181,7 +193,8 @@ async function handleLogout() {
   &__link {
     display: flex;
     align-items: center;
-    gap: $spacing-3;
+    // Sidebar `5382:30672`: label 8 after the 20 glyph, i.e. at 52.
+    gap: $spacing-2;
     padding: $spacing-3 $spacing-6;
     color: $color-text-muted;
     text-decoration: none;
@@ -205,10 +218,11 @@ async function handleLogout() {
     }
   }
 
+  // Sidebar `5382:30672`: glyph 20, painted in the label's colour.
   &__link-icon {
-    font-size: $font-size-lg;
-    width: 24px;
-    text-align: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
   }
 
   &__footer {
