@@ -7,7 +7,6 @@ import type {
   Concept,
   NewConceptBrief,
   BrandConceptData,
-  BrandExternalNamingData,
 } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
@@ -24,6 +23,7 @@ import {
   EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS,
 } from '@/constants/editFlowLayout'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
+import { needsExternalNamingReselect } from '@/utils/draftConceptCascade'
 
 /**
  * Draft inline-edit — concept selection screen (Figma "Twil" flow).
@@ -32,8 +32,8 @@ import UiAsyncState from '@/components/ui/UiAsyncState.vue'
  * Mirrors the po-edit / ceo-reselect edit-flow pattern (wide layout,
  * UiFooter «Скасувати / Далі») but without the CEO-suggestion blocks.
  *
- * Cascade: when the concept actually changes AND the brief already had
- * external-naming picks, «Далі» clears external and chains to the dedicated
+ * Cascade: when the pick is a library concept other than the one the edit
+ * began with, «Далі» clears external and chains to the dedicated
  * external-naming screen (re-selection required). Otherwise «Далі» saves and
  * returns to the review.
  */
@@ -213,24 +213,17 @@ function goCancel() {
 async function goDali() {
   if (primaryDisabled.value) return
 
-  const nextConceptId = store.stepData.concept.selectedId
-  const isBriefConcept = store.stepData.concept.newConceptBrief !== null
-  const conceptChanged = nextConceptId !== baselineConceptId.value
-
-  // The original external slice — from the cascade snapshot if already
-  // captured this session, otherwise the current (untouched) slice.
-  const originalExternal = (
-    Object.prototype.hasOwnProperty.call(store.cascadeSnapshots, 'externalNaming')
-      ? (store.cascadeSnapshots.externalNaming as BrandExternalNamingData | null)
-      : store.stepData.externalNaming
-  )
-  const hadExternalPicks =
-    (originalExternal?.selectedIds?.length ?? 0) > 0 ||
-    originalExternal?.newNamingBrief != null
-
-  // Cascade: concept changed (to another concept, not a brief) and external
-  // naming had picks → clear external and require re-selection on the next step.
-  if (conceptChanged && !isBriefConcept && hadExternalPicks) {
+  // Cascade: a library concept other than the one this edit began with →
+  // clear external and require re-selection on the next step. That includes
+  // the brief whose naming step was skipped because a concept was ordered —
+  // DP-15450, Final review 5; the rule and her text live in
+  // `utils/draftConceptCascade.ts`.
+  const chainToExternal = needsExternalNamingReselect({
+    nextConceptId: store.stepData.concept.selectedId,
+    baselineConceptId: baselineConceptId.value,
+    isBriefConcept: store.stepData.concept.newConceptBrief !== null,
+  })
+  if (chainToExternal) {
     if (!Object.prototype.hasOwnProperty.call(store.cascadeSnapshots, 'externalNaming')) {
       store.captureCascadeSnapshot('externalNaming')
     }

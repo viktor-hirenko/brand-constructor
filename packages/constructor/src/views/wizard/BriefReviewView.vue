@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { apiPatch, apiGet } from '@/composables/useApi'
@@ -263,6 +263,15 @@ function startCeoReselectBySection(key: string) {
  */
 function editSection(step: number, sectionKey: string) {
   const bid = store.brandId
+  // DP-15450, Final review 2: «Після редагування секції та повернення назад
+  // сторінка відкривається зверху… → Відновлювати попередню позицію скролу».
+  // Every edit route leaves this view through `leaveForEdit`, and the review
+  // consumes the position on its next mount — the memory the CEO path already
+  // used. The modal branch below stays on this view, so it saves nothing.
+  const leaveForEdit = (to: RouteLocationRaw) => {
+    if (bid) saveReviewScrollPosition(bid, reviewUnifiedViewRef.value?.getScrollTop() ?? 0)
+    router.push(to)
+  }
   // In returned-from-CEO view, concept/external/internal use dedicated po-edit routes.
   if (isPoReturnedView.value && bid) {
     if (sectionKey === 'externalNaming') {
@@ -271,17 +280,17 @@ function editSection(step: number, sectionKey: string) {
         return
       }
       const query = apply.isCeoExternalApplied.value ? { mode: 'post-apply' } : {}
-      router.push({ path: `/constructor/brand/${bid}/po-edit/external-naming`, query })
+      leaveForEdit({ path: `/constructor/brand/${bid}/po-edit/external-naming`, query })
       return
     }
     if (sectionKey === 'concept') {
       const query = apply.isCeoConceptApplied.value ? { mode: 'post-apply' } : {}
-      router.push({ path: `/constructor/brand/${bid}/po-edit/concept`, query })
+      leaveForEdit({ path: `/constructor/brand/${bid}/po-edit/concept`, query })
       return
     }
     if (sectionKey === 'internalNaming') {
       const query = apply.isCeoInternalApplied.value ? { mode: 'post-apply' } : {}
-      router.push({ path: `/constructor/brand/${bid}/po-edit/internal-naming`, query })
+      leaveForEdit({ path: `/constructor/brand/${bid}/po-edit/internal-naming`, query })
       return
     }
   }
@@ -292,14 +301,14 @@ function editSection(step: number, sectionKey: string) {
     (brandStatus.value === 'draft' || reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK) &&
     bid
   ) {
-    router.push(`/constructor/brand/${bid}/draft-edit/concept`)
+    leaveForEdit(`/constructor/brand/${bid}/draft-edit/concept`)
     return
   }
   store.beginEditSection(sectionKey, 8)
   // `editBrand` lets the router guard recognise an F5 on the wizard URL as
   // an interrupted brand-edit session (not a fresh wizard run) and redirect
   // back to the brand review page instead of dumping the user on step/1.
-  router.push({ path: `/constructor/step/${step}`, query: { editBrand: bid ?? undefined } })
+  leaveForEdit({ path: `/constructor/step/${step}`, query: { editBrand: bid ?? undefined } })
 }
 
 /** PO footer "Назад" — plain step navigation, no edit-mode marker. */

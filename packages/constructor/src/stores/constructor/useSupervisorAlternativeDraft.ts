@@ -212,11 +212,14 @@ export function useSupervisorAlternativeDraft(opts: UseSupervisorAlternativeDraf
     } else if (section === 'externalNaming') {
       supervisorAlternativeDraft.value.conceptId =
         readSelectionAsString(sel?.concept) ?? sd.concept.selectedId
-      const saved = readSelectionAsArray(sel?.externalNaming)
-      supervisorAlternativeDraft.value.externalNamingIds =
-        saved.length > 0
-          ? saved
-          : sd.externalNaming.selectedIds.slice(0, SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT)
+      // Only the Supervisor's OWN saved picks come back ticked — never the
+      // Author's. DP-15450, CEO view 3: «При переході до зміни External Naming
+      // вибір замовника одразу позначений галочкою, через що може сприйматися
+      // як уже підтверджений вибір SEO. → Не проставляти selected-state за
+      // замовчуванням (але залишити SEO можливість обрати його повторно разом
+      // з іншими варіантами).» The Author's names stay pickable in the
+      // «Вибір замовника» row above the grid, with its select-all.
+      supervisorAlternativeDraft.value.externalNamingIds = readSelectionAsArray(sel?.externalNaming)
     } else {
       supervisorAlternativeDraft.value.internalNamingId =
         readSelectionAsString(sel?.internalNaming) ?? sd.internalNaming.selectedId ?? null

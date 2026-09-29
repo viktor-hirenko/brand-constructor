@@ -147,7 +147,10 @@ describe('visual components 4 — the eye moved into the Sidebar row', () => {
     expect(phoneSidebar).not.toContain('<button')
     expect(phoneSidebar).not.toContain('@click')
     expect(phoneSidebar).not.toMatch(/@(pointer|mouse|touch|key)/)
-    expect(phoneSidebar).not.toMatch(/\bemit\(/)
+    // Its one event is the list's scroll, which retires the step 7 hint
+    // (DP-15450, Interface Components 3) — not a press on anything.
+    expect(phoneSidebar.match(/\bemit\(\s*'[^']*'/g)).toEqual(["emit('scrolled'"])
+    expect(phoneSidebar).toMatch(/@scroll\.passive="emit\('scrolled'\)"/)
   })
 })
 

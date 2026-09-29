@@ -42,6 +42,12 @@ interface Props {
 
 const props = defineProps<Props>()
 
+/**
+ * The list moved. Step 7 retires its scroll hint on the first one — DP-15450,
+ * Interface Components 3; the review's copy of this layer simply ignores it.
+ */
+const emit = defineEmits<{ scrolled: [] }>()
+
 const geometry = computed(() => resolveSidebarBandGeometry(props.unitRem))
 
 const topBandStyle = computed(() => ({ height: geometry.value.topHeightRem }))
@@ -60,7 +66,10 @@ const middleStyle = computed(() => ({
       <img :src="slice.url" :alt="slice.typeId" class="block w-full h-auto" />
     </div>
 
-    <div class="phone-preview-sidebar__scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
+    <div
+      class="phone-preview-sidebar__scroll flex-1 min-h-0 overflow-y-auto overscroll-contain"
+      @scroll.passive="emit('scrolled')"
+    >
       <!-- `overflow-hidden` is what makes this a window rather than a viewport:
            it stops the image's negative margins from collapsing out of the
            window's auto height, so the scrollable height is exactly the part

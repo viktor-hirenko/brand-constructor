@@ -40,6 +40,8 @@ import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCan
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
+import SidebarScrollHint from '@/components/constructor/preview/SidebarScrollHint.vue'
+import { useSidebarScrollHint } from '@/composables/useSidebarScrollHint'
 import {
   STEP_ONE_CARD_CLASS,
   STEP_ONE_CARD_ICON_CLASS,
@@ -120,6 +122,16 @@ const step7EmptyVariant = computed((): VisualComponentsPhoneEmptyVariant =>
  * where the mockup shows the phone whole. It never grows past its design size.
  */
 const paneGeometry = inject(WIZARD_PANE_GEOMETRY_KEY, undefined)
+
+/**
+ * «Прокрутіть, щоб переглянути весь Sidebar» — DP-15450, Interface Components 3.
+ * Up while the Sidebar layer is on the phone, gone after its list is first
+ * scrolled; the rule is `composables/useSidebarScrollHint.ts`.
+ */
+const sidebarLayerShown = computed(
+  () => props.currentStep === 7 && !!props.step7OverlaySlice && props.step9SidebarVisible,
+)
+const sidebarScrollHint = useSidebarScrollHint(sidebarLayerShown)
 
 const phoneBox = computed(() =>
   fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
@@ -273,6 +285,9 @@ const phoneBox = computed(() =>
             :duration-ms="SIDEBAR_HIDDEN_CALLOUT_DURATION_MS"
           />
         </div>
+        <!-- Her tooltip sits over the header band, above the phone — outside
+             the scroll area, which would clip it. -->
+        <SidebarScrollHint v-if="sidebarScrollHint.visible.value" />
         <!-- Kit `Type=UI preview` `3839:9514`, measured on the drawn step 7
              `5382:64270`: a 24 `Sparkle` in #6f6f7d, `spacing/8`, «Превʼю» in
              `header/l` 24/32 weight 500 #1f1f2e, letter-spacing 0. It was 20/32
@@ -326,7 +341,11 @@ const phoneBox = computed(() =>
                   :key="step7OverlaySlice.url"
                   class="absolute inset-0 overflow-hidden"
                 >
-                  <PhonePreviewSidebar :slice="step7OverlaySlice" :unit-rem="unitRem" />
+                  <PhonePreviewSidebar
+                    :slice="step7OverlaySlice"
+                    :unit-rem="unitRem"
+                    @scrolled="sidebarScrollHint.markScrolled"
+                  />
                 </div>
               </template>
             </PhonePreviewCanvas>
