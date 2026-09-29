@@ -12,8 +12,12 @@
 import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
+import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
 import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import {
+  PREVIEW_IMAGE_BACKDROP_CLASS,
+  PREVIEW_IMAGE_CLASS,
+  previewImageFitClass,
   PREVIEW_PANEL_HEADER_CLASS,
   PREVIEW_PANEL_PLACEHOLDER_BODY_CLASS,
   PREVIEW_PANEL_PLACEHOLDER_CLASS,
@@ -62,6 +66,21 @@ const mobileSrc = computed(() => {
   const url = c.gallery_url_1
   return url && url.trim() !== '' ? getAssetUrl(url) : null
 })
+
+/**
+ * DP-15450 CEO view 4, HIGH: «Preview справа некоректно масштабується:
+ * порушуються пропорції, частина контенту не вміщується.» → «Зберігати фіксовані
+ * пропорції preview без crop.»
+ *
+ * This square used to fill itself with the picture unconditionally, so a
+ * concept shot that is not square lost its edges on every screen this component
+ * draws — the naming steps, the final review and the CEO's own review. Step 2's
+ * slider already asked `useAdaptiveImageFit` the same question; this one never
+ * did. Same composable, same classes (`constants/previewLayout.ts`), so the two
+ * squares cannot drift apart again.
+ */
+const { containerRef: squareRef, recordAspect, fitModeFor } = useAdaptiveImageFit()
+const mobileFit = computed(() => fitModeFor(mobileSrc.value))
 </script>
 
 <template>
@@ -97,18 +116,29 @@ const mobileSrc = computed(() => {
 
       <div
         v-else
+        ref="squareRef"
         :class="[
           PREVIEW_PANEL_SQUARE_CLASS,
           PREVIEW_PANEL_SQUARE_RADIUS_CLASS,
-          'overflow-hidden bg-muted/30',
+          'relative overflow-hidden bg-muted/30',
         ]"
       >
+        <!-- Shown whole rather than cropped (DP-15450 CEO view 4). The blurred
+             copy is what fills the space left over — see `previewLayout.ts`. -->
+        <img
+          v-if="mobileSrc && mobileFit === 'contain'"
+          :src="mobileSrc"
+          alt=""
+          aria-hidden="true"
+          :class="PREVIEW_IMAGE_BACKDROP_CLASS"
+        />
         <img
           v-if="mobileSrc"
           :src="mobileSrc"
           :alt="concept.name || 'Mobile preview'"
-          class="w-full h-full object-cover"
+          :class="[PREVIEW_IMAGE_CLASS, previewImageFitClass(mobileFit)]"
           loading="lazy"
+          @load="e => recordAspect(mobileSrc, e)"
         />
         <div
           v-else

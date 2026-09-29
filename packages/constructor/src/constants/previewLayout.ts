@@ -140,3 +140,39 @@ export const PREVIEW_PANEL_PLACEHOLDER_TEXT = 'Оберіть концепт з�
  * the phone vertically and the review used to pin it to y=0.
  */
 export const PREVIEW_PANEL_PHONE_ROW_CLASS = 'flex h-full w-full items-start justify-center pt-6'
+
+/**
+ * ── How a concept picture sits in the square — DP-15450, both HIGH rows ──────
+ *
+ * The designer wrote the same sentence on two screens: «Зберігати фіксовані
+ * пропорції preview без crop.» Which shape a picture gets is decided by
+ * `composables/useAdaptiveImageFit.ts`; these three are the classes that decide
+ * carries, and they live here because **two components draw this same square
+ * and they had drifted apart.**
+ *
+ * `ConceptPreviewSlider` (step 2) asked the composable and honoured the answer.
+ * `ConceptMobilePreview` — the square on the naming steps, the final review and
+ * the CEO's screen — did not ask at all: it filled the square unconditionally,
+ * which is exactly the second HIGH row. One picture, one rule, one place.
+ *
+ * The backdrop is what fills the space left over when a picture is shown whole:
+ * an enlarged, blurred, darkened copy of the picture itself, so the panel never
+ * shows a bare plate. It was already in the slider; the review square had
+ * nothing.
+ */
+
+/** The picture itself — fills the square's box; the fit class decides the rest. */
+export const PREVIEW_IMAGE_CLASS = 'absolute inset-0 h-full w-full'
+
+/**
+ * The blurred copy behind it. `scale-110` hides the blur's own soft edge,
+ * `brightness-[0.7]` keeps it from competing with the picture in front.
+ * Always filled, never shown whole — it is a backdrop, not content.
+ */
+export const PREVIEW_IMAGE_BACKDROP_CLASS =
+  'absolute inset-0 h-full w-full scale-110 object-cover blur-2xl brightness-[0.7]'
+
+/** The one place the fit decision becomes a class. */
+export function previewImageFitClass(fit: 'cover' | 'contain'): string {
+  return fit === 'contain' ? 'object-contain' : 'object-cover'
+}

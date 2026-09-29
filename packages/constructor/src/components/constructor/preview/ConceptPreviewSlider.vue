@@ -13,6 +13,9 @@ import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiPagination from '@/components/ui/UiPagination.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
 import {
+  PREVIEW_IMAGE_BACKDROP_CLASS,
+  PREVIEW_IMAGE_CLASS,
+  previewImageFitClass,
   PREVIEW_PANEL_HEADER_CLASS,
   PREVIEW_PANEL_HEADER_GAP_CLASS,
   PREVIEW_PANEL_PLACEHOLDER_BODY_CLASS,
@@ -314,14 +317,13 @@ onUnmounted(() => {
           :src="asset(bgUrl)"
           alt=""
           aria-hidden="true"
-          class="absolute inset-0 w-full h-full scale-110 object-cover blur-2xl brightness-[0.7]"
+          :class="PREVIEW_IMAGE_BACKDROP_CLASS"
         />
         <img
           v-if="bgUrl"
           :src="asset(bgUrl)"
           :alt="concept.name"
-          class="absolute inset-0 w-full h-full"
-          :class="bgFit === 'contain' ? 'object-contain' : 'object-cover'"
+          :class="[PREVIEW_IMAGE_CLASS, previewImageFitClass(bgFit)]"
           @load="e => recordSlideAspect(bgUrl, e)"
         />
         <!-- Crossfade: foreground layer — incoming image, invisible until decoded then fades in -->
@@ -330,15 +332,22 @@ onUnmounted(() => {
           :src="asset(fgUrl)"
           alt=""
           aria-hidden="true"
-          class="absolute inset-0 w-full h-full scale-110 object-cover blur-2xl brightness-[0.7] transition-opacity duration-300"
-          :class="fgReady ? 'opacity-100' : 'opacity-0'"
+          :class="[
+            PREVIEW_IMAGE_BACKDROP_CLASS,
+            'transition-opacity duration-300',
+            fgReady ? 'opacity-100' : 'opacity-0',
+          ]"
         />
         <img
           v-if="fgUrl"
           :src="asset(fgUrl)"
           :alt="concept.name"
-          class="absolute inset-0 w-full h-full transition-opacity duration-300"
-          :class="[fgFit === 'contain' ? 'object-contain' : 'object-cover', fgReady ? 'opacity-100' : 'opacity-0']"
+          :class="[
+            PREVIEW_IMAGE_CLASS,
+            previewImageFitClass(fgFit),
+            'transition-opacity duration-300',
+            fgReady ? 'opacity-100' : 'opacity-0',
+          ]"
           @load="e => { recordSlideAspect(fgUrl, e); onFgLoaded() }"
         />
         <div
@@ -438,8 +447,7 @@ onUnmounted(() => {
           <img
             :src="asset(currentSlideUrl)"
             :alt="concept.name"
-            class="relative z-0 h-full w-full"
-            :class="expandedFit === 'contain' ? 'object-contain' : 'object-cover'"
+            :class="['relative z-0 h-full w-full', previewImageFitClass(expandedFit)]"
             @load="e => recordExpandedAspect(currentSlideUrl, e)"
           />
         </div>
