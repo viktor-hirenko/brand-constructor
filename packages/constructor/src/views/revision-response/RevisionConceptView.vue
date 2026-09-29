@@ -36,7 +36,7 @@ const brandId = computed(() => route.params.id as string)
  */
 const isPostApply = computed(() => route.query.mode === 'post-apply')
 
-const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
+const { data: concepts, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
 
 const localMode = ref<'light' | 'dark'>(store.stepData.mode === 'dark' ? 'dark' : 'light')
 
@@ -153,10 +153,15 @@ const hasFetchedPoConcept = ref(false)
 const showHeaderSkeleton = computed(
   () => !hasFetchedPoConcept.value || (!isPostApply.value && !hasFetchedCeoConcept.value)
 )
+/**
+ * First load only — a theme switch keeps the cards it has and swaps them in
+ * place, instead of putting six placeholder tiles between the two lists and
+ * moving everything under the grid twice. Why, at length:
+ * `views/wizard/ConceptSelectionView.vue` (DP-15450, Concept Selection 2).
+ */
 const showGridSkeleton = computed(
   () =>
     !hasFetchedConcepts.value ||
-    loading.value ||
     (!isPostApply.value && !hasFetchedCeoConcept.value)
 )
 

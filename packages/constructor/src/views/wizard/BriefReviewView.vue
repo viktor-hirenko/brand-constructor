@@ -194,11 +194,14 @@ const hasCeoAlternativesForApprove = computed(() => {
 
 const approveConfirmCopy = computed(() => {
   if (approveConfirmMode.value === 'warning') {
+    // Word for word off the drawn modal `5387:78012` (DP-15450, CEO view 5):
+    // title, body and both buttons are her text, and the body is ONE paragraph
+    // there — the hard break this used to carry was ours.
     return {
-      title: 'Ви внесли зміни до брифу',
-      body: 'Ви змінили вибір концепту або неймінгу.\nЗа потреби поверніть бриф на доопрацювання перед затвердженням.',
+      title: 'Затвердити бриф зі змінами?',
+      body: 'Ви змінили вибір концепту або неймінгу. За потреби поверніть бриф на доопрацювання перед затвердженням.',
       cancelLabel: 'Повернути на доопрацювання',
-      primaryLabel: 'Затвердити бриф',
+      primaryLabel: 'Затвердити зі змінами',
     }
   }
   return {

@@ -32,7 +32,6 @@ const brandId = computed(() => route.params.id as string)
 
 const {
   data: concepts,
-  loading,
   error,
   fetchData,
   perPage,
@@ -84,13 +83,15 @@ async function loadPoConcept() {
  * empty/"not selected" states while either the PO pick or the available
  * concepts list is still loading. Both fetches are kicked off in `onMounted`
  * in parallel, and the skeleton tree is rendered until they both resolve.
+ *
+ * It waits on the FIRST load only. A later refetch — the theme segment is the
+ * one that happens by hand — keeps what is on screen and swaps it in place
+ * instead of dropping the page back to skeletons, which is what made the
+ * layout jump twice per theme switch. Why, at length:
+ * `views/wizard/ConceptSelectionView.vue` (DP-15450, Concept Selection 2).
  */
 const isReady = computed(
-  () =>
-    hasFetchedConcepts.value &&
-    hasFetchedPoConcept.value &&
-    !poConceptLoading.value &&
-    !loading.value
+  () => hasFetchedConcepts.value && hasFetchedPoConcept.value
 )
 
 const stagedConfirmedId = computed(() => store.supervisorAlternativeDraft.conceptId)

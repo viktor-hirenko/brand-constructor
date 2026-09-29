@@ -40,7 +40,7 @@ const router = useRouter()
 
 const brandId = computed(() => route.params.id as string)
 
-const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
+const { data: concepts, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
 
 const selectedId = computed(() => store.stepData.concept.selectedId)
 const previewId = computed(() => store.stepData.concept.previewId ?? null)
@@ -69,7 +69,12 @@ const isSaving = ref(false)
 const primaryDisabled = computed(() => !selectedId.value && !hasBrief.value)
 
 const hasFetched = ref(false)
-const showSkeleton = computed(() => !hasFetched.value || loading.value)
+/**
+ * Skeleton on the FIRST load only — a theme switch keeps the cards it has and
+ * swaps them in place. Why, at length: `views/wizard/ConceptSelectionView.vue`
+ * (DP-15450, Concept Selection 2). This screen carries the same theme segment.
+ */
+const showSkeleton = computed(() => !hasFetched.value)
 
 /**
  * The concept the brief had BEFORE this edit session started. Read from the

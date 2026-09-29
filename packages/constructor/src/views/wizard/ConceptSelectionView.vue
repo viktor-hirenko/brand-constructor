@@ -13,7 +13,7 @@ import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButto
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
-const { data: concepts, loading, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
+const { data: concepts, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
 
 const isCreatingNew = ref(false)
 const showNewModal = ref(false)
@@ -44,7 +44,29 @@ const themeMode = computed({
 })
 
 const hasFetched = ref(false)
-const showSkeleton = computed(() => !hasFetched.value || loading.value)
+
+/**
+ * DP-15450, Concept Selection 2 — «При перемиканні світлої/темної теми
+ * змінюється позиція progress bar і розмір карток концептів. → При перемиканні
+ * теми layout не має стрибати.»
+ *
+ * The theme segment refetches the list (`watch(selectedMode, loadConcepts)`),
+ * and while that was in flight the grid was replaced by a SIX-tile skeleton
+ * regardless of how many concepts either theme actually has. The block
+ * therefore changed height twice on every switch — N cards → 6 tiles → M cards
+ * — and everything under it (the order button, the comment field) moved with
+ * it. `useApi` keeps `data` until the new result lands, so the cure is simply
+ * to stop asking for the skeleton once a list has been shown: the cards on
+ * screen stay put and swap in place.
+ *
+ * The progress bar half of her замечання is already gone by construction: the
+ * rule now lives in `UiWizardHeader` above both columns, not inside the
+ * scrolling left pane it used to sit in. Card SIZE is likewise stable — the
+ * grid is `auto-fill` over `--wizard-concept-card-min`, so it follows the
+ * column width, and the column reserves its scrollbar gutter (`wizard-scrollbar`,
+ * `scrollbar-gutter: stable`) whether or not the content overflows.
+ */
+const showSkeleton = computed(() => !hasFetched.value)
 
 async function loadConcepts() {
   const params: Record<string, string> = { status: 'active' }

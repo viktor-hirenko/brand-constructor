@@ -24,7 +24,10 @@ const CEO_SECTION_LABELS: Record<string, string> = {
   internalNaming: 'Внутрішня назва',
   marketingPackage: 'PR пакет',
   deliverables: 'Deliverables',
-  visualComponents: 'Візуальні компоненти',
+  // DP-15450, visual components 1: the step is `Interface Components` across
+  // the builder (`router/index.ts` step/7). The printed brief was the last
+  // place still calling it «Візуальні компоненти».
+  visualComponents: 'Interface Components',
   general: 'Загальний коментар',
 }
 
@@ -227,7 +230,7 @@ export function usePrintBrand() {
       ])
     )
 
-    // 8. Visual Components
+    // 8. Interface Components
     const vcRows: SectionRow[] = []
     if (sd.visualComponents.delegateToDesigners) {
       vcRows.push({ label: 'Режим', value: 'Делеговано дизайнерам' })
@@ -237,7 +240,7 @@ export function usePrintBrand() {
       }
     }
     vcRows.push({ label: 'Коментар', value: val(sd.visualComponents.comment) })
-    content.push(...buildSectionContent('Visual Components', vcRows))
+    content.push(...buildSectionContent('Interface Components', vcRows))
 
     // 9. CEO Comments
     if (data.ceoComments && Object.values(data.ceoComments).some(v => v?.trim())) {

@@ -32,7 +32,7 @@ function handleSave() {
 }
 
 const title = computed(() => {
-  if (props.readonly) return 'Бриф нової Internal Naming'
+  if (props.readonly) return 'Бриф на створення Internal Naming'
   return isEditMode ? 'Редагування брифу назви' : 'Замовити нову внутрішню назву'
 })
 </script>

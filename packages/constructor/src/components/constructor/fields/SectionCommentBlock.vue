@@ -40,8 +40,26 @@ import UiTextarea from '@/components/ui/UiTextarea.vue'
  * `amber/border` the editor below it already uses.
  */
 const CEO_SECTION_COMMENT_MAX_ROWS = 5
-const CEO_GENERAL_COMMENT_MIN_ROWS = 6
+const CEO_GENERAL_COMMENT_MIN_ROWS = 3
 const CEO_GENERAL_COMMENT_MAX_ROWS = 12
+
+/**
+ * DP-15450, CEO view 1 — «Зменшити висоту textarea до 112 px. При великому
+ * обсязі тексту — може бути auto-grow, а потім з'являється внутрішній scroll.»
+ *
+ * The field used to open at six lines: 6 × 24 + the box's own 24 = 168.
+ *
+ * 112 is not a whole number of 24-line rows (it is 3 ⅔), so the floor is the
+ * BOX's, not the textarea's: three rows of content (96) inside a box that
+ * cannot go under 112. `min-h-28` is 7rem — 112 at the 1440 canvas, and unlike
+ * a px literal it scales with the embed the way every other number in the kit
+ * does. The `!` is needed because the Area recipe already carries `min-h-24`.
+ *
+ * **Her own drawn CEO screen `5387:74910` puts this Input at 96** (128 with the
+ * Title above it), i.e. the kit's floor — the 112 implemented here is the
+ * number her written замечання states. Divergence recorded in the tracker.
+ */
+const CEO_GENERAL_COMMENT_MIN_HEIGHT_CLASS = 'min-h-28!'
 
 interface SectionCommentBlockProps {
   /** Section identifier from CEO_COMMENT_SECTIONS (concept, externalNaming, ...). */
@@ -226,7 +244,10 @@ defineExpose({ isVisible })
         v-else
         ref="textareaRef"
         class="section-comment__ceo-editor"
-        :class="highlighted && !hasSupervisorComment ? 'border-amber-border!' : ''"
+        :class="[
+          alwaysExpanded ? CEO_GENERAL_COMMENT_MIN_HEIGHT_CLASS : '',
+          highlighted && !hasSupervisorComment ? 'border-amber-border!' : '',
+        ]"
         :model-value="draft"
         :label="alwaysExpanded ? '' : 'Коментар CEO'"
         :rows="editorRows"

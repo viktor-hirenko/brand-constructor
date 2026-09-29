@@ -67,7 +67,7 @@ const layoutModifier = computed(() => {
         >
           <div class="flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
-            <span class="text-ink-900">Бриф нової Internal Naming</span>
+            <span class="text-ink-900">Бриф на створення Internal Naming</span>
           </div>
           <UiLink @click="emit('previewBrief')">
             <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>
@@ -98,7 +98,7 @@ const layoutModifier = computed(() => {
         >
           <div class="flex items-baseline gap-1 text-[1rem] leading-6">
             <span class="text-ink-700">•</span>
-            <span class="text-ink-900">Бриф нової Internal Naming</span>
+            <span class="text-ink-900">Бриф на створення Internal Naming</span>
           </div>
           <UiLink @click="emit('previewBrief')">
             <template #icon="{ iconClass }"><EyeIcon :class="iconClass" /></template>

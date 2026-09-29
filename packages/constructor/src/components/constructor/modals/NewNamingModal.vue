@@ -96,7 +96,7 @@ function handleSave() {
 }
 
 const title = computed(() => {
-  if (props.readonly) return 'Бриф нового External Naming'
+  if (props.readonly) return 'Бриф на створення External Naming'
   return isEditMode
     ? 'Редагування брифу External Naming'
     : 'Замовити новий External Naming'
