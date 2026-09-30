@@ -146,7 +146,8 @@ async function saveChanges() {
   try {
     await apiPut(`/api/concepts/${concept.value.id}`, payload)
     isEditing.value = false
-    await reloadConcept()
+    // Quiet: a plain reload swapped the whole page for «Loading...».
+    await reloadConcept({ silent: true })
   } catch (err) {
     showError(err, 'save')
   }
@@ -172,7 +173,7 @@ async function handleFileUpload(event: Event, entityType: string) {
     }
 
     await apiUpload<Asset>('/api/assets/upload', formData)
-    reloadConcept()
+    reloadConcept({ silent: true })
   } catch (err) {
     showError(err, 'upload')
   } finally {
@@ -228,7 +229,7 @@ async function confirmAssetDelete() {
       await apiPut(`/api/concepts/${concept.value.id}`, payload)
     }
     deleteAssetTarget.value = null
-    await reloadConcept()
+    await reloadConcept({ silent: true })
   } catch (err) {
     showError(err, 'delete')
   } finally {

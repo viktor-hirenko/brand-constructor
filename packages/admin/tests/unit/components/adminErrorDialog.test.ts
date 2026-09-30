@@ -67,6 +67,7 @@ const PLACES: ReadonlyArray<readonly [file: string, action: string, count: numbe
   ['views/ConceptDetailView.vue', 'upload', 1],
   ['views/ConceptDetailView.vue', 'delete', 1],
   ['views/ComponentVariantsView.vue', 'upload', 1],
+  ['views/ComponentVariantsView.vue', 'delete', 1],
   ['views/PrPackagesView.vue', 'save', 1],
   ['views/PrPackagesView.vue', 'delete', 1],
 ]

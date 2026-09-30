@@ -13,6 +13,11 @@ import usersRoutes from './routes/users'
 import authRoutes from './routes/auth'
 import brandsRoutes from './routes/brands'
 import { batchCheckDomains, isPananamesConfigured } from './utils/domain-check'
+import {
+  assetKeysToTry,
+  ASSET_CACHE_CONTROL,
+  ASSET_FALLBACK_CACHE_CONTROL,
+} from './utils/asset-small'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -41,16 +46,27 @@ app.get('/api/health', c => {
   return c.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() })
 })
 
-// Asset serving — public, no auth required
+// Asset serving — public, no auth required. `?size=small` serves the small
+// copy made at upload and falls back to the picture itself (utils/asset-small.ts).
 app.get('/api/assets/:entityType/:entityId/:fileName', async c => {
   const key = `${c.req.param('entityType')}/${c.req.param('entityId')}/${c.req.param('fileName')}`
-  const object = await c.env.ASSETS_BUCKET.get(key)
+  const keys = assetKeysToTry(key, new URL(c.req.url))
+  let object: R2ObjectBody | null = null
+  let servedKey = key
+  for (const candidate of keys) {
+    object = await c.env.ASSETS_BUCKET.get(candidate)
+    if (object) {
+      servedKey = candidate
+      break
+    }
+  }
   if (!object) {
     return c.json({ success: false, error: 'Asset not found' }, 404)
   }
+  const isFallback = keys.length > 1 && servedKey !== keys[0]
   const headers = new Headers()
   headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream')
-  headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+  headers.set('Cache-Control', isFallback ? ASSET_FALLBACK_CACHE_CONTROL : ASSET_CACHE_CONTROL)
   return new Response(object.body, { headers })
 })
 

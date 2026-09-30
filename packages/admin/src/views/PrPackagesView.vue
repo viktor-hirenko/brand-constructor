@@ -5,6 +5,7 @@ import { PR_TEAMS } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
+import { pinLeavingCard, useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
@@ -12,6 +13,8 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import { useErrorDialog } from '@/composables/useErrorDialog'
 
 const { showError } = useErrorDialog()
+
+const { transitionName, playDelete } = useDeleteAnimation()
 
 const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('pr_packages'))
@@ -130,7 +133,7 @@ async function handleSave() {
     showCreateModal.value = false
     editingPkg.value = null
     resetForm()
-    reloadPackages()
+    reloadPackages({ silent: true })
   } catch (err) {
     showError(err, 'save')
   }
@@ -158,9 +161,13 @@ async function confirmDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
   try {
-    await apiDelete(`/api/pr-packages/${deleteTarget.value.id}`)
+    const id = deleteTarget.value.id
+    await apiDelete(`/api/pr-packages/${id}`)
     deleteTarget.value = null
-    reloadPackages()
+    // In place + quiet refresh — see BrandsView `confirmDeleteBrand`.
+    playDelete(() => {
+      packages.value = packages.value.filter(p => p.id !== id)
+    }, () => reloadPackages({ silent: true }))
   } catch (err) {
     // Used to have no catch at all: a refused delete closed nothing and said
     // nothing.
@@ -180,7 +187,13 @@ async function confirmDelete() {
 
     <div v-if="loading" class="pr-packages-view__loading">Loading...</div>
 
-    <div v-else class="pr-packages-view__grid">
+    <TransitionGroup
+      v-else
+      tag="div"
+      class="pr-packages-view__grid list-delete-cards"
+      :name="transitionName"
+      @before-leave="pinLeavingCard"
+    >
       <div v-for="pkg in packages" :key="pkg.id" class="package-card" @click="viewingPkg = pkg">
         <div class="package-card__header">
           <span class="package-card__number">#{{ pkg.number }}</span>
@@ -232,7 +245,7 @@ async function confirmDelete() {
           </div>
         </div>
       </div>
-    </div>
+    </TransitionGroup>
 
     <BaseModal
       v-if="viewingPkg"
@@ -381,6 +394,7 @@ async function confirmDelete() {
   }
 
   &__grid {
+    position: relative; // the leaving card is pinned inside it
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: $spacing-4;
@@ -520,6 +534,7 @@ button.team-chip {
 }
 
 .package-card {
+  cursor: pointer;
   background-color: $color-bg-white;
   border: 1px solid $color-border;
   border-radius: $radius-lg;

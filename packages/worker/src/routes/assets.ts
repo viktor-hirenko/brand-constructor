@@ -15,6 +15,8 @@ import {
   validateAsset,
 } from '../utils/asset-validation'
 import { buildR2Key, getContentType } from '../utils/r2'
+import { validateSmallAsset } from '../utils/asset-small'
+import { ASSET_SMALL_FORM_FIELD, smallAssetKey } from '@brand-constructor/shared'
 import type { AssetEntityType } from '@brand-constructor/shared'
 import type { Env, Variables } from '../types'
 
@@ -23,6 +25,7 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 app.post('/upload', async c => {
   const formData = await c.req.formData()
   const file = formData.get('file') as File | null
+  const smallFile = formData.get(ASSET_SMALL_FORM_FIELD) as File | null
   const entityType = formData.get('entity_type') as AssetEntityType | null
   const entityId = formData.get('entity_id') as string | null
   const componentTypeId = formData.get('component_type_id') as string | null
@@ -108,6 +111,24 @@ app.post('/upload', async c => {
     )
   }
 
+  // Optional small copy for cards (shared/src/utils/assetVariants.ts). Checked
+  // against the image that has just passed validation, before anything is stored.
+  let smallBuffer: ArrayBuffer | null = null
+  if (smallFile && typeof smallFile !== 'string' && meta) {
+    smallBuffer = await smallFile.arrayBuffer()
+    const smallCheck = validateSmallAsset(smallBuffer, meta)
+    if (!smallCheck.valid) {
+      return c.json(
+        {
+          success: false,
+          error: `Asset validation failed: ${smallCheck.error}`,
+          details: { validation: [smallCheck.error] },
+        },
+        400
+      )
+    }
+  }
+
   const id = generateId('ast')
   const safeFileName = `${id}.${fileType}`
   const r2Key = buildR2Key(entityType, entityId, safeFileName)
@@ -116,6 +137,13 @@ app.post('/upload', async c => {
     httpMetadata: { contentType: getContentType(fileType) },
     customMetadata: { entityType, entityId, originalName: file.name },
   })
+
+  if (smallBuffer) {
+    await c.env.ASSETS_BUCKET.put(smallAssetKey(r2Key), smallBuffer, {
+      httpMetadata: { contentType: getContentType('webp') },
+      customMetadata: { entityType, entityId, originalName: file.name, variant: 'small' },
+    })
+  }
 
   const fileUrl = `/api/assets/${r2Key}`
 
@@ -237,7 +265,7 @@ app.delete('/:id', async c => {
   const entityId = asset.entity_id as string
 
   const r2Key = (asset.file_url as string).replace('/api/assets/', '')
-  await c.env.ASSETS_BUCKET.delete(r2Key)
+  await c.env.ASSETS_BUCKET.delete([r2Key, smallAssetKey(r2Key)])
   await c.env.DB.prepare('DELETE FROM assets WHERE id = ?').bind(id).run()
 
   if (entityType === 'concept_visual') {

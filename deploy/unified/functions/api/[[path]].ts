@@ -30,9 +30,51 @@ interface Env {
 interface PagesContext {
   request: Request
   env: Env
+  waitUntil: (promise: Promise<unknown>) => void
 }
 
-export async function onRequest({ request, env }: PagesContext): Promise<Response> {
+// EDGE CACHE FOR PICTURES
+// -----------------------
+// `GET /api/assets/*` is public and every file name is a fresh asset id, so a
+// picture never changes under its URL. The Worker is reached on `*.workers.dev`,
+// where the Cache API does nothing — so pictures are cached HERE, on the
+// Cloudflare node that answers the browser. The Worker's own `Cache-Control`
+// decides how long (a year; a day for a small-copy fallback, see
+// packages/worker/src/utils/asset-small.ts). Nothing else under `/api` is
+// cached: it is per-user and `no-store`.
+//
+// `X-Edge-Cache: HIT | MISS` says which way the answer came.
+function isCacheableAssetRequest(request: Request): boolean {
+  if (request.method.toUpperCase() !== 'GET') return false
+  return new URL(request.url).pathname.startsWith('/api/assets/')
+}
+
+async function serveAssetFromEdge(
+  request: Request,
+  fetchFromWorker: () => Promise<Response>,
+  waitUntil: (promise: Promise<unknown>) => void
+): Promise<Response> {
+  // The key is the URL alone: cookies and other headers must not split it.
+  const cacheKey = new Request(request.url, { method: 'GET' })
+  const cache = (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default
+  if (!cache) return fetchFromWorker()
+  const cached = await cache.match(cacheKey)
+  if (cached) {
+    const hit = new Response(cached.body, cached)
+    hit.headers.set('X-Edge-Cache', 'HIT')
+    return hit
+  }
+  const fresh = await fetchFromWorker()
+  const response = new Response(fresh.body, fresh)
+  if (response.status === 200) {
+    waitUntil(cache.put(cacheKey, response.clone()))
+  }
+  response.headers.set('X-Edge-Cache', 'MISS')
+  return response
+}
+
+export async function onRequest(context: PagesContext): Promise<Response> {
+  const { request, env } = context
   const workerBase = env.WORKER_URL
   if (!workerBase) {
     return new Response(
@@ -65,6 +107,14 @@ export async function onRequest({ request, env }: PagesContext): Promise<Respons
   // limitations of Workers fetch when forwarding a streaming Request.
   if (method !== 'GET' && method !== 'HEAD') {
     init.body = await request.arrayBuffer()
+  }
+
+  if (isCacheableAssetRequest(request)) {
+    return serveAssetFromEdge(
+      request,
+      () => fetch(target.toString(), init),
+      promise => context.waitUntil(promise)
+    )
   }
 
   return fetch(target.toString(), init)

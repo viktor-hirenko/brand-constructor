@@ -7,6 +7,7 @@ import { apiGet, apiPost, apiPut, apiDelete, apiUpload, getAssetUrl } from '@/co
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
+import { pinLeavingCard, useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -16,6 +17,8 @@ import arrowLeft from '@phosphor-icons/core/regular/arrow-left.svg?raw'
 import imageSquare from '@phosphor-icons/core/regular/image-square.svg?raw'
 
 const { showError } = useErrorDialog()
+
+const { transitionName, playDelete } = useDeleteAnimation()
 
 const route = useRoute()
 const router = useRouter()
@@ -79,7 +82,7 @@ async function confirmRename() {
     })
     renamingId.value = null
     renameValue.value = ''
-    await fetchVariants()
+    await fetchVariants({ silent: true })
   } finally {
     renaming.value = false
   }
@@ -141,7 +144,7 @@ async function handleCreate() {
     await apiPost(`/api/components/types/${typeId}/variants`, { name: newName.value.trim() })
     showCreateModal.value = false
     newName.value = ''
-    fetchVariants()
+    fetchVariants({ silent: true })
   } finally {
     creating.value = false
   }
@@ -155,9 +158,16 @@ async function confirmDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
   try {
-    await apiDelete(`/api/components/variants/${deleteTarget.value.id}`)
+    const id = deleteTarget.value.id
+    await apiDelete(`/api/components/variants/${id}`)
     deleteTarget.value = null
-    fetchVariants()
+    // In place + quiet refresh — see BrandsView `confirmDeleteBrand`.
+    playDelete(() => {
+      variants.value = variants.value.filter(v => v.id !== id)
+    }, () => fetchVariants({ silent: true }))
+  } catch (err) {
+    // Had no catch: a refused delete kept the window open and said nothing.
+    showError(err, 'delete')
   } finally {
     deleting.value = false
   }
@@ -181,7 +191,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       formData.append('aspect_ratio', String(parsedRatio))
     }
     await apiUpload('/api/assets/upload', formData)
-    fetchVariants()
+    fetchVariants({ silent: true })
   } catch (err) {
     showError(err, 'upload')
   } finally {
@@ -247,7 +257,13 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
 
     <div v-if="loading" class="variants-view__loading">Loading...</div>
 
-    <div v-else class="variants-view__grid">
+    <TransitionGroup
+      v-else
+      tag="div"
+      class="variants-view__grid list-delete-cards"
+      :name="transitionName"
+      @before-leave="pinLeavingCard"
+    >
       <div v-for="v in sortedVariants" :key="v.id" class="variant-card">
         <div class="variant-card__preview">
           <img
@@ -314,7 +330,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
           </div>
         </div>
       </div>
-    </div>
+    </TransitionGroup>
 
     <Teleport to="body">
       <div v-if="lightboxUrl" class="lightbox" @click="lightboxUrl = null">
@@ -440,6 +456,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
   }
 
   &__grid {
+    position: relative; // the leaving card is pinned inside it
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: $spacing-4;

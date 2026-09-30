@@ -7,6 +7,7 @@ import { describeApiError } from '@/utils/apiErrorText'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
+import { pinLeavingCard, useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
@@ -49,7 +50,11 @@ const unlinkedNamings = computed(() =>
 )
 
 function refreshConcepts(options?: { silent?: boolean }) {
-  fetchData({ queryParams: { status: statusFilter.value }, silent: options?.silent })
+  // No page switcher: ask for the server's maximum (100), not the default 20.
+  fetchData({
+    queryParams: { status: statusFilter.value, per_page: '100' },
+    silent: options?.silent,
+  })
 }
 
 onMounted(() => {
@@ -116,12 +121,19 @@ function handleDelete(id: string, name: string) {
 
 const deleteError = ref<string | null>(null)
 
+const { transitionName, playDelete } = useDeleteAnimation()
+
 async function confirmDelete() {
   deleteError.value = null
   try {
-    await apiDelete(`/api/concepts/${deleteTargetId.value}`)
+    const id = deleteTargetId.value
+    await apiDelete(`/api/concepts/${id}`)
     showDeleteConfirm.value = false
-    refreshConcepts()
+    // In place + quiet refresh — see BrandsView `confirmDeleteBrand`.
+    playDelete(() => {
+      concepts.value = concepts.value.filter(c => c.id !== id)
+      total.value = Math.max(0, total.value - 1)
+    }, () => refreshConcepts({ silent: true }))
   } catch (e) {
     const text = describeApiError(e, 'delete')
     deleteError.value = `${text.title}. ${text.body}`
@@ -178,7 +190,13 @@ async function confirmDelete() {
       No concepts found. Create your first concept to get started.
     </div>
 
-    <div v-else class="concepts-view__grid">
+    <TransitionGroup
+      v-else
+      tag="div"
+      class="concepts-view__grid list-delete-cards"
+      :name="transitionName"
+      @before-leave="pinLeavingCard"
+    >
       <div
         v-for="concept in sortedConcepts"
         :key="concept.id"
@@ -223,7 +241,7 @@ async function confirmDelete() {
           </div>
         </div>
       </div>
-    </div>
+    </TransitionGroup>
 
     <BaseModal
       v-if="showDeleteConfirm"
@@ -375,6 +393,7 @@ async function confirmDelete() {
   }
 
   &__grid {
+    position: relative; // the leaving card is pinned inside it
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: $spacing-6;

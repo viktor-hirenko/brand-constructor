@@ -70,3 +70,32 @@ table tbody tr {
     background-color: $color-bg;
   }
 }
+
+// Delete animation for lists — see `composables/useDeleteAnimation.ts`.
+// Only `list-delete` has CSS; `list-still` is the name when nothing animates.
+// `!important`: rows and cards carry their own scoped hover transitions, which
+// otherwise win and swallow the fade (and Vue then skips the slide).
+.list-delete-leave-active {
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease !important;
+}
+
+.list-delete-leave-to {
+  opacity: 0;
+}
+
+.list-delete-cards .list-delete-leave-to {
+  transform: scale(0.96);
+}
+
+.list-delete-move {
+  transition: transform 250ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list-delete-leave-active,
+  .list-delete-move {
+    transition: none !important;
+  }
+}

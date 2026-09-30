@@ -43,7 +43,7 @@ async function handleCreate() {
     newName.value = ''
     newDescription.value = ''
     showCreateModal.value = false
-    reloadTypes()
+    reloadTypes({ silent: true })
   } finally {
     creating.value = false
   }

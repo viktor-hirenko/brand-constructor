@@ -17,12 +17,15 @@ import {
   getBrandReviewDisplay,
 } from '@/composables/useBrandReviewDisplay'
 import { useAuthStore } from '@/stores/auth'
+import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { useErrorDialog } from '@/composables/useErrorDialog'
 import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryModal.vue'
 
 const { showError } = useErrorDialog()
+
+const { transitionName, playDelete } = useDeleteAnimation()
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -117,7 +120,8 @@ function loadBrands(options?: { silent?: boolean }) {
 }
 
 onMounted(() => {
-  perPage.value = 50
+  // No page switcher: one page must hold every brand (50 hid the oldest ones).
+  perPage.value = 500
   applyDefaultSortForTab(activeTab.value)
   loadBrands()
 })
@@ -180,10 +184,16 @@ function handleDeleteBrand(brand: BrandListItem) {
 async function confirmDeleteBrand() {
   if (!deleteTarget.value) return
   try {
-    await apiDelete(`/api/brands/${deleteTarget.value.id}`)
+    const id = deleteTarget.value.id
+    await apiDelete(`/api/brands/${id}`)
     showDeleteConfirm.value = false
     deleteTarget.value = null
-    loadBrands()
+    // Drop the row in place and refresh quietly: a plain reload swapped the
+    // whole table for «Loading...» and the page blinked after every delete.
+    playDelete(() => {
+      brands.value = brands.value.filter(b => b.id !== id)
+      total.value = Math.max(0, total.value - 1)
+    }, () => loadBrands({ silent: true }))
   } catch (err) {
     showError(err, 'delete')
   }
@@ -272,7 +282,7 @@ async function confirmDeleteBrand() {
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <TransitionGroup tag="tbody" :name="transitionName">
           <tr
             v-for="brand in displayBrands"
             :key="brand.id"
@@ -366,7 +376,7 @@ async function confirmDeleteBrand() {
               </button>
             </td>
           </tr>
-        </tbody>
+        </TransitionGroup>
       </table>
     </div>
 

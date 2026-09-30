@@ -5,6 +5,7 @@ import { ROLE_LABELS, USER_ROLES } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
+import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -13,6 +14,8 @@ import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import close from '@phosphor-icons/core/regular/x.svg?raw'
 
 const { showError } = useErrorDialog()
+
+const { transitionName, playDelete } = useDeleteAnimation()
 
 const authStore = useAuthStore()
 const { data: users, loading, fetchData: fetchUsers } = useApiList<User>('/api/users')
@@ -105,7 +108,7 @@ async function handleSubmit() {
       await apiPost('/api/users', form.value)
     }
     closeModal()
-    fetchUsers()
+    fetchUsers({ silent: true })
   } catch (err) {
     showError(err, 'save')
   }
@@ -119,9 +122,13 @@ async function confirmDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
   try {
-    await apiDelete(`/api/users/${deleteTarget.value.id}`)
+    const id = deleteTarget.value.id
+    await apiDelete(`/api/users/${id}`)
     deleteTarget.value = null
-    fetchUsers()
+    // In place + quiet refresh — see BrandsView `confirmDeleteBrand`.
+    playDelete(() => {
+      users.value = users.value.filter(u => u.id !== id)
+    }, () => fetchUsers({ silent: true }))
   } catch (err) {
     showError(err, 'delete')
   } finally {
@@ -175,7 +182,7 @@ async function confirmDelete() {
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <TransitionGroup tag="tbody" :name="transitionName">
             <tr v-for="u in sortedUsers" :key="u.id">
               <td class="users-view__name">{{ u.name }}</td>
               <td>{{ u.email }}</td>
@@ -193,7 +200,7 @@ async function confirmDelete() {
                 </BaseButton>
               </td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
 

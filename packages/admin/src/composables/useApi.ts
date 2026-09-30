@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { handleSessionExpired } from '@/utils/sessionExpiry'
+import { prepareImageUpload } from '@/utils/imageVariants'
 import type { ApiResponse, ApiListResponse, ApiErrorResponse } from '@brand-constructor/shared'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -186,6 +187,8 @@ export async function apiDelete(url: string): Promise<void> {
 }
 
 export async function apiUpload<T>(url: string, formData: FormData): Promise<T> {
+  // Pictures leave the browser as WebP, large + small — see utils/imageVariants.ts.
+  await prepareImageUpload(formData)
   const result = await request<ApiResponse<T>>(url, {
     method: 'POST',
     body: formData,

@@ -5,6 +5,7 @@ import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
+import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -197,7 +198,9 @@ function scheduleEditDomainPreview() {
 }
 
 function refreshList(options?: { silent?: boolean }) {
-  const params: Record<string, string> = { status: statusFilter.value }
+  // No page switcher: ask for the server's maximum (100). The default 20 hid
+  // every naming past the twentieth — 38 external ones in prod on 29.09.
+  const params: Record<string, string> = { status: statusFilter.value, per_page: '100' }
   if (activeTab.value === 'external') {
     if (conceptFilter.value !== 'all') {
       params.filter = conceptFilter.value
@@ -284,7 +287,7 @@ async function handleCreate() {
     }
     showCreateModal.value = false
     resetCreateDomainPreview()
-    refreshList()
+    refreshList({ silent: true })
   } finally {
     creating.value = false
   }
@@ -339,7 +342,7 @@ async function handleSaveEdit() {
     await apiPut(`/api/namings/${type}/${editId.value}`, body)
     showEditModal.value = false
     resetEditDomainPreview()
-    refreshList()
+    refreshList({ silent: true })
   } finally {
     saving.value = false
   }
@@ -412,13 +415,20 @@ function handleDeleteNaming(id: string, name: string) {
 
 const deleteError = ref<string | null>(null)
 
+const { transitionName, playDelete } = useDeleteAnimation()
+
 async function confirmDeleteNaming() {
   deleteError.value = null
   try {
     const type = activeTab.value
-    await apiDelete(`/api/namings/${type}/${deleteTargetId.value}`)
+    const id = deleteTargetId.value
+    await apiDelete(`/api/namings/${type}/${id}`)
     showDeleteConfirm.value = false
-    refreshList()
+    // In place + quiet refresh — see BrandsView `confirmDeleteBrand`.
+    playDelete(() => {
+      if (type === 'external') externalNamings.value = externalNamings.value.filter(n => n.id !== id)
+      else internalNamings.value = internalNamings.value.filter(n => n.id !== id)
+    }, () => refreshList({ silent: true }))
   } catch (e) {
     deleteError.value = e instanceof Error ? e.message : 'Failed to delete naming'
   }
@@ -566,7 +576,7 @@ async function confirmDeleteNaming() {
             </tr>
           </template>
         </thead>
-        <tbody>
+        <TransitionGroup tag="tbody" :name="transitionName">
           <template v-if="activeTab === 'external'">
             <tr v-for="n in sortedExternal" :key="n.id">
               <td>
@@ -705,7 +715,7 @@ async function confirmDeleteNaming() {
               </td>
             </tr>
           </template>
-        </tbody>
+        </TransitionGroup>
       </table>
     </div>
 
