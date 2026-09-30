@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  UI_ACCORDION_ACTION_ICON_CLASS,
   UI_ACCORDION_HEADER_ACTION_CLASS,
   UI_ACCORDION_HEADER_TITLE_GROUP_CLASS,
   UI_ACCORDION_ICON_SIZE_CLASS,
@@ -169,23 +170,35 @@ describe('the accordion header that had to stop being one button', () => {
     expect(chevron).toBeGreaterThan(actions)
   })
 
-  it('still opens the section from everywhere the whole-row button covered', () => {
-    // The title button is `flex-1`, so it spans the row up to the action slot.
-    expect(UI_ACCORDION_HEADER_TITLE_GROUP_CLASS).toContain('flex-1')
-    expect(accordionItem.match(/@click="emit\('toggle'\)"/g) ?? []).toHaveLength(2)
+  it('opens the section from anywhere on the row, padding included', () => {
+    // Owner 29.09: «Sidebar открывается только с третьего-четвёртого раза» —
+    // only the title and chevron listened, the row's 16 px padding did not.
+    // The header row itself listens now; the buttons keep keyboard access and
+    // their clicks bubble to it, so they must NOT emit on their own (twice =
+    // open-and-close).
+    expect(accordionItem).toContain('@click="onHeaderClick"')
+    expect(accordionItem.match(/@click="emit\('toggle'\)"/g) ?? []).toHaveLength(0)
+    expect(accordionItem).toMatch(/function onHeaderClick\(\) \{\s*if \(!props\.disabled\) emit\('toggle'\)/)
+    // The eye must not also fold the row.
+    expect(accordionItem).toMatch(/<span class="contents" @click\.stop>\s*<slot name="actions" \/>/)
     // One accessible control, not two: the chevron is out of the tab order.
     expect(accordionItem).toContain('tabindex="-1"')
     expect(accordionItem).toContain(':aria-expanded="props.open"')
   })
 
-  it('draws the action glyph at the kit 16 without moving its neighbours', () => {
-    // The box is 24 so the pointer has something to hit; `-mx-1` hands the
-    // four spare pixels back on each side, keeping her 8 from badge and
-    // chevron. 4 < 8, so the box cannot reach into the chevron's.
-    expect(UI_ACCORDION_HEADER_ACTION_CLASS).toContain('size-6')
-    expect(UI_ACCORDION_HEADER_ACTION_CLASS).toContain('-mx-1')
-    expect(UI_ACCORDION_HEADER_ACTION_CLASS).toContain('text-ink-700')
+  it('draws the action glyph at the kit 16 but gives the pointer a big target', () => {
+    // Owner 29.09: the eye was hard to hit. Padding is cancelled by equal
+    // negative margin, so the row layout is unchanged; on the right it reaches
+    // exactly the 8 gap, never into the chevron.
+    for (const c of ['py-3', '-my-3', 'pl-4', '-ml-4', 'pr-2', '-mr-2', 'text-ink-700']) {
+      expect(UI_ACCORDION_HEADER_ACTION_CLASS.split(' ')).toContain(c)
+    }
     expect(UI_ACCORDION_ICON_SIZE_CLASS).toBe('size-4')
-    expect(stepSeven).toContain('UI_ACCORDION_ICON_SIZE_CLASS')
+    // The glyph is drawn through the hover class, which starts from the kit 16
+    // and thickens to Phosphor Bold on hover (owner 29.09).
+    expect(stepSeven).toContain('UI_ACCORDION_ACTION_ICON_CLASS')
+    expect(UI_ACCORDION_ACTION_ICON_CLASS.startsWith(UI_ACCORDION_ICON_SIZE_CLASS)).toBe(true)
+    expect(UI_ACCORDION_ACTION_ICON_CLASS).toContain('group-hover:[stroke-width:8]')
+    expect(UI_ACCORDION_HEADER_ACTION_CLASS.split(' ')).toContain('group')
   })
 })

@@ -20,7 +20,12 @@
  */
 export const EDIT_FLOW_CONTENT_INSET_CLASS = 'px-8'
 
-export const EDIT_FLOW_BODY_OFFSET_CLASS = 'flex flex-col pt-2'
+/**
+ * No top padding of its own: the shell already puts the kit 24 between the
+ * step header and the body. The extra 8 (`pt-2`) made it 32 — owner 29.09 on
+ * the External Naming edit screen: «не должно быть верхнего паддинга».
+ */
+export const EDIT_FLOW_BODY_OFFSET_CLASS = 'flex flex-col'
 
 /**
  * 24 between two sibling blocks above the divider («Ваш попередній вибір» →
@@ -35,12 +40,20 @@ export const EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS = 'flex flex-col gap-6'
  * phase 3. `edit-flow-divider` stays: `EditFlowStepShell` reaches for it with
  * `:deep()` to pull the line out of the 48px inset.
  *
- * **48, not 40.** The kit gives the divider the container's own padding on both
- * sides: on `4492:27189` the block above ends at 426 inside a 474-tall
- * container, and the block below opens at y=48 of the next one. Same on
- * `4492:29250`, `4492:16446` and `4492:12413`. It stood at `my-10` (40).
+ * **32.** The refactor mockups give the divider the container's own 32 padding
+ * on both sides: CEO reselect `5387:102295` (card ends 326.3, rule at 358.3,
+ * next block at 390.3), `5387:104945`, and the author's revision screens
+ * `5395:107475`, `5395:107506`, `5395:111458`. It was 48 after the old drawings
+ * (`4492:27189`), 40 before that. Owner 30.09.
  */
-export const EDIT_FLOW_DIVIDER_CLASS = 'edit-flow-divider my-12'
+export const EDIT_FLOW_DIVIDER_CLASS = 'edit-flow-divider my-8'
+
+/**
+ * «Вибір замовника» concept card on the CEO reselect screen: a third of the
+ * column, as the kit lays it out — `5387:102295` draws 170.3 in a 527 column
+ * ((527 − 2 × 8) / 3). Was a fixed 162. Owner 30.09.
+ */
+export const EDIT_FLOW_AUTHOR_PICK_CARD_CLASS = 'w-[calc((100%-1rem)/3)]'
 
 /**
  * 12 from a section label to the cards under it — `4492:27444` → `4492:27445`,
@@ -71,14 +84,18 @@ export const EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS = 'mb-6'
 /**
  * «Ваш попередній вибір» next to «Вибір CEO» on the revision concept screen.
  *
- * Two equal columns **8** apart, not 16: `4492:27194` is a 500 container
- * holding two 246 frames at x=0 and x=254. That is the same 8 the concept grid
- * below it already uses, so the two blocks line up.
+ * Two equal columns **8** apart across the whole column: `5395:107475` draws
+ * two 259.5 cards in the 527 content (it was capped at 506 after the old
+ * `4492:27194`, cards 249). Owner 30.09.
  */
-export const EDIT_FLOW_CONCEPT_PAIR_GRID_CLASS = 'grid grid-cols-2 gap-2 max-w-[31.625rem]'
+export const EDIT_FLOW_CONCEPT_PAIR_GRID_CLASS = 'grid grid-cols-2 gap-2'
 
-/** 32 from cards/grid block to the comment field below (Figma edit-flow). */
-export const EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS = 'mb-8'
+/**
+ * 24 from cards/grid block to the comment field below — the refactor mockups
+ * (`5387:101072`: every CEO reselect screen, Input 24 under its Container).
+ * Was 32 for the old edit-flow drawings, plus the field's own 8 on top.
+ */
+export const EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS = 'mb-6'
 
 export const EDIT_FLOW_POST_DIVIDER_SECTION_CLASS = `flex flex-col ${EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS}`
 
@@ -92,9 +109,15 @@ export const EDIT_FLOW_CARDS_BEFORE_COMMENT_SECTION_CLASS = `${EDIT_FLOW_POST_DI
 export const EDIT_FLOW_CONTROL_CARDS_BEFORE_COMMENT_SECTION_CLASS = `${EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS} ${EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS}`
 
 /**
- * 32 from the last block to the comment field where the comment is a plain
+ * 24 from the last block to the comment field where the comment is a plain
  * sibling rather than the block's own bottom margin. Same measurement as
- * `EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS`; the slot carried 24, 32 and 48 on
- * three different screens before this phase.
+ * `EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS` — `5387:99729` (Container ends 459.5,
+ * Input at 483.5) and the revision screen `5395:107376`.
  */
-export const EDIT_FLOW_COMMENT_OFFSET_CLASS = 'mt-8'
+export const EDIT_FLOW_COMMENT_OFFSET_CLASS = 'mt-6'
+
+/**
+ * The kit's Step content container: every block 24 apart (`spacing/24`) —
+ * header, alert, the list with its order button, the comment. `5387:99881`.
+ */
+export const EDIT_FLOW_STACK_CLASS = 'flex flex-col gap-6'

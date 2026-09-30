@@ -91,6 +91,12 @@ export interface UiFieldSurfaceOptions {
   /** Kit State = Disabled — Default colours under `opacity/50`. */
   disabled?: boolean
   /**
+   * Read-only text shown in the field's shape, full colour: no hover fill and
+   * no focus border, since nothing on it reacts. The author's view of the CEO
+   * general comment (`5387:105225`) — owner 30.09: «зачем на него ховер».
+   */
+  readonly?: boolean
+  /**
    * True when the surface WRAPS the focusable control (a div holding an
    * `<input>`, the GEO trigger) instead of being one (a bare `<select>`).
    * Picks `focus-within:` over `focus:` so the kit's Focused border still
@@ -131,7 +137,11 @@ export const UI_FIELD_TYPE_DEFAULT_CLASS = 'ui-field--default flex h-12 items-ce
 export const UI_FIELD_TYPE_DEFAULT_BARE_CLASS = 'ui-field--default h-12 px-4'
 
 /** Type = Area: floor 96 (`min-h-24` = 6rem), value top-aligned. */
-export const UI_FIELD_TYPE_AREA_CLASS = 'ui-field--area flex min-h-24 flex-col gap-1 px-4 py-3'
+// The kit's 1 px stroke sits inside the 96 (`I5387:99898;3424:2444`: p12,
+// text px4 → text 12 down and 16 in from the outer edge). Our border is outside
+// the padding, so the padding is 1 px short of the kit's: 11 + 1 and 15 + 1.
+// Without it three rows came out 98 tall (owner 29.09, edit External Naming).
+export const UI_FIELD_TYPE_AREA_CLASS = 'ui-field--area flex min-h-24 flex-col gap-1 px-[0.9375rem] py-[0.6875rem]'
 
 /** Ours: floors at the kit's 48 and grows, for the badge-carrying GEO trigger. */
 export const UI_FIELD_TYPE_FLUID_CLASS =
@@ -166,6 +176,9 @@ export const UI_FIELD_INTERACTIVE_SELF_CLASS =
  * is reporting.
  */
 export const UI_FIELD_INTERACTIVE_INVALID_CLASS = 'ui-field--pinned'
+
+/** Read-only — Default colours, no hover and no focus state, plain cursor. */
+export const UI_FIELD_READONLY_CLASS = 'ui-field--readonly cursor-default'
 
 /** Kit State = Disabled — `opacity/50` over the Default colours, no hover. */
 export const UI_FIELD_DISABLED_CLASS = 'ui-field--disabled cursor-not-allowed opacity-50'
@@ -234,6 +247,7 @@ export function resolveUiFieldSurfaceClasses(options: UiFieldSurfaceOptions = {}
     type = 'default',
     invalid = false,
     disabled = false,
+    readonly = false,
     focusWithin = true,
     bare = false,
     focused = false,
@@ -256,7 +270,9 @@ export function resolveUiFieldSurfaceClasses(options: UiFieldSurfaceOptions = {}
 
   const interactiveClass = disabled
     ? UI_FIELD_DISABLED_CLASS
-    : invalid || focused
+    : readonly
+      ? UI_FIELD_READONLY_CLASS
+      : invalid || focused
       ? UI_FIELD_INTERACTIVE_INVALID_CLASS
       : focusWithin
         ? UI_FIELD_INTERACTIVE_WITHIN_CLASS

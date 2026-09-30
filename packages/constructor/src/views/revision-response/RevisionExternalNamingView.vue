@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConceptCascadeBanner from '@/components/constructor/edit-flow/ConceptCascadeBanner.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -21,6 +22,7 @@ import {
   EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
   EDIT_FLOW_PRE_DIVIDER_GROUP_CLASS,
   EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS,
+  EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS,
 } from '@/constants/editFlowLayout'
 import {
   getExternalNamingCommentHint,
@@ -196,12 +198,19 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
   >
     <!--
       One body wrapper for every state, so the comment field keeps the kit's
-      32 below the block in all of them. It used to sit outside the branches,
+      24 below the block in all of them (32 before the refactor mockups). It used to sit outside the branches,
       where the shell's own gap-6 added to its mt-6 and made the gap 48 on this
       screen while the sibling screens showed 24 and 32 in the same slot
       (DP-15258 phase 18; the kit gives 32 on `4492:29267` → `4492:29273`).
     -->
     <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
+      <!-- After a concept change the old names no longer fit: the same warning
+           the draft cascade shows, 24 above the lists — `5395:107506`. -->
+      <ConceptCascadeBanner
+        v-if="isChained && !isPostApply"
+        :class="EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS"
+      />
+
       <!-- Skeleton state: pixel-matched tree avoids CLS on data load.
            Skeleton sections key off raw *Ids (not *Namings), because the
            resolved namings only populate after the API call. -->

@@ -20,7 +20,9 @@
 export type UiAlertType = 'default' | 'info' | 'success' | 'warning' | 'error'
 
 /** Radius 16 (`rounded-2xl`) and padding 16 (`p-4`) are the kit alert values. */
-export const UI_ALERT_ROOT_CLASS = 'ui-alert flex w-full items-start gap-3 rounded-2xl border p-4'
+// Stroke inside the box, as the kit draws it: `I5387:91772;4463:9587` is 112
+// tall (16 + 80 + 16); a CSS border made it 114.
+export const UI_ALERT_ROOT_CLASS = 'ui-alert flex w-full items-start gap-3 rounded-2xl ring-1 ring-inset p-4'
 export const UI_ALERT_TEXT_CLASS = 'ui-alert__text flex min-w-0 flex-1 flex-col gap-2'
 export const UI_ALERT_TITLE_CLASS = 'ui-alert__title text-lg/6 font-medium text-ink-900'
 export const UI_ALERT_DESCRIPTION_CLASS = 'ui-alert__description text-base text-ink-700'
@@ -35,11 +37,11 @@ export const UI_ALERT_ICON_CLASS = 'ui-alert__icon size-6 shrink-0'
  * `--color-ink-300` since the DP-15258 token fix (`app.css`).
  */
 export const UI_ALERT_TONES: Record<UiAlertType, { box: string; icon: string }> = {
-  default: { box: 'ui-alert--default border-ink-300 bg-white', icon: 'text-ink-900' },
-  info: { box: 'ui-alert--info border-blue-border bg-blue-surface', icon: 'text-blue-content' },
-  success: { box: 'ui-alert--success border-green-border bg-green-surface', icon: 'text-green-content' },
-  warning: { box: 'ui-alert--warning border-amber-border bg-amber-surface', icon: 'text-amber-content' },
-  error: { box: 'ui-alert--error border-red-border bg-red-surface', icon: 'text-red-content' },
+  default: { box: 'ui-alert--default ring-ink-300 bg-white', icon: 'text-ink-900' },
+  info: { box: 'ui-alert--info ring-blue-border bg-blue-surface', icon: 'text-blue-content' },
+  success: { box: 'ui-alert--success ring-green-border bg-green-surface', icon: 'text-green-content' },
+  warning: { box: 'ui-alert--warning ring-amber-border bg-amber-surface', icon: 'text-amber-content' },
+  error: { box: 'ui-alert--error ring-red-border bg-red-surface', icon: 'text-red-content' },
 }
 
 export interface UiAlertClasses {

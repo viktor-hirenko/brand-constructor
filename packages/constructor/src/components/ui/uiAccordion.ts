@@ -114,12 +114,15 @@ export const UI_ACCORDION_LIST_DISABLED_CLASS =
  * `accordion/bg/default` #ffffff, `accordion/border/default` #eaeaeb,
  * `radius/accordion` 16. Numbers 2–4 of the eight.
  *
- * `box-border` keeps the 1px border inside the 56, the way phase 1 learned to
- * on the footer button. `overflow-hidden` is what makes the radius clip the
+ * The 1px stroke is an inner outline, not a border: the kit's stroke is
+ * inside, so a closed item is 56 — with `border` it measured 58 on step 7
+ * (`5382:70251`, five items at a 64 pitch; we had 66). An outline is painted
+ * over the children, so the header's hover fill cannot cover it the way it
+ * would an inset ring. `overflow-hidden` is what makes the radius clip the
  * header fill and the body while it animates.
  */
 export const UI_ACCORDION_ITEM_CLASS =
-  'ui-accordion-item box-border overflow-hidden rounded-2xl border border-ink-300 bg-white'
+  'ui-accordion-item box-border overflow-hidden rounded-2xl outline outline-1 -outline-offset-1 outline-ink-300 bg-white'
 
 /**
  * Header: `spacing/16` on all four sides with a 24 line box between them.
@@ -136,7 +139,7 @@ export const UI_ACCORDION_HEADER_CLASS =
   'ui-accordion-item__header flex w-full items-center gap-2 p-4 text-left transition-colors'
 
 /** State = Hovered — `accordion/bg/hovered` #f3f3f5, the kit's only hover here. */
-export const UI_ACCORDION_HEADER_INTERACTIVE_CLASS = 'hover:bg-ink-200'
+export const UI_ACCORDION_HEADER_INTERACTIVE_CLASS = 'cursor-pointer hover:bg-ink-200'
 
 /**
  * `Title + Badge` frame: `spacing/8` between the two, title truncates first.
@@ -185,6 +188,12 @@ export const UI_ACCORDION_ICON_SIZE_CLASS = 'size-4'
  * The 180° flip on open is ours: the kit draws a separate `CaretUp`, which is
  * this glyph mirrored in the same colour.
  */
+// Hover of the action glyph — owner 29.09: «не рамка и не фон, может, жирнее
+// линию». Phosphor draws filled outlines, so a currentColor stroke thickens
+// them: 8 units on the 256 box adds 4 per side, Regular 16 → 24 = Phosphor
+// Bold. Colour goes ink-700 → ink-900 with it.
+export const UI_ACCORDION_ACTION_ICON_CLASS = `${UI_ACCORDION_ICON_SIZE_CLASS} stroke-current [stroke-linejoin:round] [stroke-width:0] transition-[stroke-width,color] duration-150 group-hover:[stroke-width:8] group-hover:text-ink-900`
+
 export const UI_ACCORDION_CHEVRON_CLASS = `ui-accordion-item__chevron ${UI_ACCORDION_ICON_SIZE_CLASS} shrink-0 text-ink-700 transition-transform duration-200`
 
 /**
@@ -206,7 +215,10 @@ export const UI_ACCORDION_CHEVRON_BUTTON_CLASS =
  * half again as wide. The negative margin is 4 and the gap is 8, so the box
  * cannot reach into the chevron's.
  */
-export const UI_ACCORDION_HEADER_ACTION_CLASS = `ui-accordion-item__action -mx-1 flex size-6 shrink-0 items-center justify-center text-ink-700`
+// Owner 29.09: the eye was hard to hit. The glyph still takes 16 in the row
+// (padding cancelled by negative margin), but the button reaches 16 to the left
+// (over the gap into the title's free space), 8 right (the gap) and 12 up/down.
+export const UI_ACCORDION_HEADER_ACTION_CLASS = `ui-accordion-item__action group -my-3 -ml-4 -mr-2 flex shrink-0 items-center justify-center py-3 pl-4 pr-2 text-ink-700`
 
 /** Content frame under the divider: `spacing/12` inset, `spacing/4` between rows. */
 export const UI_ACCORDION_CONTENT_CLASS =

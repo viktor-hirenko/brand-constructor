@@ -12,6 +12,7 @@
 import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
+import UiAssetImage from '@/components/ui/UiAssetImage.vue'
 import { useAdaptiveImageFit } from '@/composables/useAdaptiveImageFit'
 import ImagePlaceholderIcon from '@/components/icons/ImagePlaceholderIcon.vue'
 import {
@@ -125,19 +126,19 @@ const mobileFit = computed(() => fitModeFor(mobileSrc.value))
       >
         <!-- Shown whole rather than cropped (DP-15450 CEO view 4). The blurred
              copy is what fills the space left over — see `previewLayout.ts`. -->
-        <img
+        <UiAssetImage
           v-if="mobileSrc && mobileFit === 'contain'"
           :src="mobileSrc"
-          alt=""
+          size="large"
           aria-hidden="true"
           :class="PREVIEW_IMAGE_BACKDROP_CLASS"
         />
-        <img
+        <UiAssetImage
           v-if="mobileSrc"
           :src="mobileSrc"
           :alt="concept.name || 'Mobile preview'"
+          size="large"
           :class="[PREVIEW_IMAGE_CLASS, previewImageFitClass(mobileFit)]"
-          loading="lazy"
           @load="e => recordAspect(mobileSrc, e)"
         />
         <div

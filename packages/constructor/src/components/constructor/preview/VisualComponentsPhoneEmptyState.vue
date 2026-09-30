@@ -29,7 +29,8 @@ const message = computed(() =>
   <div
     class="visual-components-phone-empty h-full flex items-center justify-center p-6 text-center"
   >
-    <p class="visual-components-phone-empty__message text-sm text-white/45">
+    <!-- `5382:70251`: 12/16 in #6f6f7d, a 170 column centred on the screen. -->
+    <p class="visual-components-phone-empty__message max-w-[10.625rem] text-xs/4 text-ink-700">
       {{ message }}
     </p>
   </div>

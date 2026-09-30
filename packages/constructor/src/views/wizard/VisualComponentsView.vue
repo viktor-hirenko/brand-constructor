@@ -28,7 +28,7 @@ import UiBadge from '@/components/ui/UiBadge.vue'
 import UiToggle from '@/components/ui/UiToggle.vue'
 import {
   UI_ACCORDION_HEADER_ACTION_CLASS,
-  UI_ACCORDION_ICON_SIZE_CLASS,
+  UI_ACCORDION_ACTION_ICON_CLASS,
 } from '@/components/ui/uiAccordion'
 
 const store = useConstructorStore()
@@ -282,7 +282,17 @@ onMounted(loadComponentTypes)
       Letter-spacing dropped — the kit sets 0 on `body/medium`, and open
       question 7 only defends tracking on screens a phase is NOT rewriting.
     -->
-    <div class="overflow-hidden rounded-2xl border border-ink-300">
+    <!--
+      Inner 1px stroke, black while the choice is delegated — `Designer mode`
+      on `5382:70251` is 56 tall with `#030213` inside. It was a grey border
+      outside the 56 in both states (58, no black). Owner 30.09.
+    -->
+    <div
+      :class="[
+        'overflow-hidden rounded-2xl outline outline-1 -outline-offset-1',
+        isDelegated ? 'outline-primary' : 'outline-ink-300',
+      ]"
+    >
       <button
         class="flex h-14 w-full items-center gap-4 bg-white p-1 pr-4 transition-colors hover:bg-ink-100"
         @click="handleDelegateToggle"
@@ -355,9 +365,9 @@ onMounted(loadComponentTypes)
             >
               <EyeIcon
                 v-if="isSidebarPreviewVisible"
-                :class="UI_ACCORDION_ICON_SIZE_CLASS"
+                :class="UI_ACCORDION_ACTION_ICON_CLASS"
               />
-              <EyeSlashIcon v-else :class="UI_ACCORDION_ICON_SIZE_CLASS" />
+              <EyeSlashIcon v-else :class="UI_ACCORDION_ACTION_ICON_CLASS" />
             </button>
           </template>
 
@@ -404,17 +414,17 @@ onMounted(loadComponentTypes)
         What stood here was a hand-rolled `#fff8dc` box at radius 10 with a
         `#d97706` triangle: three hexes the kit does not contain (row 13).
 
-        The two conflicting names were amber `#ab6400`. The kit gives a
-        description exactly one colour, so the emphasis moves from colour to
-        weight and the hex goes. The triangle goes with it —
+        The two conflicting names are amber `#ab6400` (`--color-warning`) at
+        the description's regular weight — owner 29.09 against `5382:57226`:
+        colour, not bold. The triangle goes —
         `AlertTriangleIcon` has no kit pair (row 32), while `UiAlert`'s own
         glyph is the Phosphor WarningCircle Fill the kit actually draws.
       -->
       <UiAlert v-if="hasConflicts && !isDelegated" type="warning" title="Несумісні компоненти">
         <p v-for="(conflict, idx) in conflicts" :key="idx">
-          <span class="font-medium text-ink-900">{{ conflict.titleA }}</span>
+          <span class="text-warning" data-test="conflict-name">{{ conflict.titleA }}</span>
           і
-          <span class="font-medium text-ink-900">{{ conflict.titleB }}</span>
+          <span class="text-warning" data-test="conflict-name">{{ conflict.titleB }}</span>
           конфліктують між собою. Змініть один із варіантів, щоб продовжити.
         </p>
       </UiAlert>

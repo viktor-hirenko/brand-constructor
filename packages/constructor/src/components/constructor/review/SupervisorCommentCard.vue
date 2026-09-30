@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiComment from '@/components/ui/UiComment.vue'
@@ -40,11 +39,6 @@ const emit = defineEmits<{
   unresolve: []
 }>()
 
-const resolvedButtonHovered = ref(false)
-
-const showResolveIcon = computed(
-  () => !props.resolved || !resolvedButtonHovered.value,
-)
 </script>
 
 <template>
@@ -54,6 +48,7 @@ const showResolveIcon = computed(
     label="Коментар CEO"
     :value="value"
     :unresolved="!resolved"
+    :resolved="resolved"
   >
     <template v-if="canResolve" #footer>
       <UiButton
@@ -70,23 +65,37 @@ const showResolveIcon = computed(
         Позначити як вирішений
       </UiButton>
 
+      <!--
+        «Вирішено» swaps to «Повернути» on hover. Both states are stacked in one
+        grid cell, so the button keeps the width of the wider one: when the
+        swap changed the width, a cursor on the edge fell off the button, the
+        label swapped back, the cursor was on it again — the button shook
+        (owner 30.09). The resting look is unchanged: the check sits where the
+        kit's `Icon left` did (`-ml-1` gives back the label's own inset), 4
+        before the text; the button is still 107 (`5387:105225`).
+      -->
       <UiButton
         v-else
         variant="secondary"
         size="S"
-        class="ceo-comment-card__resolve-button self-start"
+        class="ceo-comment-card__resolve-button group self-start"
         :disabled="loading"
         @click="emit('unresolve')"
-        @mouseenter="resolvedButtonHovered = true"
-        @mouseleave="resolvedButtonHovered = false"
       >
-        <!-- The slot is always declared and the glyph inside it is what
-             disappears on hover: `UiButton` reads its slots once per render,
-             so removing the slot itself would leave the check behind. -->
-        <template #icon-left="{ iconClass }">
-          <CheckIcon v-if="showResolveIcon" :class="iconClass" aria-hidden="true" />
-        </template>
-        {{ resolvedButtonHovered ? 'Повернути' : 'Вирішено' }}
+        <span class="ceo-comment-card__resolved-label inline-grid">
+          <span
+            class="ceo-comment-card__resolved-state col-start-1 row-start-1 inline-flex items-center group-hover:invisible group-focus-visible:invisible"
+          >
+            <CheckIcon class="-ml-1 mr-1 size-4 shrink-0" aria-hidden="true" />
+            Вирішено
+          </span>
+          <span
+            class="ceo-comment-card__unresolve-state invisible col-start-1 row-start-1 justify-self-center group-hover:visible group-focus-visible:visible"
+            aria-hidden="true"
+          >
+            Повернути
+          </span>
+        </span>
       </UiButton>
     </template>
   </UiComment>

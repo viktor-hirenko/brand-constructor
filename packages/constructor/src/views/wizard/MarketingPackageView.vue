@@ -302,7 +302,7 @@ onMounted(loadPackages)
     </template>
 
     <!-- Коментар -->
-    <StepCommentField v-model="comment" :class="MARKETING_PACKAGE_COMMENT_WIDTH_CLASS" flush />
+    <StepCommentField v-model="comment" :class="MARKETING_PACKAGE_COMMENT_WIDTH_CLASS" />
 
     <!-- Detail Overlay — the wizard modal shell, same as the confirmations -->
     <UiModal v-if="detailPackage" size="md" @close="closeDetail">

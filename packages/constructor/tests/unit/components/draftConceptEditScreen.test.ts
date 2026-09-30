@@ -177,9 +177,10 @@ describe('the OTHER edit screen — the one after the CEO proposed a concept —
     expect(draftEdit).not.toContain('EDIT_FLOW_CONCEPT_PAIR_GRID_CLASS')
   })
 
-  it('it keeps both of her captions', () => {
-    expect(revisionEdit).toContain('Ваш попередній вибір')
+  it('it keeps both captions, as `5395:107475` words them', () => {
+    expect(revisionEdit).toContain('Вибір замовника')
     expect(revisionEdit).toContain('Вибір CEO')
+    expect(revisionEdit).toContain('Доступні концепти')
   })
 
   it('and it is not offered the order button — her `4492:27189` draws none', () => {

@@ -97,9 +97,9 @@ describe('kit icon button — Figma 3333:5541', () => {
     })
 
     it('carries the kit drop shadow and drops it when disabled', () => {
-      // drop-shadow(0px 8px 4px rgba(0,0,0,0.12)) is on Default and Hovered and
+      // Figma drop-shadow(0px 8px 4px) renders like CSS blur 8 (measured) — on Default and Hovered and
       // absent on Disabled — opacity alone would leave a faded shadow behind.
-      expect(UI_ICON_BUTTON_VARIANT.solid).toContain('shadow-[0_8px_4px_rgba(0,0,0,0.12)]')
+      expect(UI_ICON_BUTTON_VARIANT.solid).toContain('shadow-[0_8px_8px_rgba(0,0,0,0.12)]')
       expect(UI_ICON_BUTTON_VARIANT.solid).toContain('disabled:shadow-none')
     })
   })
@@ -188,7 +188,7 @@ describe('decorative mode — the mark on a Concept card', () => {
     expect(root).toContain(UI_ICON_BUTTON_SIZE.S.root)
     expect(root).toContain('border-ink-300')
     expect(root).toContain('bg-white')
-    expect(root).toContain('shadow-[0_8px_4px_rgba(0,0,0,0.12)]')
+    expect(root).toContain('shadow-[0_8px_8px_rgba(0,0,0,0.12)]')
     expect(root).toContain('rounded-full')
     expect(icon).toContain('size-4')
   })

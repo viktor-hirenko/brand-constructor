@@ -31,6 +31,7 @@ describe('the failed-to-load card', () => {
   it('owns the rhythm and nothing else — colour and box come from the alert', () => {
     const root = resolveUiAsyncStateClasses().root
     expect(root).not.toContain('border')
+    expect(root).not.toContain('ring-')
     expect(root).not.toContain('bg-')
     expect(root).not.toContain('text-')
     expect(root).not.toContain('rounded')
@@ -45,7 +46,7 @@ describe('the failed-to-load card', () => {
   it('renders on the error tone of the alert', () => {
     const alert = resolveUiAlertClasses('error')
     expect(alert.root).toContain('bg-red-surface')
-    expect(alert.root).toContain('border-red-border')
+    expect(alert.root).toContain('ring-red-border')
     expect(alert.icon).toContain('text-red-content')
   })
 })

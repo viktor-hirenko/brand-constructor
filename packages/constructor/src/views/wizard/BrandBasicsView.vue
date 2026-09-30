@@ -102,6 +102,6 @@ const comment = computed({
       No `optional`: the drawn Title reads «Коментар» and nothing else. The
       "(необов'язково)" suffix was ours.
     -->
-    <StepCommentField v-model="comment" flush />
+    <StepCommentField v-model="comment" />
   </div>
 </template>

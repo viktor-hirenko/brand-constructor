@@ -42,17 +42,6 @@ interface StepCommentFieldProps {
   requiredHint?: string
   /** Optional "(необов'язково)" suffix shown next to the label. */
   optional?: boolean
-  /**
-   * Drops the component's own 8 of top padding, so the field sits exactly the
-   * parent's gap away from its neighbour.
-   *
-   * The padding is not decoration: on the fifteen screens phase 18 measured,
-   * the comment slot is 32 from the block above it and gets there as the
-   * parent's 24 plus this 8. The drawn step 1 `5409:35822` spaces all four of
-   * its Inputs at a flat 16, so that screen opts out instead of the default
-   * moving under fifteen screens that never asked.
-   */
-  flush?: boolean
 }
 
 const props = withDefaults(defineProps<StepCommentFieldProps>(), {
@@ -63,7 +52,6 @@ const props = withDefaults(defineProps<StepCommentFieldProps>(), {
   required: false,
   requiredHint: '',
   optional: false,
-  flush: false,
 })
 
 const emit = defineEmits<{
@@ -72,18 +60,6 @@ const emit = defineEmits<{
 
 const showRequiredHint = computed(() => props.required && !!props.requiredHint)
 
-/**
- * One class string, chosen here rather than two utilities on the element.
- * Writing `pt-2` and a cancelling `pt-0` side by side would leave the winner to
- * Tailwind's own output order, not to the order they are written — the way the
- * accordion lost its selected border to `border-transparent`.
- */
-const rootClass = computed(() =>
-  props.flush
-    ? 'step-comment-field flex flex-col gap-2'
-    : 'step-comment-field pt-2 flex flex-col gap-2'
-)
-
 const value = computed({
   get: () => props.modelValue,
   set: (next: string) => emit('update:modelValue', next),
@@ -91,7 +67,14 @@ const value = computed({
 </script>
 
 <template>
-  <div :class="rootClass">
+  <!--
+    No top padding of its own: the parent's gap is the whole distance to the
+    block above. The refactor mockups draw 24 on every screen that has this
+    field (step 1 draws 16, its own stack's gap) — `5387:99729`, `5387:99898`,
+    `5382:44788`. The 8 that used to live here (`d455530`, the old mockups'
+    32) made it 32 on steps 2/3/4/7 and 40 on the CEO and revision screens.
+  -->
+  <div class="step-comment-field flex flex-col gap-2">
     <UiFieldLabel
       class="step-comment-field__header"
       :required="props.required"

@@ -76,12 +76,13 @@ describe('the edit-flow spacing scale is the kit’s', () => {
     expect(EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS).toBe('mb-6')
   })
 
-  it('leaves 32 to the comment field, whichever way the screen spells it', () => {
-    // `4492:29267` (ends 328) → `4492:29273` (y=360). The slot carried 24, 32
-    // and 48 on three different screens before this phase; both spellings now
-    // resolve to the same 32.
-    expect(EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS).toBe('mb-8')
-    expect(EDIT_FLOW_COMMENT_OFFSET_CLASS).toBe('mt-8')
+  it('leaves 24 to the comment field, whichever way the screen spells it', () => {
+    // Refactor mockups: `5387:99729` (Container ends 459.5, Input at 483.5),
+    // `5387:101072` CEO reselect, `5395:107376` revision — all 24. The old
+    // drawings (`4492:29267` → `4492:29273`) had 32; with the field's own 8
+    // on top the screens showed 40.
+    expect(EDIT_FLOW_GRID_TO_COMMENT_GAP_CLASS).toBe('mb-6')
+    expect(EDIT_FLOW_COMMENT_OFFSET_CLASS).toBe('mt-6')
   })
 
   it('stands the two concept columns 8 apart, not 16', () => {
@@ -103,6 +104,11 @@ describe('the edit-flow spacing scale is the kit’s', () => {
     expect(EDIT_FLOW_CONTROL_CARDS_BEFORE_COMMENT_SECTION_CLASS).toContain(
       EDIT_FLOW_CONTROL_ROW_TO_GRID_GAP_CLASS,
     )
+  })
+
+  it('adds no top padding under the step header — the shell gap is the whole 24', () => {
+    expect(EDIT_FLOW_BODY_OFFSET_CLASS.split(' ')).not.toContain('pt-2')
+    expect(EDIT_FLOW_BODY_OFFSET_CLASS).not.toMatch(/(^|\s)(pt|py|p)-/)
   })
 
   it('keeps every length in rem — the shell is inside the scale handle', () => {

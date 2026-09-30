@@ -33,6 +33,8 @@ interface UiTextareaProps {
   autosize?: boolean
   invalid?: boolean
   disabled?: boolean
+  /** Shown, not edited: no hover, no focus border, `readonly` on the control. */
+  readonly?: boolean
   /** Kit inner Label `3436:4420` — caption l 14/16 above the value. */
   label?: string
   class?: HTMLAttributes['class']
@@ -45,6 +47,7 @@ const props = withDefaults(defineProps<UiTextareaProps>(), {
   autosize: false,
   invalid: false,
   disabled: false,
+  readonly: false,
   label: '',
   class: undefined,
 })
@@ -61,6 +64,7 @@ const surfaceClass = computed(() =>
     type: 'area',
     invalid: props.invalid,
     disabled: props.disabled,
+    readonly: props.readonly,
   })
 )
 
@@ -84,6 +88,11 @@ function adjustHeight() {
   )
   el.style.height = `${heightPx}px`
   el.style.overflowY = overflowY
+  // The Area control is `flex-1` (basis 0) so a fixed field fills its floor.
+  // With autosize that basis overrode the height set above: the field stayed
+  // at its floor and lines past it were hidden — six lines rendered as three.
+  // The measured height has to be the size, so the control stops flexing.
+  el.style.flex = 'none'
 }
 
 function onInput(event: Event) {
@@ -114,7 +123,8 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
       :rows="props.rows"
       :placeholder="props.placeholder"
       :disabled="props.disabled"
-      :class="[UI_FIELD_CONTROL_AREA_CLASS, props.autosize ? 'overflow-hidden' : '']"
+      :readonly="props.readonly"
+      :class="[UI_FIELD_CONTROL_AREA_CLASS, props.autosize ? 'overflow-hidden' : '', props.readonly ? 'cursor-default' : '']"
       v-bind="$attrs"
       @input="onInput"
       @blur="emit('blur', $event)"

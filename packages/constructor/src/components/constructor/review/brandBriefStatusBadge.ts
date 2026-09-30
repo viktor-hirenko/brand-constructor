@@ -12,7 +12,7 @@ export function resolveBrandBriefStatusBadge(
     case 'submitted':
       return { label: 'На розгляді', tone: 'brief-submitted' }
     case 'needs_revision':
-      return { label: 'Потрібно доопрацювати', tone: 'brief-revision' }
+      return { label: 'Потребує доопрацювання', tone: 'brief-revision' }
     case 'approved':
       return { label: 'Затверджено', tone: 'brief-approved' }
     default:

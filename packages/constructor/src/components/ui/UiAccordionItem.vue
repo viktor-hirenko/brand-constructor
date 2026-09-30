@@ -55,6 +55,17 @@ const emit = defineEmits<{ toggle: [] }>()
 
 const headerClass = computed(() => resolveUiAccordionHeaderClasses({ disabled: props.disabled }))
 
+/*
+ * The whole row toggles — owner 29.09: «клацаю по Sidebar, открывается только с
+ * третьего раза». Only the title and the chevron used to listen, so a click in
+ * the row's 16 px padding (hover-highlighted like the rest) did nothing. The
+ * two buttons stay for the keyboard; their click bubbles here. The actions
+ * slot stops its own click so the eye does not also fold the row.
+ */
+function onHeaderClick() {
+  if (!props.disabled) emit('toggle')
+}
+
 function onEnter(el: Element) {
   const htmlEl = el as HTMLElement
   htmlEl.style.height = '0'
@@ -90,19 +101,20 @@ function onAfterLeave(el: Element) {
 
 <template>
   <div :class="UI_ACCORDION_ITEM_CLASS">
-    <div :class="headerClass">
+    <div :class="headerClass" @click="onHeaderClick">
       <button
         type="button"
         :class="UI_ACCORDION_HEADER_TITLE_GROUP_CLASS"
         :disabled="props.disabled"
         :aria-expanded="props.open"
-        @click="emit('toggle')"
       >
         <span :class="UI_ACCORDION_HEADER_TITLE_CLASS">{{ props.title }}</span>
         <slot name="badge" />
       </button>
 
-      <slot name="actions" />
+      <span class="contents" @click.stop>
+        <slot name="actions" />
+      </span>
 
       <button
         type="button"
@@ -110,7 +122,6 @@ function onAfterLeave(el: Element) {
         :disabled="props.disabled"
         tabindex="-1"
         aria-hidden="true"
-        @click="emit('toggle')"
       >
         <CaretDownIcon :class="[UI_ACCORDION_CHEVRON_CLASS, { 'rotate-180': props.open }]" />
       </button>

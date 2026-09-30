@@ -12,7 +12,7 @@ import SectionCommentBlock from '@/components/constructor/fields/SectionCommentB
 import ReviewHeader from '@/components/constructor/review/ReviewHeader.vue'
 import ReviewSection from '@/components/constructor/review/ReviewSection.vue'
 import UiProperty from '@/components/ui/UiProperty.vue'
-import UiComment from '@/components/ui/UiComment.vue'
+import UiTextarea from '@/components/ui/UiTextarea.vue'
 import UiFieldLabel from '@/components/ui/UiFieldLabel.vue'
 import ReviewConceptBlock from '@/components/constructor/review/ReviewConceptBlock.vue'
 import ReviewExternalNamingsList from '@/components/constructor/review/ReviewExternalNamingsList.vue'
@@ -416,7 +416,7 @@ defineExpose({
       -->
       <div
         :class="[
-          'review-unified-view__scroll-inner flex flex-col gap-6 pt-12 pb-12',
+          'review-unified-view__scroll-inner flex flex-col gap-6 pt-8 pb-8',
           LEFT_PANE_SCROLL_INNER_CLASS,
         ]"
       >
@@ -628,7 +628,7 @@ defineExpose({
         <!-- General CEO comment read-only for PO returned view (Figma 1973:7884) -->
         <div
           v-if="isPoReturnedView && getSectionCeoCommentValue('general')"
-          class="review-unified-view__general-comment-po space-y-3"
+          class="review-unified-view__general-comment-po flex flex-col gap-2"
         >
           <UiFieldLabel>
             <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
@@ -638,14 +638,23 @@ defineExpose({
             The caption stays OUTSIDE the box here, unlike every other comment
             in review: it has to match the CEO's own editor a few lines below,
             whose caption is the kit's Title (`3424:1050`) above an Input, not
-            the Comment's inner label.
+            the Comment's inner label. The box is that Input too — Area, 96,
+            #f3f3f5 with its border, read-only (`5387:105225`, owner 30.09);
+            it was a Comment box 48 tall.
           -->
-          <UiComment :value="getSectionCeoCommentValue('general')" />
+          <UiTextarea
+            class="review-unified-view__general-comment-po-value"
+            :model-value="getSectionCeoCommentValue('general')"
+            :rows="3"
+            :max-rows="12"
+            autosize
+            readonly
+          />
         </div>
 
         <div
           v-if="reviewMode === 'ceo'"
-          class="review-unified-view__general-comment-ceo space-y-3"
+          class="review-unified-view__general-comment-ceo flex flex-col gap-2"
         >
           <UiFieldLabel>
             <template #icon="{ iconClass }"><ChatBubbleIcon :class="iconClass" /></template>
@@ -658,7 +667,7 @@ defineExpose({
             :supervisor-editable="true"
             :highlighted="!!revisionWarning"
             empty-label="Коментар CEO"
-            placeholder="Додайте ваші коментарі або побажання…"
+            placeholder="Додайте ваші коментарі або побажання..."
             @update:supervisor-comment="value => emit('general-ceo-comment-update', value)"
           />
         </div>

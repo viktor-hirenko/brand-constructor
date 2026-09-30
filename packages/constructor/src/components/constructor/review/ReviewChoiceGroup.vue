@@ -30,7 +30,9 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
   ceoLabel: 'Вибір CEO',
   appliedLabel: 'Обрані назви',
   dualGrid: false,
-  dualOuterGap: 'gap-6',
+  // 16 between «Вибір замовника» and «Вибір CEO» — `5387:105225` External
+  // Naming property list. Was 24.
+  dualOuterGap: 'gap-4',
 })
 </script>
 

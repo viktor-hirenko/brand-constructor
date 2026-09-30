@@ -349,8 +349,8 @@ describe('the comment field', () => {
     expect(stepView).toContain('MARKETING_PACKAGE_COMMENT_WIDTH_CLASS')
   })
 
-  it('sits the drawn 24 from the grid, not 24 plus its own 8', () => {
+  it('sits the drawn 24 from the grid — the stack gap, nothing added', () => {
     // Grid ends at y = 1116, the Input opens at 1140.
-    expect(stepView).toContain('flush')
+    expect(stepView).toContain('<StepCommentField v-model="comment" :class="MARKETING_PACKAGE_COMMENT_WIDTH_CLASS" />')
   })
 })

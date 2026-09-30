@@ -40,26 +40,23 @@ import UiTextarea from '@/components/ui/UiTextarea.vue'
  * `amber/border` the editor below it already uses.
  */
 const CEO_SECTION_COMMENT_MAX_ROWS = 5
+
+/**
+ * The in-card CEO editor opens at the Comment's own 68 (label + one line), not
+ * at the Area floor of 96: the written comment rests as a 68 `UiComment`, and
+ * a 96 editor made the card jump 28 on every click. No drawing covers the
+ * editing state; owner 30.09 chose «no jump». Longer text still grows the
+ * field to five lines, then it scrolls. The `!` beats the Area's `min-h-24`.
+ */
+const CEO_SECTION_EDITOR_FLOOR_CLASS = 'min-h-0!'
 const CEO_GENERAL_COMMENT_MIN_ROWS = 3
 const CEO_GENERAL_COMMENT_MAX_ROWS = 12
 
 /**
- * DP-15450, CEO view 1 — «Зменшити висоту textarea до 112 px. При великому
- * обсязі тексту — може бути auto-grow, а потім з'являється внутрішній scroll.»
- *
- * The field used to open at six lines: 6 × 24 + the box's own 24 = 168.
- *
- * 112 is not a whole number of 24-line rows (it is 3 ⅔), so the floor is the
- * BOX's, not the textarea's: three rows of content (96) inside a box that
- * cannot go under 112. `min-h-28` is 7rem — 112 at the 1440 canvas, and unlike
- * a px literal it scales with the embed the way every other number in the kit
- * does. The `!` is needed because the Area recipe already carries `min-h-24`.
- *
- * **Her own drawn CEO screen `5387:74910` puts this Input at 96** (128 with the
- * Title above it), i.e. the kit's floor — the 112 implemented here is the
- * number her written замечання states. Divergence recorded in the tracker.
+ * «Загальний коментар» opens at the kit's own Area floor, 96 — as drawn on
+ * `5387:79023` (128 with the Title). It stood at 112 after the written
+ * DP-15450 «CEO view 1» remark; the owner chose the drawing on 30.09.
  */
-const CEO_GENERAL_COMMENT_MIN_HEIGHT_CLASS = 'min-h-28!'
 
 interface SectionCommentBlockProps {
   /** Section identifier from CEO_COMMENT_SECTIONS (concept, externalNaming, ...). */
@@ -100,7 +97,7 @@ const props = withDefaults(defineProps<SectionCommentBlockProps>(), {
   supervisorComment: '',
   highlighted: false,
   emptyLabel: 'Коментар CEO',
-  placeholder: 'Додайте ваші коментарі або побажання…',
+  placeholder: 'Додайте ваші коментарі або побажання...',
   debounceMs: 600,
   alwaysExpanded: false,
   showResolveUi: false,
@@ -122,6 +119,13 @@ const emit = defineEmits<{
 const draft = ref<string>(props.supervisorComment ?? '')
 const isExpanded = ref<boolean>(props.alwaysExpanded || !!(props.supervisorComment ?? '').trim())
 const textareaRef = ref<InstanceType<typeof UiTextarea> | null>(null)
+/**
+ * A written section comment rests as the kit Comment — the same box as
+ * «Коментар замовника» above it (`5387:104592`: two Comments, 68 each, 8
+ * apart). A click turns it back into the field; leaving the field shows the
+ * Comment again. Owner 30.09.
+ */
+const isEditing = ref(false)
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
 const editorRows = computed(() => (props.alwaysExpanded ? CEO_GENERAL_COMMENT_MIN_ROWS : 1))
@@ -179,6 +183,7 @@ function onInput(value: string) {
 
 function onBlur() {
   flushNow()
+  isEditing.value = false
   if (!props.alwaysExpanded && !draft.value.trim()) {
     isExpanded.value = false
   }
@@ -186,6 +191,7 @@ function onBlur() {
 
 function openEditor() {
   isExpanded.value = true
+  isEditing.value = true
   nextTick(() => {
     textareaRef.value?.focus()
   })
@@ -211,7 +217,9 @@ defineExpose({ isVisible })
   <div
     v-if="isVisible"
     :class="[
-      'section-comment mt-4 flex flex-col gap-2',
+      // The general comment sits under its own label, 8 below it (`5387:79023`
+      // Title → Input field), so only the in-card blocks take the 16 above.
+      alwaysExpanded ? 'section-comment flex flex-col gap-2' : 'section-comment mt-4 flex flex-col gap-2',
       highlighted ? 'section-comment--highlighted' : '',
       alwaysExpanded ? 'section-comment--always-expanded' : '',
     ]"
@@ -240,12 +248,24 @@ defineExpose({ isVisible })
         {{ emptyLabel }}
       </UiButton>
 
+      <UiComment
+        v-else-if="!alwaysExpanded && hasSupervisorComment && !isEditing"
+        class="section-comment__ceo-comment cursor-text"
+        label="Коментар CEO"
+        :value="draft"
+        role="button"
+        tabindex="0"
+        aria-label="Редагувати коментар CEO"
+        @click="openEditor"
+        @keydown.enter.prevent="openEditor"
+      />
+
       <UiTextarea
         v-else
         ref="textareaRef"
         class="section-comment__ceo-editor"
         :class="[
-          alwaysExpanded ? CEO_GENERAL_COMMENT_MIN_HEIGHT_CLASS : '',
+          alwaysExpanded ? '' : CEO_SECTION_EDITOR_FLOOR_CLASS,
           highlighted && !hasSupervisorComment ? 'border-amber-border!' : '',
         ]"
         :model-value="draft"

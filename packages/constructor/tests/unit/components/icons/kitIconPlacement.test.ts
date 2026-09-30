@@ -143,7 +143,7 @@ const PLACEMENTS: readonly Placement[] = [
   {
     useCase: 'Приховати',
     file: 'views/wizard/VisualComponentsView.vue',
-    at: /<(\w+Icon)\s+v-else\s+:class="UI_ACCORDION_ICON_SIZE_CLASS"\s*\/>/,
+    at: /<(\w+Icon)\s+v-else\s+:class="UI_ACCORDION_ACTION_ICON_CLASS"\s*\/>/,
     expect: 'EyeSlashIcon',
   },
 ]

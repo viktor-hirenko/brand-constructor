@@ -109,7 +109,6 @@ function onAction(role: UiFooterAction) {
           size="L"
           :class="classes.button"
           :variant="button.variant"
-          :block="layout === 'stack'"
           :disabled="button.disabled"
           :loading="button.loading"
           :loading-label="loadingLabel"

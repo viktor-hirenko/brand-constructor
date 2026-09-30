@@ -42,6 +42,7 @@ import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlic
 import PreviewPanelToast from '@/components/ui/PreviewPanelToast.vue'
 import SidebarScrollHint from '@/components/constructor/preview/SidebarScrollHint.vue'
 import { useSidebarScrollHint } from '@/composables/useSidebarScrollHint'
+import { useConstructorStore } from '@/stores/constructor'
 import {
   STEP_ONE_CARD_CLASS,
   STEP_ONE_CARD_ICON_CLASS,
@@ -131,7 +132,11 @@ const paneGeometry = inject(WIZARD_PANE_GEOMETRY_KEY, undefined)
 const sidebarLayerShown = computed(
   () => props.currentStep === 7 && !!props.step7OverlaySlice && props.step9SidebarVisible,
 )
-const sidebarScrollHint = useSidebarScrollHint(sidebarLayerShown)
+const constructorStore = useConstructorStore()
+const sidebarScrollHint = useSidebarScrollHint(
+  sidebarLayerShown,
+  computed(() => constructorStore.brandId ?? null),
+)
 
 const phoneBox = computed(() =>
   fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {

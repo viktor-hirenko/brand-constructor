@@ -61,7 +61,8 @@ const cardClass = computed(() => resolveUiSectionCardClasses({ highlighted: prop
       <slot name="action" />
     </header>
 
-    <UiDivider />
+    <!-- Kit divider is 0 tall and draws over the header's last row. -->
+    <UiDivider class="relative -mt-px" />
 
     <div :class="UI_SECTION_CARD_BODY_CLASS">
       <div :class="UI_SECTION_CARD_CONTENT_CLASS">

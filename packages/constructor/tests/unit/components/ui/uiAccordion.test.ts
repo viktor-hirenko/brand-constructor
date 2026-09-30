@@ -46,14 +46,16 @@ describe('kit accordion — Figma 3839:12607 / 3839:12381', () => {
       expect(UI_ACCORDION_LIST_CLASS).toContain('flex-col')
     })
 
-    it('2, 3, 4 — the section box: 1px ink-300 border, radius 16, white fill', () => {
+    it('2, 3, 4 — the section box: 1px ink-300 inner stroke, radius 16, white fill', () => {
       // get_variable_defs 3839:12604: accordion/border/default #eaeaeb → ink-300,
       // accordion/bg/default #ffffff, radius/accordion 16 → rounded-2xl.
-      expect(UI_ACCORDION_ITEM_CLASS).toContain('border-ink-300')
+      expect(UI_ACCORDION_ITEM_CLASS).toContain('outline-ink-300')
       expect(UI_ACCORDION_ITEM_CLASS).toContain('rounded-2xl')
       expect(UI_ACCORDION_ITEM_CLASS).toContain('bg-white')
-      // box-border keeps the border inside the 56 — phase 1's footer lesson.
-      expect(UI_ACCORDION_ITEM_CLASS).toContain('box-border')
+      // The stroke is an inner outline, so a closed item is 56, not 56 + 2
+      // (`5382:70251`: 64 pitch). A `border` measured 58 on step 7.
+      expect(UI_ACCORDION_ITEM_CLASS).toContain('-outline-offset-1')
+      expect(UI_ACCORDION_ITEM_CLASS.split(' ')).not.toContain('border')
     })
 
     it('3 — the radius is the kit 16, never the 10 the screen shipped with', () => {

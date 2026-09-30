@@ -55,6 +55,8 @@ export interface BriefAuthorRevisionEnvelope {
     chainedDraft: {
       baselineConceptId: string | null
       baselineExternalIds: string[]
+      /** Absent in envelopes written before 30.09 — see `AuthorRevisionDraft`. */
+      baselineExternalCaptured?: boolean
       pendingConceptId: string | null
       pendingExternalIds: string[] | null
     }

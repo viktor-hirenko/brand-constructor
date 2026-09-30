@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
+import UiAssetImage from '@/components/ui/UiAssetImage.vue'
 import { CONCEPT_CARD_TITLE_GRADIENT } from '@/constants/conceptCardVisual'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
@@ -11,7 +12,8 @@ import EyeIcon from '@/components/icons/EyeIcon.vue'
 import FileIcon from '@/components/icons/FileIcon.vue'
 import PaletteIcon from '@/components/icons/PaletteIcon.vue'
 
-// Concept cards: 230×230px → 14.375rem @16 design base (fluid in embed).
+// Concept cards: one column of the kit's 2-column grid, gap 8 — `5387:91784`
+// draws 243.5 square in a 495 row (owner 29.09: «сделай по макету»).
 //
 // The eye on a card is the kit's icon button, Solid at S-32 — `get_variable_defs`
 // on the drawn Concept section (`5387:91785`) returns `button/secondary/bg/default`
@@ -126,12 +128,7 @@ const singlePoLabel = 'Вибір Замовника'
           v-if="concept && previewUrl"
           class="review-concept-block__card relative w-full aspect-square rounded-2xl overflow-hidden bg-muted"
         >
-          <img
-            :src="previewUrl"
-            :alt="concept.name"
-            class="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <UiAssetImage :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" />
           <div
             class="pointer-events-none absolute inset-0 z-[1]"
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
@@ -144,7 +141,7 @@ const singlePoLabel = 'Вибір Замовника'
           <UiIconButton
             variant="solid"
             size="S"
-            class="review-concept-block__preview-button absolute top-1 right-1"
+            class="review-concept-block__preview-button absolute top-2 right-2"
             aria-label="Переглянути концепт"
             @click="concept && emit('preview', concept)"
           >
@@ -164,7 +161,7 @@ const singlePoLabel = 'Вибір Замовника'
           <UiIconButton
             variant="solid"
             size="S"
-            class="review-concept-block__preview-button absolute top-1 right-1"
+            class="review-concept-block__preview-button absolute top-2 right-2"
             aria-label="Переглянути бриф нового концепту"
             @click="emit('previewBrief')"
           >
@@ -189,12 +186,7 @@ const singlePoLabel = 'Вибір Замовника'
           v-if="ceoConcept && ceoPreviewUrl"
           class="review-concept-block__card relative w-full aspect-square rounded-2xl overflow-hidden bg-muted"
         >
-          <img
-            :src="ceoPreviewUrl"
-            :alt="ceoConcept.name"
-            class="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <UiAssetImage :src="ceoPreviewUrl" :alt="ceoConcept.name" class="w-full h-full object-cover" />
           <div
             class="pointer-events-none absolute inset-0 z-[1]"
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
@@ -207,7 +199,7 @@ const singlePoLabel = 'Вибір Замовника'
           <UiIconButton
             variant="solid"
             size="S"
-            class="review-concept-block__preview-button absolute top-1 right-1 z-[2]"
+            class="review-concept-block__preview-button absolute top-2 right-2 z-[2]"
             aria-label="Переглянути концепт CEO"
             @click="ceoConcept && emit('preview', ceoConcept)"
           >
@@ -221,9 +213,9 @@ const singlePoLabel = 'Вибір Замовника'
       <template #applied>
         <div
           v-if="concept && previewUrl"
-          class="review-concept-block__card relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-muted"
+          class="review-concept-block__card relative w-[calc((100%-0.5rem)/2)] aspect-square rounded-2xl overflow-hidden bg-muted"
         >
-          <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
+          <UiAssetImage :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" />
           <div
             class="pointer-events-none absolute inset-0 z-[1]"
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
@@ -235,7 +227,7 @@ const singlePoLabel = 'Вибір Замовника'
             v-if="concept"
             variant="solid"
             size="S"
-            class="review-concept-block__preview-button absolute top-1 right-1"
+            class="review-concept-block__preview-button absolute top-2 right-2"
             aria-label="Переглянути концепт"
             @click="emit('preview', concept)"
           >
@@ -255,9 +247,9 @@ const singlePoLabel = 'Вибір Замовника'
       <template #single>
         <div
           v-if="concept && previewUrl"
-          class="review-concept-block__card relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-muted"
+          class="review-concept-block__card relative w-[calc((100%-0.5rem)/2)] aspect-square rounded-2xl overflow-hidden bg-muted"
         >
-          <img :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" loading="lazy" />
+          <UiAssetImage :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" />
           <div
             class="pointer-events-none absolute inset-0 z-[1]"
             :style="{ background: CONCEPT_CARD_TITLE_GRADIENT }"
@@ -269,7 +261,7 @@ const singlePoLabel = 'Вибір Замовника'
             v-if="concept"
             variant="solid"
             size="S"
-            class="review-concept-block__preview-button absolute top-1 right-1"
+            class="review-concept-block__preview-button absolute top-2 right-2"
             aria-label="Переглянути концепт"
             @click="emit('preview', concept)"
           >
@@ -280,7 +272,7 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="isNewConcept"
-          class="review-concept-block__card review-concept-block__card--brief relative w-[14.375rem] h-[14.375rem] rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
+          class="review-concept-block__card review-concept-block__card--brief relative w-[calc((100%-0.5rem)/2)] aspect-square rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
           <p class="text-[0.875rem] font-medium leading-5 text-ink-900 text-center px-4">
@@ -289,7 +281,7 @@ const singlePoLabel = 'Вибір Замовника'
           <UiIconButton
             variant="solid"
             size="S"
-            class="review-concept-block__preview-button absolute top-1 right-1"
+            class="review-concept-block__preview-button absolute top-2 right-2"
             aria-label="Переглянути бриф нового концепту"
             @click="emit('previewBrief')"
           >

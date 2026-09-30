@@ -52,9 +52,9 @@ const layoutModifier = computed(() => {
       dual-outer-gap="gap-4"
     >
       <template #applied>
-        <ul class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
-            <span class="text-ink-700">•</span>
+        <ul class="review-internal-block__list flex flex-col gap-2">
+          <li class="review-internal-block__item flex items-baseline text-[1rem] leading-6">
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ poValue }}</span>
           </li>
         </ul>
@@ -74,18 +74,18 @@ const layoutModifier = computed(() => {
             Переглянути
           </UiLink>
         </div>
-        <ul v-else class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
-            <span class="text-ink-700">•</span>
+        <ul v-else class="review-internal-block__list flex flex-col gap-2">
+          <li class="review-internal-block__item flex items-baseline text-[1rem] leading-6">
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ poValue }}</span>
           </li>
         </ul>
       </template>
 
       <template #ceo>
-        <ul class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
-            <span class="text-ink-700">•</span>
+        <ul class="review-internal-block__list flex flex-col gap-2">
+          <li class="review-internal-block__item flex items-baseline text-[1rem] leading-6">
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ ceoName }}</span>
           </li>
         </ul>
@@ -105,9 +105,9 @@ const layoutModifier = computed(() => {
             Переглянути
           </UiLink>
         </div>
-        <ul v-else class="review-internal-block__list flex flex-col gap-1">
-          <li class="review-internal-block__item flex items-baseline gap-1 text-[1rem] leading-6">
-            <span class="text-ink-700">•</span>
+        <ul v-else class="review-internal-block__list flex flex-col gap-2">
+          <li class="review-internal-block__item flex items-baseline text-[1rem] leading-6">
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ poValue }}</span>
           </li>
         </ul>

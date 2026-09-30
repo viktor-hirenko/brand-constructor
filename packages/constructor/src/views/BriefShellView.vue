@@ -44,6 +44,7 @@ import {
   useBriefExitConfirm,
 } from '@/composables/useBriefExitConfirm'
 import type { Concept } from '@brand-constructor/shared/types'
+import { conceptEditSliderLabel } from '@/utils/conceptEditSliderLabel'
 
 const route = useRoute()
 const router = useRouter()
@@ -79,6 +80,36 @@ const {
 } = useBrandBriefReviewPhase()
 
 const currentStep = computed(() => (route.meta.step as number) || 1)
+
+/**
+ * Step shown in the wizard header (counter + progress). Usually the route step;
+ * the draft-edit screens live under step 8 for the flow's sake but show the
+ * step they edit — `5387:99707` reads «2/8», `5387:99881` «3/8».
+ */
+const headerStep = computed(() => (route.meta.headerStep as number | undefined) ?? currentStep.value)
+
+/**
+ * The CEO's screens name themselves «Brief Review» and carry no step counter
+ * or progress — `5387:78989`, `5387:83810` and the reselect screens of
+ * `5387:101072` all draw the bare title over a 1px rule. The counter and the
+ * black fill belong to the author's wizard.
+ */
+const isCeoHeader = computed(() => isSupervisorReview.value || isAlternativeSelection.value)
+/**
+ * The author's screens after the CEO returned the brief — the review and every
+ * `po-edit/*` screen it opens — are «Brief Revision», no counter, no progress:
+ * `5387:105225`, `5395:107475`, `5395:107506`, `5395:111458`. The draft-edit
+ * screens share the revision phase but keep the wizard header, hence the route.
+ */
+const isRevisionHeader = computed(
+  () => isAuthorReturned.value || String(route.name ?? '').startsWith('po-edit')
+)
+const isNamedHeader = computed(() => isCeoHeader.value || isRevisionHeader.value)
+const wizardHeaderTitle = computed(() =>
+  isCeoHeader.value ? 'Brief Review' : isRevisionHeader.value ? 'Brief Revision' : undefined
+)
+const wizardHeaderStep = computed(() => (isNamedHeader.value ? undefined : headerStep.value))
+const wizardHeaderTotal = computed(() => (isNamedHeader.value ? undefined : totalSteps))
 
 watch(
   currentStep,
@@ -299,13 +330,14 @@ const poEditCeoConceptId = computed(() => {
   return typeof sel === 'string' ? sel : Array.isArray(sel) ? (sel[0] ?? null) : null
 })
 
-const poEditSliderTopLabel = computed<string | null>(() => {
-  const previewId = store.stepData.concept.previewId
-  if (!previewId) return null
-  if (previewId === poEditCeoConceptId.value) return 'Вибір CEO'
-  if (previewId === store.stepData.concept.selectedId) return 'Ваш попередній вибір'
-  return null
-})
+const poEditSliderTopLabel = computed<string | null>(() =>
+  conceptEditSliderLabel({
+    mode: route.meta.draftEdit ? 'draft' : 'revision',
+    previewId: store.stepData.concept.previewId ?? null,
+    selectedId: store.stepData.concept.selectedId ?? null,
+    ceoConceptId: poEditCeoConceptId.value,
+  }),
+)
 
 /** Mobile-preview concept for naming sub-pages: confirmed CEO if any, else PO. */
 const ceoReselectMobilePreviewConcept = computed(() => {
@@ -635,8 +667,9 @@ watch(currentStep, step => {
     >
       <template #header>
         <UiWizardHeader
-          :current-step="currentStep"
-          :total-steps="totalSteps"
+          :title="wizardHeaderTitle"
+          :current-step="wizardHeaderStep"
+          :total-steps="wizardHeaderTotal"
           @close="handleWizardClose"
         />
       </template>

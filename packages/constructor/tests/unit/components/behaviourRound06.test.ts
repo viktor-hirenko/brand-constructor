@@ -7,6 +7,7 @@ import { needsExternalNamingReselect } from '@/utils/draftConceptCascade'
 import { useSupervisorAlternativeDraft } from '@/stores/constructor/useSupervisorAlternativeDraft'
 import {
   SIDEBAR_SCROLL_HINT_STORAGE_KEY,
+  sidebarScrollHintStorageKey,
   shouldShowSidebarScrollHint,
   useSidebarScrollHint,
 } from '@/composables/useSidebarScrollHint'
@@ -178,7 +179,7 @@ describe('Interface Components 3 — the scroll hint over the step 7 Sidebar', (
     expect(shouldShowSidebarScrollHint(false, false)).toBe(false)
   })
 
-  describe('once per browser', () => {
+  describe('once per brief (owner 30.09)', () => {
     let store: Map<string, string>
     beforeEach(() => {
       store = new Map()
@@ -191,19 +192,37 @@ describe('Interface Components 3 — the scroll hint over the step 7 Sidebar', (
       delete (globalThis as { localStorage?: unknown }).localStorage
     })
 
-    it('the first scroll retires it, and a new visit does not bring it back', () => {
-      const shown = ref(true)
-      const first = useSidebarScrollHint(shown)
+    it('the first scroll retires it for that brief, and a new visit to it does not bring it back', () => {
+      const first = useSidebarScrollHint(ref(true), ref('brand_a'))
       expect(first.visible.value).toBe(true)
       first.markScrolled()
       expect(first.visible.value).toBe(false)
-      expect(store.get(SIDEBAR_SCROLL_HINT_STORAGE_KEY)).toBe('1')
-      expect(useSidebarScrollHint(ref(true)).visible.value).toBe(false)
+      expect(store.get(sidebarScrollHintStorageKey('brand_a'))).toBe('1')
+      expect(useSidebarScrollHint(ref(true), ref('brand_a')).visible.value).toBe(false)
+    })
+
+    it('a NEW brief shows it again, even after another brief was scrolled', () => {
+      useSidebarScrollHint(ref(true), ref('brand_a')).markScrolled()
+      expect(useSidebarScrollHint(ref(true), ref('brand_b')).visible.value).toBe(true)
+    })
+
+    it('the old browser-wide flag no longer hides it', () => {
+      store.set(SIDEBAR_SCROLL_HINT_STORAGE_KEY, '1')
+      expect(useSidebarScrollHint(ref(true), ref('brand_c')).visible.value).toBe(true)
+    })
+
+    it('switching briefs in the same page follows the brief', () => {
+      const id = ref<string | null>('brand_a')
+      const hint = useSidebarScrollHint(ref(true), id)
+      hint.markScrolled()
+      expect(hint.visible.value).toBe(false)
+      id.value = 'brand_b'
+      expect(hint.visible.value).toBe(true)
     })
 
     it('hiding the layer with the eye is not a scroll — it comes back with the layer', () => {
       const shown = ref(true)
-      const hint = useSidebarScrollHint(shown)
+      const hint = useSidebarScrollHint(shown, ref('brand_a'))
       shown.value = false
       expect(hint.visible.value).toBe(false)
       shown.value = true
@@ -215,7 +234,7 @@ describe('Interface Components 3 — the scroll hint over the step 7 Sidebar', (
         getItem: () => { throw new Error('blocked') },
         setItem: () => { throw new Error('blocked') },
       }
-      const hint = useSidebarScrollHint(ref(true))
+      const hint = useSidebarScrollHint(ref(true), ref('brand_a'))
       expect(hint.visible.value).toBe(true)
       hint.markScrolled()
       expect(hint.visible.value).toBe(false)

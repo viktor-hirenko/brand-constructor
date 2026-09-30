@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
-import type { ExternalNaming, BrandExternalNamingData } from '@brand-constructor/shared/types'
+import type { ExternalNaming, BrandExternalNamingData, NewNamingBrief } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
 import ConceptCascadeBanner from '@/components/constructor/edit-flow/ConceptCascadeBanner.vue'
 import UiFooter from '@/components/ui/UiFooter.vue'
-import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
+import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
+import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import {
-  EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS,
-  EDIT_FLOW_BODY_OFFSET_CLASS,
-  EDIT_FLOW_COMMENT_OFFSET_CLASS,
-  EDIT_FLOW_POST_DIVIDER_SECTION_CLASS,
+  EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS,
+  EDIT_FLOW_STACK_CLASS,
 } from '@/constants/editFlowLayout'
 import {
   getExternalNamingCommentHint,
@@ -55,12 +55,14 @@ const isCommentRequired = computed(() =>
 
 const commentHint = computed(() => getExternalNamingCommentHint(selectedIds.value, namings.value))
 
+const isCreatingNew = computed(() => store.stepData.externalNaming.newNamingBrief != null)
+
 const primaryDisabled = computed(
   () =>
     !isExternalNamingStepValid(
       selectedIds.value,
       store.stepData.externalNaming.comment ?? '',
-      false,
+      isCreatingNew.value,
       namings.value,
     ),
 )
@@ -92,9 +94,59 @@ onMounted(async () => {
   await loadNamings()
 })
 
+/*
+ * «Замовити нову назву» — `5387:99881` draws it under the list on this screen
+ * too (owner 29.09). Same behaviour as step 3 (`ExternalNamingView.vue`): a
+ * brief replaces the picked names, picking a name drops the brief after a
+ * confirmation.
+ */
+const showNewModal = ref(false)
+const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingNamingId = ref<string | null>(null)
+
+function handleBriefSave(brief: NewNamingBrief) {
+  store.setNewNamingBrief(brief)
+  store.setExternalNaming({ selectedIds: [] })
+  showNewModal.value = false
+}
+
+function confirmDeleteBrief() {
+  store.setNewNamingBrief(null)
+  showDeleteConfirm.value = false
+}
+
 function handleToggle(id: string) {
+  if (isCreatingNew.value) {
+    pendingNamingId.value = id
+    showSwitchConfirm.value = true
+    return
+  }
   store.toggleExternalNaming(id)
 }
+
+function confirmSwitchSelection() {
+  const id = pendingNamingId.value
+  if (id == null) return
+  store.setNewNamingBrief(null)
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+  store.toggleExternalNaming(id)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+}
+
+watch(
+  () => store.briefPreviewEditRequested,
+  kind => {
+    if (kind !== 'externalNaming') return
+    showNewModal.value = true
+    store.consumeBriefPreviewEditRequest()
+  },
+)
 
 function goBack() {
   // Restore external to its pre-cascade baseline so the concept screen reopens
@@ -125,12 +177,15 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
     title="External Naming"
     :subtitle="subtitleText"
   >
-    <div :class="EDIT_FLOW_BODY_OFFSET_CLASS">
-      <ConceptCascadeBanner :class="EDIT_FLOW_ALERT_TO_SECTION_GAP_CLASS" />
+    <!--
+      `5387:99881`: Step header, Alert, the list with its button, the comment —
+      24 apart; cards 8 apart, list → «Замовити нову назву» 16. No section
+      label above the list on this screen.
+    -->
+    <div :class="['draft-edit-external-naming-view__body', EDIT_FLOW_STACK_CLASS]">
+      <ConceptCascadeBanner />
 
-      <div :class="EDIT_FLOW_POST_DIVIDER_SECTION_CLASS">
-        <EditFlowSectionLabel>Назви для обраного концепту</EditFlowSectionLabel>
-
+      <div :class="EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS">
         <ExternalNamingGridSkeleton v-if="showSkeleton" :count="6" />
         <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
         <ExternalNamingGrid
@@ -139,19 +194,55 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
           :selected-ids="selectedIds"
           @toggle="handleToggle"
         />
+
+        <BriefOrderButton
+          create-label="Замовити нову назву"
+          created-label="Бриф неймінгу створено"
+          :is-created="isCreatingNew"
+          @create="showNewModal = true"
+          @view="store.openBriefPreview('externalNaming')"
+          @edit="showNewModal = true"
+          @delete="showDeleteConfirm = true"
+        />
       </div>
 
       <StepCommentField
         v-model="comment"
         label="Коментар"
-        :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
         :required="isCommentRequired"
         :required-hint="commentHint"
       />
 
-      <p v-if="store.saveError" class="text-sm text-red-600 mt-2">
+      <p v-if="store.saveError" class="text-sm text-red-600">
         {{ store.saveError }}
       </p>
+
+      <NewNamingModal
+        v-if="showNewModal"
+        :initial-data="store.stepData.externalNaming.newNamingBrief"
+        @save="handleBriefSave"
+        @cancel="showNewModal = false"
+      />
+
+      <ConfirmationModal
+        v-if="showDeleteConfirm"
+        title="Видалити бриф?"
+        body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
+        cancel-label="Скасувати"
+        primary-label="Видалити"
+        @cancel="showDeleteConfirm = false"
+        @primary="confirmDeleteBrief"
+      />
+
+      <ConfirmationModal
+        v-if="showSwitchConfirm"
+        title="Обрати цей неймінг?"
+        body="При виборі неймінгу створений бриф буде видалено. Цю дію неможливо скасувати."
+        cancel-label="Скасувати"
+        primary-label="Обрати неймінг"
+        @cancel="cancelSwitchSelection"
+        @primary="confirmSwitchSelection"
+      />
     </div>
 
     <template #footer>

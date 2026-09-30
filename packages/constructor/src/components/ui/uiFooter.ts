@@ -83,11 +83,13 @@ export const UI_FOOTER_ACTIONS: Record<UiFooterLayout, string> = {
  * `block` and split the column between them, so they grew with the panel.
  *
  * The stack keeps the full column width: on the drawn review `5387:91813` the
- * buttons are 527 wide, i.e. the content column itself.
+ * buttons are 527 wide, i.e. the content column itself. It is `w-full`, not the
+ * button's `block` (`flex-1`): in a column that is a zero basis, the kit `h-12`
+ * stops holding and a bordered button grows to 50 — CEO view `5387:83684`.
  */
 export const UI_FOOTER_BUTTON: Record<UiFooterLayout, string> = {
   bar: 'w-32',
-  stack: '',
+  stack: 'w-full',
 }
 
 export function resolveUiFooterClasses(layout: UiFooterLayout = 'bar'): UiFooterClassSet {

@@ -70,8 +70,8 @@ describe('left column — four Inputs at a flat spacing/16', () => {
     expect(stepView).not.toContain('flex flex-col gap-6')
   })
 
-  it('lets the comment field sit at that same 16 instead of 16 + its own 8', () => {
-    expect(stepView).toContain('<StepCommentField v-model="comment" flush />')
+  it('lets the comment field sit at that same 16 — the field adds nothing of its own', () => {
+    expect(stepView).toContain('<StepCommentField v-model="comment" />')
   })
 
   it('titles the comment field «Коментар» and nothing else', () => {
@@ -79,16 +79,13 @@ describe('left column — four Inputs at a flat spacing/16', () => {
     expect(stepView).not.toContain('optional')
   })
 
-  it('keeps the 8 as the default for the fifteen screens that measure 32 with it', () => {
-    expect(commentField).toContain("'step-comment-field pt-2 flex flex-col gap-2'")
-    expect(commentField).toContain("'step-comment-field flex flex-col gap-2'")
-  })
-
-  it('never puts two padding-top utilities on the one element', () => {
-    // Which of `pt-2` and a cancelling `pt-0` wins is decided by Tailwind's own
-    // output order, not by the order they are written — the way the accordion
-    // lost its selected border. So the class is chosen, not layered.
-    expect(commentField).not.toContain('pt-0')
+  it('gives the comment field no top padding or margin of its own, on any screen', () => {
+    // The refactor mockups draw the field 24 under the block above on every
+    // screen (`5387:99729`, `5387:99898`, `5382:44788`) — the parent's gap and
+    // nothing else. The old default `pt-2` made it 32 (and 40 on CEO screens).
+    expect(commentField).toContain('class="step-comment-field flex flex-col gap-2"')
+    expect(commentField).not.toMatch(/(^|[\s'"])(pt|py|p|mt|my|m)-\d/)
+    expect(commentField).not.toContain('flush')
   })
 })
 

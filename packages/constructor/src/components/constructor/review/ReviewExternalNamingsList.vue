@@ -49,15 +49,15 @@ const layoutModifier = computed(() => {
   <div :class="['review-external-list', layoutModifier]">
     <ReviewChoiceGroup :layout="layout" applied-label="Обрані назви">
       <template #applied>
-        <ul v-if="items.length > 0" class="review-external-list__list flex flex-col gap-1">
+        <ul v-if="items.length > 0" class="review-external-list__list flex flex-col gap-2">
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
+            class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
-            <span class="text-ink-700">•</span>
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
+            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
         <p v-else class="review-external-list__empty text-[0.875rem] text-ink-700 italic">
@@ -66,15 +66,15 @@ const layoutModifier = computed(() => {
       </template>
 
       <template #po>
-        <ul v-if="items.length > 0" class="review-external-list__list flex flex-col gap-1">
+        <ul v-if="items.length > 0" class="review-external-list__list flex flex-col gap-2">
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
+            class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
-            <span class="text-ink-700">•</span>
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
+            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
         <div
@@ -96,29 +96,29 @@ const layoutModifier = computed(() => {
       </template>
 
       <template #ceo>
-        <ul class="review-external-list__list flex flex-col gap-1">
+        <ul class="review-external-list__list flex flex-col gap-2">
           <li
             v-for="item in ceoItems"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
+            class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
-            <span class="text-ink-700">•</span>
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
+            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
       </template>
 
       <template #single>
-        <ul v-if="items.length > 0" class="review-external-list__list flex flex-col gap-1">
+        <ul v-if="items.length > 0" class="review-external-list__list flex flex-col gap-2">
           <li
             v-for="item in items"
             :key="item.id"
-            class="review-external-list__item flex items-baseline gap-1 text-[1rem] leading-6"
+            class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
-            <span class="text-ink-700">•</span>
+            <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
             <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="text-ink-700">({{ item.domain }})</span>
+            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
           </li>
         </ul>
         <div

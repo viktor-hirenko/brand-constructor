@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { externalIdsOnConceptCancel } from '@/utils/revisionConceptCancel'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
@@ -228,11 +229,12 @@ function selectConcept(id: string) {
 }
 
 function goCancel() {
-  // Restore externalNaming to the baseline (what it was before the edit session).
-  store.setExternalNaming({
-    selectedIds: [...store.authorRevisionDraft.baselineExternalIds],
-    newNamingBrief: null,
-  })
+  // Restore externalNaming to the baseline — only if «Далі» captured one.
+  // Straight «Редагувати» → «Скасувати» never touched the names, so they stay.
+  const restoreIds = externalIdsOnConceptCancel(store.authorRevisionDraft)
+  if (restoreIds) {
+    store.setExternalNaming({ selectedIds: restoreIds, newNamingBrief: null })
+  }
   store.resetAuthorRevisionDraft()
   store.cancelEditSection()
   router.push(`/constructor/brand/${brandId.value}`)
@@ -324,7 +326,7 @@ async function goDali() {
       <!-- PO previous — reference only, not selectable.
            CEO already rejected PO's pick; if PO wants to keep it they use "Скасувати". -->
       <div :class="['flex flex-col', EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS]">
-        <EditFlowSectionLabel>Ваш попередній вибір</EditFlowSectionLabel>
+        <EditFlowSectionLabel>Вибір замовника</EditFlowSectionLabel>
         <ConceptCard :concept="poConcept" :show-overlay="true" :clickable="false" />
       </div>
 
@@ -347,10 +349,8 @@ async function goDali() {
 
     <!-- Other / available concepts grid -->
     <div :class="EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS">
-      <div class="flex items-center justify-between max-w-[31.625rem]">
-        <EditFlowSectionLabel>
-          {{ isPostApply ? 'Доступні концепти' : 'Інші концепти' }}
-        </EditFlowSectionLabel>
+      <div class="flex items-center justify-between">
+        <EditFlowSectionLabel>Доступні концепти</EditFlowSectionLabel>
         <SegmentedControl v-model="localMode" :options="themeOptions" />
       </div>
 

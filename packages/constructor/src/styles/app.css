@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/*
+ * Tailwind 4's preflight dropped `cursor: pointer` on buttons, so every icon
+ * button (modal ×, the Sidebar eye, chevrons) showed an arrow — owner 29.09.
+ * In `base`, so `cursor-default` / `cursor-not-allowed` utilities still win.
+ */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+}
+
 @theme {
   --color-primary: #030213;
   --color-primary-foreground: #ffffff;

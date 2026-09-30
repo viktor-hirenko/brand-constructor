@@ -120,8 +120,10 @@ describe('kit input surface — Figma 3424:2287', () => {
       // get_metadata 5562:49194: Input 527×128 = 24 + 8 + 96, text at y=12.
       // min-h-24 is 6rem = 96.
       expect(UI_FIELD_TYPE_AREA_CLASS).toContain('min-h-24')
-      expect(UI_FIELD_TYPE_AREA_CLASS).toContain('py-3')
-      expect(UI_FIELD_TYPE_AREA_CLASS).toContain('px-4')
+      // Kit stroke is inside the box: padding + our 1 px border = kit 12 / 16,
+      // so three rows land on 96, not 98.
+      expect(UI_FIELD_TYPE_AREA_CLASS).toContain('py-[0.6875rem]')
+      expect(UI_FIELD_TYPE_AREA_CLASS).toContain('px-[0.9375rem]')
     })
 
     it('the fluid type floors at the kit 48 and never fixes a height', () => {

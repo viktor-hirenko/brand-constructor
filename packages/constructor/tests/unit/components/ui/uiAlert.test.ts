@@ -29,19 +29,19 @@ describe('kit alert — Figma 3461:5236', () => {
   it('paints each semantic type from its own kit slot trio', () => {
     // border → semantic/border, background → semantic/surface,
     // icon → semantic/content. Mixing the slots is the failure this pins.
-    expect(UI_ALERT_TONES.info.box).toContain('border-blue-border')
+    expect(UI_ALERT_TONES.info.box).toContain('ring-blue-border')
     expect(UI_ALERT_TONES.info.box).toContain('bg-blue-surface')
     expect(UI_ALERT_TONES.info.icon).toContain('text-blue-content')
 
-    expect(UI_ALERT_TONES.success.box).toContain('border-green-border')
+    expect(UI_ALERT_TONES.success.box).toContain('ring-green-border')
     expect(UI_ALERT_TONES.success.box).toContain('bg-green-surface')
     expect(UI_ALERT_TONES.success.icon).toContain('text-green-content')
 
-    expect(UI_ALERT_TONES.warning.box).toContain('border-amber-border')
+    expect(UI_ALERT_TONES.warning.box).toContain('ring-amber-border')
     expect(UI_ALERT_TONES.warning.box).toContain('bg-amber-surface')
     expect(UI_ALERT_TONES.warning.icon).toContain('text-amber-content')
 
-    expect(UI_ALERT_TONES.error.box).toContain('border-red-border')
+    expect(UI_ALERT_TONES.error.box).toContain('ring-red-border')
     expect(UI_ALERT_TONES.error.box).toContain('bg-red-surface')
     expect(UI_ALERT_TONES.error.icon).toContain('text-red-content')
   })
@@ -50,7 +50,7 @@ describe('kit alert — Figma 3461:5236', () => {
     // alert/border/default is #eaeaeb, which is --color-ink-300 since the
     // DP-15258 token fix (app.css).
     expect(UI_ALERT_TONES.default.box).toContain('bg-white')
-    expect(UI_ALERT_TONES.default.box).toContain('border-ink-300')
+    expect(UI_ALERT_TONES.default.box).toContain('ring-ink-300')
     expect(UI_ALERT_TONES.default.icon).toContain('text-ink-900')
   })
 
@@ -58,7 +58,7 @@ describe('kit alert — Figma 3461:5236', () => {
     expect(UI_ALERT_ROOT_CLASS).toContain('rounded-2xl')
     expect(UI_ALERT_ROOT_CLASS).toContain('p-4')
     expect(UI_ALERT_ROOT_CLASS).toContain('gap-3')
-    expect(UI_ALERT_ROOT_CLASS).toContain('border')
+    expect(UI_ALERT_ROOT_CLASS).toContain('ring-inset')
     expect(UI_ALERT_ROOT_CLASS).toContain('items-start')
   })
 

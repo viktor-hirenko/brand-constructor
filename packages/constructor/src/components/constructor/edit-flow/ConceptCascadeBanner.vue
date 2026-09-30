@@ -26,7 +26,7 @@ import UiAlert from '@/components/ui/UiAlert.vue'
   <UiAlert
     class="concept-cascade-banner"
     type="warning"
-    title="Необхідно обрати External Naming"
+    title="Оберіть новий External Naming"
     description="Попередній вибір більше не відповідає новому концепту."
   />
 </template>

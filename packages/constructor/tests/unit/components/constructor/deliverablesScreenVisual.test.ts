@@ -182,9 +182,9 @@ describe('the two fields under the cards', () => {
     expect(stepView).toContain(':class="DELIVERABLE_FIELD_WIDTH_CLASS"')
   })
 
-  it('sits the comment the drawn 24 below, not 24 plus its own 8', () => {
+  it('sits the comment the drawn 24 below — the stack gap, nothing added', () => {
     // Date Input at y = 130 and 80 tall, comment Input at y = 234.
-    expect(stepView).toContain('flush')
+    expect(stepView).toContain('<StepCommentField v-model="comment" :class="DELIVERABLE_FIELD_WIDTH_CLASS" />')
   })
 
   it('stacks the three blocks at the flat 24 she draws', () => {

@@ -78,6 +78,14 @@ export const UI_COMMENT_CLASS =
 export const UI_COMMENT_UNRESOLVED_CLASS =
   'ui-comment--unresolved border-l-2 border-solid border-blue-content pl-[calc(1rem-2px)]'
 
+/**
+ * Resolved — the same 2px rail in `#dfdfe2` (ink-400): the author's returned
+ * brief draws it on the resolved CEO comment (`5387:105225`, Brand Basics).
+ * It had no rail. Same inset trick, so text does not move between states.
+ */
+export const UI_COMMENT_RESOLVED_CLASS =
+  'ui-comment--resolved border-l-2 border-solid border-ink-400 pl-[calc(1rem-2px)]'
+
 /** `caption/l/medium` 14/16 in `comment/content/label` #6f6f7d. */
 export const UI_COMMENT_LABEL_CLASS =
   'ui-comment__label text-sm/4 font-medium text-ink-700'
@@ -90,11 +98,15 @@ export const UI_COMMENT_VALUE_CLASS =
 export const UI_COMMENT_BODY_CLASS = 'ui-comment__body flex flex-col gap-1'
 
 export interface UiCommentOptions {
-  /** Kit Type = Unresolved — adds the blue rail. Default and Resolved have none. */
+  /** Kit Type = Unresolved — adds the blue rail. */
   unresolved?: boolean
+  /** Resolved CEO comment — the grey rail. Default (author's comment) has none. */
+  resolved?: boolean
 }
 
 export function resolveUiCommentClasses(options: UiCommentOptions = {}): string {
-  const { unresolved = false } = options
-  return unresolved ? `${UI_COMMENT_CLASS} ${UI_COMMENT_UNRESOLVED_CLASS}` : UI_COMMENT_CLASS
+  const { unresolved = false, resolved = false } = options
+  if (unresolved) return `${UI_COMMENT_CLASS} ${UI_COMMENT_UNRESOLVED_CLASS}`
+  if (resolved) return `${UI_COMMENT_CLASS} ${UI_COMMENT_RESOLVED_CLASS}`
+  return UI_COMMENT_CLASS
 }

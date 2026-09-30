@@ -86,8 +86,14 @@ export const UI_ICON_BUTTON_SIZE: Record<UiIconButtonSize, { root: string; icon:
  * the same value the Secondary border, the input border, the accordion, the
  * section card, the alert, the progress bar and the badge all use.
  *
- * The Solid shadow is `drop-shadow(0px 8px 4px rgba(0,0,0,0.12))` on Default
- * and Hovered and absent on Disabled — so it is switched off explicitly rather
+ * The Solid shadow is Figma `drop-shadow(0px 8px 4px rgba(0,0,0,0.12))` on
+ * Default and Hovered. Figma's blur is not CSS's: its «4» renders as soft as
+ * a CSS blur of 8. Measured 30.09 on `3715:5625` exported with a transparent
+ * background — alpha straight under the button 29/28/28/27/23/21/19/15/10/8/4
+ * per px; CSS `0 8px 8px` gives 29/28/27/25/23/20/17/14/11/8/6, CSS `0 8px 4px`
+ * gave a hard 31/31/31/30/29/26 edge (owner: «уродливая тень» on the drawer
+ * close). So the CSS value is 8, not the 4 the inspector prints.
+ * It is absent on Disabled — so it is switched off explicitly rather
  * than merely faded by the shared `disabled:opacity-50`.
  *
  * Neither state in the kit defines a focus ring; the ring below is carried over
@@ -96,7 +102,7 @@ export const UI_ICON_BUTTON_SIZE: Record<UiIconButtonSize, { root: string; icon:
  */
 export const UI_ICON_BUTTON_VARIANT: Record<UiIconButtonVariant, string> = {
   solid:
-    'ui-icon-button--solid border border-ink-300 bg-white text-ink-800 shadow-[0_8px_4px_rgba(0,0,0,0.12)] hover:bg-ink-200 focus-visible:ring-ink-500 disabled:shadow-none',
+    'ui-icon-button--solid border border-ink-300 bg-white text-ink-800 shadow-[0_8px_8px_rgba(0,0,0,0.12)] hover:bg-ink-200 focus-visible:ring-ink-500 disabled:shadow-none',
   glass:
     'ui-icon-button--glass bg-[rgba(57,57,71,0.25)] text-white backdrop-blur-[20px] hover:bg-[rgba(57,57,71,0.5)] focus-visible:ring-white/70',
 }
@@ -104,7 +110,7 @@ export const UI_ICON_BUTTON_VARIANT: Record<UiIconButtonVariant, string> = {
 /** The same two fills with the hover/focus/disabled hooks stripped out. */
 export const UI_ICON_BUTTON_DECORATIVE_VARIANT: Record<UiIconButtonVariant, string> = {
   solid:
-    'ui-icon-button--solid border border-ink-300 bg-white text-ink-800 shadow-[0_8px_4px_rgba(0,0,0,0.12)]',
+    'ui-icon-button--solid border border-ink-300 bg-white text-ink-800 shadow-[0_8px_8px_rgba(0,0,0,0.12)]',
   glass: 'ui-icon-button--glass bg-[rgba(57,57,71,0.25)] text-white backdrop-blur-[20px]',
 }
 

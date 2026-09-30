@@ -59,11 +59,15 @@
  * `section card/border` #eaeaeb → ink-300. `box-border` keeps the 1px border
  * inside the drawn box, the lesson phase 1 learned on the footer buttons.
  */
+// The kit strokes the card INSIDE its box (`5387:91779`: the 56 header starts
+// at 0 and a card is exactly header + content). A CSS border adds 2 px per card,
+// ~20 px down the step-8 list — owner 29.09. An inset ring draws the same line
+// without taking space.
 export const UI_SECTION_CARD_CLASS =
-  'ui-section-card box-border rounded-2xl border border-solid bg-white transition-colors'
+  'ui-section-card box-border rounded-2xl bg-white ring-1 ring-inset transition-[box-shadow,outline-color]'
 
 /** Kit `section card/border` #eaeaeb. */
-export const UI_SECTION_CARD_BORDER_CLASS = 'border-ink-300'
+export const UI_SECTION_CARD_BORDER_CLASS = 'ring-ink-300'
 
 /**
  * Ours, not the kit's: review marks the section that still needs a comment.
@@ -76,7 +80,7 @@ export const UI_SECTION_CARD_BORDER_CLASS = 'border-ink-300'
  * they are written in, so the choice has to be made once, here.
  */
 export const UI_SECTION_CARD_HIGHLIGHTED_CLASS =
-  'ui-section-card--highlighted border-amber-400 ring-2 ring-amber-200'
+  'ui-section-card--highlighted ring-amber-400 outline-2 outline-amber-200'
 
 export interface UiSectionCardOptions {
   /** Ours, not the kit's — see `UI_SECTION_CARD_HIGHLIGHTED_CLASS`. */

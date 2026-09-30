@@ -9,6 +9,8 @@ import CheckIcon from '@/components/icons/CheckIcon.vue'
 import RevisionReturnIcon from '@/components/icons/RevisionReturnIcon.vue'
 import SendIcon from '@/components/icons/SendIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
+import { postClose } from '@/composables/useEmbedBridge'
+import { isEmbedded } from '@/composables/useEmbedMode'
 
 /**
  * The three actions are kit Buttons at L-48 — Primary, Secondary, Ghost.
@@ -129,7 +131,18 @@ function handleNewBrief() {
   router.push('/constructor/step/1')
 }
 
-function handleGoHome() {
+/**
+ * Leaves the wizard for the brand list — the same exit as the header cross
+ * (`BriefShellView` `leaveWizard`). Inside the Admin the old «на головну» sent
+ * the frame to the wizard's own landing, a page from the standalone days that
+ * has no way back to the list; the Admin's home is Brands. Owner 30.09.
+ * Standalone there is no list, so it keeps going to the landing.
+ */
+function handleBackToBrands() {
+  if (isEmbedded()) {
+    postClose()
+    return
+  }
   router.push('/')
 }
 </script>
@@ -221,9 +234,9 @@ function handleGoHome() {
             variant="ghost"
             size="L"
             class="brand-success__home-button w-full"
-            @click="handleGoHome"
+            @click="handleBackToBrands"
           >
-            Повернутись на головну
+            До списку брендів
           </UiButton>
         </div>
       </div>

@@ -114,6 +114,6 @@ const hasAnythingEnabled = computed(() => legalLanding.value || partnerLanding.v
       </UiFieldHint>
     </div>
 
-    <StepCommentField v-model="comment" :class="DELIVERABLE_FIELD_WIDTH_CLASS" flush />
+    <StepCommentField v-model="comment" :class="DELIVERABLE_FIELD_WIDTH_CLASS" />
   </div>
 </template>

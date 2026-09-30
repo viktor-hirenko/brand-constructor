@@ -32,6 +32,7 @@ interface UiCommentProps {
   value?: string
   /** Kit Type = Unresolved — the blue rail. */
   unresolved?: boolean
+  resolved?: boolean
   class?: HTMLAttributes['class']
 }
 
@@ -39,10 +40,11 @@ const props = withDefaults(defineProps<UiCommentProps>(), {
   label: undefined,
   value: undefined,
   unresolved: false,
+  resolved: false,
   class: undefined,
 })
 
-const commentClass = computed(() => resolveUiCommentClasses({ unresolved: props.unresolved }))
+const commentClass = computed(() => resolveUiCommentClasses({ unresolved: props.unresolved, resolved: props.resolved }))
 </script>
 
 <template>

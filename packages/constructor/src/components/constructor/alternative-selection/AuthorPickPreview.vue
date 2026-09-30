@@ -3,7 +3,10 @@ import type { Concept } from '@brand-constructor/shared/types'
 import { computed } from 'vue'
 import ConceptCard from '@/components/constructor/alternative-selection/ConceptCard.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
-import { EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS } from '@/constants/editFlowLayout'
+import {
+  EDIT_FLOW_AUTHOR_PICK_CARD_CLASS,
+  EDIT_FLOW_SECTION_TO_GRID_GAP_CLASS,
+} from '@/constants/editFlowLayout'
 
 interface AuthorPickPreviewProps {
   concept: Concept | null
@@ -51,7 +54,7 @@ function handleClick() {
     <EditFlowSectionLabel class="author-pick-preview__label">
       Вибір замовника
     </EditFlowSectionLabel>
-    <div v-if="concept && previewUrl" class="author-pick-preview__card w-[10.125rem] shrink-0">
+    <div v-if="concept && previewUrl" :class="['author-pick-preview__card shrink-0', EDIT_FLOW_AUTHOR_PICK_CARD_CLASS]">
       <ConceptCard
         :concept="concept"
         :show-overlay="true"

@@ -130,7 +130,7 @@ describe('vertical rhythm of the screen — current canvas, not 4492', () => {
   it('puts 24 between header, cards, general comment and footer', () => {
     // `5387:91764`: header ends 192, list opens 216. `5387:83810`: 160 → 184,
     // list ends 2583.5 → Input 2607.5, Input ends 2735.5 → footer 2759.5.
-    expect(view).toContain("'review-unified-view__scroll-inner flex flex-col gap-6 pt-12 pb-12',")
+    expect(view).toContain("'review-unified-view__scroll-inner flex flex-col gap-6 pt-8 pb-8',")
     expect(view).not.toContain('scroll-inner flex flex-col gap-8')
   })
 

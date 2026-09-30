@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { EDIT_FLOW_AUTHOR_PICK_CARD_CLASS } from '@/constants/editFlowLayout'
 /**
  * Pixel-matched skeleton for `AuthorPickPreview`.
  *
@@ -11,6 +12,6 @@
 <template>
   <div class="author-pick-preview-skeleton flex flex-col gap-3" aria-hidden="true">
     <div class="h-6 w-[120px] rounded bg-muted animate-pulse" />
-    <div class="w-[162px] h-[162px] rounded-2xl bg-muted animate-pulse shrink-0" />
+    <div :class="['aspect-square rounded-2xl bg-muted animate-pulse shrink-0', EDIT_FLOW_AUTHOR_PICK_CARD_CLASS]" />
   </div>
 </template>

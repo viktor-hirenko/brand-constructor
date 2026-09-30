@@ -42,10 +42,18 @@ const emit = defineEmits<{
         {{ body }}
       </p>
 
+      <!--
+        Row: two equal columns, not two `block` (flex-1) buttons — with a basis
+        of 0 the bordered «Скасувати» took 198 and the primary 196; the kit
+        draws 197 + 8 + 197 (`1985:4936`). Labels never wrap: «Редагувати
+        концепт» renders 159 in the browser (155 in Figma) and broke into two
+        lines in 156. The stack is a grid too: a column of `flex-1` buttons
+        let the bordered one grow to 50. Owner 30.09.
+      -->
       <div
         :class="[
-          'confirmation-modal__actions flex w-full items-stretch gap-2',
-          actionsLayout === 'stack' ? 'flex-col' : 'flex-row',
+          'confirmation-modal__actions w-full gap-2 whitespace-nowrap',
+          actionsLayout === 'stack' ? 'grid grid-cols-1' : 'grid grid-cols-2',
         ]"
       >
         <UiButton

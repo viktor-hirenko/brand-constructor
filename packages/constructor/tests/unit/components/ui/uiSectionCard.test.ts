@@ -27,7 +27,11 @@ describe('kit section card — Figma 3761:2273', () => {
       // Sampled back off the export of 5387:91779: border (234,234,235).
       const classes = resolveUiSectionCardClasses()
       expect(classes).toContain('bg-white')
-      expect(classes).toContain('border-ink-300')
+      // Stroke inside the box, as the kit draws it (owner 29.09, step 8
+      // measured +3 px per card with a CSS border).
+      expect(classes).toContain('ring-inset')
+      expect(classes).toContain('ring-ink-300')
+      expect(classes.split(" ")).not.toContain("border")
       expect(classes).toContain('rounded-2xl')
     })
 
@@ -99,9 +103,9 @@ describe('kit section card — Figma 3761:2273', () => {
   describe('highlighted is ours, not the kit’s', () => {
     it('swaps the rim for the amber one review has always drawn', () => {
       const classes = resolveUiSectionCardClasses({ highlighted: true })
-      expect(classes).toContain('border-amber-400')
-      expect(classes).toContain('ring-2')
-      expect(classes).toContain('ring-amber-200')
+      expect(classes).toContain('ring-amber-400')
+      expect(classes).toContain('outline-2')
+      expect(classes).toContain('outline-amber-200')
     })
 
     it('does not leave the kit border behind it', () => {
@@ -109,8 +113,8 @@ describe('kit section card — Figma 3761:2273', () => {
       // property order, not by the order they are written — so exactly one of
       // them may ever be emitted. That is the whole reason this is a function.
       const classes = resolveUiSectionCardClasses({ highlighted: true })
-      expect(classes).not.toContain('border-ink-300')
-      expect(UI_SECTION_CARD_HIGHLIGHTED_CLASS).not.toContain('border-ink-300')
+      expect(classes).not.toContain('ring-ink-300')
+      expect(UI_SECTION_CARD_HIGHLIGHTED_CLASS).not.toContain('ring-ink-300')
     })
   })
 

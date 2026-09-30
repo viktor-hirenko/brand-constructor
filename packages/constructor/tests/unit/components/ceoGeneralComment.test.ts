@@ -18,7 +18,7 @@ import { computeTextareaAutosize } from '@/components/ui/uiField'
  * embed, where the root font is ~13 and a line is ~19.5 — the mistake
  * `UiTextarea` was written to avoid.
  *
- * **Her own drawn CEO screen `5387:74910` puts this Input at 96** — the kit's
+ * **Owner 30.09 chose the drawing: 96.** Her drawn CEO screen puts this Input at 96 — the kit's
  * floor, 128 counting the Title above it. 112 is what her written remark asks
  * for, and that is the number implemented; the divergence is recorded in
  * `docs/design-audit/dp-15450-bugs.md`. A session that later moves this to 96
@@ -32,21 +32,16 @@ const read = (rel: string) => readFileSync(resolve(SRC, rel), 'utf8')
 const block = read('components/constructor/fields/SectionCommentBlock.vue')
 const uiField = read('components/ui/uiField.ts')
 
-describe('the general CEO comment opens at 112, not at 168', () => {
+describe('the general CEO comment opens at the drawn 96, not at 112 or 168', () => {
   it('starts at three rows of content, not six', () => {
     expect(block).toContain('const CEO_GENERAL_COMMENT_MIN_ROWS = 3')
     expect(block).not.toContain('const CEO_GENERAL_COMMENT_MIN_ROWS = 6')
   })
 
-  it('and the box itself cannot go under 7rem = 112', () => {
-    expect(block).toContain("const CEO_GENERAL_COMMENT_MIN_HEIGHT_CLASS = 'min-h-28!'")
-    // The `!` matters: the Area recipe already carries a min-height.
+  it('keeps the kit Area floor of 96 — no 112 override (owner 30.09, drawing `5387:79023`)', () => {
     expect(uiField).toContain('min-h-24')
-  })
-
-  it('the floor is applied to the general comment and to nothing else', () => {
-    // Section comments keep the kit's own box — she asked about one field.
-    expect(block).toContain('alwaysExpanded ? CEO_GENERAL_COMMENT_MIN_HEIGHT_CLASS')
+    expect(block).not.toContain('min-h-28')
+    expect(block).not.toContain('CEO_GENERAL_COMMENT_MIN_HEIGHT_CLASS')
   })
 })
 

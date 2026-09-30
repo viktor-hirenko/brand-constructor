@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import {
   UI_FOOTER_ACTIONS,
   UI_FOOTER_BUTTON,
@@ -8,6 +10,9 @@ import {
   type UiFooterLayout,
 } from '@/components/ui/uiFooter'
 import { EDIT_FLOW_CONTENT_INSET_CLASS } from '@/constants/editFlowLayout'
+
+const SRC = fileURLToPath(new URL('../../../../src/', import.meta.url))
+const read = (path: string): string => readFileSync(`${SRC}${path}`, 'utf8')
 
 /**
  * `UiFooter` class map — Figma `3984:7719` (bar) / `4463:9161` (stack) /
@@ -52,7 +57,11 @@ describe('kit bar — Figma 3984:7719', () => {
     // They were `block` and shared the column, so they grew with the panel —
     // exactly the scaling the kit gives up.
     expect(UI_FOOTER_BUTTON.bar).toBe('w-32')
-    expect(UI_FOOTER_BUTTON.stack).toBe('')
+    // The stack buttons take the column width, not `flex-1`: in a column
+    // `flex-1` means basis 0, which drops the kit `h-12` and lets the bordered
+    // «Повернути на доопрацювання» grow to 50 (`5387:83684` draws 48).
+    expect(UI_FOOTER_BUTTON.stack).toBe('w-full')
+    expect(read('components/ui/UiFooter.vue')).not.toContain(':block=')
   })
 
   it('keeps the inset equal to the edit-flow body inset — the rule spans the column, the buttons do not', () => {

@@ -18,7 +18,7 @@
  */
 import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
-import { getAssetUrl } from '@/composables/useApi'
+import UiAssetImage from '@/components/ui/UiAssetImage.vue'
 import {
   CONCEPT_CARD_BORDER_COLOR_SELECTED,
   CONCEPT_CARD_DIM_OVERLAY_COLOR,
@@ -108,13 +108,12 @@ function handleClick() {
   >
     <div class="concept-card__media absolute inset-0 bg-muted">
       <template v-if="concept">
-        <img
+        <UiAssetImage
           v-if="conceptImageUrl"
-          :src="getAssetUrl(conceptImageUrl)"
+          :src="conceptImageUrl"
           :alt="concept.name"
+          size="small"
           class="concept-card__image h-full w-full object-cover"
-          loading="lazy"
-          decoding="async"
         />
         <div
           v-else

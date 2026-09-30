@@ -183,8 +183,14 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
    * Applies CEO's suggested alternative for a single section to PO's stepData,
    * then persists via saveBrand().
    *
-   * `concept` — overwrites stepData.concept.selectedId and clears externalNaming
-   *   selectedIds (they belonged to the old concept and are now invalid).
+   * `concept` — overwrites stepData.concept.selectedId. The Author's External
+   *   Naming stays when the CEO also proposed External Naming — the drawn state
+   *   after this click (`1985:2589`, `1985:2188`) keeps «Вибір замовника» next
+   *   to «Вибір CEO» with «Застосувати варіант CEO», and the section keeps
+   *   blocking «На погодження CEO» until the Author applies or edits it. It is
+   *   cleared only when the CEO proposed a concept alone: then nothing else
+   *   would make the Author pick names for the new concept. Before 30.09 it was
+   *   always cleared, silently. See `shouldClearExternalOnConceptApply`.
    * `externalNaming` — overwrites stepData.externalNaming.selectedIds.
    *   ⚠️  Caller must first check hasConceptMismatch: if CEO also suggests a
    *   different concept that hasn't been applied yet, show the modal instead of
@@ -204,9 +210,11 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
         if (!ceoConcept) return false
         stepData.value.concept.selectedId = ceoConcept
         stepData.value.concept.newConceptBrief = null
-        // External namings belong to the old concept — clear them.
-        stepData.value.externalNaming.selectedIds = []
-        stepData.value.externalNaming.newNamingBrief = null
+        if (shouldClearExternalOnConceptApply(readSelectionAsArray(sel?.externalNaming))) {
+          // CEO changed the concept only: the old names cannot stay unnoticed.
+          stepData.value.externalNaming.selectedIds = []
+          stepData.value.externalNaming.newNamingBrief = null
+        }
       } else if (section === 'externalNaming') {
         const ceoExt = readSelectionAsArray(sel?.externalNaming)
         if (ceoExt.length === 0) return false
@@ -448,3 +456,12 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
 }
 
 export type UseSupervisorReviewReturn = ReturnType<typeof useSupervisorReview>
+
+/**
+ * «Застосувати варіант CEO» in Concept: clear the Author's External Naming only
+ * when the CEO proposed no External Naming of their own. With a CEO proposal the
+ * section stays «Потрібно обрати варіант» and blocks submit by itself.
+ */
+export function shouldClearExternalOnConceptApply(ceoExternalIds: string[]): boolean {
+  return ceoExternalIds.length === 0
+}

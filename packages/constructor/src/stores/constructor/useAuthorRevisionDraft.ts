@@ -41,6 +41,14 @@ interface UseAuthorRevisionDraftOptions {
 export interface AuthorRevisionDraft {
   baselineConceptId: string | null
   baselineExternalIds: string[]
+  /**
+   * True once `baselineExternalIds` was really captured — i.e. «Далі» with a
+   * different concept was pressed and the external picks may be cleared from
+   * here on. Without it an empty `baselineExternalIds` could not be told apart
+   * from «never captured», and «Скасувати» straight from the concept screen
+   * wrote that empty list over the Author's names (owner 30.09).
+   */
+  baselineExternalCaptured: boolean
   pendingConceptId: string | null
   /** `null` = nothing has been staged yet (distinct from an empty array). */
   pendingExternalIds: string[] | null
@@ -89,6 +97,7 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
   const authorRevisionDraft = ref<AuthorRevisionDraft>({
     baselineConceptId: null,
     baselineExternalIds: [],
+    baselineExternalCaptured: false,
     pendingConceptId: null,
     pendingExternalIds: null,
     resolvedConflictSections: [],
@@ -105,6 +114,7 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
 
   function captureAuthorRevisionBaselineExternal(ids: string[]) {
     authorRevisionDraft.value.baselineExternalIds = [...ids]
+    authorRevisionDraft.value.baselineExternalCaptured = true
   }
 
   function setAuthorRevisionPendingConcept(id: string) {
@@ -215,6 +225,11 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
 
         const restoredDraft = {
           ...envelope.draft.chainedDraft,
+          // Envelopes written before the flag existed: a non-empty baseline can
+          // only have come from a capture.
+          baselineExternalCaptured:
+            envelope.draft.chainedDraft.baselineExternalCaptured ??
+            envelope.draft.chainedDraft.baselineExternalIds.length > 0,
           resolvedConflictSections: envelope.draft.resolvedConflictSections ?? [],
         }
 
@@ -265,6 +280,7 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
     authorRevisionDraft.value = {
       baselineConceptId: null,
       baselineExternalIds: [],
+      baselineExternalCaptured: false,
       pendingConceptId: null,
       pendingExternalIds: null,
       // Preserve resolved markers — cleared only on full reset (resetSlice).
@@ -279,6 +295,7 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
     authorRevisionDraft.value = {
       baselineConceptId: null,
       baselineExternalIds: [],
+      baselineExternalCaptured: false,
       pendingConceptId: null,
       pendingExternalIds: null,
       resolvedConflictSections: [],
