@@ -37,6 +37,9 @@ crons = ["0 6 * * *"] # Daily domain availability check at 6:00 AM UTC
 [env.production.vars]
 ENVIRONMENT = "production"
 CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev"
+# Brief links in Slack and Jira open the brief inside the Admin
+# (`/workspace/brand/<id>`); CONSTRUCTOR_URL is the stale standalone wizard.
+ADMIN_URL = "https://brand-constructor.pages.dev"
 CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-app.pages.dev"
 
 GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com"

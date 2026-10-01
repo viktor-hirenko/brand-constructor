@@ -54,10 +54,34 @@ interface WaitingSinceResult {
   isApprox: boolean
 }
 
+/**
+ * The teams are fulfilling the brief's order: the `in_work` status, or — until
+ * migration 013 has run — the old encoding, `submitted` with an order.
+ */
+export function isBriefInWork(brand: BrandListItem): boolean {
+  if (brand.status === BRAND_BRIEF_STATUS.IN_WORK) return true
+  return brand.status === BRAND_BRIEF_STATUS.SUBMITTED && brandHasNewBriefsFromBrand(brand)
+}
+
+/** Status tabs of the Brands list. The CEO never gets «In Work» — those briefs are not hers yet. */
+export function brandStatusTabs(opts: { isCeo: boolean }): { key: string; label: string }[] {
+  return [
+    { key: 'all', label: 'All' },
+    { key: 'draft', label: 'Drafts' },
+    ...(opts.isCeo ? [] : [{ key: BRAND_BRIEF_STATUS.IN_WORK, label: 'In Work' }]),
+    { key: 'submitted', label: 'Submitted' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'needs_revision', label: 'Needs Revision' },
+  ]
+}
+
 export function getWaitingSince(brand: BrandListItem): WaitingSinceResult {
   switch (brand.status) {
     case BRAND_BRIEF_STATUS.DRAFT:
       return { iso: null, isApprox: false }
+    case BRAND_BRIEF_STATUS.IN_WORK:
+      if (brand.sentToWorkAt) return { iso: brand.sentToWorkAt, isApprox: false }
+      return { iso: brand.updatedAt, isApprox: true }
     case BRAND_BRIEF_STATUS.SUBMITTED:
       if (brand.submittedAt) return { iso: brand.submittedAt, isApprox: false }
       return { iso: brand.updatedAt, isApprox: true }
@@ -111,8 +135,9 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
         isApproxDate: false,
       }
 
+    case BRAND_BRIEF_STATUS.IN_WORK:
     case BRAND_BRIEF_STATUS.SUBMITTED: {
-      if (brandHasNewBriefsFromBrand(brand)) {
+      if (isBriefInWork(brand)) {
         const waitingLine = formatWaitingLine(since, { showRelative: true })
         const days = since.iso ? daysInStatus(since.iso) : 0
         return {

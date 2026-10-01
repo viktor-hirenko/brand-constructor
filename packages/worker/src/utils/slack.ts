@@ -19,18 +19,37 @@ interface SlackBlock {
   elements?: SlackBlockButton[]
 }
 
-interface SlackMessage {
+export interface SlackMessage {
   channel: string
   text: string
   blocks?: SlackBlock[]
+  /** Posts the message as a reply in the thread of this message `ts`. */
+  thread_ts?: string
 }
 
 interface SlackResponse {
   ok: boolean
   error?: string
+  ts?: string
+  channel?: string
 }
 
-export async function sendSlackMessage(token: string, message: SlackMessage): Promise<boolean> {
+/**
+ * Outcome of one `chat.postMessage`. `ts` + `channel` identify the posted
+ * message (the order message in bc-strategy is answered in its thread later);
+ * `error` is Slack's code or the network failure, kept for the History event.
+ */
+export interface SlackSendResult {
+  ok: boolean
+  ts: string | null
+  channel: string
+  error: string | null
+}
+
+export async function sendSlackMessage(
+  token: string,
+  message: SlackMessage
+): Promise<SlackSendResult> {
   try {
     const res = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
@@ -44,10 +63,20 @@ export async function sendSlackMessage(token: string, message: SlackMessage): Pr
     if (!data.ok) {
       console.error(`Slack API error [${message.channel}]:`, data.error)
     }
-    return data.ok
+    return {
+      ok: data.ok,
+      ts: data.ts ?? null,
+      channel: data.channel ?? message.channel,
+      error: data.ok ? null : (data.error ?? 'unknown_error'),
+    }
   } catch (err) {
     console.error(`Slack fetch error [${message.channel}]:`, err)
-    return false
+    return {
+      ok: false,
+      ts: null,
+      channel: message.channel,
+      error: err instanceof Error ? err.message : String(err),
+    }
   }
 }
 
@@ -74,7 +103,8 @@ export interface BrandNotificationData {
   partnerLanding: boolean
   delegateToDesigners: boolean
   developmentDeadline: string | null
-  constructorUrl: string
+  /** Admin origin; brief buttons open `/workspace/brand/<id>` there (`brandBriefUrl`). */
+  adminUrl: string
 
   brandBasicsComment: string | null
   conceptComment: string | null
@@ -269,22 +299,77 @@ function jiraInitiativeFragment(data: BrandNotificationData): SectionOrSkip[] {
   ]
 }
 
+/**
+ * The brief inside the Admin. The old standalone wizard (`CONSTRUCTOR_URL`) is
+ * a stale deploy (STATE OPEN-16) and its links opened an outdated site (H-12).
+ */
+export function brandBriefUrl(adminUrl: string, brandId: string): string {
+  return `${adminUrl.replace(/\/+$/, '')}/workspace/brand/${brandId}`
+}
+
+/** Slack refuses a section whose text is over 3000 characters, and a message over 50 blocks. */
+export const SLACK_SECTION_TEXT_LIMIT = 3000
+export const SLACK_MAX_BLOCKS = 50
+export const SLACK_TRUNCATED_NOTE = '… повний текст у брифі'
+
+function truncateLine(line: string, limit: number): string {
+  if (line.length <= limit) return line
+  return `${line.slice(0, limit - SLACK_TRUNCATED_NOTE.length - 1).trimEnd()} ${SLACK_TRUNCATED_NOTE}`
+}
+
+/**
+ * Packs rendered lines into section texts that each fit Slack's limit (H-17:
+ * a 5000-character comment made the whole message bounce, and nobody saw it).
+ * Lines are never split across sections; a single over-long line is cut with
+ * a pointer to the brief. Past `maxSections`, the rest is replaced by the same
+ * pointer.
+ */
+export function packSectionTexts(
+  lines: string[],
+  limit = SLACK_SECTION_TEXT_LIMIT,
+  maxSections = SLACK_MAX_BLOCKS - 1
+): string[] {
+  const sections: string[] = []
+  let current = ''
+  for (const raw of lines) {
+    const line = truncateLine(raw, limit)
+    const next = current ? `${current}\n${line}` : line
+    if (next.length <= limit) {
+      current = next
+      continue
+    }
+    sections.push(current)
+    current = line
+  }
+  if (current) sections.push(current)
+  if (sections.length > maxSections) {
+    return [...sections.slice(0, maxSections - 1), SLACK_TRUNCATED_NOTE]
+  }
+  return sections
+}
+
+interface BuildMessageOpts {
+  /** False hides «Відкрити бриф» — for channels whose readers cannot open the brief yet. */
+  briefButton?: boolean
+}
+
 function buildMessage(
   channel: string,
   fallbackText: string,
   sections: SectionOrSkip[],
-  data: BrandNotificationData
+  data: BrandNotificationData,
+  opts: BuildMessageOpts = {}
 ): SlackMessage {
-  const text = renderSections(sections).join('\n')
-  const linkUrl = `${data.constructorUrl}/constructor/brand/${data.brandId}`
-  const elements: SlackBlockButton[] = [
-    {
+  const texts = packSectionTexts(renderSections(sections))
+  const elements: SlackBlockButton[] = []
+  if (opts.briefButton !== false) {
+    elements.push({
       type: 'button',
       text: { type: 'plain_text', text: 'Відкрити бриф' },
-      url: linkUrl,
+      url: brandBriefUrl(data.adminUrl, data.brandId),
       action_id: 'open_brand_brief',
-    },
-  ]
+    })
+  }
   if (data.jiraInitiativeUrl && data.jiraInitiativeKey) {
     elements.push({
       type: 'button',
@@ -293,17 +378,10 @@ function buildMessage(
       action_id: 'open_jira_initiative',
     })
   }
-  return {
-    channel,
-    text: fallbackText,
-    blocks: [
-      { type: 'section', text: { type: 'mrkdwn', text } },
-      {
-        type: 'actions',
-        elements,
-      },
-    ],
-  }
+  const blocks: SlackBlock[] = texts.map(text => ({ type: 'section', text: { type: 'mrkdwn', text } }))
+  // An `actions` block with no buttons is rejected by Slack.
+  if (elements.length > 0) blocks.push({ type: 'actions', elements })
+  return { channel, text: fallbackText, blocks }
 }
 
 function parseJson<T>(raw: string | null): T | null {
@@ -730,9 +808,16 @@ export function buildNewBriefsApprovalMessage(
   const conceptBrief = parseJson<Record<string, unknown>>(brand.new_concept_brief)
   const namingBrief = parseJson<Record<string, unknown>>(brand.new_naming_brief)
 
+  const stepData = parseJson<Record<string, unknown>>(brand.step_data)
+  const internalFeedback = (stepData?.internalNaming as Record<string, unknown> | undefined)
+    ?.newNamingFeedback
+
   const orderItems: string[] = []
   if (conceptBrief) orderItems.push('новий концепт')
   if (namingBrief) orderItems.push('новий external naming')
+  if (typeof internalFeedback === 'string' && internalFeedback.trim()) {
+    orderItems.push('новий internal naming')
+  }
 
   return buildMessage(
     channel,
@@ -744,7 +829,9 @@ export function buildNewBriefsApprovalMessage(
       field('Дата запуску', data.launchDate),
       field('Нові замовлення', orderItems.join(', ')),
       spacer(),
-      italic('Бриф містить нові замовлення. CEO-ревью не потрібне.'),
+      italic(
+        'Бриф містить нові замовлення. На погодження CEO — після того, як замовник обере готове з бібліотеки.'
+      ),
       ...jiraInitiativeFragment(data),
     ],
     data
@@ -795,7 +882,10 @@ export function buildNewBriefsPrMessage(
       italic('Бриф містить нові замовлення (не з бібліотеки).'),
       ...jiraInitiativeFragment(data),
     ],
-    data
+    data,
+    // PR and Design open only approved briefs; everything they need now is
+    // in the text (v2-prd:381-385). The button returns with «затверджено».
+    { briefButton: false }
   )
 }
 
@@ -816,7 +906,10 @@ export function buildNewBriefsDesignMessage(
       italic('Бриф містить нові замовлення (не з бібліотеки).'),
       ...jiraInitiativeFragment(data),
     ],
-    data
+    data,
+    // PR and Design open only approved briefs; everything they need now is
+    // in the text (v2-prd:381-385). The button returns with «затверджено».
+    { briefButton: false }
   )
 }
 

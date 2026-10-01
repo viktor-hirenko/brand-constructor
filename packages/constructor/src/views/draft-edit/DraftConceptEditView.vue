@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
+import { isBriefOrderLocked } from '@/utils/briefOrderLock'
 import { useApiList } from '@/composables/useApi'
 import type {
   Concept,
@@ -38,6 +39,7 @@ import { needsExternalNamingReselect } from '@/utils/draftConceptCascade'
  * returns to the review.
  */
 const store = useConstructorStore()
+const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
 const route = useRoute()
 const router = useRouter()
 
@@ -296,8 +298,9 @@ async function goDali() {
           create-label="Замовити новий концепт"
           created-label="Бриф концепту створено"
           :is-created="isCreatingNew"
+          :locked="orderLocked"
           @create="handleCreateBrief"
-          @view="store.openBriefPreview('concept')"
+          @view="store.openBriefPreview('concept', { allowEdit: !orderLocked })"
           @edit="showNewModal = true"
           @delete="showDeleteConfirm = true"
         />

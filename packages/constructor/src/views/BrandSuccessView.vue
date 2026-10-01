@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { brandHasNewBriefs } from '@brand-constructor/shared'
 import { useConstructorStore } from '@/stores/constructor'
 import { useAuthStore } from '@/stores/auth'
 import { useJiraInitiativePoll } from '@/composables/useJiraInitiativePoll'
@@ -29,20 +30,23 @@ const authStore = useAuthStore()
 
 const brandDisplayName = computed(() => store.brandInternalName || 'New Brand')
 
-const hasNewBriefs = computed(() => {
-  const sd = store.stepData
-  return (
-    sd?.concept?.newConceptBrief != null ||
-    sd?.externalNaming?.newNamingBrief != null ||
-    sd?.internalNaming?.newNamingFeedback != null
-  )
-})
+// Same rule as the server and the review screen (an empty Internal order is no order).
+const hasNewBriefs = computed(() =>
+  brandHasNewBriefs({
+    newConceptBrief: store.stepData?.concept?.newConceptBrief ?? null,
+    newNamingBrief: store.stepData?.externalNaming?.newNamingBrief ?? null,
+    stepData: store.stepData,
+  })
+)
 
-const shouldPollJira = computed(
+/** The brief went to the teams: `in_work`, or the pre-`in_work` encoding (`submitted` + order). */
+const sentToWork = computed(
   () =>
-    store.successType === 'approved' ||
+    store.successType === 'in_work' ||
     (store.successType === 'submitted' && hasNewBriefs.value)
 )
+
+const shouldPollJira = computed(() => store.successType === 'approved' || sentToWork.value)
 
 const { jiraKey, jiraUrl, isPending: isJiraPending } = useJiraInitiativePoll(
   brandId,
@@ -63,17 +67,30 @@ interface SuccessConfig {
 
 const successConfig = computed<SuccessConfig>(() => {
   switch (store.successType) {
+    // «В роботі» is purple everywhere — the wizard badge and the Admin list badge.
+    case 'in_work':
+      return {
+        title: 'Бриф відправлено в роботу!',
+        subtitle: 'Повідомлення надіслано командам у Slack. Команди отримали деталі брифу.',
+        iconBg: 'bg-purple-bg',
+        iconColor: 'text-purple-content',
+        dateLabel: 'Дата відправки',
+        showStatus: true,
+        statusLabel: 'В роботі',
+        statusColor: 'text-purple-content',
+        showCreateNew: true,
+      }
     case 'submitted':
       return {
-        title: hasNewBriefs.value ? 'Бриф відправлено в роботу!' : 'Бриф відправлено на розгляд!',
-        subtitle: hasNewBriefs.value
+        title: sentToWork.value ? 'Бриф відправлено в роботу!' : 'Бриф відправлено на розгляд!',
+        subtitle: sentToWork.value
           ? 'Повідомлення надіслано командам у Slack. Команди отримали деталі брифу.'
           : 'CEO отримає повідомлення у Slack та зможе переглянути бриф.',
         iconBg: 'bg-blue-100',
         iconColor: 'text-blue-600',
         dateLabel: 'Дата відправки',
         showStatus: true,
-        statusLabel: hasNewBriefs.value ? 'В роботі' : 'На розгляді',
+        statusLabel: sentToWork.value ? 'В роботі' : 'На розгляді',
         statusColor: 'text-blue-600',
         showCreateNew: true,
       }
@@ -156,7 +173,7 @@ function handleBackToBrands() {
           :class="successConfig.iconBg"
         >
           <SendIcon
-            v-if="store.successType === 'submitted'"
+            v-if="store.successType === 'submitted' || store.successType === 'in_work'"
             class="size-8"
             :class="successConfig.iconColor"
           />
@@ -210,6 +227,7 @@ function handleBackToBrands() {
           <UiButton
             v-if="
               store.brandId &&
+              store.successType !== 'in_work' &&
               store.successType !== 'submitted' &&
               store.successType !== 'needs_revision' &&
               store.successType !== 'approved'

@@ -22,7 +22,7 @@ import {
 export async function collectBrandNotificationData(
   db: D1Database,
   brand: BrandRow,
-  constructorUrl: string,
+  adminUrl: string,
   ceoSelectionsOverride?: Record<string, string | string[]>
 ): Promise<BrandNotificationData> {
   const ceoSel: Record<string, string | string[]> =
@@ -163,7 +163,7 @@ export async function collectBrandNotificationData(
     partnerLanding: Boolean(brand.partner_landing),
     delegateToDesigners: Boolean(brand.delegate_to_designers),
     developmentDeadline: brand.development_deadline || null,
-    constructorUrl,
+    adminUrl,
 
     brandBasicsComment,
     conceptComment: brand.concept_comment || null,

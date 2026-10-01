@@ -4,6 +4,8 @@
  */
 export const BRAND_WORKFLOW_EVENT_TYPES = {
   CREATED: 'created',
+  /** The author sent a brief with an order to the teams (`→ in_work`). */
+  SENT_TO_WORK: 'sent_to_work',
   SUBMITTED: 'submitted',
   CEO_FEEDBACK: 'ceo_feedback',
   APPROVED: 'approved',
@@ -11,6 +13,8 @@ export const BRAND_WORKFLOW_EVENT_TYPES = {
   PO_COMMENT_RESOLVED: 'po_comment_resolved',
   /** Audit-only: written on resubmit, hidden in admin timeline UI. */
   RESUBMIT_CLEARED_CEO: 'resubmit_cleared_ceo',
+  /** A Slack message of a status change was not delivered; meta names the channel. */
+  SLACK_FAILED: 'slack_failed',
 } as const
 
 export type BrandWorkflowEventType =
@@ -19,12 +23,14 @@ export type BrandWorkflowEventType =
 /** Admin History modal — human-readable event titles. */
 export const BRAND_WORKFLOW_EVENT_LABELS: Record<BrandWorkflowEventType, string> = {
   [BRAND_WORKFLOW_EVENT_TYPES.CREATED]: 'Created',
+  [BRAND_WORKFLOW_EVENT_TYPES.SENT_TO_WORK]: 'Sent to teams (in work)',
   [BRAND_WORKFLOW_EVENT_TYPES.SUBMITTED]: 'Submitted for review',
   [BRAND_WORKFLOW_EVENT_TYPES.CEO_FEEDBACK]: 'Sent back for revision',
   [BRAND_WORKFLOW_EVENT_TYPES.APPROVED]: 'Approved',
   [BRAND_WORKFLOW_EVENT_TYPES.CEO_SELECTION_UPDATE]: 'CEO updated alternatives',
   [BRAND_WORKFLOW_EVENT_TYPES.PO_COMMENT_RESOLVED]: 'PO comment status',
   [BRAND_WORKFLOW_EVENT_TYPES.RESUBMIT_CLEARED_CEO]: 'Resubmitted (CEO feedback cleared)',
+  [BRAND_WORKFLOW_EVENT_TYPES.SLACK_FAILED]: 'Slack message not delivered',
 }
 
 /** Brief section keys used in CEO comments, PO comments, and workflow meta. */

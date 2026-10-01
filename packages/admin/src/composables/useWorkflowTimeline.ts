@@ -36,12 +36,28 @@ export interface SectionBlock {
 
 const EVENT_TONE: Record<string, string> = {
   [EVT.CREATED]: 'tone--gray',
+  [EVT.SENT_TO_WORK]: 'tone--indigo',
   [EVT.SUBMITTED]: 'tone--blue',
   [EVT.CEO_FEEDBACK]: 'tone--amber',
   [EVT.APPROVED]: 'tone--green',
   [EVT.CEO_SELECTION_UPDATE]: 'tone--indigo',
   [EVT.PO_COMMENT_RESOLVED]: 'tone--gray',
   [EVT.RESUBMIT_CLEARED_CEO]: 'tone--blue',
+  [EVT.SLACK_FAILED]: 'tone--amber',
+}
+
+const SLACK_CHANNEL_LABELS: Record<string, string> = {
+  approvals: 'bc-approvals',
+  strategy: 'bc-strategy',
+  pr: 'bc-pr',
+  design: 'bc-design',
+}
+
+/** «Slack message not delivered — bc-strategy (channel_not_found)». */
+export function slackFailedTitle(base: string, meta: Record<string, unknown>): string {
+  const kind = typeof meta.kind === 'string' ? (SLACK_CHANNEL_LABELS[meta.kind] ?? meta.kind) : null
+  const error = typeof meta.error === 'string' && meta.error ? ` (${meta.error})` : ''
+  return kind ? `${base} — ${kind}${error}` : `${base}${error}`
 }
 
 const SUBMITTED_SELECTION_FIELDS: { field: string; label: string }[] = [
@@ -122,6 +138,7 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
     if (event.eventType === EVT.SUBMITTED && submitted) {
       return `${base} (#${submitted.submitCount})`
     }
+    if (event.eventType === EVT.SLACK_FAILED) return slackFailedTitle(base, event.meta)
     return base
   }
 
@@ -324,7 +341,12 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
   }
 
   function isCompactEvent(event: BrandWorkflowEvent): boolean {
-    return event.eventType === EVT.CREATED || event.eventType === EVT.RESUBMIT_CLEARED_CEO
+    return (
+      event.eventType === EVT.CREATED ||
+      event.eventType === EVT.RESUBMIT_CLEARED_CEO ||
+      event.eventType === EVT.SENT_TO_WORK ||
+      event.eventType === EVT.SLACK_FAILED
+    )
   }
 
   function ceoGroupTitle(count: number): string {

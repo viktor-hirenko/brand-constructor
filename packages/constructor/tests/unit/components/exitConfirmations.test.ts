@@ -86,6 +86,10 @@ describe('the exit question carries her copy, word for word', () => {
     expect(resolveBriefExitConfirmBody({ isCeo: false, brandStatus: 'needs_revision' })).toBe(
       BRIEF_EXIT_CONFIRM_BODY.review,
     )
+    // a brief «В роботі» is no longer in the drafts list either
+    expect(resolveBriefExitConfirmBody({ isCeo: false, brandStatus: 'in_work' })).toBe(
+      BRIEF_EXIT_CONFIRM_BODY.review,
+    )
   })
 })
 

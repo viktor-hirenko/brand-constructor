@@ -172,6 +172,11 @@ export interface Brand {
   approvedBy?: string | null
   needsRevisionAt?: string | null
   needsRevisionBy?: string | null
+  /** When the author sent the brief with an order to the teams (`→ in_work`). */
+  sentToWorkAt?: string | null
+  /** When the team marked the order done (phase 2 of brief-orders). */
+  ordersReadyAt?: string | null
+  ordersReadyBy?: string | null
   jiraInitiativeKey?: string | null
   jiraInitiativeUrl?: string | null
   jiraInitiativeCreatedAt?: string | null

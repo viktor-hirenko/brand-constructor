@@ -25,6 +25,8 @@ interface AuthorActionsFooterProps {
    * Used in returned-from-CEO view when attention counter > 0.
    */
   submitDisabled?: boolean
+  /** One line under the submit button saying why it is disabled (brief «В роботі»). */
+  submitHint?: string | null
   /**
    * Whether to render the primary "submit" button at all.
    * Defaults to true to preserve existing PO flows. Pass false on the
@@ -47,6 +49,7 @@ withDefaults(defineProps<AuthorActionsFooterProps>(), {
   loading: false,
   submitLabel: 'На погодження CEO',
   submitDisabled: false,
+  submitHint: null,
   showSubmit: true,
   showBack: true,
   showShare: false,
@@ -80,6 +83,13 @@ const emit = defineEmits<{
     >
       {{ submitLabel }}
     </UiButton>
+
+    <p
+      v-if="showSubmit && submitHint"
+      class="po-actions-footer__hint text-center text-sm/4 font-normal text-[#6f6f7d]"
+    >
+      {{ submitHint }}
+    </p>
 
     <UiButton
       v-if="showBack"

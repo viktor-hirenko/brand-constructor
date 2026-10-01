@@ -20,6 +20,7 @@ import {
   insertWorkflowEvent,
   WORKFLOW_EVENT_TYPES,
 } from '../utils/brand-workflow'
+import { BRIEF_CHANGED_MESSAGE, checkInWorkEdit } from '../utils/brief-checks'
 
 const crud = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -272,18 +273,22 @@ crud.put('/:id', async c => {
     )
   }
 
+  // `in_work`: the author swaps an order for what the teams made (H-01) —
+  // `checkInWorkEdit` keeps the order itself and light/dark untouchable.
   const EDITABLE_STATUSES: readonly BrandStatus[] = [
     BRAND_BRIEF_STATUS.DRAFT,
+    BRAND_BRIEF_STATUS.IN_WORK,
     BRAND_BRIEF_STATUS.NEEDS_REVISION,
   ] as const
+  // A tab opened before the brief was sent (or approved) is the usual way here:
+  // the author sees the plain «reload», not a status code (H-23).
   if (!EDITABLE_STATUSES.includes(existing.status as BrandStatus)) {
-    return c.json(
-      {
-        success: false,
-        error: `Brand in status "${existing.status}" cannot be edited via wizard. Use the dedicated CEO/PO/status endpoints.`,
-      },
-      409
-    )
+    return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+  }
+
+  if (existing.status === BRAND_BRIEF_STATUS.IN_WORK) {
+    const refusal = checkInWorkEdit(existing, body)
+    if (refusal) return c.json({ success: false, error: refusal }, 400)
   }
 
   const updates: string[] = []
@@ -303,11 +308,18 @@ crud.put('/:id', async c => {
 
   updates.push('updated_at = ?')
   values.push(new Date().toISOString())
-  values.push(id)
+  values.push(id, existing.status)
 
-  await c.env.DB.prepare(`UPDATE brands SET ${updates.join(', ')} WHERE id = ?`)
+  // Only if the status is still the one checked above: a save racing a status
+  // change (second tab, double click) must not write into a sent brief.
+  const result = await c.env.DB.prepare(
+    `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ?`
+  )
     .bind(...values)
     .run()
+  if (result.meta.changes !== 1) {
+    return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+  }
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
 

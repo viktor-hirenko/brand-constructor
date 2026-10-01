@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { isBriefOrderLocked } from '@/utils/briefOrderLock'
 import { useApiList } from '@/composables/useApi'
 import type { InternalNaming } from '@brand-constructor/shared/types'
 import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
@@ -12,6 +13,7 @@ import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButto
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
+const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
 const { data: namings, loading, error, fetchData } = useApiList<InternalNaming>(
   '/api/namings/internal',
 )
@@ -101,8 +103,9 @@ watch(
       create-label="Замовити нову назву"
       created-label="Бриф назви створено"
       :is-created="isCreatingNew"
+      :locked="orderLocked"
       @create="showNewModal = true"
-      @view="store.openBriefPreview('internalNaming')"
+      @view="store.openBriefPreview('internalNaming', { allowEdit: !orderLocked })"
       @edit="showNewModal = true"
       @delete="showDeleteConfirm = true"
     />

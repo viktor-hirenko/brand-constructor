@@ -132,7 +132,9 @@ describe('Final review 4 — ordering a new concept is offered here too', () => 
     for (const handler of ['@create=', '@view=', '@edit=', '@delete=']) {
       expect(tag).toContain(handler)
     }
-    expect(tag).toContain("store.openBriefPreview('concept')")
+    expect(tag).toContain("store.openBriefPreview('concept', { allowEdit: !orderLocked })")
+    // brief «В роботі»: no new order, the existing one is view-only
+    expect(tag).toContain(':locked="orderLocked"')
   })
 
   /**

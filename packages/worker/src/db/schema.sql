@@ -171,6 +171,11 @@ CREATE TABLE IF NOT EXISTS brands (
   approved_by TEXT,
   needs_revision_at TEXT,
   needs_revision_by TEXT,
+  sent_to_work_at TEXT,
+  orders_ready_at TEXT,
+  orders_ready_by TEXT,
+  orders_slack_channel TEXT,
+  orders_slack_ts TEXT,
   jira_initiative_key TEXT,
   jira_initiative_url TEXT,
   jira_initiative_created_at TEXT,
@@ -180,6 +185,7 @@ CREATE TABLE IF NOT EXISTS brands (
   FOREIGN KEY (submitted_by) REFERENCES users(id),
   FOREIGN KEY (approved_by) REFERENCES users(id),
   FOREIGN KEY (needs_revision_by) REFERENCES users(id),
+  FOREIGN KEY (orders_ready_by) REFERENCES users(id),
   FOREIGN KEY (concept_id) REFERENCES concepts(id) ON DELETE SET NULL,
   FOREIGN KEY (pr_package_id) REFERENCES pr_packages(id) ON DELETE SET NULL
 );

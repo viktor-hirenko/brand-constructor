@@ -10,14 +10,18 @@ import type {
 
 /**
  * Allowed status transitions enforced by `PATCH /:id/status`. `approved` is a
- * terminal state — no outgoing edges.
+ * terminal state — no outgoing edges. Mirrored by `BRAND_BRIEF_STATUS_TRANSITIONS`
+ * in shared (a test keeps the two equal).
+ *
+ * A brief with an order goes `draft → in_work`; the author then picks what the
+ * teams made and sends it `in_work → submitted`. The CEO never acts on `in_work`.
  */
 export const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
-  [BRAND_BRIEF_STATUS.DRAFT]: [BRAND_BRIEF_STATUS.SUBMITTED],
+  [BRAND_BRIEF_STATUS.DRAFT]: [BRAND_BRIEF_STATUS.IN_WORK, BRAND_BRIEF_STATUS.SUBMITTED],
+  [BRAND_BRIEF_STATUS.IN_WORK]: [BRAND_BRIEF_STATUS.SUBMITTED],
   [BRAND_BRIEF_STATUS.SUBMITTED]: [
     BRAND_BRIEF_STATUS.APPROVED,
     BRAND_BRIEF_STATUS.NEEDS_REVISION,
-    BRAND_BRIEF_STATUS.SUBMITTED,
   ],
   [BRAND_BRIEF_STATUS.NEEDS_REVISION]: [
     BRAND_BRIEF_STATUS.SUBMITTED,
@@ -52,8 +56,11 @@ const ceoCommentMetaSchema = z.object({
 
 const ceoCommentValueSchema = z.union([z.string().max(5000), ceoCommentMetaSchema])
 
+// Listed by hand: z.enum needs a literal tuple. A new status must be added here
+// too, or `PATCH /:id/status` rejects it as a validation error.
 const brandStatusValues = [
   BRAND_BRIEF_STATUS.DRAFT,
+  BRAND_BRIEF_STATUS.IN_WORK,
   BRAND_BRIEF_STATUS.SUBMITTED,
   BRAND_BRIEF_STATUS.NEEDS_REVISION,
   BRAND_BRIEF_STATUS.APPROVED,
@@ -251,6 +258,11 @@ export interface BrandRow {
   approved_by?: string | null
   needs_revision_at?: string | null
   needs_revision_by?: string | null
+  sent_to_work_at?: string | null
+  orders_ready_at?: string | null
+  orders_ready_by?: string | null
+  orders_slack_channel?: string | null
+  orders_slack_ts?: string | null
   jira_initiative_key?: string | null
   jira_initiative_url?: string | null
   jira_initiative_created_at?: string | null
@@ -303,6 +315,9 @@ export function rowToBrand(row: BrandRow): Brand {
     approvedBy: row.approved_by ?? null,
     needsRevisionAt: row.needs_revision_at ?? null,
     needsRevisionBy: row.needs_revision_by ?? null,
+    sentToWorkAt: row.sent_to_work_at ?? null,
+    ordersReadyAt: row.orders_ready_at ?? null,
+    ordersReadyBy: row.orders_ready_by ?? null,
     jiraInitiativeKey: row.jira_initiative_key ?? null,
     jiraInitiativeUrl: row.jira_initiative_url ?? null,
     jiraInitiativeCreatedAt: row.jira_initiative_created_at ?? null,

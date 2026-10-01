@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { isBriefOrderLocked } from '@/utils/briefOrderLock'
 import { useApiList } from '@/composables/useApi'
 import type { Concept, NewConceptBrief } from '@brand-constructor/shared/types'
 import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
@@ -13,6 +14,7 @@ import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButto
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
+const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
 const { data: concepts, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
 
 const isCreatingNew = ref(false)
@@ -190,8 +192,9 @@ function confirmDeleteBrief() {
         create-label="Замовити новий концепт"
         created-label="Бриф концепту створено"
         :is-created="isCreatingNew"
+        :locked="orderLocked"
         @create="handleCreateBrief"
-        @view="store.openBriefPreview('concept')"
+        @view="store.openBriefPreview('concept', { allowEdit: !orderLocked })"
         @edit="showNewModal = true"
         @delete="showDeleteConfirm = true"
       />

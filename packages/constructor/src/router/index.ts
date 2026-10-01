@@ -5,13 +5,13 @@ import {
   type RouteRecordRaw,
 } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { brandHasNewBriefs } from '@brand-constructor/shared'
 import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
 import type { Brand } from '@brand-constructor/shared/types'
 import { resolveColdStartNavigation } from '@/router/coldStartNavigation'
 import { isEmbedded } from '@/composables/useEmbedMode'
 import { postAuthRequired } from '@/composables/useEmbedBridge'
+import { canEnterDraftEdit } from '@/utils/inWorkReview'
 import { applyBrandToStore, buildStepDataFromBrand, clampWizardStep, wizardStepLocation } from '@/utils/brandHydration'
 
 function ceoReselectGuard(to: RouteLocationNormalized) {
@@ -45,23 +45,18 @@ function poEditGuard(to: RouteLocationNormalized) {
  * Guards the draft inline-edit cascade routes (`/draft-edit/*`). These are the
  * dedicated edit-flow screens the Author (PO) opens from the *draft* final
  * review to re-pick a concept and the dependent external naming. Only the
- * brand owner (non-CEO) editing a `draft` brief may enter.
+ * brand owner (non-CEO) editing a `draft` or `in_work` brief may enter.
+ *
+ * Decided by the brief's STATUS, not by whether it still carries an order: the
+ * author enters to swap the ordered concept for a library one, and the moment
+ * she picks it the order is gone from the store — the old order-based check
+ * then threw her out mid-edit with a false «sent to CEO» (H-01).
  */
 function draftEditGuard(to: RouteLocationNormalized) {
   const auth = useAuthStore()
   const store = useConstructorStore()
   const id = to.params.id as string
-  if (auth.isCeo) {
-    return { path: `/constructor/brand/${id}` }
-  }
-  const inWorkWithTeam =
-    store.brandStatus === 'submitted' &&
-    brandHasNewBriefs({
-      newConceptBrief: store.stepData?.concept?.newConceptBrief ?? null,
-      newNamingBrief: store.stepData?.externalNaming?.newNamingBrief ?? null,
-      stepData: store.stepData,
-    })
-  if (store.brandStatus !== 'draft' && !inWorkWithTeam) {
+  if (!canEnterDraftEdit({ isCeo: auth.isCeo, brandStatus: store.brandStatus })) {
     return { path: `/constructor/brand/${id}` }
   }
   return true

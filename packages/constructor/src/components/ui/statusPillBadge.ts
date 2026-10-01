@@ -23,6 +23,7 @@ import type { UiBadgeTone } from '@/components/ui/uiBadge'
 export type StatusPillLeading = 'none' | 'attention'
 
 export type StatusPillTone =
+  | 'brief-in-work'
   | 'brief-submitted'
   | 'brief-revision'
   | 'brief-approved'
@@ -35,6 +36,9 @@ export interface StatusPillToneMeta {
 
 export function resolveStatusPillTone(tone: StatusPillTone): StatusPillToneMeta {
   switch (tone) {
+    // «В роботі» has no drawn badge; purple keeps it apart from «На розгляді» (blue).
+    case 'brief-in-work':
+      return { tone: 'purple', leading: 'none' }
     case 'brief-submitted':
       return { tone: 'blue', leading: 'none' }
     case 'brief-revision':

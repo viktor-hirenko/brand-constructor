@@ -33,6 +33,7 @@ const CEO_SECTION_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Чернетка',
+  in_work: 'В роботі',
   submitted: 'На розгляді',
   needs_revision: 'Потребує доопрацювання',
   approved: 'Затверджено',

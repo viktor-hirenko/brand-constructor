@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
 import type { BrandListItem } from '@brand-constructor/shared'
 import {
+  brandStatusTabs,
   daysInStatus,
   formatRelativeUk,
   getBrandReviewDisplay,
   getWaitingSince,
+  isBriefInWork,
   waitingToneFromDays,
 } from '@/composables/useBrandReviewDisplay'
 
@@ -89,6 +91,28 @@ describe('getBrandReviewDisplay', () => {
     )
     expect(d.reviewLine).toBe('In work with team')
     expect(d.reviewTitle).toContain('Teams received')
+  })
+
+  it('in_work shows in work with team, waiting since it was sent to the teams', () => {
+    const brand = baseBrand({
+      status: BRAND_BRIEF_STATUS.IN_WORK,
+      sentToWorkAt: '2026-09-30T09:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+    })
+    const d = getBrandReviewDisplay(brand)
+    expect(d.reviewLine).toBe('In work with team')
+    expect(getWaitingSince(brand)).toEqual({ iso: '2026-09-30T09:00:00.000Z', isApprox: false })
+  })
+
+  it('in_work stays «in work» after the order was swapped for library picks', () => {
+    // the order is gone from the brief, but the CEO has not received it yet
+    expect(isBriefInWork(baseBrand({ status: BRAND_BRIEF_STATUS.IN_WORK }))).toBe(true)
+    expect(isBriefInWork(baseBrand({ status: BRAND_BRIEF_STATUS.SUBMITTED }))).toBe(false)
+  })
+
+  it('the CEO never gets the In Work tab; everyone else does', () => {
+    expect(brandStatusTabs({ isCeo: true }).map(t => t.key)).not.toContain('in_work')
+    expect(brandStatusTabs({ isCeo: false }).map(t => t.key)).toContain('in_work')
   })
 
   it('submitted shows awaiting approval with resubmit badge', () => {

@@ -3,7 +3,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { BrandListItem } from '@brand-constructor/shared'
 import {
-  brandHasNewBriefsFromBrand,
   BRAND_BRIEF_STATUS,
   BRAND_BRIEF_CREATOR_ROLES,
   USER_ROLES,
@@ -13,8 +12,10 @@ import { useApiList, apiDelete } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import {
+  brandStatusTabs,
   formatAuthorRole,
   getBrandReviewDisplay,
+  isBriefInWork,
 } from '@/composables/useBrandReviewDisplay'
 import { useAuthStore } from '@/stores/auth'
 import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
@@ -66,12 +67,10 @@ const { sortedData, sortField, sortDirection, toggleSort, setSort } = useTableSo
   brandsSortValue
 )
 
+// The CEO sees a brief only once it is sent for approval — never while the
+// teams are still fulfilling its order (`in_work`).
 const displayBrands = computed(() =>
-  sortedData.value.filter(brand => {
-    if (!isCeoUser.value) return true
-    if (brand.status !== BRAND_BRIEF_STATUS.SUBMITTED) return true
-    return !brandHasNewBriefsFromBrand(brand)
-  })
+  sortedData.value.filter(brand => !isCeoUser.value || !isBriefInWork(brand))
 )
 
 function applyDefaultSortForTab(tab: string) {
@@ -92,16 +91,11 @@ function handleSort(field: string) {
 
 const activeTab = ref<string>('all')
 
-const STATUS_TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'draft', label: 'Drafts' },
-  { key: 'submitted', label: 'Submitted' },
-  { key: 'approved', label: 'Approved' },
-  { key: 'needs_revision', label: 'Needs Revision' },
-]
+const statusTabs = computed(() => brandStatusTabs({ isCeo: isCeoUser.value }))
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 'badge--gray' },
+  in_work: { label: 'In Work', cls: 'badge--purple' },
   submitted: { label: 'Submitted', cls: 'badge--blue' },
   approved: { label: 'Approved', cls: 'badge--green' },
   needs_revision: { label: 'Needs Revision', cls: 'badge--amber' },
@@ -215,7 +209,7 @@ async function confirmDeleteBrand() {
 
     <div class="brands-view__tabs">
       <button
-        v-for="tab in STATUS_TABS"
+        v-for="tab in statusTabs"
         :key="tab.key"
         class="brands-view__tab"
         :class="{ 'brands-view__tab--active': activeTab === tab.key }"
@@ -712,6 +706,13 @@ async function confirmDeleteBrand() {
   &--amber {
     background-color: #fef3c7;
     color: #b45309;
+  }
+
+  // «In Work» has no drawn badge; purple keeps it apart from Submitted (blue).
+  // The kit's purple (wizard `--color-purple-bg/-content`), same as «В роботі» there.
+  &--purple {
+    background-color: #f2e2fc;
+    color: #8145b5;
   }
 }
 </style>

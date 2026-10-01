@@ -133,13 +133,16 @@ describe('kit status indicator — Figma 3761:1914', () => {
 
 describe('StatusPillBadge adapter keeps its vocabulary on kit paint', () => {
   const PILL_TONES: StatusPillTone[] = [
+    'brief-in-work',
     'brief-submitted',
     'brief-revision',
     'brief-approved',
     'section-attention',
   ]
 
-  it('maps all four brief tones onto kit tones', () => {
+  it('maps every brief tone onto kit tones', () => {
+    // «В роботі» has its own colour so it is never read as «На розгляді».
+    expect(resolveStatusPillTone('brief-in-work').tone).toBe('purple')
     expect(resolveStatusPillTone('brief-submitted').tone).toBe('blue')
     expect(resolveStatusPillTone('brief-revision').tone).toBe('amber')
     expect(resolveStatusPillTone('brief-approved').tone).toBe('green')

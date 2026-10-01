@@ -18,6 +18,24 @@ try {
   // a missing item is exactly the state we want, so swallow silently.
 }
 
+// After a release the old page asks for code chunks that no longer exist and
+// a screen opens blank. Vite reports it as `vite:preloadError`: reload once to
+// get the new build. The 10-second mark stops a loop if the chunk is really
+// missing from the new build too.
+window.addEventListener('vite:preloadError', event => {
+  const KEY = 'preload-error-reload-at';
+  let last = 0;
+  try {
+    last = Number(sessionStorage.getItem(KEY) ?? 0);
+    sessionStorage.setItem(KEY, String(Date.now()));
+  } catch {
+    // no sessionStorage: still reload once, the browser is in a broken state
+  }
+  if (Date.now() - last < 10_000) return;
+  event.preventDefault();
+  window.location.reload();
+});
+
 const app = createApp(App);
 
 app.use(createPinia());

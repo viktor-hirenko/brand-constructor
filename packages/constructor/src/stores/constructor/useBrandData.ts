@@ -22,6 +22,7 @@ import {
   writePreviewSlidesDraft,
 } from '@/domain/persistence/briefDraftStorage'
 import { normalizeWizardStepData } from '@/utils/brandHydration'
+import { successTypeFromStatus } from '@/utils/successType'
 
 const DRAFT_STORAGE_KEY = 'brand-constructor-draft'
 
@@ -111,13 +112,7 @@ export function useBrandData() {
    * "what just happened" label consumed by `BrandSuccessView`.
    * Read-only: mutations go through `setBrandStatus` only.
    */
-  const successType = computed<'saved' | 'submitted' | 'needs_revision' | 'approved'>(() => {
-    const s = brandStatus.value
-    if (s === 'submitted') return 'submitted'
-    if (s === 'needs_revision') return 'needs_revision'
-    if (s === 'approved') return 'approved'
-    return 'saved'
-  })
+  const successType = computed(() => successTypeFromStatus(brandStatus.value))
   const saveError = ref<string | null>(null)
 
   // ─── Wizard state ──────────────────────────────────────────────────────────

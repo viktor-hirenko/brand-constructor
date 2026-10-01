@@ -18,7 +18,7 @@ import {
 import type { Env } from '../../../src/types'
 
 const cloudId = '1cae3bd1-b0cd-4eb1-bfb6-0c11d5d77845'
-const constructorUrl = 'https://brand-constructor-app.pages.dev'
+const adminUrl = 'https://brand-constructor.pages.dev'
 
 const emptyContext: JiraBrandContext = {
   newConceptBrief: null,
@@ -40,7 +40,7 @@ const sampleData: BrandNotificationData = {
   partnerLanding: false,
   delegateToDesigners: false,
   developmentDeadline: '2026-08-01',
-  constructorUrl,
+  adminUrl,
   brandBasicsComment: null,
   conceptComment: null,
   externalNamingComment: null,
@@ -159,7 +159,7 @@ describe('jira utils', () => {
     it('includes library selections, CEO comments, components and brief URL', () => {
       const text = buildInitiativeDescriptionText(
         sampleData,
-        constructorUrl,
+        adminUrl,
         'ceo_approved',
         emptyContext
       )
@@ -170,7 +170,7 @@ describe('jira utils', () => {
       expect(text).toContain('Коментар CEO: CEO basics note')
       expect(text).not.toContain('Коментарі CEO')
       expect(text).toContain('PR, Design')
-      expect(text).toContain(`${constructorUrl}/constructor/brand/brand_test_001`)
+      expect(text).toContain(`${adminUrl}/workspace/brand/brand_test_001`)
     })
   })
 
@@ -191,7 +191,7 @@ describe('jira utils', () => {
 
       const text = buildInitiativeDescriptionText(
         sampleData,
-        constructorUrl,
+        adminUrl,
         'new_briefs',
         context
       )
@@ -211,7 +211,7 @@ describe('jira utils', () => {
     it('uses headings, bullet lists and link for brief URL', () => {
       const doc = buildInitiativeDescriptionAdf(
         sampleData,
-        constructorUrl,
+        adminUrl,
         'ceo_approved',
         emptyContext
       )
@@ -235,7 +235,7 @@ describe('jira utils', () => {
     it('builds summary and issuetype id 10018', () => {
       const payload = buildInitiativePayload(
         sampleData,
-        constructorUrl,
+        adminUrl,
         { projectKey: 'DHC', issueTypeId: '10018' },
         'ceo_approved',
         emptyContext
@@ -272,7 +272,7 @@ describe('jira utils', () => {
         config,
         buildInitiativePayload(
           sampleData,
-          constructorUrl,
+          adminUrl,
           { projectKey: 'DHC', issueTypeId: '10018' },
           'ceo_approved',
           emptyContext
@@ -305,7 +305,7 @@ describe('jira utils', () => {
         config,
         buildInitiativePayload(
           sampleData,
-          constructorUrl,
+          adminUrl,
           { projectKey: 'DHC', issueTypeId: '10018' },
           'ceo_approved',
           emptyContext

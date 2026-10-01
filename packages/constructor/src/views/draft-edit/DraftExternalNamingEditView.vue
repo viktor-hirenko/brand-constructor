@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
+import { isBriefOrderLocked } from '@/utils/briefOrderLock'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming, BrandExternalNamingData, NewNamingBrief } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
@@ -35,6 +36,7 @@ import UiAsyncState from '@/components/ui/UiAsyncState.vue'
  *  - «Зберегти» persists the new concept + external pair and returns to review.
  */
 const store = useConstructorStore()
+const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
 const route = useRoute()
 const router = useRouter()
 
@@ -199,8 +201,9 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
           create-label="Замовити нову назву"
           created-label="Бриф неймінгу створено"
           :is-created="isCreatingNew"
+          :locked="orderLocked"
           @create="showNewModal = true"
-          @view="store.openBriefPreview('externalNaming')"
+          @view="store.openBriefPreview('externalNaming', { allowEdit: !orderLocked })"
           @edit="showNewModal = true"
           @delete="showDeleteConfirm = true"
         />

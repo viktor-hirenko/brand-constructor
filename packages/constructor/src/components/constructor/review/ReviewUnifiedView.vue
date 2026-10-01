@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import {
+  authorSubmitTarget,
+  isInWorkReadyForCeo,
+  isSectionEditableInMode,
+} from '@/utils/inWorkReview'
 import type {
   Concept,
   ExternalNaming,
@@ -118,7 +123,7 @@ interface ReviewUnifiedViewProps {
 const props = defineProps<ReviewUnifiedViewProps>()
 
 const emit = defineEmits<{
-  'status-change': [newStatus: 'submitted' | 'approved' | 'needs_revision']
+  'status-change': [newStatus: 'in_work' | 'submitted' | 'approved' | 'needs_revision']
   back: [step: number]
   share: []
   pdf: []
@@ -278,15 +283,41 @@ const unifiedReviewSubtitle = computed(() =>
 )
 
 /**
- * `Редагувати` button is available in PO draft AND PO returned-from-CEO views,
- * but NOT in CEO finalize, PO submitted or approved read-only view.
+ * `Редагувати` is available in PO draft, PO returned-from-CEO and PO in-work
+ * views, never in CEO finalize, PO submitted or approved read-only view. In a
+ * brief «В роботі» the teams already have its data, so the author may only swap
+ * what was ordered — Concept, External and Internal Naming — for library picks.
  */
-const isAuthorEditable = computed(
+function sectionEditStep(sectionKey: string, step: number): number | undefined {
+  return isSectionEditableInMode(props.reviewMode, sectionKey, {
+    conceptOrdered: props.isNewConcept,
+  })
+    ? step
+    : undefined
+}
+
+/**
+ * «На погодження CEO» from a brief in work waits until nothing is on order and
+ * the brief is whole — the server refuses anything else (H-01, H-02).
+ */
+const inWorkNotReady = computed(
   () =>
-    props.reviewMode !== 'ceo' &&
-    props.reviewMode !== 'po-submitted' &&
-    props.reviewMode !== 'approved'
+    props.reviewMode === 'po-in-work' &&
+    !isInWorkReadyForCeo({
+      hasNewBrief: props.hasNewBrief,
+      hasConcept: !!props.selectedConcept,
+      externalCount: props.selectedExternalNamings.length,
+      hasInternal: !!props.selectedInternalNaming,
+    })
 )
+
+const authorSubmitLabel = computed(() => {
+  if (props.reviewMode === 'po-in-work' || props.isPoReturnedView) return 'На погодження CEO'
+  return props.hasNewBrief ? 'Відправити в роботу' : 'На погодження CEO'
+})
+
+/** A draft with an order goes to the teams (`in_work`); everything else to the CEO. */
+const submitTarget = computed(() => authorSubmitTarget(props.reviewMode, props.hasNewBrief))
 
 const externalNamingItems = computed(() =>
   props.selectedExternalNamings.map(n => ({
@@ -430,7 +461,7 @@ defineExpose({
         <div class="review-unified-view__sections space-y-4">
           <ReviewSection
             title="Brand Basics"
-            :edit-step="isAuthorEditable ? 1 : undefined"
+            :edit-step="sectionEditStep('basics', 1)"
             :has-unresolved="hasSectionUnresolvedComment('basics')"
             @edit="step => emitEditSection(step, 'basics')"
           >
@@ -473,7 +504,7 @@ defineExpose({
 
           <ReviewSection
             title="Concept"
-            :edit-step="isAuthorEditable ? 2 : undefined"
+            :edit-step="sectionEditStep('concept', 2)"
             :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('concept')"
             :needs-choice="sectionApplyFlags.conceptNeedsChoice"
@@ -504,7 +535,7 @@ defineExpose({
 
           <ReviewSection
             title="External Naming"
-            :edit-step="isAuthorEditable ? 3 : undefined"
+            :edit-step="sectionEditStep('externalNaming', 3)"
             :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('externalNaming')"
             :needs-choice="sectionApplyFlags.externalNamingNeedsChoice"
@@ -533,7 +564,7 @@ defineExpose({
 
           <ReviewSection
             title="Internal Naming"
-            :edit-step="isAuthorEditable ? 4 : undefined"
+            :edit-step="sectionEditStep('internalNaming', 4)"
             :change-choice="reviewMode === 'ceo' && !ceoFrozenView"
             :has-unresolved="hasSectionUnresolvedComment('internalNaming')"
             :needs-choice="sectionApplyFlags.internalNamingNeedsChoice"
@@ -562,7 +593,7 @@ defineExpose({
 
           <ReviewSection
             title="PR Package"
-            :edit-step="isAuthorEditable ? 5 : undefined"
+            :edit-step="sectionEditStep('marketingPackage', 5)"
             :has-unresolved="hasSectionUnresolvedComment('marketingPackage')"
             @edit="step => emitEditSection(step, 'marketingPackage')"
           >
@@ -582,7 +613,7 @@ defineExpose({
 
           <ReviewSection
             title="Deliverables"
-            :edit-step="isAuthorEditable ? 6 : undefined"
+            :edit-step="sectionEditStep('deliverables', 6)"
             :has-unresolved="hasSectionUnresolvedComment('deliverables')"
             @edit="step => emitEditSection(step, 'deliverables')"
           >
@@ -602,7 +633,7 @@ defineExpose({
 
           <ReviewSection
             title="Visual Components"
-            :edit-step="isAuthorEditable ? 7 : undefined"
+            :edit-step="sectionEditStep('visualComponents', 7)"
             :has-unresolved="hasSectionUnresolvedComment('visualComponents')"
             @edit="step => emitEditSection(step, 'visualComponents')"
           >
@@ -691,25 +722,16 @@ defineExpose({
         <AuthorActionsFooter
           v-else-if="!ceoFrozenView && reviewMode !== 'po-submitted'"
           :loading="statusActionLoading || isSaving"
-          :submit-label="
-            reviewMode === 'po-in-work'
-              ? hasNewBrief
-                ? 'Зберегти'
-                : 'На погодження CEO'
-              : isPoReturnedView
-                ? 'На погодження CEO'
-                : hasNewBrief
-                  ? 'Відправити в роботу'
-                  : 'На погодження CEO'
-          "
-          :submit-disabled="submitBlocked"
+          :submit-label="authorSubmitLabel"
+          :submit-disabled="submitBlocked || inWorkNotReady"
+          :submit-hint="inWorkNotReady ? 'Оберіть замовлене з бібліотеки' : null"
           :show-submit="reviewMode !== 'approved'"
           :show-back="!isPoReturnedView && reviewMode !== 'approved' && reviewMode !== 'po-in-work'"
           :show-share="showShareButton"
           :show-pdf="showPdfButton"
           :share-copied="shareSuccess"
           :pdf-loading="isPdfLoading"
-          @submit="emit('status-change', 'submitted')"
+          @submit="emit('status-change', submitTarget)"
           @back="emit('back', 7)"
           @share="emit('share')"
           @pdf="emit('pdf')"

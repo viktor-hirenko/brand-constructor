@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { isBriefOrderLocked } from '@/utils/briefOrderLock'
 import { useApiList } from '@/composables/useApi'
 import type { ExternalNaming, NewNamingBrief } from '@brand-constructor/shared/types'
 import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
@@ -13,6 +14,7 @@ import { isExternalNamingCommentRequired, getExternalNamingCommentHint } from '@
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 
 const store = useConstructorStore()
+const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
 const { data: namings, loading, error, fetchData } = useApiList<ExternalNaming>(
   '/api/namings/external',
 )
@@ -119,8 +121,9 @@ watch(
       create-label="Замовити нову назву"
       created-label="Бриф неймінгу створено"
       :is-created="isCreatingNew"
+      :locked="orderLocked"
       @create="showNewModal = true"
-      @view="store.openBriefPreview('externalNaming')"
+      @view="store.openBriefPreview('externalNaming', { allowEdit: !orderLocked })"
       @edit="showNewModal = true"
       @delete="showDeleteConfirm = true"
     />

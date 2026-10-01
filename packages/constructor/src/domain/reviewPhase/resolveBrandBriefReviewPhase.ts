@@ -47,19 +47,23 @@ export function resolveBrandBriefReviewPhase({
 
   if (status === 'approved') return BRAND_BRIEF_REVIEW_PHASE.APPROVED
 
-  if (isSupervisor && status === 'submitted' && hasNewBriefs) {
-    return BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
-  }
+  // «In work»: the `in_work` status, or — for the minutes between the site
+  // release and migration 013 — the old encoding, `submitted` with an order.
+  const inWork = status === 'in_work' || (status === 'submitted' && hasNewBriefs)
+
+  if (isSupervisor && inWork) return BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
 
   if (isSupervisor && (status === 'submitted' || status === 'needs_revision')) {
     return BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_REVIEW
   }
 
+  // A status this build does not know must not open as an editable draft for
+  // the CEO: show the «not ready yet» gate instead.
+  if (isSupervisor && status !== 'draft') return BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM
+
   if (status === 'needs_revision') return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_RETURNED
 
-  if (status === 'submitted' && hasNewBriefs) {
-    return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK
-  }
+  if (inWork) return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK
 
   if (status === 'submitted') return BRAND_BRIEF_REVIEW_PHASE.AUTHOR_SUBMITTED
 

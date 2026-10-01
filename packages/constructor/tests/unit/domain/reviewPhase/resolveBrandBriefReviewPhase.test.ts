@@ -77,6 +77,31 @@ describe('resolveBrandBriefReviewPhase', () => {
     ).toBe(BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK)
   })
 
+  it('in_work: the CEO gets the «still in work» gate, never the review (H-15)', () => {
+    for (const hasNewBriefs of [true, false]) {
+      expect(
+        resolveBrandBriefReviewPhase({ ...base, status: 'in_work', isSupervisor: true, hasNewBriefs })
+      ).toBe(BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM)
+    }
+  })
+
+  it('in_work: the author is in work even after the order was swapped for a library pick', () => {
+    for (const hasNewBriefs of [true, false]) {
+      expect(
+        resolveBrandBriefReviewPhase({ ...base, status: 'in_work', hasNewBriefs })
+      ).toBe(BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK)
+    }
+  })
+
+  it('a status this build does not know never opens as a draft for the CEO', () => {
+    expect(
+      resolveBrandBriefReviewPhase({ ...base, status: 'orders_ready', isSupervisor: true })
+    ).toBe(BRAND_BRIEF_REVIEW_PHASE.SUPERVISOR_AWAITING_TEAM)
+    expect(
+      resolveBrandBriefReviewPhase({ ...base, status: 'draft', isSupervisor: true })
+    ).toBe(BRAND_BRIEF_REVIEW_PHASE.AUTHOR_DRAFT)
+  })
+
   it('resolves author-returned for a needs_revision brief viewed by the author', () => {
     expect(
       resolveBrandBriefReviewPhase({ ...base, status: 'needs_revision' })

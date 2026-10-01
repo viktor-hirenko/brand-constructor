@@ -42,7 +42,7 @@ interface ReviewHeaderProps {
   /** Brand internal name (when known) or fallback "New Brand". */
   title: string
   /** Brand status — drives the badge/info block. */
-  status: 'submitted' | 'needs_revision' | 'approved' | string
+  status: 'in_work' | 'submitted' | 'needs_revision' | 'approved' | string
   /** Optional line under the title (e.g. PO final step instruction). */
   subtitle?: string
   /** When set, replaces status-derived info block (PO “Бриф готовий!”). */
@@ -56,6 +56,7 @@ const props = withDefaults(defineProps<ReviewHeaderProps>(), {
 
 const showStatusBadge = computed(
   () =>
+    props.status === 'in_work' ||
     props.status === 'submitted' ||
     props.status === 'needs_revision' ||
     props.status === 'approved'
@@ -69,6 +70,13 @@ interface InfoMeta {
 
 const info = computed<InfoMeta | null>(() => {
   switch (props.status) {
+    case 'in_work':
+      return {
+        title: 'Бриф у роботі',
+        description:
+          'Команди виконують замовлення. Бриф надійде на погодження, коли замовник обере готове з бібліотеки.',
+        iconVariant: 'warning' as const,
+      }
     case 'submitted':
       return {
         title: 'Бриф на розгляді',

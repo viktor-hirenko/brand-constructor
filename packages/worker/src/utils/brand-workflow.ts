@@ -66,6 +66,12 @@ export function appendWorkflowSnapshot(
   updates: string[],
   values: (string | number | null)[]
 ): void {
+  // `in_work` is not a submission: the CEO has not received anything, so
+  // `submit_count` stays — the brief's first «На погодження CEO» is still #1.
+  if (targetStatus === BRAND_BRIEF_STATUS.IN_WORK) {
+    updates.push('sent_to_work_at = ?')
+    values.push(now)
+  }
   if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
     updates.push('submitted_at = ?', 'submitted_by = ?', 'submit_count = ?')
     const nextCount = (existing.submit_count ?? 0) + 1
@@ -503,6 +509,22 @@ export function buildFeedbackSummaryLine(meta: Record<string, unknown>): string 
   return parts.length ? parts.join(' · ') : null
 }
 
+/** Which parts of the brief carry an order — `sent_to_work` event meta. */
+export function orderedSections(row: BrandRow): string[] {
+  const out: string[] = []
+  if (row.new_concept_brief != null) out.push('concept')
+  if (row.new_naming_brief != null) out.push('externalNaming')
+  try {
+    const stepData = row.step_data
+      ? (JSON.parse(row.step_data) as { internalNaming?: { newNamingFeedback?: string | null } })
+      : null
+    if (stepData?.internalNaming?.newNamingFeedback?.trim()) out.push('internalNaming')
+  } catch {
+    /* unreadable step_data carries no internal order */
+  }
+  return out
+}
+
 export async function recordStatusWorkflowEvents(
   db: D1Database,
   opts: {
@@ -517,6 +539,12 @@ export async function recordStatusWorkflowEvents(
 ): Promise<void> {
   const { brandId, userId, targetStatus, currentStatus, existing, ceoComments, ceoSelections } =
     opts
+
+  if (targetStatus === BRAND_BRIEF_STATUS.IN_WORK) {
+    await insertWorkflowEvent(db, brandId, WORKFLOW_EVENT_TYPES.SENT_TO_WORK, userId, {
+      orders: orderedSections(existing),
+    })
+  }
 
   if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
     const submitCount = (existing.submit_count ?? 0) + 1

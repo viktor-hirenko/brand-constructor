@@ -166,6 +166,7 @@ const showPdfButton = computed(() => {
   // No PDF button in returned-from-CEO view.
   if (isPoReturnedView.value) return false
   return (
+    brandStatus.value === 'in_work' ||
     brandStatus.value === 'submitted' ||
     brandStatus.value === 'needs_revision' ||
     brandStatus.value === 'approved'
@@ -354,20 +355,9 @@ async function handleShare() {
   }
 }
 
-async function handleStatusChange(newStatus: 'submitted' | 'approved' | 'needs_revision') {
-  if (
-    newStatus === 'submitted' &&
-    reviewPhase.value === BRAND_BRIEF_REVIEW_PHASE.AUTHOR_IN_WORK &&
-    hasNewBrief.value
-  ) {
-    statusActionError.value = null
-    const saved = await store.saveBrand()
-    if (!saved && store.saveError) {
-      statusActionError.value = store.saveError
-    }
-    return
-  }
+type BriefStatusTarget = 'in_work' | 'submitted' | 'approved' | 'needs_revision'
 
+async function handleStatusChange(newStatus: BriefStatusTarget) {
   if (newStatus === 'needs_revision') {
     const validation = comments.validateNeedsRevision()
     if (!validation.ok) {
@@ -413,10 +403,13 @@ async function handleApproveWarningReturn() {
   await handleStatusChange('needs_revision')
 }
 
-async function executeStatusChange(newStatus: 'submitted' | 'approved' | 'needs_revision') {
-  if (newStatus === 'submitted') {
+async function executeStatusChange(newStatus: BriefStatusTarget) {
+  if (newStatus === 'submitted' || newStatus === 'in_work') {
     const saved = await store.saveBrand()
-    if (!saved) return
+    if (!saved) {
+      statusActionError.value = store.saveError
+      return
+    }
   }
 
   statusActionLoading.value = true
@@ -455,14 +448,7 @@ async function executeStatusChange(newStatus: 'submitted' | 'approved' | 'needs_
       store.purgeSupervisorCommentsCache()
     }
 
-    if (
-      newStatus === 'needs_revision' ||
-      newStatus === 'approved' ||
-      newStatus === 'submitted'
-    ) {
-      router.push('/constructor/success')
-      return
-    }
+    router.push('/constructor/success')
   } catch (err) {
     statusActionError.value = err instanceof Error ? err.message : 'Помилка зміни статусу'
   } finally {

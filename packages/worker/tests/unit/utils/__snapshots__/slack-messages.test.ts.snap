@@ -1,0 +1,282 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`message texts (snapshot of every status message) > A1 approvals, sent to work 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Бриф відправлено в роботу: New Brand #7",
+  "text": ":rocket: Бриф відправлено в роботу: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Нові замовлення:* новий концепт, новий external naming, новий internal naming
+_Бриф містить нові замовлення. На погодження CEO — після того, як замовник обере готове з бібліотеки._
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > A2 strategy, the order 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Нове замовлення: New Brand #7",
+  "text": ":memo: Нове замовлення для *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*Режим:* dark
+*Концепт:* Sunrise
+*Коментар замовника:* concept c
+*--- Бриф нового концепту ---*
+*Нове ГЕО:* Так
+*Інфо про ГЕО:* AU
+*Що не підійшло:* dull
+*Доменні зони:* .com
+*Бюджет домена:* $100
+*Зовнішній неймінг:* Bubbleton, Sunny
+*Коментар замовника:* ext c
+*--- Бриф нового External Naming ---*
+*Що не підійшло:* long
+*Доменні зони:* .io
+*Внутрішній неймінг:* Int One
+*Коментар замовника:* int c
+*--- Бриф нового Internal Naming ---*
+*Що не підійшло:* short please
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > A3 pr, in work 1`] = `
+{
+  "buttons": [
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Новий бриф в роботу: New Brand #7",
+  "text": ":memo: Новий бриф відправлено в роботу: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*PR-пакет:* PR Basic
+*Строки впровадження:* Q3
+*Задіяні команди:* PR
+*Складові пакету:*
+Banner
+Landing
+*Що необхідно:* Fast
+*Коментар замовника:* pr c
+_Бриф містить нові замовлення (не з бібліотеки)._
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > A4 design, in work 1`] = `
+{
+  "buttons": [
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Новий бриф в роботу: New Brand #7",
+  "text": ":memo: Новий бриф відправлено в роботу: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*Режим:* dark
+*Legal Landing:* Так
+*Partner Landing:* Ні
+*Дедлайн розробки:* 2026-11-20
+*Коментар замовника:* deliv c
+*Делегувати дизайнерам:* Ні
+*Візуальні компоненти:*
+  • *Logo:* A
+*Коментар замовника:* comp c
+_Бриф містить нові замовлення (не з бібліотеки)._
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > B approvals, submitted 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Новий бриф на розгляд: New Brand #7",
+  "text": ":new: Новий бриф відправлено на розгляд: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*Режим:* dark
+*Концепт:* Sunrise
+*Коментар замовника:* concept c
+*Зовнішній неймінг:* Bubbleton, Sunny
+*Коментар замовника:* ext c
+*Внутрішній неймінг:* Int One
+*Коментар замовника:* int c
+*PR-пакет:* PR Basic
+*Строки впровадження:* Q3
+*Задіяні команди:* PR
+*Складові пакету:*
+Banner
+Landing
+*Що необхідно:* Fast
+*Коментар замовника:* pr c
+*Legal Landing:* Так
+*Partner Landing:* Ні
+*Дедлайн розробки:* 2026-11-20
+*Коментар замовника:* deliv c
+*Делегувати дизайнерам:* Ні
+*Візуальні компоненти:*
+  • *Logo:* A
+*Коментар замовника:* comp c",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > C approvals, resubmitted 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Бриф повторно на розгляд: New Brand #7",
+  "text": ":arrows_counterclockwise: Бриф повторно відправлено на розгляд: *New Brand #7*
+_Бриф було доопрацьовано та повторно надіслано._
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*Режим:* dark
+*Концепт:* Sunrise
+*Коментар замовника:* concept c
+*Зовнішній неймінг:* Bubbleton, Sunny
+*Коментар замовника:* ext c
+*Внутрішній неймінг:* Int One
+*Коментар замовника:* int c
+*PR-пакет:* PR Basic
+*Строки впровадження:* Q3
+*Задіяні команди:* PR
+*Складові пакету:*
+Banner
+Landing
+*Що необхідно:* Fast
+*Коментар замовника:* pr c
+*Legal Landing:* Так
+*Partner Landing:* Ні
+*Дедлайн розробки:* 2026-11-20
+*Коментар замовника:* deliv c
+*Делегувати дизайнерам:* Ні
+*Візуальні компоненти:*
+  • *Logo:* A
+*Коментар замовника:* comp c",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > D approvals, returned 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Бриф повернуто на доопрацювання: New Brand #7",
+  "text": ":warning: Бриф повернуто на доопрацювання: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*--- Концепт ---*
+*Обрано:* Sunrise
+*Коментар CEO:* no
+*Альтернатива CEO:* Wonka
+*--- Загальний коментар ---*
+*Коментар CEO:* redo",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > E1 strategy, approved 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Бренд затверджено: New Brand #7",
+  "text": ":white_check_mark: Бренд затверджено: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*Режим:* dark
+*Концепт:* Sunrise
+*Коментар замовника:* concept c
+*Коментар CEO:* ceo on concept
+*Зовнішній неймінг:* Bubbleton, Sunny
+*Коментар замовника:* ext c
+*Внутрішній неймінг:* Int One
+*Коментар замовника:* int c
+*Загальний коментар CEO:*
+ceo general
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > E2 pr, approved 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Бренд затверджено: New Brand #7",
+  "text": ":white_check_mark: Бренд затверджено: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*PR-пакет:* PR Basic
+*Строки впровадження:* Q3
+*Задіяні команди:* PR
+*Складові пакету:*
+Banner
+Landing
+*Що необхідно:* Fast
+*Коментар замовника:* pr c
+*Загальний коментар CEO:*
+ceo general
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > E3 design, approved 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Бренд затверджено: New Brand #7",
+  "text": ":white_check_mark: Бренд затверджено: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+*Коментар замовника:* basics c
+*Режим:* dark
+*Legal Landing:* Так
+*Partner Landing:* Ні
+*Дедлайн розробки:* 2026-11-20
+*Коментар замовника:* deliv c
+*Делегувати дизайнерам:* Ні
+*Візуальні компоненти:*
+  • *Logo:* A
+*Коментар замовника:* comp c
+*Загальний коментар CEO:*
+ceo general
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;
+
+exports[`message texts (snapshot of every status message) > E4 approvals, approved 1`] = `
+{
+  "buttons": [
+    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Jira DHC-1 → https://jira.example/browse/DHC-1",
+  ],
+  "fallback": "Бренд затверджено: New Brand #7",
+  "text": ":white_check_mark: Бренд затверджено: *New Brand #7*
+*GEO:* AU, NZ
+*Дата запуску:* 2026-12-01
+_Повідомлення надіслано у командні канали._
+*Jira Initiative:* <https://jira.example/browse/DHC-1|DHC-1>",
+}
+`;

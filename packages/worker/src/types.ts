@@ -4,7 +4,10 @@ export interface Env {
   ENVIRONMENT: string
   CORS_ORIGINS: string
   JWT_SECRET: string
+  /** Legacy standalone wizard (OPEN-16). Brief links no longer point here — see `ADMIN_URL`. */
   CONSTRUCTOR_URL: string
+  /** Admin origin; Slack buttons and the Jira «Посилання на бриф» open `/workspace/brand/<id>`. */
+  ADMIN_URL: string
   GOOGLE_CLIENT_ID: string
   /**
    * Comma-separated list of email domains permitted at Google login

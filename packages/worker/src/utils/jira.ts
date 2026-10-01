@@ -1,5 +1,6 @@
 import type { Env } from '../types'
 import type { BrandNotificationData } from './slack'
+import { brandBriefUrl } from './slack'
 import type { CeoSectionKey } from './slack'
 
 const DEFAULT_JIRA_BASE_URL = 'https://upstars.atlassian.net'
@@ -372,11 +373,11 @@ export function plainTextToAdfDocument(text: string): JiraAdfDocument {
 
 export function buildInitiativeDescriptionText(
   data: BrandNotificationData,
-  constructorUrl: string,
+  adminUrl: string,
   flow: JiraInitiativeFlowType,
   context: JiraBrandContext
 ): string {
-  const briefUrl = `${constructorUrl}/constructor/brand/${data.brandId}`
+  const briefUrl = brandBriefUrl(adminUrl, data.brandId)
   const sections = buildInitiativeSections(data, flow, context)
 
   const parts = [
@@ -390,11 +391,11 @@ export function buildInitiativeDescriptionText(
 
 export function buildInitiativeDescriptionAdf(
   data: BrandNotificationData,
-  constructorUrl: string,
+  adminUrl: string,
   flow: JiraInitiativeFlowType,
   context: JiraBrandContext
 ): JiraAdfDocument {
-  const briefUrl = `${constructorUrl}/constructor/brand/${data.brandId}`
+  const briefUrl = brandBriefUrl(adminUrl, data.brandId)
   const sections = buildInitiativeSections(data, flow, context)
   const content: JiraAdfBlockNode[] = [adfParagraph(buildInitiativeIntro(flow))]
 
@@ -429,7 +430,7 @@ export function buildInitiativeSummary(
 
 export function buildInitiativePayload(
   data: BrandNotificationData,
-  constructorUrl: string,
+  adminUrl: string,
   config: Pick<JiraResolvedConfig, 'projectKey' | 'issueTypeId'>,
   flow: JiraInitiativeFlowType,
   context: JiraBrandContext,
@@ -440,7 +441,7 @@ export function buildInitiativePayload(
       project: { key: config.projectKey },
       issuetype: { id: config.issueTypeId },
       summary: buildInitiativeSummary(data, flow, titlePrefix),
-      description: buildInitiativeDescriptionAdf(data, constructorUrl, flow, context),
+      description: buildInitiativeDescriptionAdf(data, adminUrl, flow, context),
     },
   }
 }
@@ -528,7 +529,7 @@ export async function createBrandJiraInitiative(
   brandId: string,
   existingJiraKey: string | null | undefined,
   data: BrandNotificationData,
-  constructorUrl: string,
+  adminUrl: string,
   flow: JiraInitiativeFlowType,
   context: JiraBrandContext
 ): Promise<JiraInitiativeRef | null> {
@@ -548,7 +549,7 @@ export async function createBrandJiraInitiative(
 
   const payload = buildInitiativePayload(
     data,
-    constructorUrl,
+    adminUrl,
     config,
     flow,
     context,

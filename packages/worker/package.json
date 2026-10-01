@@ -19,7 +19,10 @@
     "db:seed": "wrangler d1 execute brand-constructor-db --env production --local --file=./src/db/seed.sql",
     "db:seed:components": "wrangler d1 execute brand-constructor-db --env production --local --file=./src/db/seed-components.sql",
     "db:seed:remote": "wrangler d1 execute brand-constructor-db --remote --file=./src/db/seed.sql",
-    "db:migrate:012:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/012_add_jira_initiative.sql"
+    "db:migrate:012:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/012_add_jira_initiative.sql",
+    "db:migrate:013:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/013_in_work_status.sql",
+    "db:migrate:013:down:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/013_down.sql",
+    "migrate:013:data": "vite-node scripts/in-work-013.ts --"
   },
   "dependencies": {
     "@brand-constructor/shared": "workspace:*",

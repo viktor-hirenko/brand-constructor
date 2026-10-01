@@ -28,9 +28,14 @@ interface BriefOrderButtonProps {
   createLabel: string
   createdLabel: string
   isCreated: boolean
+  /**
+   * The brief is `in_work`: the teams already have the order. No new order can
+   * be placed and the existing one can be viewed or removed, not edited.
+   */
+  locked?: boolean
 }
 
-const props = defineProps<BriefOrderButtonProps>()
+const props = withDefaults(defineProps<BriefOrderButtonProps>(), { locked: false })
 
 const emit = defineEmits<{
   create: []
@@ -61,7 +66,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 </script>
 
 <template>
-  <div ref="containerRef" class="relative self-start">
+  <div v-if="isCreated || !locked" ref="containerRef" class="relative self-start">
     <UiButton
       v-if="!isCreated"
       variant="neutral"
@@ -105,6 +110,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
         Переглянути бриф
       </button>
       <button
+        v-if="!locked"
         type="button"
         class="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-[#f3f3f5] transition-colors"
         @click="showDropdown = false; emit('edit')"

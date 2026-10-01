@@ -28,13 +28,14 @@ export const BRAND_BRIEF_REVIEW_PHASE = {
 
   /**
    * Supervisor opened a direct link to a brief still being fulfilled by teams
-   * (`submitted` + pending new concept/naming orders). Gate screen only — no review.
+   * (`in_work`), or to a status this build does not know. Gate screen only — no review.
    */
   SUPERVISOR_AWAITING_TEAM: 'supervisor-awaiting-team',
 
   /**
-   * PO submitted the brief with outstanding new-brief orders; teams are working.
-   * PO can edit concept/naming via draft-edit routes until ready for CEO.
+   * PO sent the brief with new-brief orders to the teams (`in_work`); teams are
+   * working. PO can swap concept/naming for library picks via the draft-edit
+   * routes and then send the brief to the CEO.
    */
   AUTHOR_IN_WORK: 'author-in-work',
 

@@ -9,6 +9,8 @@ export function resolveBrandBriefStatusBadge(
   status: string
 ): BrandBriefStatusBadgeMeta | null {
   switch (status) {
+    case 'in_work':
+      return { label: 'В роботі', tone: 'brief-in-work' }
     case 'submitted':
       return { label: 'На розгляді', tone: 'brief-submitted' }
     case 'needs_revision':

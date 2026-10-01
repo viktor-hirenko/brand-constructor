@@ -67,7 +67,6 @@ async function createJiraForBrand(
   data: BrandNotificationData,
   flow: JiraInitiativeFlowType
 ): Promise<JiraInitiativeRef | null> {
-  const constructorUrl = env.CONSTRUCTOR_URL ?? ''
   const context = parseJiraBrandContext(brand)
   return createBrandJiraInitiative(
     env,
@@ -75,7 +74,7 @@ async function createJiraForBrand(
     brand.id,
     brand.jira_initiative_key,
     data,
-    constructorUrl,
+    data.adminUrl,
     flow,
     context
   )
