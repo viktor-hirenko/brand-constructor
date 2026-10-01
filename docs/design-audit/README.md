@@ -59,6 +59,8 @@ Node ID в таблице выше проставлены только для La
 - `figma-visual-components-bugs.md` - progress tracker: 8 багов Visual Components (node 2837-4389), пул закрыт
 - `figma-ceo-review-bugs.md` - progress tracker: 11 багов CEO Review (node 2925-9240), 10 закрыто, BRIEF-031 частично
 - `uxui-2553-postmortem.md` - разбор отменённой задачи «Переглянути контейнер»: две отклонённые архитектуры и почему
+- `brief-holes.md` - progress tracker: дыры в работе брифа, найденные ручным прогоном 30.09–01.10; план исправлений — `../architecture/brief-orders-plan.md`
+- `edit-flow-scenarios.md` - справочник: сценарии правки брифа (составлен чтением кода и макетов, не прогоном; число и команда проверки — в шапке файла)
 
 Текущий фокус здесь **не указывается** — он живёт в [`../STATE.md`](../STATE.md),
 чтобы не расходиться с реальностью.

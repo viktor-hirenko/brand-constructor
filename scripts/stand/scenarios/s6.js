@@ -1,0 +1,17 @@
+const L = require('../lib'); const F = require('../flow')
+;(async () => {
+  const b = await L.launch(); const { page } = await L.session(b, 'po')
+  const { id } = await F.newBrief(page); console.log('ID', id); await F.step1(page)
+  await F.orderConcept(page); await F.next(page)
+  await F.step4(page, 'Luna'); await F.step5(page, 'Trust Focus'); await F.next(page); await F.step7delegate(page)
+  console.log('final:', await F.submitState(page)); await L.shot(page, 'S6-final')
+  L.state.writes.length = 0
+  await L.clickText(L.wiz(page), 'Відправити в роботу'); await L.wait(page, 3000)
+  console.log('after send', L.wiz(page).url().replace(L.O, ''), await L.buttons(L.wiz(page)))
+  console.log(JSON.stringify(L.state.writes.map(w => [w.m, w.p, w.status, w.body.slice(0, 80)])))
+  console.log(F.dbSummary(id))
+  await page.goto(`${L.O}/workspace/brand/${id}`, { waitUntil: 'networkidle' }); await L.wait(page, 3500)
+  await F.dump(page, 'S6-in-work')
+  fs = require('fs'); fs.writeFileSync(L.SP + '/run/s6-id.txt', id)
+  await b.close()
+})()

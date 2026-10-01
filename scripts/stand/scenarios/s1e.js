@@ -1,0 +1,15 @@
+const L = require('../lib'); const F = require('../flow'); const fs = require('fs')
+;(async () => {
+  const id = fs.readFileSync(L.SP + '/run/s1-id.txt', 'utf8').trim()
+  const b = await L.launch(); const { page } = await L.session(b, 'po'); await F.open(page, id)
+  await F.dump(page, 'S1-po-revision')
+  L.state.writes.length = 0
+  await F.sectionBtn(page, 'Concept', 'Застосувати варіант CEO'); await L.wait(page, 1500)
+  console.log('URL', L.wiz(page).url().replace(L.O, ''))
+  console.log('Concept:', await F.sec(page, 'Concept')); console.log('External:', await F.sec(page, 'External Naming')); console.log('submit:', await F.submitState(page))
+  console.log('header:', (await L.text(L.wiz(page))).split('\n').slice(0, 6).join(' | '))
+  console.log(JSON.stringify(L.state.writes.map(w => [w.m, w.p, w.status, w.body.slice(0, 250)])))
+  console.log(F.dbSummary(id))
+  await L.shot(page, 'S1-po-after-apply-concept')
+  await b.close()
+})()
