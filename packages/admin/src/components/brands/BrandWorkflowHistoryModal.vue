@@ -7,6 +7,8 @@ import caretDown from '@phosphor-icons/core/regular/caret-down.svg?raw'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import { useWorkflowTimeline } from '@/composables/useWorkflowTimeline'
+import { isOrderRole } from '@brand-constructor/shared'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
   brandId: string
@@ -16,6 +18,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+/** Order events link to the order page — for the roles that may open it. */
+const authStore = useAuthStore()
+const ORDER_EVENTS = new Set(['sent_to_work', 'orders_ready', 'order_cancelled'])
+function showsOrderLink(eventType: string): boolean {
+  return ORDER_EVENTS.has(eventType) && isOrderRole(authStore.user?.role ?? '')
+}
 
 const {
   EVT,
@@ -329,6 +338,10 @@ const {
                   </span>
                 </component>
 
+                <p v-if="showsOrderLink(row.event.eventType)" class="workflow-modal__order-link">
+                  <RouterLink :to="`/orders/${props.brandId}`" @click="emit('close')">Open order →</RouterLink>
+                </p>
+
                 <div
                   v-if="hasDetails(row.event)"
                   class="workflow-modal__collapse"
@@ -424,7 +437,35 @@ const {
                         </div>
                       </template>
 
-                      <template v-if="buildSectionBlocks(row.event).length">
+                      <!-- Order events: the same box and type as «Submitted» -->
+                      <div
+                        v-if="
+                          (row.event.eventType === EVT.ORDERS_READY ||
+                            row.event.eventType === EVT.ORDER_CANCELLED) &&
+                          buildSectionBlocks(row.event).length
+                        "
+                        class="workflow-modal__submitted"
+                      >
+                        <p class="workflow-modal__group-heading">
+                          {{
+                            row.event.eventType === EVT.ORDERS_READY
+                              ? 'Made by the team for the order'
+                              : 'The author picked from the library'
+                          }}
+                        </p>
+                        <div
+                          v-for="block in buildSectionBlocks(row.event)"
+                          :key="block.label"
+                          class="workflow-modal__section workflow-modal__section--submitted"
+                        >
+                          <p class="workflow-modal__section-title">{{ block.label }}</p>
+                          <p class="workflow-modal__selection-value">{{ block.value }}</p>
+                        </div>
+                      </div>
+
+                      <template
+                        v-else-if="buildSectionBlocks(row.event).length"
+                      >
                         <div
                           v-for="block in buildSectionBlocks(row.event)"
                           :key="block.label"
@@ -751,6 +792,23 @@ const {
 
   &__submitted {
     padding-top: $spacing-2;
+  }
+
+  // «Open order →» under an order event (Orders page, phase 2a).
+  &__order-link {
+    margin: 0;
+    padding: 0 $spacing-4 $spacing-3;
+    font-size: $font-size-xs;
+
+    a {
+      color: $color-primary;
+      font-weight: $font-weight-medium;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 
   &__group-heading {

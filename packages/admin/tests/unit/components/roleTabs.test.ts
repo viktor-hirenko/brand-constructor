@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { LIBRARY_TAB_ROLES, USER_ROLES } from '@brand-constructor/shared'
+import { LIBRARY_TAB_ROLES, ORDER_ROLES, USER_ROLES } from '@brand-constructor/shared'
 
 /*
  * Product Owner and CPO/CEO see only «Brands» in the Admin menu — team request
@@ -49,5 +49,32 @@ describe('library tabs by role', () => {
     }
     expect(sidebar).toMatch(/item\.roles\.includes\(authStore\.user\?\.role/)
     expect(sidebar).toMatch(/label: 'Brands', path: '\/brands', icon: tag \}/)
+  })
+})
+
+describe('Orders by role (brief-orders plan, phase 2a)', () => {
+  it('are for Strategy, Admin and Head of DHC only', () => {
+    expect([...ORDER_ROLES].sort()).toEqual(
+      [USER_ROLES.ADMIN, USER_ROLES.HEAD_DHC, USER_ROLES.STRATEGY_IDENTITY].sort()
+    )
+  })
+
+  it('both order pages ask the router for those roles', () => {
+    const router = read('router/index.ts')
+    for (const name of ['orders', 'order-detail']) {
+      const block = router.slice(router.indexOf(`name: '${name}'`))
+      const route = block.slice(0, block.indexOf('}'))
+      expect(route, name).toContain('meta: { roles: ORDER_ROLES')
+    }
+  })
+
+  it('the sidebar shows «Orders» between Brands and Concepts, only to those roles', () => {
+    const sidebar = read('components/ui/AppSidebar.vue')
+    expect(sidebar).toMatch(/label: 'Orders', path: '\/orders', icon: clipboardText, roles: ORDER_ROLES/)
+    const brands = sidebar.indexOf("label: 'Brands'")
+    const orders = sidebar.indexOf("label: 'Orders'")
+    const concepts = sidebar.indexOf("label: 'Concepts'")
+    expect(brands).toBeLessThan(orders)
+    expect(orders).toBeLessThan(concepts)
   })
 })

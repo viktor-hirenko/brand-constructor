@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import clipboardText from '@phosphor-icons/core/regular/clipboard-text.svg?raw'
 import lightbulb from '@phosphor-icons/core/regular/lightbulb.svg?raw'
 import megaphone from '@phosphor-icons/core/regular/megaphone.svg?raw'
 import squaresFour from '@phosphor-icons/core/regular/squares-four.svg?raw'
@@ -9,8 +10,11 @@ import textAa from '@phosphor-icons/core/regular/text-aa.svg?raw'
 import users from '@phosphor-icons/core/regular/users.svg?raw'
 import close from '@phosphor-icons/core/regular/x.svg?raw'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
-import { LIBRARY_TAB_ROLES } from '@brand-constructor/shared'
+import { LIBRARY_TAB_ROLES, ORDER_ROLES, isOrderRole } from '@brand-constructor/shared'
+import type { OrderListResponse } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
+import { apiGet } from '@/composables/useApi'
+import { useListPolling } from '@/composables/useListPolling'
 
 interface Props {
   isOpen?: boolean
@@ -37,14 +41,18 @@ interface NavItem {
   adminOnly?: boolean
   /** Only these roles see the item; the router refuses the page to the rest. */
   roles?: readonly string[]
+  /** Shows the number of open orders beside the label. */
+  counter?: 'openOrders'
 }
 
 // Glyphs — DP-15859, the designer's mapping table `5658:39246`, "Admin sidebar"
 // rows, all weight Regular. `Users` has no row there and is not drawn on any
 // screen (the mock-ups show a product owner's menu); the owner chose Phosphor
-// `Users` for it.
+// `Users` for it. `Orders` (brief-orders plan, phase 2a) has no row either;
+// the plan names Phosphor `ClipboardText`.
 const navItems: NavItem[] = [
   { label: 'Brands', path: '/brands', icon: tag },
+  { label: 'Orders', path: '/orders', icon: clipboardText, roles: ORDER_ROLES, counter: 'openOrders' },
   { label: 'Concepts', path: '/concepts', icon: lightbulb, roles: LIBRARY_TAB_ROLES },
   { label: 'Namings', path: '/namings', icon: textAa, roles: LIBRARY_TAB_ROLES },
   { label: 'PR Packages', path: '/pr-packages', icon: megaphone, roles: LIBRARY_TAB_ROLES },
@@ -59,6 +67,24 @@ const visibleItems = computed(() =>
       (!item.roles || item.roles.includes(authStore.user?.role ?? ''))
   )
 )
+
+// Open orders: on every page change and with the lists' background refresh, so
+// «Готово» or a new order shows without a reload.
+const openOrders = ref(0)
+
+async function refreshOpenOrders() {
+  if (!isOrderRole(authStore.user?.role ?? '')) return
+  try {
+    const res = await apiGet<OrderListResponse>('/api/orders?tab=open')
+    openOrders.value = res.counts.open
+  } catch {
+    // The menu stays usable without the number.
+  }
+}
+
+onMounted(refreshOpenOrders)
+watch(() => route.fullPath, refreshOpenOrders)
+useListPolling(refreshOpenOrders)
 
 function isActive(path: string): boolean {
   // The embedded Wizard lives under `/workspace/*` but is opened from Brands,
@@ -103,6 +129,12 @@ async function handleLogout() {
       >
         <PhosphorIcon :svg="item.icon" class="sidebar__link-icon" />
         <span class="sidebar__link-label">{{ item.label }}</span>
+        <span
+          v-if="item.counter === 'openOrders' && openOrders > 0"
+          class="sidebar__link-counter"
+          :aria-label="`${openOrders} open orders`"
+          >{{ openOrders }}</span
+        >
       </RouterLink>
     </nav>
 
@@ -232,6 +264,27 @@ async function handleLogout() {
       padding: $spacing-4 $spacing-6;
       font-size: $font-size-base;
     }
+  }
+
+  // Open orders beside «Orders». No mock-up: a small pill in the active-item
+  // colour, pushed to the row's end.
+  &__link-counter {
+    margin-left: auto;
+    min-width: 20px;
+    padding: 0 $spacing-2;
+    border-radius: $radius-full;
+    background-color: $color-bg-sidebar-active;
+    color: $color-text-inverse;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    line-height: 20px;
+    text-align: center;
+  }
+
+  // On the active row the pill would vanish into the same colour.
+  &__link--active &__link-counter {
+    background-color: $color-text-inverse;
+    color: $color-bg-sidebar-active;
   }
 
   // Sidebar `5382:30672`: glyph 20, painted in the label's colour.

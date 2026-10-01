@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Concept, ExternalNaming, Asset } from '@brand-constructor/shared'
-import { parseAspectRatio } from '@brand-constructor/shared'
+import { isOrderRole, parseAspectRatio } from '@brand-constructor/shared'
 import { useApi, apiPut, apiUpload, apiDelete, getAssetUrl } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import { useAuthStore } from '@/stores/auth'
@@ -76,6 +76,19 @@ const isUsedInBrand = computed(
 const canEdit = computed(() => canWrite.value && !isUsedInBrand.value)
 const lockedBrandLabel = computed(() =>
   concept.value?.brand_name ? ` «${concept.value.brand_name}»` : '',
+)
+
+/**
+ * Made for a brief's order (phase 2a): the order page sends the team here to
+ * add pictures, and this is the way back to it.
+ */
+const orderLink = computed(() =>
+  concept.value?.for_brand_id && isOrderRole(authStore.user?.role ?? '')
+    ? {
+        to: `/orders/${concept.value.for_brand_id}`,
+        label: concept.value.for_brand_name || 'the order',
+      }
+    : null,
 )
 
 const {
@@ -245,6 +258,10 @@ async function confirmAssetDelete() {
         <PhosphorIcon :svg="arrowLeft" class="concept-detail__back-icon" />
         Back to Concepts
       </BaseButton>
+      <BaseButton v-if="orderLink" variant="ghost" size="sm" @click="router.push(orderLink.to)">
+        <PhosphorIcon :svg="arrowLeft" class="concept-detail__back-icon" />
+        Back to order {{ orderLink.label }}
+      </BaseButton>
     </div>
 
     <div v-if="loading" class="concept-detail__loading">Loading...</div>
@@ -264,6 +281,9 @@ async function confirmAssetDelete() {
           <p class="concept-detail__meta">
             by {{ concept.author_name }}
             {{ new Date(concept.created_at).toLocaleDateString() }}
+            <template v-if="concept.for_brand_id">
+              · For {{ concept.for_brand_name || 'a brief' }}
+            </template>
           </p>
         </div>
         <div v-if="canEdit" class="concept-detail__actions">
@@ -475,6 +495,9 @@ async function confirmAssetDelete() {
   max-width: 900px;
 
   &__back {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
     margin-bottom: $spacing-4;
   }
 

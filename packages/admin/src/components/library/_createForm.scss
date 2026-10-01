@@ -1,0 +1,63 @@
+// The create windows of the library (`ConceptCreateModal`, `NamingCreateModal`):
+// the same form block the Concepts and Namings pages drew inline before they
+// moved into components (brief-orders plan, phase 2a).
+@use '@/styles/variables' as *;
+
+@mixin create-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-4;
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text;
+  }
+
+  &__label-hint {
+    font-weight: $font-weight-normal;
+    color: $color-text-muted;
+  }
+
+  &__select {
+    width: 100%;
+    padding: $spacing-2 $spacing-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    background-color: $color-bg-white;
+  }
+
+  // «For brief» fixed by the order page: shown, not editable.
+  &__fixed {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+  }
+
+  &__hint {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    line-height: $line-height-normal;
+
+    &--error {
+      color: #b91c1c;
+    }
+  }
+
+  &__error {
+    margin: 0;
+    padding: $spacing-3;
+    border-radius: $radius-md;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    font-size: $font-size-sm;
+    line-height: $line-height-normal;
+  }
+}

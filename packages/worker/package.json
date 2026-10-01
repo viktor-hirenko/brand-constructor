@@ -22,6 +22,7 @@
     "db:migrate:012:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/012_add_jira_initiative.sql",
     "db:migrate:013:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/013_in_work_status.sql",
     "db:migrate:013:down:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/013_down.sql",
+    "db:migrate:014:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/014_for_brand.sql",
     "migrate:013:data": "vite-node scripts/in-work-013.ts --"
   },
   "dependencies": {

@@ -23,6 +23,13 @@ export interface Concept {
   gallery_url_10: string | null
   created_by: string
   used_in_brand_id: string | null
+  /**
+   * Made for this brief's order (brief-orders plan, phase 2a). While set, no
+   * other brief may pick it; lists hide it from other briefs.
+   */
+  for_brand_id?: string | null
+  /** The brief's name, joined by the list and detail endpoints. */
+  for_brand_name?: string | null
   created_at: string
   updated_at: string
 }
@@ -32,6 +39,7 @@ export interface CreateConceptPayload {
   description: string
   mode?: ConceptMode | null
   naming_ids?: string[]
+  for_brand_id?: string | null
 }
 
 export interface UpdateConceptPayload {

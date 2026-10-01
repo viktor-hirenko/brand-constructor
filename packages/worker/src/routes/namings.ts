@@ -9,6 +9,14 @@ import {
   shouldRecheck,
   isPananamesConfigured,
 } from '../utils/domain-check'
+import {
+  checkOrderTarget,
+  pickedByAnotherBrief,
+  reserveIsFrozen,
+  reserveListFilter,
+  RESERVE_FROZEN_MESSAGE,
+  type LibraryKind,
+} from '../utils/orders'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -20,11 +28,14 @@ const createExternalSchema = z.object({
   availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
   domain_check_source: z.enum(['manual', 'pananames', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
+  /** The brief whose order this naming fulfils (Orders page; phase 2a). */
+  for_brand_id: z.string().min(1).nullable().optional(),
 })
 
 const createInternalSchema = z.object({
   name: z.string().min(1).max(200),
   tagline: z.string().max(500).optional().default(''),
+  for_brand_id: z.string().min(1).nullable().optional(),
 })
 
 const updateExternalSchema = z.object({
@@ -36,13 +47,49 @@ const updateExternalSchema = z.object({
   domain_check_source: z.enum(['manual', 'pananames', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
+  for_brand_id: z.string().min(1).nullable().optional(),
 })
 
 const updateInternalSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   tagline: z.string().max(500).optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
+  for_brand_id: z.string().min(1).nullable().optional(),
 })
+
+/**
+ * A PUT that moves a naming to (or off) an order, or relinks a reserved
+ * external naming to another concept. Returns the refusal as [message, status].
+ */
+async function checkReserveChange(
+  db: D1Database,
+  kind: LibraryKind,
+  id: string,
+  existing: Record<string, unknown>,
+  nextForBrand: string | null | undefined,
+  nextConceptId: string | null | undefined
+): Promise<[string, 400 | 409] | null> {
+  const current = (existing.for_brand_id as string | null) ?? null
+  const forBrandChanges = nextForBrand !== undefined && (nextForBrand || null) !== current
+  const conceptChanges =
+    kind === 'external' &&
+    nextConceptId !== undefined &&
+    (nextConceptId || null) !== ((existing.concept_id as string | null) ?? null)
+  if (!forBrandChanges && !conceptChanges) return null
+
+  if (forBrandChanges && (await reserveIsFrozen(db, current))) return [RESERVE_FROZEN_MESSAGE, 409]
+
+  const target = forBrandChanges ? nextForBrand || null : current
+  if (!target) return null
+  const conceptId =
+    nextConceptId !== undefined ? nextConceptId : ((existing.concept_id as string | null) ?? null)
+  const refusal = await checkOrderTarget(db, target, kind, conceptId)
+  if (refusal) return [refusal, 400]
+  if (forBrandChanges && (await pickedByAnotherBrief(db, kind, id, target))) {
+    return ['Цю назву вже обрано в іншому брифі — привʼязати її до замовлення не можна.', 400]
+  }
+  return null
+}
 
 const previewDomainSchema = z.object({
   domain: z.string().min(1).max(255),
@@ -52,11 +99,13 @@ const previewDomainSchema = z.object({
 async function getExternalNamingListRow(db: D1Database, id: string) {
   return await db
     .prepare(
-      `SELECT en.*, u.name as author_name, c.name as concept_name, COALESCE(b.internal_name, en.used_in_brand_id) as brand_name
+      `SELECT en.*, u.name as author_name, c.name as concept_name, COALESCE(b.internal_name, en.used_in_brand_id) as brand_name,
+         fb.internal_name as for_brand_name
        FROM external_namings en
        LEFT JOIN users u ON en.created_by = u.id
        LEFT JOIN concepts c ON en.concept_id = c.id
        LEFT JOIN brands b ON en.used_in_brand_id = b.id
+       LEFT JOIN brands fb ON en.for_brand_id = fb.id
        WHERE en.id = ?`
     )
     .bind(id)
@@ -94,6 +143,10 @@ app.get('/external', async c => {
     where += ' AND en.concept_id IS NULL'
   }
 
+  const reserve = reserveListFilter('en', availableForBrand, c.req.query('include_reserved'))
+  where += reserve.sql
+  params.push(...reserve.binds)
+
   const countResult = await c.env.DB.prepare(
     `SELECT COUNT(*) as total FROM external_namings en WHERE ${where}`
   )
@@ -101,11 +154,13 @@ app.get('/external', async c => {
     .first<{ total: number }>()
 
   const namings = await c.env.DB.prepare(
-    `SELECT en.*, u.name as author_name, c.name as concept_name, COALESCE(b.internal_name, en.used_in_brand_id) as brand_name
+    `SELECT en.*, u.name as author_name, c.name as concept_name, COALESCE(b.internal_name, en.used_in_brand_id) as brand_name,
+       fb.internal_name as for_brand_name
      FROM external_namings en
      LEFT JOIN users u ON en.created_by = u.id
      LEFT JOIN concepts c ON en.concept_id = c.id
      LEFT JOIN brands b ON en.used_in_brand_id = b.id
+     LEFT JOIN brands fb ON en.for_brand_id = fb.id
      WHERE ${where}
      ORDER BY en.created_at DESC
      LIMIT ? OFFSET ?`
@@ -142,11 +197,17 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
     }
   }
 
+  const forBrandId = parsed.data.for_brand_id || null
+  if (forBrandId) {
+    const refusal = await checkOrderTarget(c.env.DB, forBrandId, 'external', parsed.data.concept_id)
+    if (refusal) return c.json({ success: false, error: refusal }, 400)
+  }
+
   const user = c.get('user')
   const id = generateId('exn')
 
   await c.env.DB.prepare(
-    'INSERT INTO external_namings (id, name, tagline, domain, price, availability_status, concept_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO external_namings (id, name, tagline, domain, price, availability_status, concept_id, created_by, for_brand_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
   )
     .bind(
       id,
@@ -156,7 +217,8 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
       parsed.data.price ?? null,
       parsed.data.availability_status || 'unknown',
       parsed.data.concept_id || null,
-      user.id
+      user.id,
+      forBrandId
     )
     .run()
 
@@ -236,6 +298,16 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
     return c.json({ success: false, error: 'Cannot modify a naming used in a brand' }, 409)
   }
 
+  const reserveRefusal = await checkReserveChange(
+    c.env.DB,
+    'external',
+    id,
+    existing,
+    parsed.data.for_brand_id,
+    parsed.data.concept_id
+  )
+  if (reserveRefusal) return c.json({ success: false, error: reserveRefusal[0] }, reserveRefusal[1])
+
   const updates: string[] = []
   const values: (string | null)[] = []
 
@@ -289,6 +361,10 @@ app.delete('/external/:id', requireLibraryAccess('external_namings'), async c =>
 
   if (existing.used_in_brand_id) {
     return c.json({ success: false, error: 'Cannot delete a naming used in a brand' }, 409)
+  }
+
+  if (await reserveIsFrozen(c.env.DB, existing.for_brand_id as string | null)) {
+    return c.json({ success: false, error: RESERVE_FROZEN_MESSAGE }, 409)
   }
 
   await c.env.DB.prepare('DELETE FROM external_namings WHERE id = ?').bind(id).run()
@@ -375,6 +451,10 @@ app.get('/internal', async c => {
     params.push(status)
   }
 
+  const reserve = reserveListFilter('n', availableForBrand, c.req.query('include_reserved'))
+  where += reserve.sql
+  params.push(...reserve.binds)
+
   const countResult = await c.env.DB.prepare(
     `SELECT COUNT(*) as total FROM internal_namings n WHERE ${where}`
   )
@@ -382,10 +462,12 @@ app.get('/internal', async c => {
     .first<{ total: number }>()
 
   const namings = await c.env.DB.prepare(
-    `SELECT n.*, u.name as author_name, COALESCE(b.internal_name, n.used_in_brand_id) as brand_name
+    `SELECT n.*, u.name as author_name, COALESCE(b.internal_name, n.used_in_brand_id) as brand_name,
+       fb.internal_name as for_brand_name
      FROM internal_namings n
      LEFT JOIN users u ON n.created_by = u.id
      LEFT JOIN brands b ON n.used_in_brand_id = b.id
+     LEFT JOIN brands fb ON n.for_brand_id = fb.id
      WHERE ${where}
      ORDER BY n.created_at DESC
      LIMIT ? OFFSET ?`
@@ -413,13 +495,19 @@ app.post('/internal', requireLibraryAccess('internal_namings'), async c => {
     )
   }
 
+  const forBrandId = parsed.data.for_brand_id || null
+  if (forBrandId) {
+    const refusal = await checkOrderTarget(c.env.DB, forBrandId, 'internal', null)
+    if (refusal) return c.json({ success: false, error: refusal }, 400)
+  }
+
   const user = c.get('user')
   const id = generateId('inn')
 
   await c.env.DB.prepare(
-    'INSERT INTO internal_namings (id, name, tagline, created_by) VALUES (?, ?, ?, ?)'
+    'INSERT INTO internal_namings (id, name, tagline, created_by, for_brand_id) VALUES (?, ?, ?, ?, ?)'
   )
-    .bind(id, parsed.data.name, parsed.data.tagline || '', user.id)
+    .bind(id, parsed.data.name, parsed.data.tagline || '', user.id, forBrandId)
     .run()
 
   const naming = await c.env.DB.prepare('SELECT * FROM internal_namings WHERE id = ?')
@@ -450,6 +538,16 @@ app.put('/internal/:id', requireLibraryAccess('internal_namings'), async c => {
   if (existing.status === 'used') {
     return c.json({ success: false, error: 'Cannot modify a naming used in a brand' }, 409)
   }
+
+  const reserveRefusal = await checkReserveChange(
+    c.env.DB,
+    'internal',
+    id,
+    existing,
+    parsed.data.for_brand_id,
+    undefined
+  )
+  if (reserveRefusal) return c.json({ success: false, error: reserveRefusal[0] }, reserveRefusal[1])
 
   const updates: string[] = []
   const values: (string | null)[] = []
@@ -490,6 +588,10 @@ app.delete('/internal/:id', requireLibraryAccess('internal_namings'), async c =>
 
   if (existing.used_in_brand_id) {
     return c.json({ success: false, error: 'Cannot delete a naming used in a brand' }, 409)
+  }
+
+  if (await reserveIsFrozen(c.env.DB, existing.for_brand_id as string | null)) {
+    return c.json({ success: false, error: RESERVE_FROZEN_MESSAGE }, 409)
   }
 
   await c.env.DB.prepare('DELETE FROM internal_namings WHERE id = ?').bind(id).run()

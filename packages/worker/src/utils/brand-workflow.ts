@@ -510,6 +510,27 @@ export function buildFeedbackSummaryLine(meta: Record<string, unknown>): string 
 }
 
 /** Which parts of the brief carry an order — `sent_to_work` event meta. */
+/** The order's raw answers, keyed like `orderedSections`. */
+export function orderSnapshot(row: BrandRow): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  const parse = (raw: string | null) => {
+    if (!raw) return null
+    try {
+      return JSON.parse(raw) as unknown
+    } catch {
+      return null
+    }
+  }
+  const concept = parse(row.new_concept_brief)
+  const naming = parse(row.new_naming_brief)
+  if (concept) out.concept = concept
+  if (naming) out.externalNaming = naming
+  const stepData = parse(row.step_data) as { internalNaming?: { newNamingFeedback?: unknown } } | null
+  const feedback = stepData?.internalNaming?.newNamingFeedback
+  if (typeof feedback === 'string' && feedback.trim()) out.internalNaming = feedback
+  return out
+}
+
 export function orderedSections(row: BrandRow): string[] {
   const out: string[] = []
   if (row.new_concept_brief != null) out.push('concept')
@@ -543,6 +564,9 @@ export async function recordStatusWorkflowEvents(
   if (targetStatus === BRAND_BRIEF_STATUS.IN_WORK) {
     await insertWorkflowEvent(db, brandId, WORKFLOW_EVENT_TYPES.SENT_TO_WORK, userId, {
       orders: orderedSections(existing),
+      // The order as the teams received it: picking from the library clears it
+      // from the brief, and the Orders page still shows what was ordered.
+      answers: orderSnapshot(existing),
     })
   }
 

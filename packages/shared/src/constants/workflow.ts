@@ -15,6 +15,10 @@ export const BRAND_WORKFLOW_EVENT_TYPES = {
   RESUBMIT_CLEARED_CEO: 'resubmit_cleared_ceo',
   /** A Slack message of a status change was not delivered; meta names the channel. */
   SLACK_FAILED: 'slack_failed',
+  /** A team pressed «Відправити замовнику» on the Orders page: what was ordered has been made. */
+  ORDERS_READY: 'orders_ready',
+  /** The author picked from the library instead of what was ordered; meta names the kind. */
+  ORDER_CANCELLED: 'order_cancelled',
 } as const
 
 export type BrandWorkflowEventType =
@@ -31,6 +35,8 @@ export const BRAND_WORKFLOW_EVENT_LABELS: Record<BrandWorkflowEventType, string>
   [BRAND_WORKFLOW_EVENT_TYPES.PO_COMMENT_RESOLVED]: 'PO comment status',
   [BRAND_WORKFLOW_EVENT_TYPES.RESUBMIT_CLEARED_CEO]: 'Resubmitted (CEO feedback cleared)',
   [BRAND_WORKFLOW_EVENT_TYPES.SLACK_FAILED]: 'Slack message not delivered',
+  [BRAND_WORKFLOW_EVENT_TYPES.ORDERS_READY]: 'Order sent to the author',
+  [BRAND_WORKFLOW_EVENT_TYPES.ORDER_CANCELLED]: 'Order cancelled (picked from library)',
 }
 
 /** Brief section keys used in CEO comments, PO comments, and workflow meta. */

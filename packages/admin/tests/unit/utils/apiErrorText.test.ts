@@ -86,3 +86,16 @@ describe('describeApiError — anything else', () => {
     expect(t.body).not.toMatch(/Cannot|Forbidden|Payload/)
   })
 })
+
+describe('describeApiError — the worker already speaks Ukrainian (orders, phase 2a)', () => {
+  it('shows the worker sentence instead of the generic one', () => {
+    const text = describeApiError(api('Бриф уже не в роботі — створювати для нього не можна.', 400), 'save')
+    expect(text.title).toBe('Не вдалося зберегти')
+    expect(text.body).toBe('Бриф уже не в роботі — створювати для нього не можна.')
+  })
+
+  it('keeps the generic sentence for English it does not know', () => {
+    const text = describeApiError(api('Something odd happened', 500), 'save')
+    expect(text.body).not.toBe('Something odd happened')
+  })
+})

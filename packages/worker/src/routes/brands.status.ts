@@ -39,6 +39,12 @@ import {
   validateBriefCompleteness,
 } from '../utils/brief-checks'
 import { dispatchSlack } from '../utils/slack-dispatch'
+import {
+  checkSelectable,
+  pickedFromSelection,
+  releaseUnpickedOnApprovalStatements,
+  selectionFreeCondition,
+} from '../utils/orders'
 
 const status = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -148,6 +154,14 @@ status.patch('/:id/status', async c => {
       finalSelection(existing, effectiveCeoSel)
     )
     if (incomplete) return c.json({ success: false, error: incomplete }, 400)
+    // H-09: approving must not take what another brand already uses, nor what
+    // another brief's order made.
+    const taken = await checkSelectable(
+      c.env.DB,
+      id,
+      pickedFromSelection(finalSelection(existing, effectiveCeoSel))
+    )
+    if (taken) return c.json({ success: false, error: taken }, 409)
   }
 
   // Brand UPDATE columns shared across all status branches. The `approved`
@@ -300,14 +314,22 @@ status.patch('/:id/status', async c => {
     }
     values.push(id, currentStatus)
 
+    // The brief flips only if none of its final picks was taken in between by
+    // another approval or another brief's order (H-09); otherwise nothing in
+    // the batch changes and the CEO gets 409.
+    const free = selectionFreeCondition(
+      id,
+      pickedFromSelection({ conceptId: finalConceptId, externalIds: finalExtIds, internalId: finalIntId })
+    )
+
     // The library marks run only when the brand row above became `approved`
     // with THIS request's timestamp — a losing racer's batch changes nothing.
     const wonThisRequest = `EXISTS (SELECT 1 FROM brands WHERE id = ? AND status = 'approved' AND approved_at = ?)`
 
     const batchStatements: ReturnType<typeof c.env.DB.prepare>[] = [
       c.env.DB.prepare(
-        `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ?`
-      ).bind(...values),
+        `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ?${free.sql}`
+      ).bind(...values, ...free.binds),
     ]
 
     if (finalConceptId) {
@@ -336,6 +358,11 @@ status.patch('/:id/status', async c => {
       )
     }
 
+    // What the teams made for this brief and it did not pick goes back to the library.
+    batchStatements.push(
+      ...releaseUnpickedOnApprovalStatements(c.env.DB, id, { sql: wonThisRequest, binds: [id, now] })
+    )
+
     let batchResults: D1Result[]
     try {
       batchResults = await c.env.DB.batch(batchStatements)
@@ -351,7 +378,12 @@ status.patch('/:id/status', async c => {
       )
     }
     if (batchResults[0]?.meta.changes !== 1) {
-      return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+      const taken = await checkSelectable(
+        c.env.DB,
+        id,
+        pickedFromSelection({ conceptId: finalConceptId, externalIds: finalExtIds, internalId: finalIntId })
+      )
+      return c.json({ success: false, error: taken ?? BRIEF_CHANGED_MESSAGE }, 409)
     }
 
     try {

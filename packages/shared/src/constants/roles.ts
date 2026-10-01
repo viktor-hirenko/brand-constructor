@@ -32,6 +32,22 @@ export const LIBRARY_WRITE_PERMISSIONS: Record<string, string[]> = {
 export const ADMIN_ROLES = [USER_ROLES.ADMIN, USER_ROLES.HEAD_DHC] as const;
 
 /**
+ * Who works the Orders page — briefs `in_work` and what the teams made for them
+ * (brief-orders plan, phase 2a). Strategy fulfils the orders; Admin and Head of
+ * DHC administer the libraries the orders land in. The page gives them only
+ * what the bc-strategy order message already carries, never the whole brief.
+ */
+export const ORDER_ROLES = [
+  USER_ROLES.ADMIN,
+  USER_ROLES.HEAD_DHC,
+  USER_ROLES.STRATEGY_IDENTITY,
+] as const;
+
+export function isOrderRole(role: string): boolean {
+  return (ORDER_ROLES as readonly string[]).includes(role);
+}
+
+/**
  * Roles that see the library tabs of the Admin (Concepts, Namings, PR Packages,
  * UI Components). Product Owner and CPO/CEO work only with briefs — they still
  * pick library items inside the brief itself, which reads the API directly.

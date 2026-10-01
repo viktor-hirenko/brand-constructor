@@ -81,6 +81,15 @@ const PLACES: readonly Place[] = [
     file: 'views/ConceptDetailView.vue',
     id: 'arrowLeft',
     packageFile: 'regular/arrow-left.svg',
+    // «Back to Concepts» and, for a concept made for an order, «Back to order».
+    uses: 2,
+    gone: ['&larr;', '←'],
+  },
+  {
+    useCase: 'Arrow left',
+    file: 'views/OrderDetailView.vue',
+    id: 'arrowLeft',
+    packageFile: 'regular/arrow-left.svg',
     uses: 1,
     gone: ['&larr;', '←'],
   },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BRAND_WORKFLOW_EVENT_LABELS } from '@brand-constructor/shared'
-import { slackFailedTitle } from '@/composables/useWorkflowTimeline'
+import { orderEventBlocks, orderEventSummary, slackFailedTitle } from '@/composables/useWorkflowTimeline'
 
 /** A Slack message the worker could not deliver shows in the brief's History (brief-orders, phase 1). */
 describe('History — slack_failed', () => {
@@ -18,5 +18,33 @@ describe('History — slack_failed', () => {
 
   it('«sent to work» has its own History title', () => {
     expect(BRAND_WORKFLOW_EVENT_LABELS.sent_to_work).toBe('Sent to teams (in work)')
+  })
+})
+
+describe('order events in the History (phase 2a)', () => {
+  const ready = {
+    orders: ['concept'],
+    created: { concepts: ['TEST Concept'], externalNamings: ['Test', 'Sunny'], internalNamings: [] },
+  }
+
+  it('«Order ready» opens like «Submitted»: counts beside, names inside', () => {
+    expect(orderEventSummary('orders_ready', ready)).toBe('1 concept · 2 names')
+    expect(orderEventBlocks('orders_ready', ready)).toEqual([
+      { label: 'Concept', value: 'TEST Concept' },
+      { label: 'External Naming', value: 'Test, Sunny' },
+    ])
+  })
+
+  it('«Order cancelled» says what the author picked instead', () => {
+    const meta = { kind: 'concept', picked: ['Wonka'] }
+    expect(orderEventSummary('order_cancelled', meta)).toBe('Concept')
+    expect(orderEventBlocks('order_cancelled', meta)).toEqual([
+      { label: 'Concept', value: 'Picked from the library instead: Wonka' },
+    ])
+  })
+
+  it('other events get none of it', () => {
+    expect(orderEventSummary('submitted', {})).toBeNull()
+    expect(orderEventBlocks('submitted', {})).toEqual([])
   })
 })

@@ -30,6 +30,8 @@ export interface SectionBlock {
   label: string
   change?: { fromName: string | null; toName: string | null }
   finalName?: string
+  /** A plain value, drawn like a «Submitted» selection (order events). */
+  value?: string
   comment?: string
   poComment?: WorkflowPoCommentEntry
 }
@@ -44,6 +46,64 @@ const EVENT_TONE: Record<string, string> = {
   [EVT.PO_COMMENT_RESOLVED]: 'tone--gray',
   [EVT.RESUBMIT_CLEARED_CEO]: 'tone--blue',
   [EVT.SLACK_FAILED]: 'tone--amber',
+  [EVT.ORDERS_READY]: 'tone--green',
+  [EVT.ORDER_CANCELLED]: 'tone--gray',
+}
+
+const ORDER_KIND_SHORT: Record<string, string> = {
+  concept: 'Concept',
+  externalNaming: 'External Naming',
+  internalNaming: 'Internal Naming',
+}
+
+function names(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v !== '') : []
+}
+
+/**
+ * Order events (Orders page, phase 2a) open like «Submitted»: the summary
+ * beside the badge, the details inside. The first version showed a bare
+ * «Order ready (team)» badge (owner, 01.10).
+ */
+export function orderEventSummary(eventType: string, meta: Record<string, unknown>): string | null {
+  if (eventType === EVT.ORDERS_READY) {
+    const created = (meta.created ?? {}) as Record<string, unknown>
+    const count = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`)
+    const parts = [
+      names(created.concepts).length ? count(names(created.concepts).length, 'concept', 'concepts') : null,
+      names(created.externalNamings).length ? count(names(created.externalNamings).length, 'name', 'names') : null,
+      names(created.internalNamings).length
+        ? count(names(created.internalNamings).length, 'internal name', 'internal names')
+        : null,
+    ].filter((p): p is string => p !== null)
+    return parts.length > 0 ? parts.join(' · ') : null
+  }
+  if (eventType === EVT.ORDER_CANCELLED) {
+    return typeof meta.kind === 'string' ? (ORDER_KIND_SHORT[meta.kind] ?? meta.kind) : null
+  }
+  return null
+}
+
+/** The blocks inside an order event: what the team made, or what the author picked instead. */
+export function orderEventBlocks(eventType: string, meta: Record<string, unknown>): SectionBlock[] {
+  if (eventType === EVT.ORDERS_READY) {
+    const created = (meta.created ?? {}) as Record<string, unknown>
+    return [
+      { label: 'Concept', value: names(created.concepts).join(', ') },
+      { label: 'External Naming', value: names(created.externalNamings).join(', ') },
+      { label: 'Internal Naming', value: names(created.internalNamings).join(', ') },
+    ].filter(b => b.value)
+  }
+  if (eventType === EVT.ORDER_CANCELLED && typeof meta.kind === 'string') {
+    const picked = names(meta.picked)
+    return [
+      {
+        label: ORDER_KIND_SHORT[meta.kind] ?? meta.kind,
+        value: picked.length > 0 ? `Picked from the library instead: ${picked.join(', ')}` : 'Order dropped',
+      },
+    ]
+  }
+  return []
 }
 
 const SLACK_CHANNEL_LABELS: Record<string, string> = {
@@ -225,6 +285,8 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
   }
 
   function buildSectionBlocks(event: BrandWorkflowEvent): SectionBlock[] {
+    const orderBlocks = orderEventBlocks(event.eventType, event.meta)
+    if (orderBlocks.length > 0) return orderBlocks
     const order: string[] = []
     const map = new Map<string, SectionBlock>()
 
@@ -307,6 +369,8 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
   }
 
   function eventSummaryLine(event: BrandWorkflowEvent): string | null {
+    const order = orderEventSummary(event.eventType, event.meta)
+    if (order) return order
     if (event.eventType === EVT.SUBMITTED) {
       const meta = submittedMeta(event)
       const parts: string[] = []

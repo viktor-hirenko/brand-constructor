@@ -19,6 +19,9 @@ export interface ExternalNaming {
   status: NamingStatus
   created_by: string
   used_in_brand_id: string | null
+  /** Made for this brief's order — see `Concept.for_brand_id`. */
+  for_brand_id?: string | null
+  for_brand_name?: string | null
   created_at: string
   updated_at: string
 }
@@ -30,6 +33,9 @@ export interface InternalNaming {
   status: NamingStatus
   created_by: string
   used_in_brand_id: string | null
+  /** Made for this brief's order — see `Concept.for_brand_id`. */
+  for_brand_id?: string | null
+  for_brand_name?: string | null
   created_at: string
   updated_at: string
 }

@@ -15,12 +15,27 @@ import {
   UPDATABLE_FIELDS,
   type BrandListRow,
   type BrandRow,
+  type UpdateBrandBody,
 } from '../utils/brands'
 import {
   insertWorkflowEvent,
   WORKFLOW_EVENT_TYPES,
 } from '../utils/brand-workflow'
-import { BRIEF_CHANGED_MESSAGE, checkInWorkEdit } from '../utils/brief-checks'
+import {
+  BRIEF_CHANGED_MESSAGE,
+  checkInWorkEdit,
+  selectionFromRow,
+  type BriefSelection,
+} from '../utils/brief-checks'
+import {
+  cancelledOrderKinds,
+  checkSelectable,
+  droppedOrderKinds,
+  newlyPicked,
+  pickedFromSelection,
+  releaseAllStatements,
+  releaseCancelledStatements,
+} from '../utils/orders'
 
 const crud = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -291,6 +306,17 @@ crud.put('/:id', async c => {
     if (refusal) return c.json({ success: false, error: refusal }, 400)
   }
 
+  // What another brief's order made, or another brand already uses, is not
+  // this brief's to pick (phase 2a reserve; H-09). Only what is picked NOW is
+  // checked: the wizard resends the whole brief on every save.
+  const nextSelection = selectionAfterPut(existing, body)
+  const takenRefusal = await checkSelectable(
+    c.env.DB,
+    id,
+    newlyPicked(pickedFromSelection(selectionFromRow(existing)), pickedFromSelection(nextSelection))
+  )
+  if (takenRefusal) return c.json({ success: false, error: takenRefusal }, 400)
+
   const updates: string[] = []
   const values: (string | number | null)[] = []
 
@@ -321,10 +347,71 @@ crud.put('/:id', async c => {
     return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
   }
 
+  if (existing.status === BRAND_BRIEF_STATUS.IN_WORK) {
+    try {
+      await recordCancelledOrders(c.env.DB, id, user.id, existing, body, nextSelection)
+    } catch (err) {
+      console.error('Order cancellation bookkeeping failed:', err)
+    }
+  }
+
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
 
   return c.json({ success: true, data: rowToBrand(row!) })
 })
+
+/** The brief's picks after this save: the body where it says, the stored row elsewhere. */
+function selectionAfterPut(existing: BrandRow, body: UpdateBrandBody): BriefSelection {
+  const own = selectionFromRow(existing)
+  return {
+    conceptId: body.conceptId !== undefined ? body.conceptId || null : own.conceptId,
+    externalIds:
+      body.externalNamingIds !== undefined
+        ? (body.externalNamingIds ?? []).filter((v): v is string => typeof v === 'string' && v !== '')
+        : own.externalIds,
+    internalId: body.internalNamingId !== undefined ? body.internalNamingId || null : own.internalId,
+  }
+}
+
+/**
+ * The author replaced an order with something the team did not make: the order
+ * is cancelled — an `order_cancelled` event per kind (phase 3 answers the order
+ * in Slack from it) and the made items go back to the library.
+ */
+async function recordCancelledOrders(
+  db: D1Database,
+  brandId: string,
+  userId: string,
+  existing: BrandRow,
+  body: UpdateBrandBody,
+  sel: BriefSelection
+): Promise<void> {
+  const cancelled = await cancelledOrderKinds(db, brandId, droppedOrderKinds(existing, body), sel)
+  if (cancelled.length === 0) return
+  for (const kind of cancelled) {
+    const picked = await pickedNames(db, kind, sel)
+    await insertWorkflowEvent(db, brandId, WORKFLOW_EVENT_TYPES.ORDER_CANCELLED, userId, {
+      kind,
+      picked,
+    })
+  }
+  await db.batch(cancelled.flatMap(kind => releaseCancelledStatements(db, brandId, kind, sel)))
+}
+
+async function pickedNames(db: D1Database, kind: string, sel: BriefSelection): Promise<string[]> {
+  const [table, ids] =
+    kind === 'concept'
+      ? ['concepts', sel.conceptId ? [sel.conceptId] : []]
+      : kind === 'externalNaming'
+        ? ['external_namings', sel.externalIds]
+        : ['internal_namings', sel.internalId ? [sel.internalId] : []]
+  if (ids.length === 0) return []
+  const rows = await db
+    .prepare(`SELECT name FROM ${table} WHERE id IN (${ids.map(() => '?').join(',')})`)
+    .bind(...ids)
+    .all<{ name: string }>()
+  return rows.results.map(r => r.name)
+}
 
 crud.delete('/:id', async c => {
   const id = c.req.param('id')
@@ -359,6 +446,8 @@ crud.delete('/:id', async c => {
     c.env.DB.prepare(
       "UPDATE component_variants SET used_in_brand_id = NULL, status = 'active', updated_at = datetime('now') WHERE used_in_brand_id = ?"
     ).bind(id),
+    // What the teams made for this brief's order goes back to the library.
+    ...releaseAllStatements(c.env.DB, id),
     c.env.DB.prepare('DELETE FROM brands WHERE id = ?').bind(id),
   ])
 

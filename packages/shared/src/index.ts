@@ -6,6 +6,12 @@ export {
   brandHasNewBriefsFromRow,
 } from './utils/brandHasNewBriefs';
 export type { BrandHasNewBriefsInput } from './utils/brandHasNewBriefs';
+export {
+  conceptOrderAnswers,
+  namingOrderAnswers,
+  internalOrderAnswers,
+} from './utils/orderAnswers';
+export type { OrderAnswer } from './utils/orderAnswers';
 export { PHOSPHOR_VIEW_BOX, phosphorPaths } from './utils/phosphorGlyph';
 export {
   ASSET_LARGE_MAX_SIDE,

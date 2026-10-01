@@ -4,6 +4,7 @@ import {
   SLACK_SECTION_TEXT_LIMIT,
   SLACK_TRUNCATED_NOTE,
   brandBriefUrl,
+  orderPageUrl,
   buildApprovedWorkflowMessage,
   buildNeedsRevisionMessage,
   buildNewBriefsApprovalMessage,
@@ -114,6 +115,15 @@ describe('brief buttons', () => {
     )
     expect(view(buildSubmittedMessage('C', data)).buttons[0]).toBe(
       'Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1'
+    )
+  })
+
+  it('the order message to bc-strategy opens the order page (phase 2a)', () => {
+    expect(orderPageUrl('https://brand-constructor.pages.dev/', 'brand_1')).toBe(
+      'https://brand-constructor.pages.dev/orders/brand_1'
+    )
+    expect(view(buildNewBriefsStrategyMessage('C', data, brand)).buttons[0]).toBe(
+      'Відкрити бриф → https://brand-constructor.pages.dev/orders/brand_1'
     )
   })
 

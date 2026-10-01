@@ -176,6 +176,10 @@ function describeKnown(f: FailureLike): Omit<ErrorText, 'detail'> | null {
   return null
 }
 
+function isUkrainian(text: string): boolean {
+  return /[А-ЯҐЄІЇа-яґєії]/.test(text)
+}
+
 export function describeApiError(err: unknown, action: ErrorAction): ErrorText {
   const f = readFailure(err)
   const known = describeKnown(f)
@@ -184,7 +188,9 @@ export function describeApiError(err: unknown, action: ErrorAction): ErrorText {
     .join(' · ')
   return {
     title: known?.title ?? FALLBACK_TITLE[action],
-    body: known?.body ?? FALLBACK_BODY,
+    // The worker already speaks Ukrainian for the brief and order rules
+    // («Бриф уже не в роботі…»): that sentence says it better than the fallback.
+    body: known?.body ?? (isUkrainian(f.message) ? f.message : FALLBACK_BODY),
     detail,
   }
 }

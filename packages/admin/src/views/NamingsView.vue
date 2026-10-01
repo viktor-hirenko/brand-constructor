@@ -9,6 +9,8 @@ import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import NamingCreateModal from '@/components/library/NamingCreateModal.vue'
+import { forBriefLabel } from '@/utils/orderBriefs'
 
 interface DomainPreview {
   available: boolean
@@ -76,18 +78,6 @@ const {
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
-const newName = ref('')
-const newTagline = ref('')
-const newDomain = ref('')
-const newConceptId = ref<string | null>(null)
-const creating = ref(false)
-
-const createPreviewLoading = ref(false)
-const createPreviewError = ref<string | null>(null)
-const createPreviewData = ref<DomainPreview | null>(null)
-const createPreviewAttempted = ref(false)
-let createPreviewTimer: ReturnType<typeof setTimeout> | null = null
-
 const editId = ref('')
 const editName = ref('')
 const editTagline = ref('')
@@ -105,26 +95,11 @@ const saving = ref(false)
 
 const checkingDomainId = ref<string | null>(null)
 
-function clearCreatePreviewTimer() {
-  if (createPreviewTimer) {
-    clearTimeout(createPreviewTimer)
-    createPreviewTimer = null
-  }
-}
-
 function clearEditPreviewTimer() {
   if (editPreviewTimer) {
     clearTimeout(editPreviewTimer)
     editPreviewTimer = null
   }
-}
-
-function resetCreateDomainPreview() {
-  clearCreatePreviewTimer()
-  createPreviewLoading.value = false
-  createPreviewError.value = null
-  createPreviewData.value = null
-  createPreviewAttempted.value = false
 }
 
 function resetEditDomainPreview() {
@@ -133,37 +108,6 @@ function resetEditDomainPreview() {
   editPreviewError.value = null
   editPreviewData.value = null
   editPreviewAttempted.value = false
-}
-
-async function loadCreateDomainPreview() {
-  const raw = newDomain.value.trim()
-  if (!raw || !raw.includes('.')) {
-    resetCreateDomainPreview()
-    return
-  }
-  createPreviewLoading.value = true
-  createPreviewError.value = null
-  createPreviewData.value = null
-  createPreviewAttempted.value = false
-  try {
-    const data = await apiPost<DomainPreview | null>('/api/namings/external/preview-domain', {
-      domain: raw,
-    })
-    createPreviewData.value = data
-  } catch (e) {
-    createPreviewError.value = e instanceof Error ? e.message : 'Could not load domain preview'
-  } finally {
-    createPreviewLoading.value = false
-    createPreviewAttempted.value = true
-  }
-}
-
-function scheduleCreateDomainPreview() {
-  clearCreatePreviewTimer()
-  createPreviewTimer = setTimeout(() => {
-    createPreviewTimer = null
-    void loadCreateDomainPreview()
-  }, 500)
 }
 
 async function loadEditDomainPreview() {
@@ -200,7 +144,8 @@ function scheduleEditDomainPreview() {
 function refreshList(options?: { silent?: boolean }) {
   // No page switcher: ask for the server's maximum (100). The default 20 hid
   // every naming past the twentieth — 38 external ones in prod on 29.09.
-  const params: Record<string, string> = { status: statusFilter.value, per_page: '100' }
+  // `include_reserved`: the Admin also lists what was made for a brief's order.
+  const params: Record<string, string> = { status: statusFilter.value, per_page: '100', include_reserved: '1' }
   if (activeTab.value === 'external') {
     if (conceptFilter.value !== 'all') {
       params.filter = conceptFilter.value
@@ -213,29 +158,12 @@ function refreshList(options?: { silent?: boolean }) {
 
 onMounted(() => {
   refreshList()
-  fetchConcepts({ per_page: '100', status: 'all' })
+  fetchConcepts({ per_page: '100', status: 'all', include_reserved: '1' })
 })
 watch([activeTab, conceptFilter, statusFilter], () => refreshList())
 
 const pollingPaused = computed(() => showCreateModal.value || showEditModal.value)
 useListPolling(() => refreshList({ silent: true }), { paused: pollingPaused })
-
-watch([newDomain, showCreateModal, activeTab], () => {
-  if (!showCreateModal.value) {
-    resetCreateDomainPreview()
-    return
-  }
-  if (activeTab.value !== 'external') {
-    resetCreateDomainPreview()
-    return
-  }
-  const raw = newDomain.value.trim()
-  if (!raw || !raw.includes('.')) {
-    resetCreateDomainPreview()
-    return
-  }
-  scheduleCreateDomainPreview()
-})
 
 watch([editDomain, showEditModal, activeTab], () => {
   if (!showEditModal.value) {
@@ -259,38 +187,12 @@ function formatPreviewPrice(price: number): string {
 }
 
 function openCreateModal() {
-  newName.value = ''
-  newTagline.value = ''
-  newDomain.value = ''
-  newConceptId.value = null
-  resetCreateDomainPreview()
-  fetchConcepts({ per_page: '100' })
   showCreateModal.value = true
 }
 
-async function handleCreate() {
-  if (!newName.value.trim()) return
-  creating.value = true
-  try {
-    if (activeTab.value === 'external') {
-      await apiPost('/api/namings/external', {
-        name: newName.value.trim(),
-        tagline: newTagline.value.trim(),
-        domain: newDomain.value.trim() || null,
-        concept_id: newConceptId.value || null,
-      })
-    } else {
-      await apiPost('/api/namings/internal', {
-        name: newName.value.trim(),
-        tagline: newTagline.value.trim(),
-      })
-    }
-    showCreateModal.value = false
-    resetCreateDomainPreview()
-    refreshList({ silent: true })
-  } finally {
-    creating.value = false
-  }
+function onNamingCreated() {
+  showCreateModal.value = false
+  refreshList({ silent: true })
 }
 
 type InternalNamingRow = InternalNaming & { author_name: string }
@@ -316,7 +218,7 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
     editIsOverride.value = false
     editOverrideStatus.value = null
   }
-  fetchConcepts({ per_page: '100' })
+  fetchConcepts({ per_page: '100', include_reserved: '1' })
   showEditModal.value = true
 }
 
@@ -651,6 +553,12 @@ async function confirmDeleteNaming() {
                 >
                   Used in {{ n.brand_name || '—' }}
                 </span>
+                <span
+                  v-else-if="forBriefLabel(n)"
+                  class="namings-view__usage-badge namings-view__usage-badge--for-brief"
+                >
+                  {{ forBriefLabel(n) }}
+                </span>
                 <span v-else>—</span>
               </td>
               <td>{{ n.concept_name || '—' }}</td>
@@ -691,6 +599,12 @@ async function confirmDeleteNaming() {
                 >
                   Used in {{ n.brand_name || '—' }}
                 </span>
+                <span
+                  v-else-if="forBriefLabel(n)"
+                  class="namings-view__usage-badge namings-view__usage-badge--for-brief"
+                >
+                  {{ forBriefLabel(n) }}
+                </span>
                 <span v-else>—</span>
               </td>
               <td>{{ n.author_name }}</td>
@@ -719,74 +633,12 @@ async function confirmDeleteNaming() {
       </table>
     </div>
 
-    <BaseModal
+    <NamingCreateModal
       v-if="showCreateModal"
-      :title="`Create ${activeTab === 'external' ? 'External' : 'Internal'} Naming`"
+      :kind="activeTab"
       @close="showCreateModal = false"
-    >
-      <form class="namings-view__form" @submit.prevent="handleCreate">
-        <BaseInput v-model="newName" label="Naming" placeholder="Enter naming..." required />
-        <BaseInput v-model="newTagline" label="Tagline" placeholder="Short description..." />
-        <template v-if="activeTab === 'external'">
-          <BaseInput v-model="newDomain" label="Domain" placeholder="e.g. example.com" />
-          <div
-            v-if="newDomain.trim() && newDomain.includes('.')"
-            class="namings-view__domain-preview"
-          >
-            <p v-if="createPreviewLoading" class="namings-view__hint">
-              Checking registration estimate…
-            </p>
-            <p v-else-if="createPreviewError" class="namings-view__hint namings-view__hint--error">
-              {{ createPreviewError }}
-            </p>
-            <template v-else-if="createPreviewData">
-              <p class="namings-view__domain-preview-row">
-                <span
-                  class="namings-view__status-badge"
-                  :class="
-                    createPreviewData.available
-                      ? 'namings-view__status-badge--available'
-                      : 'namings-view__status-badge--sold'
-                  "
-                >
-                  {{ createPreviewData.available ? 'Available' : 'Sold' }}
-                </span>
-                <span
-                  v-if="createPreviewData.price != null"
-                  class="namings-view__domain-preview-price"
-                >
-                  Est. registration:
-                  {{ createPreviewData.currency || 'USD' }}
-                  {{ formatPreviewPrice(createPreviewData.price) }}
-                </span>
-              </p>
-            </template>
-            <p
-              v-else-if="createPreviewAttempted && !createPreviewLoading"
-              class="namings-view__hint"
-            >
-              Could not retrieve registration estimate. Final price is set when you save.
-            </p>
-          </div>
-          <p class="namings-view__hint">
-            Domain availability will be checked automatically via Pananames API after creation.
-          </p>
-          <div class="namings-view__field">
-            <label class="namings-view__label">Link to Concept</label>
-            <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
-              <option :value="null">— No concept —</option>
-              <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
-          </div>
-        </template>
-      </form>
-      <template #footer>
-        <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
-        <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
-          Create
-        </BaseButton>
-      </template>
-    </BaseModal>
+      @created="onNamingCreated"
+    />
 
     <BaseModal
       v-if="showDeleteConfirm"
@@ -1193,6 +1045,12 @@ async function confirmDeleteNaming() {
     &--used {
       background-color: #e2e3e5;
       color: #383d41;
+    }
+
+    // Made for a brief's order and reserved for it (phase 2a).
+    &--for-brief {
+      background-color: $color-primary-light;
+      color: $color-primary-hover;
     }
   }
 

@@ -16,6 +16,7 @@ import {
   insertWorkflowEvent,
   WORKFLOW_EVENT_TYPES,
 } from '../utils/brand-workflow'
+import { checkSelectable, pickedFromCeoSelections } from '../utils/orders'
 
 const ceo = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -61,6 +62,14 @@ ceo.patch('/:id/ceo-selections', async c => {
       400
     )
   }
+
+  // The CEO may not offer what another brief's order made or another brand uses.
+  const taken = await checkSelectable(
+    c.env.DB,
+    id,
+    pickedFromCeoSelections(parsed.data.ceoSelections)
+  )
+  if (taken) return c.json({ success: false, error: taken }, 400)
 
   await c.env.DB.prepare(
     `UPDATE brands SET ceo_selections = ?, updated_at = ? WHERE id = ?`

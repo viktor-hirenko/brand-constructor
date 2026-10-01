@@ -4,6 +4,13 @@ import { z } from 'zod'
 import type { Env, Variables } from '../types'
 import { requireLibraryAccess } from '../middleware/auth'
 import { generateId } from '../utils/id'
+import {
+  checkOrderTarget,
+  pickedByAnotherBrief,
+  reserveIsFrozen,
+  reserveListFilter,
+  RESERVE_FROZEN_MESSAGE,
+} from '../utils/orders'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -12,6 +19,8 @@ const createSchema = z.object({
   description: z.string().max(2000).default(''),
   mode: z.enum(['light', 'dark']).nullable().optional(),
   naming_ids: z.array(z.string()).max(10).optional(),
+  /** The brief whose order this concept fulfils (Orders page; phase 2a). */
+  for_brand_id: z.string().min(1).nullable().optional(),
 })
 
 const updateSchema = z.object({
@@ -30,6 +39,7 @@ const updateSchema = z.object({
   gallery_url_8: z.string().nullable().optional(),
   gallery_url_9: z.string().nullable().optional(),
   gallery_url_10: z.string().nullable().optional(),
+  for_brand_id: z.string().min(1).nullable().optional(),
 })
 
 app.get('/', async c => {
@@ -57,6 +67,10 @@ app.get('/', async c => {
     params.push(mode)
   }
 
+  const reserve = reserveListFilter('c', availableForBrand, c.req.query('include_reserved'))
+  whereClause += reserve.sql
+  params.push(...reserve.binds)
+
   const countResult = await c.env.DB.prepare(
     `SELECT COUNT(*) as total FROM concepts c WHERE ${whereClause}`
   )
@@ -64,10 +78,12 @@ app.get('/', async c => {
     .first<{ total: number }>()
 
   const concepts = await c.env.DB.prepare(
-    `SELECT c.*, u.name as author_name, COALESCE(b.internal_name, c.used_in_brand_id) as brand_name
+    `SELECT c.*, u.name as author_name, COALESCE(b.internal_name, c.used_in_brand_id) as brand_name,
+       fb.internal_name as for_brand_name
      FROM concepts c
      LEFT JOIN users u ON c.created_by = u.id
      LEFT JOIN brands b ON c.used_in_brand_id = b.id
+     LEFT JOIN brands fb ON c.for_brand_id = fb.id
      WHERE ${whereClause}
      ORDER BY c.created_at DESC
      LIMIT ? OFFSET ?`
@@ -88,10 +104,12 @@ app.get('/:id', async c => {
   const id = c.req.param('id')
 
   const concept = await c.env.DB.prepare(
-    `SELECT c.*, u.name as author_name, b.internal_name as brand_name
+    `SELECT c.*, u.name as author_name, b.internal_name as brand_name,
+       fb.internal_name as for_brand_name
      FROM concepts c
      LEFT JOIN users u ON c.created_by = u.id
      LEFT JOIN brands b ON c.used_in_brand_id = b.id
+     LEFT JOIN brands fb ON c.for_brand_id = fb.id
      WHERE c.id = ?`
   )
     .bind(id)
@@ -133,13 +151,19 @@ app.post('/', requireLibraryAccess('concepts'), async c => {
     )
   }
 
+  const forBrandId = parsed.data.for_brand_id || null
+  if (forBrandId) {
+    const refusal = await checkOrderTarget(c.env.DB, forBrandId, 'concept', null)
+    if (refusal) return c.json({ success: false, error: refusal }, 400)
+  }
+
   const user = c.get('user')
   const id = generateId('con')
 
   await c.env.DB.prepare(
-    'INSERT INTO concepts (id, name, description, mode, created_by) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO concepts (id, name, description, mode, created_by, for_brand_id) VALUES (?, ?, ?, ?, ?, ?)'
   )
-    .bind(id, parsed.data.name, parsed.data.description, parsed.data.mode || null, user.id)
+    .bind(id, parsed.data.name, parsed.data.description, parsed.data.mode || null, user.id, forBrandId)
     .run()
 
   const namingIds = parsed.data.naming_ids?.filter(Boolean) ?? []
@@ -159,7 +183,7 @@ app.post('/', requireLibraryAccess('concepts'), async c => {
       generateId('log'),
       user.id,
       id,
-      JSON.stringify({ name: parsed.data.name, naming_ids: namingIds })
+      JSON.stringify({ name: parsed.data.name, naming_ids: namingIds, for_brand_id: forBrandId })
     )
     .run()
 
@@ -187,6 +211,24 @@ app.put('/:id', requireLibraryAccess('concepts'), async c => {
 
   if (isConceptLocked(existing)) {
     return c.json({ success: false, error: CONCEPT_LOCKED_ERROR }, 409)
+  }
+
+  const nextForBrand = parsed.data.for_brand_id
+  const currentForBrand = (existing.for_brand_id as string | null) ?? null
+  if (nextForBrand !== undefined && (nextForBrand || null) !== currentForBrand) {
+    if (await reserveIsFrozen(c.env.DB, currentForBrand)) {
+      return c.json({ success: false, error: RESERVE_FROZEN_MESSAGE }, 409)
+    }
+    if (nextForBrand) {
+      const refusal = await checkOrderTarget(c.env.DB, nextForBrand, 'concept', null)
+      if (refusal) return c.json({ success: false, error: refusal }, 400)
+      if (await pickedByAnotherBrief(c.env.DB, 'concept', id, nextForBrand)) {
+        return c.json(
+          { success: false, error: 'Цей концепт уже обрано в іншому брифі — привʼязати його до замовлення не можна.' },
+          400
+        )
+      }
+    }
   }
 
   const updates: string[] = []
@@ -234,6 +276,10 @@ app.delete('/:id', requireLibraryAccess('concepts'), async c => {
       { success: false, error: 'Cannot delete a concept used in a brand. Archive it instead.' },
       409
     )
+  }
+
+  if (await reserveIsFrozen(c.env.DB, existing.for_brand_id as string | null)) {
+    return c.json({ success: false, error: RESERVE_FROZEN_MESSAGE }, 409)
   }
 
   await c.env.DB.prepare('UPDATE external_namings SET concept_id = NULL WHERE concept_id = ?')

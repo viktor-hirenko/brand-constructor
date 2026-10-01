@@ -12,6 +12,7 @@ import assetsRoutes from './routes/assets'
 import usersRoutes from './routes/users'
 import authRoutes from './routes/auth'
 import brandsRoutes from './routes/brands'
+import ordersRoutes from './routes/orders'
 import { batchCheckDomains, isPananamesConfigured } from './utils/domain-check'
 import {
   assetKeysToTry,
@@ -88,6 +89,7 @@ app.route('/api/components', componentsRoutes)
 app.route('/api/assets', assetsRoutes)
 app.route('/api/users', usersRoutes)
 app.route('/api/brands', brandsRoutes)
+app.route('/api/orders', ordersRoutes)
 
 app.notFound(c => {
   return c.json({ success: false, error: 'Not Found' }, 404)

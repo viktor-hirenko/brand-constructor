@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Concept, ExternalNaming } from '@brand-constructor/shared'
-import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
+import type { Concept } from '@brand-constructor/shared'
+import { useApiList, apiDelete, getAssetUrl } from '@/composables/useApi'
 import { describeApiError } from '@/utils/apiErrorText'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import { pinLeavingCard, useDeleteAnimation } from '@/composables/useDeleteAnimation'
+import { forBriefLabel } from '@/utils/orderBriefs'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseInput from '@/components/ui/BaseInput.vue'
-import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import ConceptCreateModal from '@/components/library/ConceptCreateModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -34,76 +34,30 @@ function onConceptSortChange(value: string) {
   setConceptSort(field, dir)
 }
 
-type NamingRow = ExternalNaming & { author_name: string }
-const { data: availableNamings, fetchData: fetchNamings } =
-  useApiList<NamingRow>('/api/namings/external')
-
 const showCreateModal = ref(false)
-const newName = ref('')
-const newDescription = ref('')
-const newMode = ref<'light' | 'dark' | null>(null)
-const selectedNamingIds = ref<string[]>([])
-const creating = ref(false)
-
-const unlinkedNamings = computed(() =>
-  availableNamings.value.filter(n => !n.concept_id).sort((a, b) => a.name.localeCompare(b.name))
-)
 
 function refreshConcepts(options?: { silent?: boolean }) {
   // No page switcher: ask for the server's maximum (100), not the default 20.
+  // `include_reserved`: the Admin also lists what was made for a brief's order.
   fetchData({
-    queryParams: { status: statusFilter.value, per_page: '100' },
+    queryParams: { status: statusFilter.value, per_page: '100', include_reserved: '1' },
     silent: options?.silent,
   })
 }
 
 onMounted(() => {
   refreshConcepts()
-  fetchNamings({ per_page: '100', filter: 'standalone' })
 })
 
 watch(statusFilter, () => refreshConcepts())
 
 function openCreateModal() {
-  newName.value = ''
-  newDescription.value = ''
-  newMode.value = null
-  selectedNamingIds.value = []
-  fetchNamings({ per_page: '100', filter: 'standalone' })
   showCreateModal.value = true
 }
 
-function toggleNaming(id: string) {
-  const idx = selectedNamingIds.value.indexOf(id)
-  if (idx === -1) {
-    selectedNamingIds.value = [...selectedNamingIds.value, id]
-  } else {
-    selectedNamingIds.value = selectedNamingIds.value.filter(v => v !== id)
-  }
-}
-
-async function handleCreate() {
-  if (!newName.value.trim()) return
-  creating.value = true
-  try {
-    const payload: Record<string, unknown> = {
-      name: newName.value.trim(),
-      description: newDescription.value.trim(),
-      mode: newMode.value,
-    }
-    if (selectedNamingIds.value.length > 0) {
-      payload.naming_ids = selectedNamingIds.value
-    }
-    const concept = await apiPost<Concept>('/api/concepts', payload)
-    showCreateModal.value = false
-    newName.value = ''
-    newDescription.value = ''
-    newMode.value = null
-    selectedNamingIds.value = []
-    router.push(`/concepts/${concept.id}`)
-  } finally {
-    creating.value = false
-  }
+function onConceptCreated(concept: Concept) {
+  showCreateModal.value = false
+  router.push(`/concepts/${concept.id}`)
 }
 
 const showDeleteConfirm = ref(false)
@@ -219,6 +173,11 @@ async function confirmDelete() {
               class="concept-card__usage-badge concept-card__usage-badge--used"
               >Used in {{ concept.brand_name || '—' }}</span
             >
+            <span
+              v-else-if="forBriefLabel(concept)"
+              class="concept-card__usage-badge concept-card__usage-badge--for-brief"
+              >{{ forBriefLabel(concept) }}</span
+            >
           </div>
           <p class="concept-card__description">
             {{ concept.description || 'No description' }}
@@ -259,63 +218,11 @@ async function confirmDelete() {
       </template>
     </BaseModal>
 
-    <BaseModal v-if="showCreateModal" title="Create New Concept" @close="showCreateModal = false">
-      <form class="concepts-view__form" @submit.prevent="handleCreate">
-        <BaseInput v-model="newName" label="Concept Name" placeholder="e.g. WonderLand" required />
-        <BaseTextarea
-          v-model="newDescription"
-          label="Description"
-          placeholder="Theme, mood, visual direction..."
-          :rows="4"
-        />
-        <div class="concepts-view__field">
-          <label class="concepts-view__label">Mode (Theme)</label>
-          <div class="concepts-view__mode-options">
-            <label class="concepts-view__mode-option">
-              <input type="radio" :value="null" v-model="newMode" name="mode" />
-              <span>Not specified</span>
-            </label>
-            <label class="concepts-view__mode-option">
-              <input type="radio" value="light" v-model="newMode" name="mode" />
-              <span>☀️ Light</span>
-            </label>
-            <label class="concepts-view__mode-option">
-              <input type="radio" value="dark" v-model="newMode" name="mode" />
-              <span>🌙 Dark</span>
-            </label>
-          </div>
-        </div>
-        <div v-if="unlinkedNamings.length > 0" class="concepts-view__field">
-          <label class="concepts-view__label">
-            Link to Naming
-            <span class="concepts-view__label-hint">(optional)</span>
-          </label>
-          <div class="concepts-view__naming-list">
-            <label
-              v-for="naming in unlinkedNamings"
-              :key="naming.id"
-              class="concepts-view__naming-option"
-            >
-              <input
-                type="checkbox"
-                :checked="selectedNamingIds.includes(naming.id)"
-                @change="toggleNaming(naming.id)"
-              />
-              <span class="concepts-view__naming-name">{{ naming.name }}</span>
-              <span v-if="naming.tagline" class="concepts-view__naming-tagline">
-                {{ naming.tagline }}
-              </span>
-            </label>
-          </div>
-        </div>
-      </form>
-      <template #footer>
-        <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
-        <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
-          Create Concept
-        </BaseButton>
-      </template>
-    </BaseModal>
+    <ConceptCreateModal
+      v-if="showCreateModal"
+      @close="showCreateModal = false"
+      @created="onConceptCreated"
+    />
   </div>
 </template>
 
@@ -404,100 +311,10 @@ async function confirmDelete() {
     }
   }
 
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-4;
-  }
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-1;
-  }
-
-  &__label {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-text;
-  }
-
-  &__label-hint {
-    font-weight: $font-weight-normal;
-    color: $color-text-muted;
-  }
-
-  &__naming-list {
-    max-height: 180px;
-    overflow-y: auto;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    padding: $spacing-2;
-  }
-
-  &__naming-option {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2;
-    padding: $spacing-2;
-    border-radius: $radius-sm;
-    cursor: pointer;
-    font-size: $font-size-sm;
-    transition: background-color $transition-fast;
-
-    &:hover {
-      background-color: $color-bg;
-    }
-
-    input[type='checkbox'] {
-      flex-shrink: 0;
-    }
-  }
-
-  &__naming-name {
-    font-weight: $font-weight-medium;
-  }
-
-  &__naming-tagline {
-    color: $color-text-secondary;
-    font-size: $font-size-xs;
-  }
-
-  &__mode-options {
-    display: flex;
-    gap: $spacing-4;
-    flex-wrap: wrap;
-  }
-
   &__confirm-text {
     font-size: $font-size-sm;
     color: $color-text;
     line-height: $line-height-normal;
-  }
-
-  &__mode-option {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2;
-    cursor: pointer;
-    font-size: $font-size-sm;
-    padding: $spacing-2 $spacing-3;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    transition: all $transition-fast;
-
-    &:hover {
-      border-color: $color-primary;
-    }
-
-    &:has(input:checked) {
-      border-color: $color-primary;
-      background-color: rgba($color-primary, 0.05);
-    }
-
-    input[type='radio'] {
-      margin: 0;
-    }
   }
 }
 
@@ -566,6 +383,13 @@ async function confirmDelete() {
     &--used {
       background-color: #e2e3e5;
       color: #383d41;
+    }
+
+    // Made for a brief's order and reserved for it (phase 2a); the Admin's
+    // primary family, so it reads apart from the grey «Used in».
+    &--for-brief {
+      background-color: $color-primary-light;
+      color: $color-primary-hover;
     }
   }
 

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS concepts (
   gallery_url_10 TEXT,
   created_by TEXT NOT NULL,
   used_in_brand_id TEXT,
+  for_brand_id TEXT REFERENCES brands(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (created_by) REFERENCES users(id)
@@ -47,6 +48,7 @@ CREATE TABLE IF NOT EXISTS external_namings (
   status TEXT NOT NULL DEFAULT 'active',
   created_by TEXT NOT NULL,
   used_in_brand_id TEXT,
+  for_brand_id TEXT REFERENCES brands(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (concept_id) REFERENCES concepts(id) ON DELETE SET NULL,
@@ -60,6 +62,7 @@ CREATE TABLE IF NOT EXISTS internal_namings (
   status TEXT NOT NULL DEFAULT 'active',
   created_by TEXT NOT NULL,
   used_in_brand_id TEXT,
+  for_brand_id TEXT REFERENCES brands(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (created_by) REFERENCES users(id)
@@ -208,6 +211,9 @@ CREATE INDEX IF NOT EXISTS idx_concepts_created_by ON concepts(created_by);
 CREATE INDEX IF NOT EXISTS idx_external_namings_concept_id ON external_namings(concept_id);
 CREATE INDEX IF NOT EXISTS idx_external_namings_status ON external_namings(status);
 CREATE INDEX IF NOT EXISTS idx_internal_namings_status ON internal_namings(status);
+CREATE INDEX IF NOT EXISTS idx_concepts_for_brand ON concepts(for_brand_id);
+CREATE INDEX IF NOT EXISTS idx_external_namings_for_brand ON external_namings(for_brand_id);
+CREATE INDEX IF NOT EXISTS idx_internal_namings_for_brand ON internal_namings(for_brand_id);
 CREATE INDEX IF NOT EXISTS idx_component_variants_type_id ON component_variants(component_type_id);
 CREATE INDEX IF NOT EXISTS idx_component_variants_status ON component_variants(status);
 CREATE INDEX IF NOT EXISTS idx_assets_entity ON assets(entity_type, entity_id);

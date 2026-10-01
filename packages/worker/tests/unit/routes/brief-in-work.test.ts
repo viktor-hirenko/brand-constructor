@@ -57,6 +57,7 @@ d('draft → in_work («Відправити в роботу»)', () => {
   })
 
   it('sends the same four messages as before, buttons to the Admin, none for PR and Design', async () => {
+    // bc-strategy's button opens the order page (phase 2a): Strategy cannot open the brief itself.
     const app = createBrandApp()
     insertBrand(app.db, { concept_id: null, external_naming_ids: [], new_concept_brief: CONCEPT_ORDER })
     await app.request('po', 'PATCH', '/api/brands/brand_1/status', { status: 'in_work' })
@@ -66,7 +67,7 @@ d('draft → in_work («Відправити в роботу»)', () => {
     const button = (ch: string) =>
       byChannel[ch].blocks?.find(b => b.type === 'actions')?.elements?.find(e => e.text.text === 'Відкрити бриф')
     expect(button('C_APPROVALS')?.url).toBe(`${ADMIN_URL}/workspace/brand/brand_1`)
-    expect(button('C_STRATEGY')?.url).toBe(`${ADMIN_URL}/workspace/brand/brand_1`)
+    expect(button('C_STRATEGY')?.url).toBe(`${ADMIN_URL}/orders/brand_1`)
     expect(button('C_PR')).toBeUndefined()
     expect(button('C_DESIGN')).toBeUndefined()
     // the order message is kept for the «скасовано» reply of phase 3

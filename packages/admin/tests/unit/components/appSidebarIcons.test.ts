@@ -9,7 +9,8 @@ import { phosphorPaths } from '@brand-constructor/shared'
  *
  * The designer's mapping table `5658:39246`, section "Admin sidebar", gives
  * five rows `Use case · Current · → · Phosphor name · Weight`; `Users` has no
- * row and the owner chose Phosphor `Users` for it. Sidebar `5382:30672` draws
+ * row and the owner chose Phosphor `Users` for it. `Orders` (brief-orders plan,
+ * phase 2a) has no row either; the plan names Phosphor `ClipboardText`. Sidebar `5382:30672` draws
  * each glyph 20×20 with the label 8 after it.
  *
  * What is pinned is the BINDING, not a mention: for each menu label, the
@@ -26,9 +27,10 @@ const SOURCE = readFileSync(
 const TEMPLATE = SOURCE.slice(SOURCE.indexOf('<template>'), SOURCE.lastIndexOf('</template>'))
 const STYLE = SOURCE.slice(SOURCE.indexOf('<style'))
 
-/** `5658:39246` "Admin sidebar" rows, plus the owner's `Users`. */
+/** `5658:39246` "Admin sidebar" rows, plus the owner's `Users` and the plan's `Orders`. */
 const EXPECTED: ReadonlyArray<readonly [label: string, file: string]> = [
   ['Brands', 'regular/tag.svg'],
+  ['Orders', 'regular/clipboard-text.svg'],
   ['Concepts', 'regular/lightbulb.svg'],
   ['Namings', 'regular/text-aa.svg'],
   ['PR Packages', 'regular/megaphone.svg'],
@@ -60,7 +62,7 @@ describe('AppSidebar — Phosphor glyphs from the mapping table', () => {
   const imports = phosphorImports(SOURCE)
   const icons = navIcons(SOURCE)
 
-  it('has exactly the six menu rows, no more and no fewer', () => {
+  it('has exactly the seven menu rows, no more and no fewer', () => {
     expect([...icons.keys()]).toEqual(EXPECTED.map(([label]) => label))
   })
 

@@ -6,6 +6,14 @@
 // as a trailing block. Section order is fixed — never Object.entries on CEO keys.
 // ---------------------------------------------------------------------------
 
+import {
+  ORDER_SECTION_TITLES,
+  conceptOrderAnswers,
+  internalOrderAnswers,
+  namingOrderAnswers,
+  type OrderAnswer,
+} from '@brand-constructor/shared'
+
 interface SlackBlockButton {
   type: 'button'
   text: { type: 'plain_text'; text: string }
@@ -307,6 +315,14 @@ export function brandBriefUrl(adminUrl: string, brandId: string): string {
   return `${adminUrl.replace(/\/+$/, '')}/workspace/brand/${brandId}`
 }
 
+/**
+ * The order page in the Admin (phase 2a). The Strategy team cannot open a
+ * brief that is not approved; the order page shows them what they need.
+ */
+export function orderPageUrl(adminUrl: string, brandId: string): string {
+  return `${adminUrl.replace(/\/+$/, '')}/orders/${brandId}`
+}
+
 /** Slack refuses a section whose text is over 3000 characters, and a message over 50 blocks. */
 export const SLACK_SECTION_TEXT_LIMIT = 3000
 export const SLACK_MAX_BLOCKS = 50
@@ -351,6 +367,8 @@ export function packSectionTexts(
 interface BuildMessageOpts {
   /** False hides «Відкрити бриф» — for channels whose readers cannot open the brief yet. */
   briefButton?: boolean
+  /** Where «Відкрити бриф» leads instead of the brief itself. */
+  briefButtonUrl?: string
 }
 
 function buildMessage(
@@ -366,7 +384,7 @@ function buildMessage(
     elements.push({
       type: 'button',
       text: { type: 'plain_text', text: 'Відкрити бриф' },
-      url: brandBriefUrl(data.adminUrl, data.brandId),
+      url: opts.briefButtonUrl ?? brandBriefUrl(data.adminUrl, data.brandId),
       action_id: 'open_brand_brief',
     })
   }
@@ -560,65 +578,27 @@ function needsRevisionSectionFragment(input: RevisionSectionInput): SectionOrSki
   return sections
 }
 
+// The order answers come from shared `orderAnswers` — the Orders page of the
+// Admin shows the very same lines.
+function orderFragment(title: string, answers: OrderAnswer[]): SectionOrSkip[] {
+  return [spacer(), briefDivider(title), ...answers.map(a => field(a.label, a.value))]
+}
+
 function conceptBriefFragment(brief: Record<string, unknown> | null): SectionOrSkip[] {
   if (!brief) return []
-  const zones = brief.domainZones as string[] | undefined
-  return [
-    spacer(),
-    briefDivider('Бриф нового концепту'),
-    optBoolField('Нове ГЕО', brief.isNewGeo),
-    field('Інфо про ГЕО', brief.geoInfo as string),
-    optBoolField('Потрібен Brand Research GEO', brief.needsGeoResearch),
-    field('Що не підійшло', brief.conceptFeedback as string),
-    field('Інфо від трафік-команди', brief.trafficTeamInfo as string),
-    field('Конкуренти', brief.competitors as string),
-    brief.keepProductConnection == null
-      ? null
-      : field(
-          "Зв'язок з іншими продуктами",
-          brief.keepProductConnection
-            ? `Так${brief.connectedProducts ? ` (${brief.connectedProducts})` : ''}`
-            : 'Ні'
-        ),
-    field('Мова назви', brief.namingLanguage as string),
-    field('Бажані слова в назві', brief.desiredWordsInName as string),
-    zones && zones.length > 0 ? field('Доменні зони', zones.join(', ')) : null,
-    field('Бюджет домена', brief.domainBudget != null ? `$${brief.domainBudget}` : null),
-    field('Дедлайн', brief.namingDeadline as string),
-    field('Додаткова інфо по ГЕО', brief.additionalGeoInfo as string),
-  ]
+  return orderFragment(ORDER_SECTION_TITLES.concept, conceptOrderAnswers(brief))
 }
 
 function namingBriefFragment(brief: Record<string, unknown> | null): SectionOrSkip[] {
   if (!brief) return []
-  const zones = brief.domainZones as string[] | undefined
-  return [
-    spacer(),
-    briefDivider('Бриф нового External Naming'),
-    optBoolField('Нове ГЕО', brief.isNewGeo),
-    field('Що не підійшло', brief.namingFeedback as string),
-    field('Інфо від трафік-команди', brief.trafficTeamInfo as string),
-    optBoolField('Потрібен Brand Research GEO', brief.needsGeoResearch),
-    field('Конкуренти', brief.competitors as string),
-    field('Мова назви', brief.namingLanguage as string),
-    field('Бажані слова в назві', brief.desiredWordsInName as string),
-    zones && zones.length > 0 ? field('Доменні зони', zones.join(', ')) : null,
-    field('Слова яких уникнути', brief.wordsToAvoid as string),
-    field('Бюджет домена', brief.domainBudget != null ? `$${brief.domainBudget}` : null),
-    field('Дедлайн', brief.namingDeadline as string),
-    field('Додаткова інфо по ГЕО', brief.additionalGeoInfo as string),
-  ]
+  return orderFragment(ORDER_SECTION_TITLES.externalNaming, namingOrderAnswers(brief))
 }
 
 function internalNamingBriefFragment(stepData: Record<string, unknown> | null): SectionOrSkip[] {
   const intNaming = stepData?.internalNaming as Record<string, unknown> | undefined
   const feedback = intNaming?.newNamingFeedback
   if (!feedback) return []
-  return [
-    spacer(),
-    briefDivider('Бриф нового Internal Naming'),
-    field('Що не підійшло', feedback as string),
-  ]
+  return orderFragment(ORDER_SECTION_TITLES.internalNaming, internalOrderAnswers(feedback))
 }
 
 /** Full brief overview for CEO review (submitted / resubmitted) — PO comments inline per section. */
@@ -862,7 +842,9 @@ export function buildNewBriefsStrategyMessage(
       ...internalNamingBriefFragment(stepData),
       ...jiraInitiativeFragment(data),
     ],
-    data
+    data,
+    // Strategy cannot open a brief `in_work`; the order page shows them the order.
+    { briefButtonUrl: orderPageUrl(data.adminUrl, data.brandId) }
   )
 }
 

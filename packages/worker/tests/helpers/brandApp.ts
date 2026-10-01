@@ -1,6 +1,9 @@
 import { Hono } from 'hono'
 import { vi } from 'vitest'
 import brands from '../../src/routes/brands'
+import concepts from '../../src/routes/concepts'
+import namings from '../../src/routes/namings'
+import orders from '../../src/routes/orders'
 import { createTestD1, type TestD1 } from './sqliteD1'
 
 /**
@@ -14,6 +17,10 @@ export const USERS = {
   po2: { id: 'usr_po2', email: 'po2@x.test', name: 'Petro PO', role: 'product_owner' },
   ceo: { id: 'usr_ceo', email: 'ceo@x.test', name: 'Ceo', role: 'cpo_ceo' },
   admin: { id: 'usr_admin', email: 'admin@x.test', name: 'Admin', role: 'admin' },
+  strategy: { id: 'usr_str', email: 'str@x.test', name: 'Stas Strategy', role: 'strategy_identity' },
+  head: { id: 'usr_head', email: 'head@x.test', name: 'Head DHC', role: 'head_dhc' },
+  pr: { id: 'usr_pr', email: 'pr@x.test', name: 'Pr', role: 'pr_marketing' },
+  design: { id: 'usr_des', email: 'des@x.test', name: 'Designer', role: 'product_designer' },
 } as const
 
 export type UserKey = keyof typeof USERS
@@ -180,6 +187,9 @@ export function createBrandApp(): BrandApp {
     await next()
   })
   app.route('/api/brands', brands as never)
+  app.route('/api/orders', orders as never)
+  app.route('/api/concepts', concepts as never)
+  app.route('/api/namings', namings as never)
 
   const env = {
     DB: db,

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { LIBRARY_TAB_ROLES, USER_ROLES } from '@brand-constructor/shared'
+import { LIBRARY_TAB_ROLES, ORDER_ROLES, USER_ROLES } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 
 function getRequiredRoles(
@@ -25,6 +25,20 @@ const router = createRouter({
       // (backend filters the list per role; the sidebar shows Brands to all).
       path: '/',
       redirect: '/brands',
+    },
+    {
+      // Orders (brief-orders plan, phase 2a): briefs `in_work` as the Strategy
+      // team works them. The worker answers only these roles too.
+      path: '/orders',
+      name: 'orders',
+      component: () => import('@/views/OrdersView.vue'),
+      meta: { roles: ORDER_ROLES },
+    },
+    {
+      path: '/orders/:brandId',
+      name: 'order-detail',
+      component: () => import('@/views/OrderDetailView.vue'),
+      meta: { roles: ORDER_ROLES },
     },
     {
       path: '/concepts',

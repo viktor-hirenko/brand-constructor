@@ -19,7 +19,7 @@ _Бриф містить нові замовлення. На погодженн�
 exports[`message texts (snapshot of every status message) > A2 strategy, the order 1`] = `
 {
   "buttons": [
-    "Відкрити бриф → https://brand-constructor.pages.dev/workspace/brand/brand_1",
+    "Відкрити бриф → https://brand-constructor.pages.dev/orders/brand_1",
     "Jira DHC-1 → https://jira.example/browse/DHC-1",
   ],
   "fallback": "Нове замовлення: New Brand #7",
