@@ -11,6 +11,8 @@ import InternalNamingGrid from '@/components/constructor/alternative-selection/I
 import InternalNamingGridSkeleton from '@/components/constructor/skeletons/InternalNamingGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
+import { splitMadeForBrief } from '@/utils/madeForBrief'
+import MadeForBriefGroups from '@/components/constructor/edit-flow/MadeForBriefGroups.vue'
 
 const store = useConstructorStore()
 const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
@@ -25,6 +27,19 @@ const comment = computed({
 
 const selectedId = computed(() => store.stepData.internalNaming.selectedId)
 const isCreatingNew = computed(() => store.stepData.internalNaming.newNamingFeedback !== null)
+
+/**
+ * Brief-orders plan, phase 2b: the Internal Naming made for this brief's order
+ * comes first once the order was sent to the author, and is picked without
+ * «Обрати цю назву?».
+ */
+const namingGroups = computed(() =>
+  splitMadeForBrief(namings.value, {
+    brandId: store.brandId,
+    ordersReadyAt: store.brandOrdersReadyAt,
+    pickedIds: selectedId.value ? [selectedId.value] : [],
+  })
+)
 
 const showNewModal = ref(false)
 const showDeleteConfirm = ref(false)
@@ -51,6 +66,11 @@ function confirmDeleteBrief() {
 }
 
 function handleSelect(namingId: string) {
+  if (isCreatingNew.value && namingGroups.value.made.some(n => n.id === namingId)) {
+    store.setInternalNamingFeedback(null)
+    store.selectInternalNaming(namingId)
+    return
+  }
   if (isCreatingNew.value) {
     pendingNamingId.value = namingId
     showSwitchConfirm.value = true
@@ -92,12 +112,15 @@ watch(
   <div class="flex flex-col gap-6">
     <InternalNamingGridSkeleton v-if="loading" />
     <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
-    <InternalNamingGrid
-      v-else
-      :namings="namings"
-      :selected-id="selectedId"
-      @select="handleSelect"
-    />
+    <MadeForBriefGroups v-else :made="namingGroups.made" :library="namingGroups.library">
+      <template #default="{ items }">
+        <InternalNamingGrid
+          :namings="items"
+          :selected-id="selectedId"
+          @select="handleSelect"
+        />
+      </template>
+    </MadeForBriefGroups>
 
     <BriefOrderButton
       create-label="Замовити нову назву"

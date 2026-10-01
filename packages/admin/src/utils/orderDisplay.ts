@@ -8,8 +8,9 @@ import type { OrderCreatedCounts, OrderKind, OrderState } from '@brand-construct
 
 export const ORDER_STATE_BADGES: Record<OrderState, { label: string; cls: string }> = {
   open: { label: 'В роботі', cls: 'badge--purple' },
-  // The team sent what it made; the author picks next.
-  ready: { label: 'Чекає на замовника', cls: 'badge--purple' },
+  // The team sent what it made; the author picks next. Amber, as «На
+  // доопрацюванні»: amber means the author has the next move (owner, 01.10).
+  ready: { label: 'Чекає на замовника', cls: 'badge--amber' },
   cancelled: { label: 'Скасовано', cls: 'badge--gray' },
   closed: { label: 'Завершено', cls: 'badge--blue' },
 }
@@ -49,7 +50,9 @@ export function orderBadge(state: OrderState, briefStatus: string): { label: str
   }
   if (briefStatus === 'approved') return { label: 'Затверджено', cls: 'badge--green' }
   if (briefStatus === 'needs_revision') return { label: 'На доопрацюванні', cls: 'badge--amber' }
-  return { label: 'У CEO', cls: 'badge--blue' }
+  // Said as what is happening, like «На доопрацюванні» (owner, 01.10: «У CEO»
+  // only said where the brief was).
+  return { label: 'На погодженні в CEO', cls: 'badge--blue' }
 }
 
 export interface OrderNoteInput {
@@ -66,7 +69,7 @@ export function orderStatusNote(o: OrderNoteInput): string | null {
   if (o.state === 'open') return null
   if (o.state === 'ready') {
     const who = o.readyByName ? `${o.readyByName}, ` : ''
-    return `Відправлено замовнику (${who}${formatOrderDate(o.readyAt)}). Чекаємо, поки він обере.`
+    return `Відправлено замовнику (${who}${formatOrderDate(o.readyAt)}).`
   }
   if (o.state === 'cancelled') {
     return 'Замовник обрав інше з бібліотеки, замовлення скасовано. Робити нічого не треба.'

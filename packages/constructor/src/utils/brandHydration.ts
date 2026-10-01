@@ -8,7 +8,8 @@ export interface ConstructorStoreBrandLoader {
     status?: string,
     internalName?: string,
     ceoComments?: BrandCeoComments | null,
-    ceoSelections?: Record<string, string | string[]> | null
+    ceoSelections?: Record<string, string | string[]> | null,
+    ordersReadyAt?: string | null
   ) => void
 }
 
@@ -98,7 +99,8 @@ export function applyBrandToStore(store: ConstructorStoreBrandLoader, brand: Bra
     brand.status,
     brand.internalName ?? undefined,
     brand.ceoComments ?? undefined,
-    brand.ceoSelections ?? undefined
+    brand.ceoSelections ?? undefined,
+    brand.ordersReadyAt ?? null
   )
 }
 

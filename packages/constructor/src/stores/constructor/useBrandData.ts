@@ -106,6 +106,11 @@ export function useBrandData() {
   const brandId = ref<string | null>(null)
   const brandInternalName = ref<string | null>(null)
   const brandStatus = ref<string>('draft')
+  /**
+   * When the team sent the brief's order to the author (brief-orders plan,
+   * phase 2b): before it the author waits, after it picks what was made.
+   */
+  const brandOrdersReadyAt = ref<string | null>(null)
 
   /**
    * Derived from `brandStatus` — maps the server status to the legacy
@@ -472,11 +477,13 @@ export function useBrandData() {
     data: BrandStepData,
     step: number,
     status?: string,
-    internalName?: string
+    internalName?: string,
+    ordersReadyAt?: string | null
   ) {
     brandId.value = id
     brandInternalName.value = internalName ?? null
     brandStatus.value = status ?? 'draft'
+    brandOrdersReadyAt.value = ordersReadyAt ?? null
     stepData.value = normalizeWizardStepData(data)
     currentStep.value = clampWizardStep(step)
     isDraft.value = false
@@ -486,6 +493,7 @@ export function useBrandData() {
     brandId.value = null
     brandInternalName.value = null
     brandStatus.value = 'draft'
+    brandOrdersReadyAt.value = null
     currentStep.value = 1
     stepData.value = getInitialStepData()
     isDraft.value = true
@@ -498,6 +506,7 @@ export function useBrandData() {
   return {
     // Brand metadata
     brandId,
+    brandOrdersReadyAt,
     brandInternalName,
     brandStatus,
     successType,

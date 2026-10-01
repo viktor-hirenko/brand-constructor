@@ -25,6 +25,9 @@ import {
 } from '@/constants/editFlowLayout'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
 import { needsExternalNamingReselect } from '@/utils/draftConceptCascade'
+import { useLibrariesStore } from '@/stores/libraries'
+import { isMadeForBrief, splitMadeForBrief } from '@/utils/madeForBrief'
+import MadeForBriefGroups from '@/components/constructor/edit-flow/MadeForBriefGroups.vue'
 
 /**
  * Draft inline-edit — concept selection screen (Figma "Twil" flow).
@@ -46,6 +49,31 @@ const router = useRouter()
 const brandId = computed(() => route.params.id as string)
 
 const { data: concepts, error, fetchData, perPage } = useApiList<Concept>('/api/concepts')
+const librariesStore = useLibrariesStore()
+
+/**
+ * Brief-orders plan, phase 2b: once the team sent the order, the concept made
+ * for this brief comes first — from the whole library, not only the current
+ * theme's list (the team may have drawn it in the other theme). The brief's
+ * theme stays: a brief «В роботі» may not change it (`checkInWorkEdit`).
+ * Before the order is sent the made concept is withheld (`splitMadeForBrief`).
+ */
+const conceptGroups = computed(() => {
+  const split = splitMadeForBrief(concepts.value, {
+    brandId: store.brandId,
+    ordersReadyAt: store.brandOrdersReadyAt,
+    pickedIds: selectedId.value ? [selectedId.value] : [],
+  })
+  const fromLibrary = splitMadeForBrief(librariesStore.concepts, {
+    brandId: store.brandId,
+    ordersReadyAt: store.brandOrdersReadyAt,
+  }).made
+  const made = [...split.made, ...fromLibrary.filter(c => !split.made.some(m => m.id === c.id))]
+  return { made, library: split.library }
+})
+const hasAnyConcept = computed(
+  () => conceptGroups.value.made.length + conceptGroups.value.library.length > 0
+)
 
 const selectedId = computed(() => store.stepData.concept.selectedId)
 const previewId = computed(() => store.stepData.concept.previewId ?? null)
@@ -132,6 +160,7 @@ onMounted(() => {
   }
   if (store.stepData.mode == null) store.setMode('light')
   loadConcepts()
+  librariesStore.load(store.brandId)
 })
 
 watch(selectedMode, loadConcepts)
@@ -160,6 +189,17 @@ function applyConceptSelection(conceptId: string) {
 }
 
 function handleSelect(conceptId: string) {
+  // What the team made for this order IS the order fulfilled: no «Обрати цей
+  // концепт?» — the brief goes without asking (brief-orders plan, phase 2b).
+  const made = conceptGroups.value.made.find(c => c.id === conceptId)
+  if (made && isMadeForBrief(made, store.brandId)) {
+    if (hasBrief.value) {
+      store.setNewConceptBrief(null)
+      isCreatingNew.value = false
+    }
+    applyConceptSelection(conceptId)
+    return
+  }
   if (hasBrief.value) {
     pendingConceptId.value = conceptId
     showSwitchConfirm.value = true
@@ -282,14 +322,21 @@ async function goDali() {
 
         <ConceptGridSkeleton v-if="showSkeleton" />
         <UiAsyncState v-else-if="error" :message="error" @retry="loadConcepts" />
-        <ConceptGrid
-          v-else-if="concepts.length > 0"
-          :concepts="concepts"
-          :selected-id="selectedId"
-          :preview-id="previewId"
-          :selection-ring="true"
-          @select="handleSelect"
-        />
+        <MadeForBriefGroups
+          v-else-if="hasAnyConcept"
+          :made="conceptGroups.made"
+          :library="conceptGroups.library"
+        >
+          <template #default="{ items }">
+            <ConceptGrid
+              :concepts="items"
+              :selected-id="selectedId"
+              :preview-id="previewId"
+              :selection-ring="true"
+              @select="handleSelect"
+            />
+          </template>
+        </MadeForBriefGroups>
         <div v-else class="text-center py-8 text-muted-foreground">
           <p>Концептів поки немає. Створіть новий.</p>
         </div>

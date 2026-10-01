@@ -32,3 +32,20 @@ export function needsExternalNamingReselect(input: DraftConceptCascadeInput): bo
   if (input.nextConceptId == null) return false
   return input.nextConceptId !== input.baselineConceptId
 }
+
+/**
+ * Step 2 of the wizard: a new name is ordered FOR a concept (`new_naming_brief`
+ * is answered about it), so when the author goes back and picks another concept
+ * — or orders a new one — that order must go, or it travels to the wrong concept
+ * (H-07, brief-orders plan phase 2b). Unpicking the same concept changes nothing
+ * yet: no other concept has been chosen.
+ */
+export function conceptChangeDropsNamingOrder(input: {
+  currentConceptId: string | null
+  nextConceptId: string | null
+  hasNamingOrder: boolean
+}): boolean {
+  if (!input.hasNamingOrder) return false
+  if (input.nextConceptId === input.currentConceptId) return false
+  return true
+}

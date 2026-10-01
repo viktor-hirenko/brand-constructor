@@ -12,6 +12,7 @@ import ConceptGrid from '@/components/constructor/alternative-selection/ConceptG
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
+import { conceptChangeDropsNamingOrder } from '@/utils/draftConceptCascade'
 
 const store = useConstructorStore()
 const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
@@ -21,6 +22,7 @@ const isCreatingNew = ref(false)
 const showNewModal = ref(false)
 const showDeleteConfirm = ref(false)
 const showSwitchConfirm = ref(false)
+const showNamingOrderConfirm = ref(false)
 const pendingConceptId = ref<string | null>(null)
 
 const selectedId = computed(() => store.stepData.concept.selectedId)
@@ -113,10 +115,24 @@ function applyConceptSelection(conceptId: string) {
   }
 }
 
+/** H-07: the name ordered on step 3 was ordered for the concept picked now. */
+function dropsNamingOrder(nextConceptId: string | null): boolean {
+  return conceptChangeDropsNamingOrder({
+    currentConceptId: selectedId.value,
+    nextConceptId,
+    hasNamingOrder: store.stepData.externalNaming.newNamingBrief != null,
+  })
+}
+
 function handleSelect(conceptId: string) {
   if (hasBrief.value) {
     pendingConceptId.value = conceptId
     showSwitchConfirm.value = true
+    return
+  }
+  if (dropsNamingOrder(conceptId)) {
+    pendingConceptId.value = conceptId
+    showNamingOrderConfirm.value = true
     return
   }
   applyConceptSelection(conceptId)
@@ -126,14 +142,25 @@ function confirmSwitchSelection() {
   const conceptId = pendingConceptId.value
   if (conceptId == null) return
   store.setNewConceptBrief(null)
+  if (dropsNamingOrder(conceptId)) store.setNewNamingBrief(null)
   isCreatingNew.value = false
   showSwitchConfirm.value = false
   pendingConceptId.value = null
   applyConceptSelection(conceptId)
 }
 
+function confirmNamingOrderDrop() {
+  const conceptId = pendingConceptId.value
+  if (conceptId == null) return
+  store.setNewNamingBrief(null)
+  showNamingOrderConfirm.value = false
+  pendingConceptId.value = null
+  applyConceptSelection(conceptId)
+}
+
 function cancelSwitchSelection() {
   showSwitchConfirm.value = false
+  showNamingOrderConfirm.value = false
   pendingConceptId.value = null
 }
 
@@ -143,6 +170,9 @@ function handleCreateBrief() {
 
 function handleBriefSave(brief: NewConceptBrief) {
   store.setNewConceptBrief(brief)
+  // A new concept's order asks for its name too (and step 3 is skipped), so a
+  // name ordered for the concept picked before goes with it (H-07).
+  if (dropsNamingOrder(null)) store.setNewNamingBrief(null)
   store.setConcept({ selectedId: null, previewId: null })
   showNewModal.value = false
   isCreatingNew.value = true
@@ -227,6 +257,16 @@ function confirmDeleteBrief() {
       primary-label="Обрати концепт"
       @cancel="cancelSwitchSelection"
       @primary="confirmSwitchSelection"
+    />
+
+    <ConfirmationModal
+      v-if="showNamingOrderConfirm"
+      title="Змінити концепт?"
+      body="Нову назву замовлено для попереднього концепту. Якщо обрати інший, це замовлення буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Змінити концепт"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmNamingOrderDrop"
     />
   </div>
 </template>

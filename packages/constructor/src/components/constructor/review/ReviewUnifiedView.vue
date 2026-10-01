@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { useLibrariesStore } from '@/stores/libraries'
+import { inWorkHeaderInfo, isMadeForBrief, madeForBriefSummary } from '@/utils/madeForBrief'
 import {
   authorSubmitTarget,
   isInWorkReadyForCeo,
@@ -142,6 +144,18 @@ const emit = defineEmits<{
 }>()
 
 const store = useConstructorStore()
+const librariesStore = useLibrariesStore()
+
+/** What the teams made for this brief — named in the «Замовлення виконано» block. */
+const madeSummary = computed(() => {
+  const mine = <T extends { id: string; for_brand_id?: string | null }>(items: readonly T[]) =>
+    items.filter(i => isMadeForBrief(i, store.brandId))
+  return madeForBriefSummary({
+    concepts: mine(librariesStore.concepts),
+    externalNamings: mine(librariesStore.externalNamings),
+    internalNamings: mine(librariesStore.internalNamings),
+  })
+})
 
 // ─── Store-derived read helpers ─────────────────────────────────────────────
 
@@ -228,12 +242,7 @@ const reviewHeaderInfoOverride = computed(() => {
     }
   }
   if (props.reviewMode === 'po-in-work') {
-    return {
-      title: 'Бриф у роботі',
-      description:
-        'Команди отримали замовлення у Slack. Коли концепт з’явиться в бібліотеці — оберіть його та натисніть «На погодження CEO».',
-      iconVariant: 'warning' as const,
-    }
+    return inWorkHeaderInfo(store.brandOrdersReadyAt, madeSummary.value, !inWorkNotReady.value)
   }
   if (props.reviewMode === 'approved') {
     return {

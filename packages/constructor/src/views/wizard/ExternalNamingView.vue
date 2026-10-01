@@ -12,6 +12,8 @@ import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/Exter
 import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
 import { isExternalNamingCommentRequired, getExternalNamingCommentHint } from '@/utils/externalNamingValidation'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
+import { splitMadeForBrief } from '@/utils/madeForBrief'
+import MadeForBriefGroups from '@/components/constructor/edit-flow/MadeForBriefGroups.vue'
 
 const store = useConstructorStore()
 const orderLocked = computed(() => isBriefOrderLocked(store.brandStatus))
@@ -34,6 +36,23 @@ const isCommentRequired = computed(() =>
 const commentHint = computed(() =>
   getExternalNamingCommentHint(selectedIds.value, namings.value),
 )
+
+/**
+ * Brief-orders plan, phase 2b: names the team made for this brief's order come
+ * first, once the order was sent to the author; picking one needs no «Обрати
+ * цей неймінг?» — it fulfils the order rather than replacing it.
+ */
+const namingGroups = computed(() =>
+  splitMadeForBrief(namings.value, {
+    brandId: store.brandId,
+    ordersReadyAt: store.brandOrdersReadyAt,
+    pickedIds: selectedIds.value,
+  })
+)
+
+function isMadeName(id: string): boolean {
+  return namingGroups.value.made.some(n => n.id === id)
+}
 
 const selectedConceptId = computed(() => store.stepData.concept.selectedId)
 
@@ -69,6 +88,11 @@ function confirmDeleteBrief() {
 }
 
 function handleToggle(namingId: string) {
+  if (isCreatingNew.value && isMadeName(namingId)) {
+    store.setNewNamingBrief(null)
+    store.toggleExternalNaming(namingId)
+    return
+  }
   if (isCreatingNew.value) {
     pendingNamingId.value = namingId
     showSwitchConfirm.value = true
@@ -110,12 +134,15 @@ watch(
   <div class="flex flex-col gap-6">
     <ExternalNamingGridSkeleton v-if="loading" />
     <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
-    <ExternalNamingGrid
-      v-else
-      :namings="namings"
-      :selected-ids="selectedIds"
-      @toggle="handleToggle"
-    />
+    <MadeForBriefGroups v-else :made="namingGroups.made" :library="namingGroups.library">
+      <template #default="{ items }">
+        <ExternalNamingGrid
+          :namings="items"
+          :selected-ids="selectedIds"
+          @toggle="handleToggle"
+        />
+      </template>
+    </MadeForBriefGroups>
 
     <BriefOrderButton
       create-label="Замовити нову назву"

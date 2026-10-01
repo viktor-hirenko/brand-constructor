@@ -80,6 +80,8 @@ export function getWaitingSince(brand: BrandListItem): WaitingSinceResult {
     case BRAND_BRIEF_STATUS.DRAFT:
       return { iso: null, isApprox: false }
     case BRAND_BRIEF_STATUS.IN_WORK:
+      // Once the team sent the order the wait is the Product Owner's (phase 2b).
+      if (brand.ordersReadyAt) return { iso: brand.ordersReadyAt, isApprox: false }
       if (brand.sentToWorkAt) return { iso: brand.sentToWorkAt, isApprox: false }
       return { iso: brand.updatedAt, isApprox: true }
     case BRAND_BRIEF_STATUS.SUBMITTED:
@@ -140,6 +142,18 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
       if (isBriefInWork(brand)) {
         const waitingLine = formatWaitingLine(since, { showRelative: true })
         const days = since.iso ? daysInStatus(since.iso) : 0
+        // The status stays In Work; only this line says the team is done (owner, 02.10).
+        if (brand.status === BRAND_BRIEF_STATUS.IN_WORK && brand.ordersReadyAt) {
+          return {
+            reviewLine: 'Order ready',
+            waitingLine,
+            waitingTone: since.iso ? waitingToneFromDays(days) : 'normal',
+            reviewTitle: 'Team sent the order. Waiting for Product Owner to pick and send to CEO.',
+            waitingTitle: since.iso ? `Order ready since ${formatDate(since.iso)}` : null,
+            waitingSince: since.iso,
+            isApproxDate: since.isApprox,
+          }
+        }
         return {
           reviewLine: 'In work with team',
           waitingLine,

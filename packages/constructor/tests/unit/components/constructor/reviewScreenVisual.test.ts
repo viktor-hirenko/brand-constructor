@@ -36,7 +36,9 @@ function body(source: string): string {
 describe('info block is the kit Alert — Figma 3461:5237', () => {
   it('renders UiAlert and writes no box of its own', () => {
     expect(header).toContain('<UiAlert')
-    expect(header).toContain(":type=\"displayInfo.iconVariant === 'warning' ? 'warning' : 'default'\"")
+    // Warning (yellow) and, since brief-orders phase 2b, Info (blue) are the kit's
+    // own Alert types; everything else is Default.
+    expect(header).toContain(":type=\"displayInfo.iconVariant === 'warning' || displayInfo.iconVariant === 'info' ? displayInfo.iconVariant : 'default'\"")
   })
 
   it('drops the hand-built surface: #EDEDED, padding 24, 14/20 description', () => {

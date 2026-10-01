@@ -19,14 +19,22 @@ import UiAlert from '@/components/ui/UiAlert.vue'
  * the mockup draws — so nothing here needs a colour, a size or a path of its
  * own. The wording is ours and unchanged: the mockup's copy is a different
  * sentence, and copy is not this task's to move.
+ *
+ * The words can be swapped by the caller: after a concept made for the brief's
+ * order is picked there was no «попередній вибір» to speak of (brief-orders
+ * plan, phase 2b).
  */
+withDefaults(defineProps<{ title?: string; description?: string }>(), {
+  title: 'Оберіть новий External Naming',
+  description: 'Попередній вибір більше не відповідає новому концепту.',
+})
 </script>
 
 <template>
   <UiAlert
     class="concept-cascade-banner"
     type="warning"
-    title="Оберіть новий External Naming"
-    description="Попередній вибір більше не відповідає новому концепту."
+    :title="title"
+    :description="description"
   />
 </template>

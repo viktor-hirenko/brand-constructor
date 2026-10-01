@@ -104,6 +104,20 @@ describe('getBrandReviewDisplay', () => {
     expect(getWaitingSince(brand)).toEqual({ iso: '2026-09-30T09:00:00.000Z', isApprox: false })
   })
 
+  it('in_work after the team sent the order: «Order ready», waiting since then; status untouched', () => {
+    const brand = baseBrand({
+      status: BRAND_BRIEF_STATUS.IN_WORK,
+      sentToWorkAt: '2026-09-30T09:00:00.000Z',
+      ordersReadyAt: '2026-10-01T15:00:00.000Z',
+      updatedAt: '2026-10-01T16:00:00.000Z',
+    })
+    const d = getBrandReviewDisplay(brand)
+    expect(d.reviewLine).toBe('Order ready')
+    expect(d.reviewTitle).toBe('Team sent the order. Waiting for Product Owner to pick and send to CEO.')
+    expect(getWaitingSince(brand)).toEqual({ iso: '2026-10-01T15:00:00.000Z', isApprox: false })
+    expect(brand.status).toBe(BRAND_BRIEF_STATUS.IN_WORK)
+  })
+
   it('in_work stays «in work» after the order was swapped for library picks', () => {
     // the order is gone from the brief, but the CEO has not received it yet
     expect(isBriefInWork(baseBrand({ status: BRAND_BRIEF_STATUS.IN_WORK }))).toBe(true)

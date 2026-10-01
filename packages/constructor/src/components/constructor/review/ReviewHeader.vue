@@ -34,8 +34,10 @@ interface InfoOverride {
    * Override the info-block icon. Default `'check'` (circled check used for
    * status-based info blocks like "Бриф готовий!" / "Бриф на розгляді").
    * Use `'warning'` for return / revision attention banners (filled circle icon).
+   * `'info'` is the kit Alert's blue type with its own info glyph — a brief «В
+   * роботі» whose order the team has sent (brief-orders plan, phase 2b).
    */
-  iconVariant?: 'check' | 'warning'
+  iconVariant?: 'check' | 'warning' | 'info'
 }
 
 interface ReviewHeaderProps {
@@ -65,7 +67,7 @@ const showStatusBadge = computed(
 interface InfoMeta {
   title: string
   description: string
-  iconVariant?: 'check' | 'warning'
+  iconVariant?: 'check' | 'warning' | 'info'
 }
 
 const info = computed<InfoMeta | null>(() => {
@@ -128,13 +130,17 @@ const displayInfo = computed<InfoMeta | null>(() => {
       <template v-if="displayInfo" #alert>
         <UiAlert
           class="review-header__info"
-          :type="displayInfo.iconVariant === 'warning' ? 'warning' : 'default'"
+          :type="displayInfo.iconVariant === 'warning' || displayInfo.iconVariant === 'info' ? displayInfo.iconVariant : 'default'"
           :title="displayInfo.title"
           :description="displayInfo.description"
         >
           <template #icon="{ iconClass }">
             <InfoCircleFilledIcon
-              v-if="displayInfo.iconVariant === 'warning'"
+              v-if="displayInfo.iconVariant === 'info'"
+              :class="[iconClass, 'review-header__info-icon review-header__info-icon--info']"
+            />
+            <InfoCircleFilledIcon
+              v-else-if="displayInfo.iconVariant === 'warning'"
               :class="[iconClass, 'review-header__info-icon review-header__info-icon--warning']"
             />
             <CheckBadgeIcon

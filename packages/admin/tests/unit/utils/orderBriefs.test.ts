@@ -80,12 +80,24 @@ describe('order page statuses (owner, 01.10: «пішов далі» said nothin
     expect(orderStatusNote({ ...base, state: 'open', briefStatus: 'in_work' })).toBeNull()
   })
 
+  it('a sent order says only that it was sent — no «чекаємо» (owner, 02.10)', () => {
+    expect(
+      orderStatusNote({ ...base, state: 'ready', briefStatus: 'in_work', readyAt: '2026-10-01T10:00:00Z', readyByName: 'Viktor Hirenko' })
+    ).toMatch(/^Відправлено замовнику \(Viktor Hirenko, .+\)\.$/)
+  })
+
   it('the plate follows the brief once the order is closed', () => {
-    expect(orderBadge('closed', 'submitted').label).toBe('У CEO')
+    expect(orderBadge('closed', 'submitted').label).toBe('На погодженні в CEO')
     expect(orderBadge('closed', 'approved').label).toBe('Затверджено')
     expect(orderBadge('closed', 'in_work').label).toBe('Обрано замовником')
     expect(orderBadge('ready', 'in_work').label).toBe('Чекає на замовника')
     expect(orderBadge('open', 'in_work').label).toBe('В роботі')
+  })
+
+  it('«Чекає на замовника» is amber like «На доопрацюванні», not the purple of «В роботі»', () => {
+    expect(orderBadge('ready', 'in_work').cls).toBe('badge--amber')
+    expect(orderBadge('closed', 'needs_revision').cls).toBe('badge--amber')
+    expect(orderBadge('open', 'in_work').cls).toBe('badge--purple')
   })
 
   it('a closed section says whether it was done or cancelled', () => {

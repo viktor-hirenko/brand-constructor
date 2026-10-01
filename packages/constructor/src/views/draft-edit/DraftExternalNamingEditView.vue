@@ -24,6 +24,9 @@ import {
   isExternalNamingStepValid,
 } from '@/utils/externalNamingValidation'
 import UiAsyncState from '@/components/ui/UiAsyncState.vue'
+import { isMadeForBrief, splitMadeForBrief } from '@/utils/madeForBrief'
+import { useLibrariesStore } from '@/stores/libraries'
+import MadeForBriefGroups from '@/components/constructor/edit-flow/MadeForBriefGroups.vue'
 
 /**
  * Draft inline-edit — chained External Naming screen (Figma "Twil" flow).
@@ -43,6 +46,7 @@ const router = useRouter()
 const brandId = computed(() => route.params.id as string)
 
 const { data: namings, loading, error, fetchData, perPage } = useApiList<ExternalNaming>('/api/namings/external')
+const librariesStore = useLibrariesStore()
 
 const selectedIds = computed(() => store.stepData.externalNaming.selectedIds ?? [])
 
@@ -68,6 +72,38 @@ const primaryDisabled = computed(
       namings.value,
     ),
 )
+
+/**
+ * Brief-orders plan, phase 2b: names the team made for this brief's order come
+ * first, once the order was sent to the author; picking one needs no «Обрати
+ * цей неймінг?» — it fulfils the order rather than replacing it.
+ */
+const namingGroups = computed(() =>
+  splitMadeForBrief(namings.value, {
+    brandId: store.brandId,
+    ordersReadyAt: store.brandOrdersReadyAt,
+    pickedIds: selectedIds.value,
+  })
+)
+
+/**
+ * The concept just picked was made for this brief's order: the names to pick
+ * are the ones made with it, and there was no earlier choice to replace.
+ */
+const pickedMadeConcept = computed(() => {
+  const id = store.stepData.concept.selectedId
+  const concept = id ? librariesStore.concepts.find(c => c.id === id) : null
+  return !!concept && isMadeForBrief(concept, store.brandId)
+})
+
+const MADE_CONCEPT_BANNER = {
+  title: 'Оберіть External Naming для концепту',
+  description: '',
+} as const
+
+function isMadeName(id: string): boolean {
+  return namingGroups.value.made.some(n => n.id === id)
+}
 
 const conceptIdForNamings = computed(() => store.stepData.concept.selectedId)
 
@@ -119,6 +155,11 @@ function confirmDeleteBrief() {
 }
 
 function handleToggle(id: string) {
+  if (isCreatingNew.value && isMadeName(id)) {
+    store.setNewNamingBrief(null)
+    store.toggleExternalNaming(id)
+    return
+  }
   if (isCreatingNew.value) {
     pendingNamingId.value = id
     showSwitchConfirm.value = true
@@ -185,17 +226,21 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
       label above the list on this screen.
     -->
     <div :class="['draft-edit-external-naming-view__body', EDIT_FLOW_STACK_CLASS]">
-      <ConceptCascadeBanner />
+      <ConceptCascadeBanner v-if="pickedMadeConcept" v-bind="MADE_CONCEPT_BANNER" />
+      <ConceptCascadeBanner v-else />
 
       <div :class="EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS">
         <ExternalNamingGridSkeleton v-if="showSkeleton" :count="6" />
         <UiAsyncState v-else-if="error" :message="error" @retry="loadNamings" />
-        <ExternalNamingGrid
-          v-else
-          :namings="namings"
-          :selected-ids="selectedIds"
-          @toggle="handleToggle"
-        />
+        <MadeForBriefGroups v-else :made="namingGroups.made" :library="namingGroups.library">
+          <template #default="{ items }">
+            <ExternalNamingGrid
+              :namings="items"
+              :selected-ids="selectedIds"
+              @toggle="handleToggle"
+            />
+          </template>
+        </MadeForBriefGroups>
 
         <BriefOrderButton
           create-label="Замовити нову назву"

@@ -115,13 +115,14 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     status?: string,
     internalName?: string,
     ceoComments?: BrandCeoComments | null,
-    ceoSelections?: Record<string, string | string[]> | null
+    ceoSelections?: Record<string, string | string[]> | null,
+    ordersReadyAt?: string | null
   ) {
     resetSupervisorAlternativeSlice()
     resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
     resetInlineSectionEditSlice()
-    loadWizard(id, data, step, status, internalName)
+    loadWizard(id, data, step, status, internalName, ordersReadyAt)
     loadCeo(ceoComments ?? null, ceoSelections ?? null)
   }
 
