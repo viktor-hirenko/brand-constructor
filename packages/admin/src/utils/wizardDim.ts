@@ -37,18 +37,30 @@ export interface FrameRect {
   bottom: number
 }
 
+export interface DimBand {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
 /**
- * The dim layer covers the viewport with a hole exactly where the iframe is.
- * `evenodd` turns the inner rectangle into a hole, and a clipped-away area
- * does not take clicks either, so the wizard under the hole stays usable.
+ * The dim is drawn as up to four bands AROUND the frame, never as one layer
+ * over it. A full-screen layer with a `clip-path` hole lets clicks through the
+ * hole, but Chrome still hands it the mouse wheel: with it a wizard modal could
+ * not be scrolled inside the Admin (01.10, «Замовити новий концепт»: no scroll).
+ * Bands of zero size are dropped.
  */
-export function wizardDimClipPath(frame: FrameRect): string {
-  const l = Math.round(frame.left)
-  const t = Math.round(frame.top)
-  const r = Math.round(frame.right)
-  const b = Math.round(frame.bottom)
-  return (
-    'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ' +
-    `${l}px ${t}px, ${r}px ${t}px, ${r}px ${b}px, ${l}px ${b}px, ${l}px ${t}px)`
-  )
+export function wizardDimBands(frame: FrameRect, viewport: { width: number; height: number }): DimBand[] {
+  const l = Math.max(0, Math.round(frame.left))
+  const t = Math.max(0, Math.round(frame.top))
+  const r = Math.min(viewport.width, Math.round(frame.right))
+  const b = Math.min(viewport.height, Math.round(frame.bottom))
+  const bands: DimBand[] = [
+    { left: 0, top: 0, width: viewport.width, height: t },
+    { left: 0, top: b, width: viewport.width, height: viewport.height - b },
+    { left: 0, top: t, width: l, height: b - t },
+    { left: r, top: t, width: viewport.width - r, height: b - t },
+  ]
+  return bands.filter(band => band.width > 0 && band.height > 0)
 }

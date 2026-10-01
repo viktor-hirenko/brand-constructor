@@ -18,8 +18,9 @@ import { useAuthStore } from '@/stores/auth'
 import { handleSessionExpired } from '@/utils/sessionExpiry'
 import {
   parseWizardDim,
-  wizardDimClipPath,
+  wizardDimBands,
   WIZARD_DIM_OFF,
+  type DimBand,
   type FrameRect,
   type WizardDimState,
 } from '@/utils/wizardDim'
@@ -73,11 +74,12 @@ const iframeKey = 'wizard-frame'
 
 // ── The wizard's dim, carried over the Admin — DP-15450, Concept Selection 6 ──
 // While a wizard modal, drawer or full-screen view is open, the same black lies
-// over this Admin's menu and bar, with a hole exactly where the frame is.
+// over this Admin's menu and bar, as bands around the frame (never over it).
 // A click on it is sent back to the wizard as a click on its own dark area.
 const frameRef = ref<HTMLIFrameElement | null>(null)
 const dim = ref<WizardDimState>(WIZARD_DIM_OFF)
 const frameRect = ref<FrameRect>({ left: 0, top: 0, right: 0, bottom: 0 })
+const viewport = ref({ width: 0, height: 0 })
 let frameObserver: ResizeObserver | null = null
 
 function measureFrame() {
@@ -85,14 +87,26 @@ function measureFrame() {
   if (!el) return
   const r = el.getBoundingClientRect()
   frameRect.value = { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+  viewport.value = { width: window.innerWidth, height: window.innerHeight }
 }
+
+const dimBands = computed(() => wizardDimBands(frameRect.value, viewport.value))
 
 const dimStyle = computed(() => ({
   backgroundColor: `rgba(0, 0, 0, ${dim.value.alpha})`,
   transition: `background-color ${dim.value.fadeMs}ms ease`,
-  clipPath: wizardDimClipPath(frameRect.value),
   pointerEvents: dim.value.alpha > 0 ? ('auto' as const) : ('none' as const),
 }))
+
+function bandStyle(band: DimBand) {
+  return {
+    ...dimStyle.value,
+    left: `${band.left}px`,
+    top: `${band.top}px`,
+    width: `${band.width}px`,
+    height: `${band.height}px`,
+  }
+}
 
 function forwardDimClick() {
   frameRef.value?.contentWindow?.postMessage(
@@ -209,8 +223,10 @@ onBeforeUnmount(() => {
     />
     <Teleport to="body">
       <div
+        v-for="(band, i) in dimBands"
+        :key="i"
         class="wizard-workspace__dim"
-        :style="dimStyle"
+        :style="bandStyle(band)"
         aria-hidden="true"
         @click="forwardDimClick"
       />
@@ -249,10 +265,9 @@ onBeforeUnmount(() => {
   }
 
   // Above everything the Admin draws (its sidebar, bar and off-canvas menu);
-  // the clip-path leaves the frame itself uncovered.
+  // the bands lie around the frame and leave it uncovered.
   &__dim {
     position: fixed;
-    inset: 0;
     z-index: 9999;
   }
 
