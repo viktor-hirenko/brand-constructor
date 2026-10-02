@@ -16,18 +16,22 @@
     "build:constructor": "pnpm --filter @brand-constructor/constructor build",
     "build:worker": "pnpm --filter @brand-constructor/worker build",
     "build:unified": "node scripts/build-unified.mjs",
-    "deploy:unified": "pnpm build:unified && cd deploy/unified && npx wrangler pages deploy public --project-name brand-constructor",
-    "deploy": "turbo run build && pnpm deploy:worker:production && cd packages/admin && npx wrangler pages deploy dist --project-name brand-constructor",
-    "deploy:constructor": "WIZARD_STANDALONE=true pnpm build:constructor && cd packages/constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
+    "deploy:unified": "node scripts/guard-prod-deploy.mjs && pnpm build:unified && cd deploy/unified && npx wrangler pages deploy public --project-name brand-constructor --branch main",
+    "deploy": "node scripts/guard-prod-deploy.mjs && turbo run build && pnpm deploy:worker:production && cd packages/admin && npx wrangler pages deploy dist --project-name brand-constructor",
+    "deploy:constructor": "node scripts/guard-prod-deploy.mjs && WIZARD_STANDALONE=true pnpm build:constructor && cd packages/constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
     "deploy:worker:production": "pnpm --filter @brand-constructor/worker run deploy:production",
-    "deploy:all": "turbo run build && pnpm deploy:worker:production && cd packages/admin && npx wrangler pages deploy dist --project-name brand-constructor && cd ../.. && WIZARD_STANDALONE=true pnpm build:constructor && cd packages/constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
+    "deploy:all": "node scripts/guard-prod-deploy.mjs && turbo run build && pnpm deploy:worker:production && cd packages/admin && npx wrangler pages deploy dist --project-name brand-constructor && cd ../.. && WIZARD_STANDALONE=true pnpm build:constructor && cd packages/constructor && npx wrangler pages deploy dist --project-name brand-constructor-app",
     "db:migrate": "pnpm --filter @brand-constructor/worker db:migrate",
     "db:seed": "pnpm --filter @brand-constructor/worker db:seed",
     "db:seed:components": "pnpm --filter @brand-constructor/worker db:seed:components",
     "slack:cleanup": "node scripts/cleanup-slack-bot-messages.mjs",
     "slack:cleanup:dry": "DRY_RUN=true node scripts/cleanup-slack-bot-messages.mjs",
     "icons:audit": "node scripts/audit-icons.mjs",
-    "icons:check": "node scripts/check-inline-icons.mjs"
+    "icons:check": "node scripts/check-inline-icons.mjs",
+    "deploy:stage": "pnpm deploy:worker:stage && pnpm deploy:stage:site",
+    "deploy:worker:stage": "pnpm --filter @brand-constructor/worker run deploy:stage",
+    "deploy:stage:site": "VITE_ENVIRONMENT=stage pnpm build:unified && cd deploy/unified && npx wrangler pages deploy public --project-name brand-constructor-stage --branch main",
+    "stage:db:refresh": "node scripts/stage-db-refresh.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.0"
