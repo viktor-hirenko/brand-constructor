@@ -76,3 +76,45 @@ bucket_name = "brand-constructor-assets"
 name = "AUTH_RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 5, period = 60 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage — the owner checks a branch here before production (02.10.2026).
+# Site: https://brand-constructor-stage.pages.dev (Pages project
+# `brand-constructor-stage`, its WORKER_URL → this worker).
+# Its own D1: a copy of production, refreshed on demand
+# (`pnpm stage:db:refresh`); nothing flows back to production.
+# Secrets: JWT_SECRET only. No SLACK_BOT_TOKEN → no Slack messages; no
+# PANANAMES_SIGNATURE → no domain checks; Jira off.
+# DEPLOY: wrangler deploy --env stage
+# ─────────────────────────────────────────────────────────────────────────────
+
+[env.stage]
+
+[env.stage.triggers]
+crons = []
+
+[env.stage.vars]
+ENVIRONMENT = "stage"
+CONSTRUCTOR_URL = "https://brand-constructor-app.pages.dev"
+ADMIN_URL = "https://brand-constructor-stage.pages.dev"
+CORS_ORIGINS = "https://brand-constructor-stage.pages.dev"
+GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com"
+ALLOWED_EMAIL_DOMAINS = "upstars.com,gmail.com"
+JIRA_INITIATIVE_ENABLED = "false"
+# Pictures live in the production bucket (the copied base points at them):
+# the stage never deletes a file there (`routes/assets.ts`).
+SHARED_ASSETS_BUCKET = "true"
+
+[[env.stage.d1_databases]]
+binding = "DB"
+database_name = "brand-constructor-db-stage"
+database_id = "1721b275-016d-4804-9b0e-96db57ccd8bc"
+
+[[env.stage.r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "brand-constructor-assets"
+
+[[env.stage.ratelimits]]
+name = "AUTH_RATE_LIMITER"
+namespace_id = "1002"
+simple = { limit = 5, period = 60 }

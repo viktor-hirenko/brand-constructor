@@ -31,7 +31,10 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const isProductionMode = import.meta.env.VITE_ENVIRONMENT === 'production'
+// The stage is a deployed copy too: it signs out like production and wears a
+// plate so it is never mistaken for production.
+const isStage = import.meta.env.VITE_ENVIRONMENT === 'stage'
+const isProductionMode = import.meta.env.VITE_ENVIRONMENT === 'production' || isStage
 
 interface NavItem {
   label: string
@@ -113,6 +116,7 @@ async function handleLogout() {
   <aside class="sidebar" :class="{ 'sidebar--open': props.isOpen }">
     <div class="sidebar__header">
       <span class="sidebar__logo-text">BC Admin</span>
+      <span v-if="isStage" class="sidebar__stage">Stage</span>
       <button class="sidebar__close" aria-label="Close menu" @click="emit('close')">
         <PhosphorIcon :svg="close" class="sidebar__close-icon" />
       </button>
@@ -200,6 +204,19 @@ async function handleLogout() {
   &__logo-text {
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
+  }
+
+  &__stage {
+    margin-right: auto;
+    margin-left: $spacing-2;
+    padding: 2px $spacing-2;
+    border-radius: 999px;
+    background: $color-warning;
+    color: #1f1300;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   &__close {

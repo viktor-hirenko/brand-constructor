@@ -38,6 +38,8 @@ export interface Env {
   // without `--env production` boots without it. Consumers must tolerate
   // `undefined` (e.g. routes/auth.ts skips the gate locally).
   AUTH_RATE_LIMITER?: RateLimit
+  /** `"true"` on the stage: the R2 bucket is production's, so files are never deleted from it. */
+  SHARED_ASSETS_BUCKET?: string
 }
 
 export interface AuthUser {

@@ -265,7 +265,11 @@ app.delete('/:id', async c => {
   const entityId = asset.entity_id as string
 
   const r2Key = (asset.file_url as string).replace('/api/assets/', '')
-  await c.env.ASSETS_BUCKET.delete([r2Key, smallAssetKey(r2Key)])
+  // The stage shares production's bucket: its copy of the base points at the
+  // same files, so deleting one there would break the picture in production.
+  if (c.env.SHARED_ASSETS_BUCKET !== 'true') {
+    await c.env.ASSETS_BUCKET.delete([r2Key, smallAssetKey(r2Key)])
+  }
   await c.env.DB.prepare('DELETE FROM assets WHERE id = ?').bind(id).run()
 
   if (entityType === 'concept_visual') {
