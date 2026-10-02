@@ -241,10 +241,13 @@ status.patch('/:id/status', async c => {
         .first<BrandRow>()
 
       if (brand) {
+        // «Обрано» is the author's pick: the row already holds the CEO's
+        // alternatives, which the message names separately (H-05).
         const notificationData = await collectBrandNotificationData(
           c.env.DB,
           brand,
-          c.env.ADMIN_URL ?? ''
+          c.env.ADMIN_URL ?? '',
+          {}
         )
 
         if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
@@ -266,7 +269,8 @@ status.patch('/:id/status', async c => {
             const text = typeof v === 'string' ? v : v.value
             if (text && text.trim()) ceoCommentsData[k] = text
           }
-          const resolvedSelections = await resolveSelectionNames(c.env.DB, body.ceoSelections ?? {})
+          // «Альтернатива CEO»: what the CEO picked — sent now or saved before.
+          const resolvedSelections = await resolveSelectionNames(c.env.DB, effectiveCeoSel)
 
           const message = buildNeedsRevisionMessage(
             c.env.SLACK_CHANNEL_APPROVALS,

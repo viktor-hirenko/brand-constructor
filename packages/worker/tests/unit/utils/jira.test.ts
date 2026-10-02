@@ -205,6 +205,25 @@ describe('jira utils', () => {
       expect(text).not.toContain('CEO basics note')
       expect(text).not.toContain('Обраний концепт')
     })
+
+    it('links the order page next to the brief (phase 3) — only for a new order', () => {
+      const orderLine = `Сторінка замовлення: ${adminUrl}/orders/brand_test_001`
+      expect(buildInitiativeDescriptionText(sampleData, adminUrl, 'new_briefs', emptyContext)).toContain(orderLine)
+      expect(buildInitiativeDescriptionText(sampleData, adminUrl, 'ceo_approved', emptyContext)).not.toContain(
+        'Сторінка замовлення'
+      )
+      const hrefs = (flow: 'new_briefs' | 'ceo_approved') =>
+        buildInitiativeDescriptionAdf(sampleData, adminUrl, flow, emptyContext)
+          .content.flatMap(n => (n.type === 'paragraph' ? n.content : []))
+          .flatMap(c => c.marks ?? [])
+          .map(m => (m as { attrs?: { href?: string } }).attrs?.href)
+          .filter(Boolean)
+      expect(hrefs('new_briefs')).toEqual([
+        `${adminUrl}/workspace/brand/brand_test_001`,
+        `${adminUrl}/orders/brand_test_001`,
+      ])
+      expect(hrefs('ceo_approved')).toEqual([`${adminUrl}/workspace/brand/brand_test_001`])
+    })
   })
 
   describe('buildInitiativeDescriptionAdf', () => {

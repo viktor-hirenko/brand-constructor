@@ -32,10 +32,20 @@ import {
   checkSelectable,
   droppedOrderKinds,
   newlyPicked,
+  openOrderKinds,
   pickedFromSelection,
   releaseAllStatements,
   releaseCancelledStatements,
 } from '../utils/orders'
+import { dispatchSlack } from '../utils/slack-dispatch'
+import {
+  BRIEF_DELETED_REASON,
+  buildOrderCancelledMessage,
+  cancelReason,
+  orderCancelledInput,
+  sendOrderCancelledForDeletedBrief,
+  type CancelledOrder,
+} from '../utils/slack-orders'
 
 const crud = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -348,10 +358,20 @@ crud.put('/:id', async c => {
   }
 
   if (existing.status === BRAND_BRIEF_STATUS.IN_WORK) {
+    let cancelled: CancelledOrder[] = []
     try {
-      await recordCancelledOrders(c.env.DB, id, user.id, existing, body, nextSelection)
+      cancelled = await recordCancelledOrders(c.env.DB, id, user.id, existing, body, nextSelection)
     } catch (err) {
       console.error('Order cancellation bookkeeping failed:', err)
+    }
+    // N2: the team hears it under the order message, once — the order is off the brief now.
+    if (cancelled.length > 0 && c.env.SLACK_BOT_TOKEN) {
+      const message = buildOrderCancelledMessage(
+        orderCancelledInput(existing, cancelReason(cancelled), c.env.SLACK_CHANNEL_STRATEGY)
+      )
+      c.executionCtx.waitUntil(
+        dispatchSlack(c.env.DB, c.env.SLACK_BOT_TOKEN, id, user.id, [{ kind: 'strategy', message }])
+      )
     }
   }
 
@@ -375,8 +395,8 @@ function selectionAfterPut(existing: BrandRow, body: UpdateBrandBody): BriefSele
 
 /**
  * The author replaced an order with something the team did not make: the order
- * is cancelled — an `order_cancelled` event per kind (phase 3 answers the order
- * in Slack from it) and the made items go back to the library.
+ * is cancelled — an `order_cancelled` event per kind and the made items go back
+ * to the library. Returns what was cancelled, for the Slack reply.
  */
 async function recordCancelledOrders(
   db: D1Database,
@@ -385,17 +405,25 @@ async function recordCancelledOrders(
   existing: BrandRow,
   body: UpdateBrandBody,
   sel: BriefSelection
-): Promise<void> {
+): Promise<CancelledOrder[]> {
   const cancelled = await cancelledOrderKinds(db, brandId, droppedOrderKinds(existing, body), sel)
-  if (cancelled.length === 0) return
+  if (cancelled.length === 0) return []
+  const out: CancelledOrder[] = []
   for (const kind of cancelled) {
     const picked = await pickedNames(db, kind, sel)
     await insertWorkflowEvent(db, brandId, WORKFLOW_EVENT_TYPES.ORDER_CANCELLED, userId, {
       kind,
       picked,
     })
+    out.push({ kind, picked })
   }
   await db.batch(cancelled.flatMap(kind => releaseCancelledStatements(db, brandId, kind, sel)))
+  // A naming order goes with the concept it was for (H-07): say which concept came instead.
+  if (sel.conceptId && sel.conceptId !== existing.concept_id) {
+    const [conceptName] = await pickedNames(db, 'concept', sel)
+    for (const order of out) order.conceptChangedTo = conceptName ?? null
+  }
+  return out
 }
 
 async function pickedNames(db: D1Database, kind: string, sel: BriefSelection): Promise<string[]> {
@@ -429,6 +457,10 @@ crud.delete('/:id', async c => {
     return c.json({ success: false, error: 'Brand not found' }, 404)
   }
 
+  // A brief deleted while the teams still work on its order: they hear it is off.
+  const orderOff =
+    existing.status === BRAND_BRIEF_STATUS.IN_WORK && openOrderKinds(existing).length > 0
+
   await c.env.DB.batch([
     c.env.DB.prepare('DELETE FROM brand_workflow_events WHERE brand_id = ?').bind(id),
     c.env.DB.prepare(
@@ -450,6 +482,15 @@ crud.delete('/:id', async c => {
     ...releaseAllStatements(c.env.DB, id),
     c.env.DB.prepare('DELETE FROM brands WHERE id = ?').bind(id),
   ])
+
+  if (orderOff && c.env.SLACK_BOT_TOKEN) {
+    c.executionCtx.waitUntil(
+      sendOrderCancelledForDeletedBrief(
+        c.env.SLACK_BOT_TOKEN,
+        orderCancelledInput(existing, BRIEF_DELETED_REASON, c.env.SLACK_CHANNEL_STRATEGY)
+      )
+    )
+  }
 
   return c.json({ success: true, data: null })
 })

@@ -1,6 +1,6 @@
 import type { Env } from '../types'
 import type { BrandNotificationData } from './slack'
-import { brandBriefUrl } from './slack'
+import { brandBriefUrl, orderPageUrl } from './slack'
 import type { CeoSectionKey } from './slack'
 
 const DEFAULT_JIRA_BASE_URL = 'https://upstars.atlassian.net'
@@ -152,12 +152,16 @@ function adfBulletList(lines: DescriptionLine[]): JiraAdfBlockNode {
   return { type: 'bulletList', content }
 }
 
-function adfLinkParagraph(label: string, url: string): JiraAdfBlockNode {
+function adfLinkParagraph(
+  label: string,
+  url: string,
+  linkText = 'Відкрити бриф у Brand Builder'
+): JiraAdfBlockNode {
   return {
     type: 'paragraph',
     content: [
       adfText(`${label}: `, [{ type: 'strong' }]),
-      adfText('Відкрити бриф у Brand Builder', [{ type: 'link', attrs: { href: url } }]),
+      adfText(linkText, [{ type: 'link', attrs: { href: url } }]),
     ],
   }
 }
@@ -385,6 +389,7 @@ export function buildInitiativeDescriptionText(
     ...sections.map(formatSectionPlain),
     `Посилання на бриф: ${briefUrl}`,
   ]
+  if (flow === 'new_briefs') parts.push(`Сторінка замовлення: ${orderPageUrl(adminUrl, data.brandId)}`)
 
   return parts.join('\n\n')
 }
@@ -408,6 +413,16 @@ export function buildInitiativeDescriptionAdf(
 
   content.push(adfRule())
   content.push(adfLinkParagraph('Посилання на бриф', briefUrl))
+  // The Strategy team cannot open a brief `in_work`; the order page is theirs (owner, 01.10).
+  if (flow === 'new_briefs') {
+    content.push(
+      adfLinkParagraph(
+        'Сторінка замовлення',
+        orderPageUrl(adminUrl, data.brandId),
+        'Відкрити замовлення в Brand Builder'
+      )
+    )
+  }
 
   return { type: 'doc', version: 1, content }
 }

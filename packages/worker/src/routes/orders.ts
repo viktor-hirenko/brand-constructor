@@ -24,6 +24,8 @@ import type { BrandRow } from '../utils/brands'
 import { selectionFromRow } from '../utils/brief-checks'
 import { collectBrandNotificationData } from './brands.notifications'
 import { insertWorkflowEvent, WORKFLOW_EVENT_TYPES } from '../utils/brand-workflow'
+import { dispatchSlack } from '../utils/slack-dispatch'
+import { buildOrderReadyMessage, slackMention } from '../utils/slack-orders'
 import {
   conceptOrder,
   internalOrderFeedback,
@@ -67,10 +69,10 @@ function orderState(
   cancelled: OrderKind[]
 ): OrderState {
   if (row.status !== BRAND_BRIEF_STATUS.IN_WORK) return 'closed'
-  if (row.orders_ready_at) return 'ready'
-  if (openKinds.length > 0) return 'open'
+  if (openKinds.length > 0) return row.orders_ready_at ? 'ready' : 'open'
   // Nothing stands: every order was either replaced by a library pick
-  // (cancelled) or closed by picking what the team made.
+  // (cancelled) or closed by picking what the team made — also after the team
+  // sent it, so the page says «Обрано замовником», not «Чекає на замовника».
   return ordered.length > 0 && ordered.every(k => cancelled.includes(k)) ? 'cancelled' : 'closed'
 }
 
@@ -353,9 +355,33 @@ orders.post('/:brandId/ready', async c => {
     console.error('Workflow event insert failed (orders_ready):', err)
   }
 
+  // N1, once: only the request whose conditional UPDATE won gets here.
+  if (c.env.SLACK_BOT_TOKEN) {
+    c.executionCtx.waitUntil(
+      notifyOrderReady(c.env, row, created, user.id).catch(err =>
+        console.error('Slack notification error (orders_ready):', err)
+      )
+    )
+  }
+
   const fresh = (await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(brandId).first<BrandRow>())!
   return c.json({ success: true, data: await buildDetail(c.env.DB, fresh, c.env.ADMIN_URL ?? '') })
 })
+
+/** «Замовлення для New Brand #N готове» to bc-approvals, the author mentioned. */
+async function notifyOrderReady(env: Env, row: BrandRow, created: CreatedForBrief, userId: string): Promise<void> {
+  const author = await env.DB.prepare('SELECT name, email FROM users WHERE id = ?')
+    .bind(row.created_by)
+    .first<{ name: string; email: string }>()
+  const message = buildOrderReadyMessage(env.SLACK_CHANNEL_APPROVALS, {
+    brandId: row.id,
+    internalName: row.internal_name || row.id,
+    adminUrl: env.ADMIN_URL ?? '',
+    created: createdNames(created),
+    author: await slackMention(env.SLACK_BOT_TOKEN, author?.email ?? null, author?.name ?? 'замовник'),
+  })
+  await dispatchSlack(env.DB, env.SLACK_BOT_TOKEN, row.id, userId, [{ kind: 'approvals', message }])
+}
 
 /** The raw stored feedback, the value `json_extract` returns for it (or null). */
 function storedInternalFeedbackRaw(stepData: string | null): string | null {

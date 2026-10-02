@@ -39,6 +39,10 @@ export interface BrandApp {
   slack: SlackPost[]
   /** Set to make Slack answer `{ ok: false }` for that channel. */
   failChannels: Set<string>
+  /** E-mail → Slack user id, for `users.lookupByEmail`; unknown → `users_not_found`. */
+  slackUsers: Map<string, string>
+  /** Set to make `users.lookupByEmail` answer with this error (e.g. `missing_scope`). */
+  lookupError: { value: string | null }
   request(user: UserKey, method: string, path: string, body?: unknown): Promise<Response>
   /** Waits for everything requests queued with `waitUntil` (Slack, Jira). */
   settle(): Promise<void>
@@ -161,6 +165,8 @@ export function createBrandApp(): BrandApp {
   seedLibrary(db)
   const slack: SlackPost[] = []
   const failChannels = new Set<string>()
+  const slackUsers = new Map<string, string>()
+  const lookupError: { value: string | null } = { value: null }
   const pending: Promise<unknown>[] = []
 
   vi.stubGlobal(
@@ -175,6 +181,16 @@ export function createBrandApp(): BrandApp {
             ok ? { ok, ts: `17000000.${slack.length}`, channel: message.channel } : { ok, error: 'channel_not_found' }
           )
         )
+      }
+      if (String(url).startsWith('https://slack.com/api/users.lookupByEmail')) {
+        const email = new URL(String(url)).searchParams.get('email') ?? ''
+        const id = slackUsers.get(email)
+        const body = lookupError.value
+          ? { ok: false, error: lookupError.value }
+          : id
+            ? { ok: true, user: { id } }
+            : { ok: false, error: 'users_not_found' }
+        return new Response(JSON.stringify(body))
       }
       throw new Error(`unexpected fetch in test: ${url}`)
     })
@@ -214,6 +230,8 @@ export function createBrandApp(): BrandApp {
     db,
     slack,
     failChannels,
+    slackUsers,
+    lookupError,
     request(user, method, path, body) {
       return app.request(
         path,
