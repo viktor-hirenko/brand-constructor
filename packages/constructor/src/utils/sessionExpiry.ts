@@ -9,8 +9,8 @@
 // Embedded: the Admin owns the top-level URL, so we ask it to break out (see
 // `postAuthRequired`). Standalone: a hard navigation to /login, which both
 // preserves the return path and guarantees every in-memory store is dropped.
-// In-progress brief data is not lost either way — the wizard mirrors drafts to
-// localStorage on a 500ms debounce (see `useBrandData.saveDraftToStorage`).
+// In-progress brief data is not lost either way — the wizard mirrors a draft's
+// unsaved answers to localStorage as they change (see `useWizardDraftCopy`).
 
 import { isEmbedded } from '@/composables/useEmbedMode';
 import { postAuthRequired } from '@/composables/useEmbedBridge';

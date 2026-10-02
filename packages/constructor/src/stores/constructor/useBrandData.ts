@@ -82,6 +82,7 @@ interface SaveBrandResult {
   id?: string
   status?: string
   internalName?: string | null
+  updatedAt?: string
 }
 
 /**
@@ -119,6 +120,8 @@ export function useBrandData() {
    */
   const successType = computed(() => successTypeFromStatus(brandStatus.value))
   const saveError = ref<string | null>(null)
+  /** Server `updatedAt` of the last successful `saveBrand()` — base for the wizard draft copy. */
+  const lastSavedUpdatedAt = ref<string | null>(null)
 
   // ─── Wizard state ──────────────────────────────────────────────────────────
   const currentStep = ref(1)
@@ -455,6 +458,7 @@ export function useBrandData() {
 
       if (result.status) brandStatus.value = result.status
       if (result.internalName) brandInternalName.value = result.internalName
+      if (result.updatedAt) lastSavedUpdatedAt.value = result.updatedAt
 
       return true
     } catch (error) {
@@ -511,6 +515,7 @@ export function useBrandData() {
     brandStatus,
     successType,
     saveError,
+    lastSavedUpdatedAt,
     setBrandStatus,
     // Wizard state
     currentStep,

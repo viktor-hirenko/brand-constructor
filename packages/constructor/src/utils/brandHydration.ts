@@ -11,6 +11,7 @@ export interface ConstructorStoreBrandLoader {
     ceoSelections?: Record<string, string | string[]> | null,
     ordersReadyAt?: string | null
   ) => void
+  restoreWizardDraftCopy: (id: string, serverUpdatedAt: string) => void
 }
 
 /** Matches `getInitialStepData()` — server drafts often have `mode: null` until step 2 is saved. */
@@ -102,6 +103,8 @@ export function applyBrandToStore(store: ConstructorStoreBrandLoader, brand: Bra
     brand.ceoSelections ?? undefined,
     brand.ordersReadyAt ?? null
   )
+  // After `loadBrand` — overlays the Author's unsaved answers, if any.
+  store.restoreWizardDraftCopy(brand.id, brand.updatedAt)
 }
 
 export function wizardStepLocation(

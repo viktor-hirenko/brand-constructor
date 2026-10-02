@@ -19,15 +19,16 @@ const USERS = {
   ceo: { sub: 'usr_179922a1565e4c22', email: 'viktor.hirenko.dev@gmail.com', name: 'CEO', role: 'cpo_ceo' },
 }
 
-function token(u) {
+function token(u, expired = false) {
   const b64 = s => Buffer.from(s).toString('base64url')
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(Date.now() / 1000) - (expired ? 200000 : 0)
   const h = b64(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const p = b64(JSON.stringify({ ...u, iat: now, exp: now + 99999, sid: now }))
   return `${h}.${p}.${crypto.createHmac('sha256', SECRET).update(`${h}.${p}`).digest('base64url')}`
 }
 
-const state = { offline: false, writes: [] }
+// `expired`: every /api call goes out with a token past its `exp` — the worker answers 401.
+const state = { offline: false, expired: false, writes: [] }
 
 // STAND_FRONT=<dir> serves the site from a local unified build
 // (`deploy/unified/public`) instead of prod — to try a change before release.
@@ -46,11 +47,12 @@ async function serveFront(route) {
 async function session(browser, who, opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts })
   const tk = token(USERS[who])
+  const deadTk = token(USERS[who], true)
   await ctx.route(`${O}/api/**`, async route => {
     const req = route.request()
     if (state.offline) return route.abort('internetdisconnected')
     const u = new URL(req.url())
-    const headers = { ...req.headers(), cookie: `auth_token=${tk}` }
+    const headers = { ...req.headers(), cookie: `auth_token=${state.expired ? deadTk : tk}` }
     delete headers['content-length']
     const res = await fetch(`http://127.0.0.1:8799${u.pathname}${u.search}`, { method: req.method(), headers, body: req.postDataBuffer() || undefined })
     const hh = {}

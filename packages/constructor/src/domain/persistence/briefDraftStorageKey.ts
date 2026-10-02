@@ -14,6 +14,8 @@
  *    sub-routes after a brief was returned for revision.
  *  - `preview-slides` — per-concept carousel slide index for ConceptPreviewSlider
  *    (F5-safe; keyed by concept id).
+ *  - `wizard-draft` — Author's unsaved wizard answers on a `draft` brief
+ *    (steps 1–8 write to the server on «Далі» only).
  *
  * The key is intentionally human-readable so engineers can inspect it in
  * browser DevTools without decoding.
@@ -24,6 +26,7 @@ export type BriefDraftScope =
   | 'supervisor-comments'
   | 'author-revision'
   | 'preview-slides'
+  | 'wizard-draft'
 
 export function briefDraftStorageKey(briefId: string, scope: BriefDraftScope): string {
   return `brief_${briefId}_${scope}`

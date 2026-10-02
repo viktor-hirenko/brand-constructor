@@ -217,6 +217,7 @@ const routes: RouteRecordRaw[] = [
         store.restoreSupervisorCommentsFromStorage(brandId)
         store.restoreAuthorRevisionDraftFromStorage(brandId)
         store.restorePreviewSlidesFromStorage(brandId)
+        store.restoreWizardDraftCopy(brandId, brand.updatedAt)
 
         return true
       } catch {

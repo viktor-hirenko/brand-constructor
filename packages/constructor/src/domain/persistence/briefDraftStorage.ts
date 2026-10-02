@@ -1,4 +1,4 @@
-import type { BrandCeoComments } from '@brand-constructor/shared/types'
+import type { BrandCeoComments, BrandStepData } from '@brand-constructor/shared/types'
 import { logSilent } from '@/utils/log'
 import { briefDraftStorageKey, type BriefDraftScope } from './briefDraftStorageKey'
 import {
@@ -7,6 +7,8 @@ import {
   type BriefSupervisorCommentsEnvelope,
   type BriefAuthorRevisionEnvelope,
   type BriefPreviewSlidesEnvelope,
+  type BriefWizardDraftEnvelope,
+  BRIEF_WIZARD_DRAFT_MAX_AGE_MS,
 } from './briefDraftEnvelope'
 
 type Envelope =
@@ -14,6 +16,7 @@ type Envelope =
   | BriefSupervisorCommentsEnvelope
   | BriefAuthorRevisionEnvelope
   | BriefPreviewSlidesEnvelope
+  | BriefWizardDraftEnvelope
 
 // ─── Write ────────────────────────────────────────────────────────────────────
 
@@ -36,12 +39,13 @@ export function writeBriefDraft<T extends Envelope>(
  * Returns `null` when:
  *  - no entry exists
  *  - `briefId` in the envelope doesn't match `activeBriefId`
- *  - the entry is older than `BRIEF_DRAFT_MAX_AGE_MS`
+ *  - the entry is older than `maxAgeMs` (`BRIEF_DRAFT_MAX_AGE_MS` by default)
  *  - the JSON is corrupt / missing required fields
  */
 export function readBriefDraft<T extends Envelope>(
   activeBriefId: string,
-  scope: BriefDraftScope
+  scope: BriefDraftScope,
+  maxAgeMs: number = BRIEF_DRAFT_MAX_AGE_MS
 ): T | null {
   try {
     const raw = localStorage.getItem(briefDraftStorageKey(activeBriefId, scope))
@@ -51,7 +55,7 @@ export function readBriefDraft<T extends Envelope>(
 
     if (parsed.briefId !== activeBriefId) return null
     if (typeof parsed.savedAt !== 'number') return null
-    if (Date.now() - parsed.savedAt > BRIEF_DRAFT_MAX_AGE_MS) {
+    if (Date.now() - parsed.savedAt > maxAgeMs) {
       clearBriefDraft(activeBriefId, scope)
       return null
     }
@@ -173,3 +177,29 @@ export function clearPreviewSlidesDraft(briefId: string): void {
   clearBriefDraft(briefId, 'preview-slides')
 }
 
+// ─── Wizard draft (Author's unsaved answers on a `draft` brief) ───────────────
+
+export function writeWizardDraftCopy(
+  briefId: string,
+  baseUpdatedAt: string,
+  stepData: BrandStepData
+): void {
+  writeBriefDraft<BriefWizardDraftEnvelope>(briefId, 'wizard-draft', {
+    briefId,
+    savedAt: Date.now(),
+    baseUpdatedAt,
+    draft: { stepData },
+  })
+}
+
+export function readWizardDraftCopy(activeBriefId: string): BriefWizardDraftEnvelope | null {
+  return readBriefDraft<BriefWizardDraftEnvelope>(
+    activeBriefId,
+    'wizard-draft',
+    BRIEF_WIZARD_DRAFT_MAX_AGE_MS
+  )
+}
+
+export function clearWizardDraftCopy(briefId: string): void {
+  clearBriefDraft(briefId, 'wizard-draft')
+}
