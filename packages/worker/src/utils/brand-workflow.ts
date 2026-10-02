@@ -56,6 +56,16 @@ export interface BrandWorkflowEventRow {
   user_role?: string
 }
 
+/**
+ * The CEO has returned this brief at least once. A brief gets `in_work` only
+ * from `draft` or `needs_revision`, and never goes back to `draft`, so a send to
+ * the CEO from `in_work` with this set follows a return: it is a RE-submission
+ * («повторно»), just as one straight from `needs_revision` (phase 4).
+ */
+export function wasReturnedByCeo(row: Pick<BrandRow, 'needs_revision_at'>): boolean {
+  return row.needs_revision_at != null && row.needs_revision_at !== ''
+}
+
 /** Appends snapshot column updates for `PATCH /:id/status`. */
 export function appendWorkflowSnapshot(
   targetStatus: BrandStatus,
@@ -68,9 +78,17 @@ export function appendWorkflowSnapshot(
 ): void {
   // `in_work` is not a submission: the CEO has not received anything, so
   // `submit_count` stays — the brief's first «На погодження CEO» is still #1.
+  // A new round of orders (after the CEO returned the brief, phase 4) starts
+  // clean: not yet sent back by the team, no order message to answer under yet.
   if (targetStatus === BRAND_BRIEF_STATUS.IN_WORK) {
-    updates.push('sent_to_work_at = ?')
-    values.push(now)
+    updates.push(
+      'sent_to_work_at = ?',
+      'orders_ready_at = ?',
+      'orders_ready_by = ?',
+      'orders_slack_channel = ?',
+      'orders_slack_ts = ?'
+    )
+    values.push(now, null, null, null, null)
   }
   if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
     updates.push('submitted_at = ?', 'submitted_by = ?', 'submit_count = ?')
@@ -428,7 +446,7 @@ export async function buildSubmittedSummaryMeta(
   submitCount: number,
   currentStatus: BrandStatus
 ): Promise<Record<string, unknown>> {
-  const isResubmit = currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
+  const isResubmit = currentStatus !== BRAND_BRIEF_STATUS.DRAFT && wasReturnedByCeo(existing)
   const currentSnapshot = await buildPoSelectionSnapshot(db, existing)
   const currentComments = buildPoCommentsFromRow(existing)
 
@@ -580,7 +598,7 @@ export async function recordStatusWorkflowEvents(
       currentStatus
     )
     await insertWorkflowEvent(db, brandId, WORKFLOW_EVENT_TYPES.SUBMITTED, userId, meta)
-    if (currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION) {
+    if (meta.isResubmit) {
       await insertWorkflowEvent(db, brandId, WORKFLOW_EVENT_TYPES.RESUBMIT_CLEARED_CEO, userId, {
         clearedCeoFeedback: true,
       })

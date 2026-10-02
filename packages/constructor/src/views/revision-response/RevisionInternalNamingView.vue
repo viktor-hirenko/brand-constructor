@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, apiGet } from '@/composables/useApi'
@@ -11,6 +11,9 @@ import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
+import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
+import NewInternalNamingModal from '@/components/constructor/modals/NewInternalNamingModal.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_COMMENT_OFFSET_CLASS,
@@ -81,7 +84,20 @@ const poInternalComment = computed({
   set: (val: string) => store.setInternalNaming({ comment: val }),
 })
 
-const primaryDisabled = computed(() => !store.stepData.internalNaming.selectedId)
+/**
+ * Ordering a new Internal Naming from the revision (brief-orders plan, phase
+ * 4) — the same button and form as step 4: an order replaces the pick, picking
+ * a name drops the order after a confirmation.
+ */
+const isCreatingNew = computed(() => store.stepData.internalNaming.newNamingFeedback !== null)
+const showNewModal = ref(false)
+const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingNamingId = ref<string | null>(null)
+
+const primaryDisabled = computed(
+  () => !store.stepData.internalNaming.selectedId && !isCreatingNew.value
+)
 const isSaving = computed(() => store.isSaving)
 
 /** Guards against initial-render flash (see CeoReselectExternalNamingView). */
@@ -120,8 +136,48 @@ onMounted(async () => {
 /** Single-select: clicking the already-selected card does nothing (no toggle). */
 function handleSelect(id: string) {
   if (store.stepData.internalNaming.selectedId === id) return
+  if (isCreatingNew.value) {
+    pendingNamingId.value = id
+    showSwitchConfirm.value = true
+    return
+  }
   store.selectInternalNaming(id)
 }
+
+function confirmSwitchSelection() {
+  const id = pendingNamingId.value
+  if (id == null) return
+  store.setInternalNamingFeedback(null)
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+  store.selectInternalNaming(id)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+}
+
+function handleFeedbackSave(feedback: string) {
+  store.setInternalNamingFeedback(feedback)
+  store.setInternalNaming({ selectedId: null })
+  showNewModal.value = false
+}
+
+function confirmDeleteBrief() {
+  store.setInternalNamingFeedback(null)
+  showDeleteConfirm.value = false
+}
+
+/** «Редагувати» inside the read-only brief preview reopens the form here. */
+watch(
+  () => store.briefPreviewEditRequested,
+  kind => {
+    if (kind !== 'internalNaming') return
+    showNewModal.value = true
+    store.consumeBriefPreviewEditRequest()
+  },
+)
 
 function goCancel() {
   store.cancelEditSection()
@@ -233,6 +289,16 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
           :selected-id="store.stepData.internalNaming.selectedId"
           @select="handleSelect"
         />
+
+        <BriefOrderButton
+          create-label="Замовити нову назву"
+          created-label="Бриф назви створено"
+          :is-created="isCreatingNew"
+          @create="showNewModal = true"
+          @view="store.openBriefPreview('internalNaming', { allowEdit: true })"
+          @edit="showNewModal = true"
+          @delete="showDeleteConfirm = true"
+        />
       </div>
 
       <StepCommentField
@@ -240,6 +306,10 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         label="Коментар"
         :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
       />
+
+      <p v-if="store.saveError" class="text-sm text-red-600">
+        {{ store.saveError }}
+      </p>
     </div>
 
     <template #footer>
@@ -252,5 +322,32 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         @primary="goSave"
       />
     </template>
+
+    <NewInternalNamingModal
+      v-if="showNewModal"
+      :initial-feedback="store.stepData.internalNaming.newNamingFeedback"
+      @save="handleFeedbackSave"
+      @cancel="showNewModal = false"
+    />
+
+    <ConfirmationModal
+      v-if="showDeleteConfirm"
+      title="Видалити бриф?"
+      body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Видалити"
+      @cancel="showDeleteConfirm = false"
+      @primary="confirmDeleteBrief"
+    />
+
+    <ConfirmationModal
+      v-if="showSwitchConfirm"
+      title="Обрати цю назву?"
+      body="При виборі назви створений бриф буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Обрати назву"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmSwitchSelection"
+    />
   </EditFlowStepShell>
 </template>

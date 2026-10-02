@@ -29,6 +29,7 @@ import { collectBrandNotificationData } from './brands.notifications'
 import {
   appendWorkflowSnapshot,
   recordStatusWorkflowEvents,
+  wasReturnedByCeo,
 } from '../utils/brand-workflow'
 import {
   BRIEF_CHANGED_MESSAGE,
@@ -43,6 +44,7 @@ import {
   checkSelectable,
   pickedFromSelection,
   releaseUnpickedOnApprovalStatements,
+  releaseUnpickedStatements,
   selectionFreeCondition,
 } from '../utils/orders'
 
@@ -175,10 +177,10 @@ status.patch('/:id/status', async c => {
 
   appendWorkflowSnapshot(targetStatus, currentStatus, user.id, existing, now, updates, values)
 
-  if (
-    targetStatus === BRAND_BRIEF_STATUS.SUBMITTED &&
-    currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
-  ) {
+  // A re-submission clears the CEO's last round — also when the author first
+  // ordered something and sends from `in_work` (phase 4): decided by the return,
+  // not by the status the brief is leaving.
+  if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED && wasReturnedByCeo(existing)) {
     updates.push('ceo_comments = ?', 'ceo_selections = ?')
     values.push(null, null)
   }
@@ -222,9 +224,22 @@ status.patch('/:id/status', async c => {
     }
   }
 
+  const afterCeoReturn = currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
+
+  // A new round of orders: what the teams made for the previous round and the
+  // author did not pick goes back to the library, so it neither counts for the
+  // new order nor stays reserved (phase 4).
+  if (targetStatus === BRAND_BRIEF_STATUS.IN_WORK && afterCeoReturn) {
+    try {
+      await c.env.DB.batch(releaseUnpickedStatements(c.env.DB, id, selectionFromRow(existing)))
+    } catch (err) {
+      console.error('Releasing the previous round failed (in_work):', err)
+    }
+  }
+
   if (targetStatus === BRAND_BRIEF_STATUS.IN_WORK) {
     try {
-      await notifySentToWork(c, id, user.id)
+      await notifySentToWork(c, id, user.id, afterCeoReturn)
     } catch (err) {
       console.error('Slack notification error (in_work):', err)
     }
@@ -252,7 +267,7 @@ status.patch('/:id/status', async c => {
 
         if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED) {
           const message =
-            currentStatus === BRAND_BRIEF_STATUS.NEEDS_REVISION
+            wasReturnedByCeo(existing)
               ? buildResubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
               : buildSubmittedMessage(c.env.SLACK_CHANNEL_APPROVALS, notificationData)
           c.executionCtx.waitUntil(
@@ -455,9 +470,15 @@ type StatusContext = Context<{ Bindings: Env; Variables: Variables }>
  * `→ in_work`: the four messages the teams got before this status existed
  * (A1–A4 of the plan) and the Jira Initiative, unchanged in content. The
  * bc-strategy message's `ts` is kept on the brief — phase 3 answers the order
- * in its thread («замовлення скасовано»).
+ * in its thread («замовлення скасовано»). Sent again after the CEO returned the
+ * brief, the four say so (N4, phase 4); Jira keeps the brief's Initiative.
  */
-async function notifySentToWork(c: StatusContext, id: string, userId: string): Promise<void> {
+async function notifySentToWork(
+  c: StatusContext,
+  id: string,
+  userId: string,
+  afterCeoReturn: boolean
+): Promise<void> {
   const token = c.env.SLACK_BOT_TOKEN
   const brand = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?')
     .bind(id)
@@ -468,6 +489,7 @@ async function notifySentToWork(c: StatusContext, id: string, userId: string): P
     brand,
     c.env.ADMIN_URL ?? ''
   )
+  const round = { afterCeoReturn }
   enqueueJiraThenSlack(
     c.executionCtx,
     c.env,
@@ -480,14 +502,17 @@ async function notifySentToWork(c: StatusContext, id: string, userId: string): P
       const results = await dispatchSlack(c.env.DB, token, id, userId, [
         {
           kind: 'approvals',
-          message: buildNewBriefsApprovalMessage(c.env.SLACK_CHANNEL_APPROVALS, enriched, brand),
+          message: buildNewBriefsApprovalMessage(c.env.SLACK_CHANNEL_APPROVALS, enriched, brand, round),
         },
         {
           kind: 'strategy',
-          message: buildNewBriefsStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, enriched, brand),
+          message: buildNewBriefsStrategyMessage(c.env.SLACK_CHANNEL_STRATEGY, enriched, brand, round),
         },
-        { kind: 'pr', message: buildNewBriefsPrMessage(c.env.SLACK_CHANNEL_PR, enriched) },
-        { kind: 'design', message: buildNewBriefsDesignMessage(c.env.SLACK_CHANNEL_DESIGN, enriched) },
+        { kind: 'pr', message: buildNewBriefsPrMessage(c.env.SLACK_CHANNEL_PR, enriched, round) },
+        {
+          kind: 'design',
+          message: buildNewBriefsDesignMessage(c.env.SLACK_CHANNEL_DESIGN, enriched, round),
+        },
       ])
       const order = results.find(r => r.kind === 'strategy')
       if (order?.ok && order.ts) {

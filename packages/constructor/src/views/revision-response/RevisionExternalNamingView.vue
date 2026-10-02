@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import ConceptCascadeBanner from '@/components/constructor/edit-flow/ConceptCascadeBanner.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useConstructorStore,
   SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT,
 } from '@/stores/constructor'
 import { useApiList } from '@/composables/useApi'
-import type { ExternalNaming } from '@brand-constructor/shared/types'
+import type { ExternalNaming, NewNamingBrief } from '@brand-constructor/shared/types'
 import ExternalNamingGrid from '@/components/constructor/alternative-selection/ExternalNamingGrid.vue'
 import ExternalNamingGridSkeleton from '@/components/constructor/skeletons/ExternalNamingGridSkeleton.vue'
 import StepCommentField from '@/components/constructor/fields/StepCommentField.vue'
@@ -15,6 +15,9 @@ import UiFooter from '@/components/ui/UiFooter.vue'
 import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSectionLabel.vue'
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
+import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
+import NewNamingModal from '@/components/constructor/modals/NewNamingModal.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_COMMENT_OFFSET_CLASS,
@@ -78,12 +81,23 @@ const commentHint = computed(() =>
   getExternalNamingCommentHint(selectedIds.value, namings.value),
 )
 
+/**
+ * Ordering a new name from the revision (brief-orders plan, phase 4) — the
+ * same button and form as the draft edit screen: an order replaces the picked
+ * names, picking a name drops the order after a confirmation.
+ */
+const isCreatingNew = computed(() => store.stepData.externalNaming.newNamingBrief != null)
+const showNewModal = ref(false)
+const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingNamingId = ref<string | null>(null)
+
 const primaryDisabled = computed(
   () =>
     !isExternalNamingStepValid(
       selectedIds.value,
       store.stepData.externalNaming.comment ?? '',
-      false,
+      isCreatingNew.value,
       namings.value,
     ),
 )
@@ -146,8 +160,48 @@ onMounted(async () => {
 })
 
 function handleToggle(id: string) {
+  if (isCreatingNew.value) {
+    pendingNamingId.value = id
+    showSwitchConfirm.value = true
+    return
+  }
   store.toggleExternalNaming(id)
 }
+
+function confirmSwitchSelection() {
+  const id = pendingNamingId.value
+  if (id == null) return
+  store.setNewNamingBrief(null)
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+  store.toggleExternalNaming(id)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingNamingId.value = null
+}
+
+function handleBriefSave(brief: NewNamingBrief) {
+  store.setNewNamingBrief(brief)
+  store.setExternalNaming({ selectedIds: [] })
+  showNewModal.value = false
+}
+
+function confirmDeleteBrief() {
+  store.setNewNamingBrief(null)
+  showDeleteConfirm.value = false
+}
+
+/** «Редагувати» inside the read-only brief preview reopens the form here. */
+watch(
+  () => store.briefPreviewEditRequested,
+  kind => {
+    if (kind !== 'externalNaming') return
+    showNewModal.value = true
+    store.consumeBriefPreviewEditRequest()
+  },
+)
 
 function goCancel() {
   if (isChained.value) {
@@ -306,6 +360,16 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
             :max-selectable="SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT"
             @toggle="handleToggle"
           />
+
+          <BriefOrderButton
+            create-label="Замовити нову назву"
+            created-label="Бриф неймінгу створено"
+            :is-created="isCreatingNew"
+            @create="showNewModal = true"
+            @view="store.openBriefPreview('externalNaming', { allowEdit: true })"
+            @edit="showNewModal = true"
+            @delete="showDeleteConfirm = true"
+          />
         </div>
       </template>
 
@@ -332,5 +396,32 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         @primary="goSave"
       />
     </template>
+
+    <NewNamingModal
+      v-if="showNewModal"
+      :initial-data="store.stepData.externalNaming.newNamingBrief"
+      @save="handleBriefSave"
+      @cancel="showNewModal = false"
+    />
+
+    <ConfirmationModal
+      v-if="showDeleteConfirm"
+      title="Видалити бриф?"
+      body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Видалити"
+      @cancel="showDeleteConfirm = false"
+      @primary="confirmDeleteBrief"
+    />
+
+    <ConfirmationModal
+      v-if="showSwitchConfirm"
+      title="Обрати цей неймінг?"
+      body="При виборі неймінгу створений бриф буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Обрати неймінг"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmSwitchSelection"
+    />
   </EditFlowStepShell>
 </template>

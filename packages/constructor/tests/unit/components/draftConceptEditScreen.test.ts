@@ -185,7 +185,14 @@ describe('the OTHER edit screen — the one after the CEO proposed a concept —
     expect(revisionEdit).toContain('Доступні концепти')
   })
 
-  it('and it is not offered the order button — her `4492:27189` draws none', () => {
-    expect(revisionEdit).not.toContain('BriefOrderButton')
+  /**
+   * Her `4492:27189` draws no order button here. The brief-orders plan, phase
+   * 4 («не из макетов», approved by the owner 01.10), adds it: a brief back
+   * from the CEO may order a new concept. It goes UNDER the alternatives, so
+   * the drawn pair above stays as she drew it (`revisionOrderScreens.test.ts`).
+   */
+  it('and the order button sits under the alternatives, not in her pair (phase 4)', () => {
+    const template = templateOf(revisionEdit)
+    expect(template.indexOf('<BriefOrderButton')).toBeGreaterThan(template.indexOf('Доступні концепти'))
   })
 })

@@ -15,6 +15,8 @@ import type {
  *
  * A brief with an order goes `draft → in_work`; the author then picks what the
  * teams made and sends it `in_work → submitted`. The CEO never acts on `in_work`.
+ * A brief the CEO returned may be ordered again: `needs_revision → in_work`
+ * (brief-orders plan, phase 4).
  */
 export const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
   [BRAND_BRIEF_STATUS.DRAFT]: [BRAND_BRIEF_STATUS.IN_WORK, BRAND_BRIEF_STATUS.SUBMITTED],
@@ -24,6 +26,7 @@ export const STATUS_TRANSITIONS: Record<BrandStatus, BrandStatus[]> = {
     BRAND_BRIEF_STATUS.NEEDS_REVISION,
   ],
   [BRAND_BRIEF_STATUS.NEEDS_REVISION]: [
+    BRAND_BRIEF_STATUS.IN_WORK,
     BRAND_BRIEF_STATUS.SUBMITTED,
     BRAND_BRIEF_STATUS.APPROVED,
   ],

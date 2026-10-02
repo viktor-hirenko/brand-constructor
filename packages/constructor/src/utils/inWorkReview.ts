@@ -46,12 +46,45 @@ export function isInWorkReadyForCeo(r: InWorkReadiness): boolean {
   return !r.hasNewBrief && r.hasConcept && r.externalCount > 0 && r.hasInternal
 }
 
-/** A draft with an order goes to the teams; everything else the author sends goes to the CEO. */
+/**
+ * A draft — or a brief back from the CEO (phase 4) — with an order goes to the
+ * teams; everything else the author sends goes to the CEO.
+ */
 export function authorSubmitTarget(
   mode: AuthorReviewMode,
   hasNewBrief: boolean
 ): 'in_work' | 'submitted' {
-  return mode === 'po-draft' && hasNewBrief ? 'in_work' : 'submitted'
+  return (mode === 'po-draft' || mode === 'po-returned') && hasNewBrief ? 'in_work' : 'submitted'
+}
+
+/** Footer label of the author's send: to the teams while something is on order. */
+export function authorSubmitLabel(mode: AuthorReviewMode, hasNewBrief: boolean): string {
+  return authorSubmitTarget(mode, hasNewBrief) === 'in_work' ? 'Відправити в роботу' : 'На погодження CEO'
+}
+
+export interface OrderedSections {
+  concept: boolean
+  externalNaming: boolean
+  internalNaming: boolean
+}
+
+/**
+ * Which sections of a brief back from the CEO the author answered with an order
+ * (phase 4). An order settles the CEO's alternative in its section — the author
+ * chose neither pick — and a concept order settles External Naming too: names
+ * come with the new concept, and that section cannot be edited meanwhile.
+ */
+export function orderedSections(stepData: {
+  concept: { newConceptBrief: unknown }
+  externalNaming: { newNamingBrief: unknown }
+  internalNaming: { newNamingFeedback: string | null }
+}): OrderedSections {
+  const concept = stepData.concept.newConceptBrief != null
+  return {
+    concept,
+    externalNaming: concept || stepData.externalNaming.newNamingBrief != null,
+    internalNaming: !!stepData.internalNaming.newNamingFeedback?.trim(),
+  }
 }
 
 /**

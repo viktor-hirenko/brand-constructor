@@ -435,7 +435,7 @@ async function executeStatusChange(newStatus: BriefStatusTarget) {
     // `needs_revision` cycle would resurrect stale picks. Stale-protection
     // would eventually catch this via `briefStatus` mismatch, but explicit
     // is better.
-    if (newStatus === 'submitted') {
+    if (newStatus === 'submitted' || newStatus === 'in_work') {
       store.resetAuthorRevisionDraft()
     }
 

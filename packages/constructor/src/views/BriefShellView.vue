@@ -318,9 +318,17 @@ const ceoReselectNamingRightPanelLoading = computed(
   () => librariesStore.isLoading || !ceoReselectMobilePreviewConcept.value
 )
 
-/** Concept shown in the right-panel slider while PO edits concept (choice mode). */
+/**
+ * Concept shown in the right-panel slider while PO edits concept (choice mode).
+ * With a new concept on order (revision, brief-orders phase 4) the old pick is
+ * still in the store until «Далі», yet it is no longer the brief's concept: the
+ * slider shows the empty placeholder, as the draft screen does, until the
+ * author browses one.
+ */
 const poEditPreviewConcept = computed(() => {
-  const id = store.stepData.concept.previewId ?? store.stepData.concept.selectedId
+  const fallback =
+    store.stepData.concept.newConceptBrief !== null ? null : store.stepData.concept.selectedId
+  const id = store.stepData.concept.previewId ?? fallback
   if (!id) return null
   return concepts.value.find(c => c.id === id) ?? null
 })
@@ -397,7 +405,10 @@ const poEditMobilePreviewConcept = computed(
  * concept fetch) resolve.
  */
 const poEditNamingRightPanelLoading = computed(
-  () => librariesStore.isLoading || !poEditMobilePreviewConcept.value,
+  () =>
+    librariesStore.isLoading ||
+    // a new concept on order (phase 4) has nothing to load: no skeleton forever
+    (!poEditMobilePreviewConcept.value && !hasOrderedNewConcept.value),
 )
 
 function confirmConceptFromSlider() {

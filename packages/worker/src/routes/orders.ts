@@ -30,6 +30,7 @@ import {
   conceptOrder,
   internalOrderFeedback,
   cancelledKindsFromEvents,
+  createdForKinds,
   loadCancelledKinds,
   loadCreatedForBrief,
   loadOrderedKinds,
@@ -114,9 +115,12 @@ orders.get('/', async c => {
       .all<{ brand_id: string; meta: string }>()
     for (const e of events.results) lastEventMeta.set(e.brand_id, e.meta)
 
+    // Only the current round's: a brief ordered again after the CEO's return
+    // (phase 4) starts its cancellations afresh.
     const cancels = await c.env.DB.prepare(
-      `SELECT brand_id, meta FROM brand_workflow_events
-       WHERE event_type = 'order_cancelled' AND brand_id IN (${marks})`
+      `SELECT e.brand_id, e.meta FROM brand_workflow_events e JOIN brands b ON b.id = e.brand_id
+       WHERE e.event_type = 'order_cancelled' AND e.brand_id IN (${marks})
+         AND (b.sent_to_work_at IS NULL OR e.created_at >= b.sent_to_work_at)`
     )
       .bind(...ids)
       .all<{ brand_id: string; meta: string }>()
@@ -148,6 +152,7 @@ orders.get('/', async c => {
       counts.get(row.id) ?? { concepts: 0, externalNamings: 0, internalNamings: 0 }
     )
     const cancelledKinds = cancelledKindsFromEvents(cancelMetas.get(row.id) ?? [])
+    const made = counts.get(row.id) ?? { concepts: 0, externalNamings: 0, internalNamings: 0 }
     return {
       brandId: row.id,
       brandName: row.internal_name || row.id,
@@ -160,7 +165,14 @@ orders.get('/', async c => {
       sentToWorkAt: row.sent_to_work_at ?? null,
       readyAt: row.orders_ready_at ?? null,
       deadline: orderDeadline(row),
-      created: counts.get(row.id) ?? { concepts: 0, externalNamings: 0, internalNamings: 0 },
+      created: {
+        concepts: kinds.includes(ORDER_KINDS.CONCEPT) ? made.concepts : 0,
+        externalNamings:
+          kinds.includes(ORDER_KINDS.EXTERNAL_NAMING) || kinds.includes(ORDER_KINDS.CONCEPT)
+            ? made.externalNamings
+            : 0,
+        internalNamings: kinds.includes(ORDER_KINDS.INTERNAL_NAMING) ? made.internalNamings : 0,
+      },
     }
   })
 
@@ -175,19 +187,20 @@ orders.get('/', async c => {
 })
 
 async function buildDetail(db: D1Database, row: BrandRow, adminUrl: string): Promise<OrderDetail> {
-  const created = await loadCreatedForBrief(db, row.id)
+  const allCreated = await loadCreatedForBrief(db, row.id)
   const [author, readyBy, orderedInfo, cancelled, data] = await Promise.all([
     db.prepare('SELECT name FROM users WHERE id = ?').bind(row.created_by).first<{ name: string }>(),
     row.orders_ready_by
       ? db.prepare('SELECT name FROM users WHERE id = ?').bind(row.orders_ready_by).first<{ name: string }>()
       : null,
-    loadOrderedKinds(db, row, created),
-    loadCancelledKinds(db, row.id),
+    loadOrderedKinds(db, row, allCreated),
+    loadCancelledKinds(db, row.id, row.sent_to_work_at),
     // The author's picks as A2 prints them; CEO alternatives never belong here.
     collectBrandNotificationData(db, row, adminUrl, {}),
   ])
   const ordered = orderedInfo.kinds
   const snapshot = orderedInfo.snapshot
+  const created = createdForKinds(allCreated, ordered)
   const openKinds = openOrderKinds(row)
   const state = orderState(row, ordered, openKinds, cancelled)
   // Nothing is added once the order is sent to the author: the author was told about what is there.
@@ -320,7 +333,7 @@ orders.post('/:brandId/ready', async c => {
       400
     )
   }
-  const created = await loadCreatedForBrief(c.env.DB, brandId)
+  const created = createdForKinds(await loadCreatedForBrief(c.env.DB, brandId), openKinds)
   const blockers = readyBlockers(openKinds, created)
   if (blockers.length > 0) {
     return c.json({ success: false, error: `Ще не можна відправити замовнику: ${blockers.join(' ')}` }, 400)

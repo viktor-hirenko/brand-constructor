@@ -4,7 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import { useApiList, apiGet } from '@/composables/useApi'
-import type { Concept } from '@brand-constructor/shared/types'
+import type { Concept, NewConceptBrief } from '@brand-constructor/shared/types'
 import ConceptGrid from '@/components/constructor/alternative-selection/ConceptGrid.vue'
 import ConceptCard from '@/components/constructor/alternative-selection/ConceptCard.vue'
 import ConceptGridSkeleton from '@/components/constructor/skeletons/ConceptGridSkeleton.vue'
@@ -14,6 +14,9 @@ import EditFlowSectionLabel from '@/components/constructor/edit-flow/EditFlowSec
 import EditFlowStepShell from '@/components/constructor/edit-flow/EditFlowStepShell.vue'
 import UiDivider from '@/components/ui/UiDivider.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import BriefOrderButton from '@/components/constructor/edit-flow/BriefOrderButton.vue'
+import NewConceptModal from '@/components/constructor/modals/NewConceptModal.vue'
+import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import {
   EDIT_FLOW_BODY_OFFSET_CLASS,
   EDIT_FLOW_COMMENT_OFFSET_CLASS,
@@ -127,7 +130,19 @@ const availableConcepts = computed(() => {
   return concepts.value.filter(c => c.id !== poConceptId.value && c.id !== ceoId)
 })
 
-const primaryDisabled = computed(() => !selectedId.value)
+/**
+ * Ordering a new concept from the revision (brief-orders plan, phase 4) — the
+ * same button and form as the draft edit screen (`DraftConceptEditView`). A
+ * concept on order replaces the pick; «Далі» then saves and the review sends
+ * the brief to the teams («Відправити в роботу»).
+ */
+const hasBrief = computed(() => store.stepData.concept.newConceptBrief !== null)
+const showNewModal = ref(false)
+const showDeleteConfirm = ref(false)
+const showSwitchConfirm = ref(false)
+const pendingSwitchId = ref<string | null>(null)
+
+const primaryDisabled = computed(() => !selectedId.value && !hasBrief.value)
 
 const isSaving = ref(false)
 
@@ -199,6 +214,9 @@ onMounted(() => {
     selectedId.value = store.authorRevisionDraft.pendingConceptId
   }
 
+  // A concept already on order: nothing is picked until the order is dropped.
+  if (hasBrief.value) selectedId.value = null
+
   // Seed previewId so the right-panel slider shows immediately on open.
   if (selectedId.value) store.setConcept({ previewId: selectedId.value })
 
@@ -223,10 +241,56 @@ watch(localMode, loadConcepts)
  * The store's `stepData.concept.selectedId` is only committed in `goDali()`.
  */
 function selectConcept(id: string) {
+  // Picking a concept drops the order — after a confirmation, as in the draft.
+  if (hasBrief.value) {
+    pendingSwitchId.value = id
+    showSwitchConfirm.value = true
+    return
+  }
+  applyConceptPick(id)
+}
+
+function applyConceptPick(id: string) {
   selectedId.value = id
   store.setAuthorRevisionPendingConcept(id)
   store.setConcept({ previewId: id })
 }
+
+function confirmSwitchSelection() {
+  const id = pendingSwitchId.value
+  if (id == null) return
+  store.setNewConceptBrief(null)
+  showSwitchConfirm.value = false
+  pendingSwitchId.value = null
+  applyConceptPick(id)
+}
+
+function cancelSwitchSelection() {
+  showSwitchConfirm.value = false
+  pendingSwitchId.value = null
+}
+
+function handleBriefSave(brief: NewConceptBrief) {
+  store.setNewConceptBrief(brief)
+  selectedId.value = null
+  store.setConcept({ previewId: null })
+  showNewModal.value = false
+}
+
+function confirmDeleteBrief() {
+  store.setNewConceptBrief(null)
+  showDeleteConfirm.value = false
+}
+
+/** «Редагувати» inside the read-only brief preview reopens the form here. */
+watch(
+  () => store.briefPreviewEditRequested,
+  kind => {
+    if (kind !== 'concept') return
+    showNewModal.value = true
+    store.consumeBriefPreviewEditRequest()
+  },
+)
 
 function goCancel() {
   // Restore externalNaming to the baseline — only if «Далі» captured one.
@@ -241,6 +305,10 @@ function goCancel() {
 }
 
 async function goDali() {
+  if (hasBrief.value) {
+    await saveConceptOrder()
+    return
+  }
   if (!selectedId.value) return
   const conceptChanged = selectedId.value !== originalPoConceptId.value
 
@@ -274,6 +342,28 @@ async function goDali() {
     store.resetAuthorRevisionDraft()
     router.push(`/constructor/brand/${brandId.value}`)
   }
+}
+
+/**
+ * A new concept on order: the brief keeps the order and no concept. Its names
+ * come with the new concept (the wizard skips External Naming for it), so the
+ * old concept's names and any name ordered for it go — they belong to a
+ * concept the brief no longer has (H-07).
+ */
+async function saveConceptOrder() {
+  // «Скасувати» after a failed save puts the names back (`goCancel`).
+  store.captureAuthorRevisionBaselineExternal(store.stepData.externalNaming.selectedIds ?? [])
+  store.markConflictSectionResolved('concept')
+  store.markConflictSectionResolved('externalNaming')
+  store.setConcept({ selectedId: null, previewId: null })
+  store.setExternalNaming({ selectedIds: [], newNamingBrief: null })
+  isSaving.value = true
+  const saved = await store.saveBrand()
+  isSaving.value = false
+  if (!saved) return
+  store.commitEditSection()
+  store.resetAuthorRevisionDraft()
+  router.push(`/constructor/brand/${brandId.value}`)
 }
 </script>
 
@@ -364,6 +454,16 @@ async function goDali() {
         :selection-ring="true"
         @select="selectConcept"
       />
+
+      <BriefOrderButton
+        create-label="Замовити новий концепт"
+        created-label="Бриф концепту створено"
+        :is-created="hasBrief"
+        @create="showNewModal = true"
+        @view="store.openBriefPreview('concept', { allowEdit: true })"
+        @edit="showNewModal = true"
+        @delete="showDeleteConfirm = true"
+      />
     </div>
 
     <StepCommentField
@@ -371,6 +471,10 @@ async function goDali() {
       label="Коментар"
       :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
     />
+
+    <p v-if="store.saveError" class="text-sm text-red-600">
+      {{ store.saveError }}
+    </p>
 
     </div>
 
@@ -384,5 +488,32 @@ async function goDali() {
         @primary="goDali"
       />
     </template>
+
+    <NewConceptModal
+      v-if="showNewModal"
+      :initial-data="store.stepData.concept.newConceptBrief"
+      @save="handleBriefSave"
+      @cancel="showNewModal = false"
+    />
+
+    <ConfirmationModal
+      v-if="showDeleteConfirm"
+      title="Видалити бриф?"
+      body="Дані брифу буде втрачено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Видалити"
+      @cancel="showDeleteConfirm = false"
+      @primary="confirmDeleteBrief"
+    />
+
+    <ConfirmationModal
+      v-if="showSwitchConfirm"
+      title="Обрати цей концепт?"
+      body="При виборі концепту створений бриф буде видалено. Цю дію неможливо скасувати."
+      cancel-label="Скасувати"
+      primary-label="Обрати концепт"
+      @cancel="cancelSwitchSelection"
+      @primary="confirmSwitchSelection"
+    />
   </EditFlowStepShell>
 </template>

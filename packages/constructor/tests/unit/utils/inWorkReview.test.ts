@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  authorSubmitLabel,
   authorSubmitTarget,
   canEnterDraftEdit,
+  orderedSections,
   isInWorkReadyForCeo,
   isSectionEditableInMode,
 } from '@/utils/inWorkReview'
@@ -107,5 +109,49 @@ describe('External Naming while a new concept is ordered (v2-prd:151-152)', () =
     expect(isSectionEditableInMode('po-in-work', 'externalNaming', { conceptOrdered: false })).toBe(true)
     expect(isSectionEditableInMode('po-in-work', 'concept', { conceptOrdered: true })).toBe(true)
     expect(isSectionEditableInMode('po-draft', 'externalNaming')).toBe(true)
+  })
+})
+
+describe('a brief back from the CEO with an order (phase 4)', () => {
+  it('goes to the teams, labelled «Відправити в роботу»', () => {
+    expect(authorSubmitTarget('po-returned', true)).toBe('in_work')
+    expect(authorSubmitLabel('po-returned', true)).toBe('Відправити в роботу')
+  })
+
+  it('without an order it goes to the CEO, as before', () => {
+    expect(authorSubmitLabel('po-returned', false)).toBe('На погодження CEO')
+    expect(authorSubmitLabel('po-draft', true)).toBe('Відправити в роботу')
+    expect(authorSubmitLabel('po-draft', false)).toBe('На погодження CEO')
+    // in work the orders already went; the author sends to the CEO only
+    expect(authorSubmitLabel('po-in-work', true)).toBe('На погодження CEO')
+  })
+})
+
+describe('which sections the author answered with an order', () => {
+  const stepData = (o: { concept?: unknown; naming?: unknown; internal?: string | null } = {}) => ({
+    concept: { newConceptBrief: o.concept ?? null },
+    externalNaming: { newNamingBrief: o.naming ?? null },
+    internalNaming: { newNamingFeedback: o.internal ?? null },
+  })
+
+  it('none without orders', () => {
+    expect(orderedSections(stepData())).toEqual({ concept: false, externalNaming: false, internalNaming: false })
+  })
+
+  it('a concept order settles External Naming too: names come with the new concept', () => {
+    expect(orderedSections(stepData({ concept: {} }))).toEqual({
+      concept: true,
+      externalNaming: true,
+      internalNaming: false,
+    })
+  })
+
+  it('a name order and an Internal Naming order settle their own sections', () => {
+    expect(orderedSections(stepData({ naming: {}, internal: 'shorter' }))).toEqual({
+      concept: false,
+      externalNaming: true,
+      internalNaming: true,
+    })
+    expect(orderedSections(stepData({ internal: '   ' })).internalNaming).toBe(false)
   })
 })

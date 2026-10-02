@@ -9,6 +9,7 @@ import {
   isSupervisorChoiceAnAlternative as isCeoChoiceAnAlternativePure,
   type SupervisorLibraryTab as CeoLibraryTab,
 } from '@/utils/supervisorRevisionGate'
+import { orderedSections } from '@/utils/inWorkReview'
 import type {
   Concept,
   ExternalNaming,
@@ -145,6 +146,12 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
   })
 
   /**
+   * Sections the Author answered with an order instead of a pick (phase 4):
+   * the CEO's alternative there is settled — neither pick was chosen.
+   */
+  const ordered = computed(() => orderedSections(store.stepData))
+
+  /**
    * CEO proposed a different concept AND it hasn't been applied yet.
    * Blocks editing External Naming until concept is resolved (Figma 1985:4657).
    */
@@ -152,7 +159,8 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
     if (!isPoReturnedView.value) return false
     return (
       isCeoChoiceAnAlternative('concept', store.brandCeoSelections?.concept ?? '') &&
-      !isCeoConceptApplied.value
+      !isCeoConceptApplied.value &&
+      !ordered.value.concept
     )
   })
 
@@ -191,17 +199,23 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
     // Library sections: unresolved comment OR un-resolved alternative.
     if (
       commentUnresolved('concept') ||
-      (isCeoChoiceAnAlternative('concept', ceoSel?.concept ?? '') && !isCeoConceptApplied.value)
+      (isCeoChoiceAnAlternative('concept', ceoSel?.concept ?? '') &&
+        !isCeoConceptApplied.value &&
+        !ordered.value.concept)
     ) count++
 
     if (
       commentUnresolved('externalNaming') ||
-      (isCeoChoiceAnAlternative('externalNaming', ceoSel?.externalNaming ?? '') && !isCeoExternalApplied.value)
+      (isCeoChoiceAnAlternative('externalNaming', ceoSel?.externalNaming ?? '') &&
+        !isCeoExternalApplied.value &&
+        !ordered.value.externalNaming)
     ) count++
 
     if (
       commentUnresolved('internalNaming') ||
-      (isCeoChoiceAnAlternative('internalNaming', ceoSel?.internalNaming ?? '') && !isCeoInternalApplied.value)
+      (isCeoChoiceAnAlternative('internalNaming', ceoSel?.internalNaming ?? '') &&
+        !isCeoInternalApplied.value &&
+        !ordered.value.internalNaming)
     ) count++
 
     return count
@@ -220,21 +234,24 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
     conceptNeedsChoice:
       isPoReturnedView.value &&
       isCeoChoiceAnAlternative('concept', store.brandCeoSelections?.concept ?? '') &&
-      !isCeoConceptApplied.value,
+      !isCeoConceptApplied.value &&
+      !ordered.value.concept,
     externalNamingNeedsChoice:
       isPoReturnedView.value &&
       isCeoChoiceAnAlternative(
         'externalNaming',
         store.brandCeoSelections?.externalNaming ?? ''
       ) &&
-      !isCeoExternalApplied.value,
+      !isCeoExternalApplied.value &&
+      !ordered.value.externalNaming,
     internalNamingNeedsChoice:
       isPoReturnedView.value &&
       isCeoChoiceAnAlternative(
         'internalNaming',
         store.brandCeoSelections?.internalNaming ?? ''
       ) &&
-      !isCeoInternalApplied.value,
+      !isCeoInternalApplied.value &&
+      !ordered.value.internalNaming,
   }))
 
   // ─── CEO display projections (resolved against libraries) ──────────────────

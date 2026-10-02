@@ -780,10 +780,28 @@ export function buildNeedsRevisionMessage(
 // Scenario B: submitted brand carries new briefs (CEO bypassed)
 // ---------------------------------------------------------------------------
 
+/** Which round of orders A1–A4 announce; absent — the first one, from the draft. */
+export interface SentToWorkRound {
+  /** The CEO returned the brief and the author ordered from the revision (N4, phase 4). */
+  afterCeoReturn?: boolean
+}
+
+export const AFTER_CEO_RETURN_NOTE = 'Після повернення від CEO.'
+
+/** N4: the same message, marked as sent again after the CEO's return. */
+function roundFragment(round: SentToWorkRound): SectionOrSkip[] {
+  return round.afterCeoReturn ? [italic(AFTER_CEO_RETURN_NOTE), spacer()] : []
+}
+
+function roundFallback(text: string, round: SentToWorkRound): string {
+  return round.afterCeoReturn ? `${text} (після повернення від CEO)` : text
+}
+
 export function buildNewBriefsApprovalMessage(
   channel: string,
   data: BrandNotificationData,
-  brand: BrandRowForSlack
+  brand: BrandRowForSlack,
+  round: SentToWorkRound = {}
 ): SlackMessage {
   const conceptBrief = parseJson<Record<string, unknown>>(brand.new_concept_brief)
   const namingBrief = parseJson<Record<string, unknown>>(brand.new_naming_brief)
@@ -801,10 +819,11 @@ export function buildNewBriefsApprovalMessage(
 
   return buildMessage(
     channel,
-    `Бриф відправлено в роботу: ${data.internalName}`,
+    roundFallback(`Бриф відправлено в роботу: ${data.internalName}`, round),
     [
       header('rocket', 'Бриф відправлено в роботу', data.internalName),
       spacer(),
+      ...roundFragment(round),
       field('GEO', data.geo),
       field('Дата запуску', data.launchDate),
       field('Нові замовлення', orderItems.join(', ')),
@@ -821,7 +840,8 @@ export function buildNewBriefsApprovalMessage(
 export function buildNewBriefsStrategyMessage(
   channel: string,
   data: BrandNotificationData,
-  brand: BrandRowForSlack
+  brand: BrandRowForSlack,
+  round: SentToWorkRound = {}
 ): SlackMessage {
   const conceptBrief = parseJson<Record<string, unknown>>(brand.new_concept_brief)
   const namingBrief = parseJson<Record<string, unknown>>(brand.new_naming_brief)
@@ -829,10 +849,11 @@ export function buildNewBriefsStrategyMessage(
 
   return buildMessage(
     channel,
-    `Нове замовлення: ${data.internalName}`,
+    roundFallback(`Нове замовлення: ${data.internalName}`, round),
     [
       header('memo', 'Нове замовлення для', data.internalName, ' '),
       spacer(),
+      ...roundFragment(round),
       ...basicsFragment(data, { withMode: true }),
       ...conceptFragment(data),
       ...conceptBriefFragment(conceptBrief),
@@ -850,14 +871,16 @@ export function buildNewBriefsStrategyMessage(
 
 export function buildNewBriefsPrMessage(
   channel: string,
-  data: BrandNotificationData
+  data: BrandNotificationData,
+  round: SentToWorkRound = {}
 ): SlackMessage {
   return buildMessage(
     channel,
-    `Новий бриф в роботу: ${data.internalName}`,
+    roundFallback(`Новий бриф в роботу: ${data.internalName}`, round),
     [
       header('memo', 'Новий бриф відправлено в роботу', data.internalName),
       spacer(),
+      ...roundFragment(round),
       ...basicsFragment(data),
       ...prPackageFragment(data),
       spacer(),
@@ -873,14 +896,16 @@ export function buildNewBriefsPrMessage(
 
 export function buildNewBriefsDesignMessage(
   channel: string,
-  data: BrandNotificationData
+  data: BrandNotificationData,
+  round: SentToWorkRound = {}
 ): SlackMessage {
   return buildMessage(
     channel,
-    `Новий бриф в роботу: ${data.internalName}`,
+    roundFallback(`Новий бриф в роботу: ${data.internalName}`, round),
     [
       header('memo', 'Новий бриф відправлено в роботу', data.internalName),
       spacer(),
+      ...roundFragment(round),
       ...basicsFragment(data, { withMode: true }),
       ...deliverablesFragment(data),
       ...visualComponentsFragment(data),

@@ -41,17 +41,24 @@ export interface MadeCounts {
  * `sent_to_work` event, because a cancelled order leaves nothing on the brief.
  * Briefs moved to `in_work` by migration 013 have no such list; for them the
  * standing orders and what the team made for the brief are the best answer.
+ * With the list at hand what was made does not add kinds: after the CEO returned
+ * a brief and it was ordered again (phase 4), the previous round's picks are
+ * still made for the brief but are not ordered this time.
  */
 export function orderedKinds(meta: string | null | undefined, row: BrandRow, made: MadeCounts): OrderKind[] {
   let fromEvent: OrderKind[] = []
+  let listed = false
   if (meta) {
     try {
-      fromEvent = asKinds((JSON.parse(meta) as { orders?: unknown }).orders)
+      const orders = (JSON.parse(meta) as { orders?: unknown }).orders
+      listed = Array.isArray(orders)
+      fromEvent = asKinds(orders)
     } catch {
       /* unreadable meta: the other sources still answer */
     }
   }
   const open = openOrderKinds(row)
+  if (listed) return KIND_ORDER.filter(k => fromEvent.includes(k) || open.includes(k))
   const fromMade: OrderKind[] = []
   if (made.concepts > 0) fromMade.push(ORDER_KINDS.CONCEPT)
   if (made.internalNamings > 0) fromMade.push(ORDER_KINDS.INTERNAL_NAMING)
@@ -73,10 +80,21 @@ export function cancelledKindsFromEvents(metas: string[]): OrderKind[] {
   return asKinds(kinds)
 }
 
-export async function loadCancelledKinds(db: D1Database, brandId: string): Promise<OrderKind[]> {
+/**
+ * Cancellations of the current round of orders — since the brief was last sent
+ * to the teams (`sent_to_work_at`); a round before the CEO's return is history.
+ */
+export async function loadCancelledKinds(
+  db: D1Database,
+  brandId: string,
+  since: string | null | undefined
+): Promise<OrderKind[]> {
   const rows = await db
-    .prepare(`SELECT meta FROM brand_workflow_events WHERE brand_id = ? AND event_type = 'order_cancelled'`)
-    .bind(brandId)
+    .prepare(
+      `SELECT meta FROM brand_workflow_events
+       WHERE brand_id = ? AND event_type = 'order_cancelled' AND (? IS NULL OR created_at >= ?)`
+    )
+    .bind(brandId, since ?? null, since ?? null)
     .all<{ meta: string }>()
   return cancelledKindsFromEvents(rows.results.map(r => r.meta))
 }
@@ -229,6 +247,22 @@ function namingOut(
     status: r.status,
     usedInBrand: r.used_in_brand_id === brandId,
     createdAt: r.created_at,
+  }
+}
+
+/**
+ * What was made for the given kinds of order. A brief ordered again after the
+ * CEO's return keeps its earlier picks reserved (`for_brand_id`); they belong
+ * to the earlier round, not to this one (phase 4). Names go with a concept order.
+ */
+export function createdForKinds(created: CreatedForBrief, kinds: OrderKind[]): CreatedForBrief {
+  return {
+    concepts: kinds.includes(ORDER_KINDS.CONCEPT) ? created.concepts : [],
+    externalNamings:
+      kinds.includes(ORDER_KINDS.EXTERNAL_NAMING) || kinds.includes(ORDER_KINDS.CONCEPT)
+        ? created.externalNamings
+        : [],
+    internalNamings: kinds.includes(ORDER_KINDS.INTERNAL_NAMING) ? created.internalNamings : [],
   }
 }
 
@@ -488,6 +522,32 @@ export function releaseUnpickedOnApprovalStatements(
       )
       .bind(brandId, brandId, ...guard.binds)
   )
+}
+
+/**
+ * A new round of orders after the CEO's return (`needs_revision → in_work`,
+ * phase 4): what the teams made for the brief and it does not hold now goes
+ * back to the library; what it holds stays reserved for it.
+ */
+export function releaseUnpickedStatements(
+  db: D1Database,
+  brandId: string,
+  keep: BriefSelection
+): D1PreparedStatement[] {
+  const notIn = (ids: string[]) => (ids.length > 0 ? ` AND id NOT IN (${ids.map(() => '?').join(',')})` : '')
+  const keepConcepts = keep.conceptId ? [keep.conceptId] : []
+  const keepInternals = keep.internalId ? [keep.internalId] : []
+  return [
+    db
+      .prepare(`UPDATE concepts SET for_brand_id = NULL WHERE for_brand_id = ?${notIn(keepConcepts)}`)
+      .bind(brandId, ...keepConcepts),
+    db
+      .prepare(`UPDATE external_namings SET for_brand_id = NULL WHERE for_brand_id = ?${notIn(keep.externalIds)}`)
+      .bind(brandId, ...keep.externalIds),
+    db
+      .prepare(`UPDATE internal_namings SET for_brand_id = NULL WHERE for_brand_id = ?${notIn(keepInternals)}`)
+      .bind(brandId, ...keepInternals),
+  ]
 }
 
 /**

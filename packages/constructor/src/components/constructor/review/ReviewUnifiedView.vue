@@ -4,6 +4,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { useLibrariesStore } from '@/stores/libraries'
 import { inWorkHeaderInfo, isMadeForBrief, madeForBriefSummary } from '@/utils/madeForBrief'
 import {
+  authorSubmitLabel as submitLabelFor,
   authorSubmitTarget,
   isInWorkReadyForCeo,
   isSectionEditableInMode,
@@ -320,12 +321,12 @@ const inWorkNotReady = computed(
     })
 )
 
-const authorSubmitLabel = computed(() => {
-  if (props.reviewMode === 'po-in-work' || props.isPoReturnedView) return 'На погодження CEO'
-  return props.hasNewBrief ? 'Відправити в роботу' : 'На погодження CEO'
-})
+const authorSubmitLabel = computed(() => submitLabelFor(props.reviewMode, props.hasNewBrief))
 
-/** A draft with an order goes to the teams (`in_work`); everything else to the CEO. */
+/**
+ * A draft or a brief back from the CEO with an order goes to the teams
+ * (`in_work`); everything else to the CEO.
+ */
 const submitTarget = computed(() => authorSubmitTarget(props.reviewMode, props.hasNewBrief))
 
 const externalNamingItems = computed(() =>
