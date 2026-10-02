@@ -1,0 +1,25 @@
+const L = require('../lib'); const F = require('../flow')
+;(async () => {
+  const b = await L.launch(); const { page } = await L.session(b, 'po')
+  const id = await F.toFinal(page); console.log('ID', id, F.dbSummary(id))
+  await F.editSection(page, 'Concept')
+  await L.wiz(page).locator('.concept-card', { hasText: 'Retro Pixel' }).first().click({ force: true }); await L.wait(page, 1200)
+  
+  await F.next(page); console.log('on', L.wiz(page).url())
+  console.log('DB after Далі:', F.dbSummary(id))
+  await L.back(page); console.log('after back1', L.wiz(page).url())
+  await L.back(page); console.log('after back2', L.wiz(page).url())
+  await F.dump(page, 'S2-after-back')
+  console.log('Concept:', await F.sec(page, 'Concept')); console.log('External:', await F.sec(page, 'External Naming')); console.log('submit:', await F.submitState(page))
+  console.log('DB:', F.dbSummary(id))
+  await L.shot(page, 'S2-final-after-back')
+  L.state.writes.length = 0
+  await L.clickText(L.wiz(page), 'На погодження CEO'); await L.wait(page, 2000)
+  console.log('after submit click', L.wiz(page).url(), await L.buttons(L.wiz(page)))
+  await L.shot(page, 'S2-after-submit-click')
+  const confirm = (await L.buttons(L.wiz(page))).find(x => /Відправити|Підтвердити|Так/.test(x))
+  if (confirm) { await L.clickText(L.wiz(page), confirm); await L.wait(page, 3000); console.log('confirmed', confirm, L.wiz(page).url()) }
+  console.log(JSON.stringify(L.state.writes.map(w => [w.m, w.p, w.status, w.body.slice(0, 200), w.res.slice(0,120)])))
+  console.log('DB:', F.dbSummary(id))
+  await b.close()
+})()

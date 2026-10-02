@@ -109,3 +109,27 @@ export interface BriefPreviewSlidesEnvelope {
     slideIndicesByConceptId: Record<string, number>
   }
 }
+
+/**
+ * A draft is something the Author comes back to days later, so its copy
+ * outlives the 24h of the review-flow envelopes.
+ */
+export const BRIEF_WIZARD_DRAFT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * The Author's unsaved wizard answers on a `draft` brief.
+ *
+ * `baseUpdatedAt` is the server `updatedAt` the copy was made on top of. On
+ * restore the copy is applied only while the server still reports that same
+ * value — if the brief was saved anywhere else in the meantime, the server
+ * wins and the copy is dropped. Comparing the two server stamps avoids
+ * comparing a browser clock with the server's.
+ */
+export interface BriefWizardDraftEnvelope {
+  briefId: string
+  savedAt: number
+  baseUpdatedAt: string
+  draft: {
+    stepData: BrandStepData
+  }
+}

@@ -1,0 +1,16 @@
+const L = require('../lib'); const F = require('../flow'); const fs = require('fs')
+;(async () => {
+  const id = fs.readFileSync(L.SP + '/run/s1-id.txt', 'utf8').trim()
+  const b = await L.launch(); const { page } = await L.session(b, 'po'); await F.open(page, id)
+  console.log('reopen Concept:', await F.sec(page, 'Concept')); console.log('reopen External:', await F.sec(page, 'External Naming')); console.log('submit:', await F.submitState(page))
+  await F.sectionBtn(page, 'Concept', 'Позначити як вирішений'); await L.wait(page, 800)
+  await F.sectionBtn(page, 'External Naming', 'Позначити як вирішений'); await L.wait(page, 800)
+  console.log('External:', await F.sec(page, 'External Naming')); console.log('submit:', await F.submitState(page))
+  await L.shot(page, 'S1-po-resolved-only')
+  const st = await F.submitState(page)
+  if (st.includes('[on]')) { L.state.writes.length = 0; await L.clickText(L.wiz(page), 'На погодження CEO'); await L.wait(page, 3000)
+    console.log('after submit', L.wiz(page).url().replace(L.O, '')); console.log(JSON.stringify(L.state.writes.map(w => [w.m, w.p, w.status, w.body.slice(0, 160)]))) }
+  console.log(F.dbSummary(id))
+  const names = L.sql("select id, name, concept_id from external_namings where id in ('exn_6e75b8da22414396','exn_8c4131b083dd47d3')"); console.log(names)
+  await b.close()
+})()

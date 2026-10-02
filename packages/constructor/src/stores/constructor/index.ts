@@ -9,6 +9,7 @@ import { useSupervisorAlternativeDraft } from './useSupervisorAlternativeDraft'
 import { useAuthorRevisionDraft } from './useAuthorRevisionDraft'
 import { usePreviews } from './usePreviews'
 import { useInlineSectionEdit } from './useInlineSectionEdit'
+import { useWizardDraftCopy } from './useWizardDraftCopy'
 
 export {
   SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT,
@@ -32,6 +33,7 @@ export {
  *    (Author = Product Owner side of the revision exchange)
  *  - `usePreviews` — concept overlay + PR package drawer
  *  - `useInlineSectionEdit` — Author inline section-edit triggered from Step 10
+ *  - `useWizardDraftCopy` — browser copy of a draft's unsaved answers
  *
  * Cross-slice dependencies are wired through explicit `opts` parameters
  * (refs + callbacks) — there are no module-level import cycles between
@@ -100,6 +102,30 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     restoreEditingSession: inlineSectionEditPublic.restoreEditingSession,
   })
 
+  const {
+    resetSlice: resetWizardDraftCopySlice,
+    flushWizardDraftCopy,
+    markWizardDraftSaved,
+    ...wizardDraftCopyPublic
+  } = useWizardDraftCopy({
+    brandId: brandDataPublic.brandId,
+    brandStatus: brandDataPublic.brandStatus,
+    stepData: brandDataPublic.stepData,
+    editingSection: inlineSectionEditPublic.editingSection,
+  })
+
+  /**
+   * `saveBrand()` with the draft copy kept in step: what is being sent is
+   * written to the browser first (so a save that dies on an expired session
+   * is not lost), and dropped once the server has it.
+   */
+  async function saveBrand(): Promise<boolean> {
+    flushWizardDraftCopy()
+    const saved = await brandDataPublic.saveBrand()
+    if (saved) markWizardDraftSaved(brandDataPublic.lastSavedUpdatedAt.value)
+    return saved
+  }
+
   // ─── Cross-slice orchestrators ─────────────────────────────────────────────
 
   /**
@@ -128,6 +154,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   /** Resets every slice to its initial state. Called from `BrandSuccessView` and the create-new-brand flow. */
   function reset() {
     resetBrandDataSlice()
+    resetWizardDraftCopySlice()
     resetSupervisorReviewSlice()
     resetSupervisorAlternativeSlice()
     resetAuthorRevisionDraftSlice()
@@ -142,6 +169,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ...authorRevisionDraftPublic,
     ...previewsPublic,
     ...inlineSectionEditPublic,
+    ...wizardDraftCopyPublic,
+    saveBrand,
     loadBrand,
     reset,
   }

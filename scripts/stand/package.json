@@ -1,0 +1,8 @@
+{
+  "name": "brand-constructor-stand",
+  "private": true,
+  "description": "Manual stand runs: prod frontend + local worker on a prod DB copy, Slack/Jira off. Not part of the pnpm workspace.",
+  "devDependencies": {
+    "playwright": "1.55"
+  }
+}
