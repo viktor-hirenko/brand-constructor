@@ -46,7 +46,39 @@ const dump = resolve(outDir, `prod-${stamp}.sql`)
 console.log(`\n> export production → ${dump}`)
 wrangler(['d1', 'export', PROD_DB, '--env', 'production', '--remote', '--output', dump])
 
+// Tables parents-first. Where references loop (a brief points at its concept;
+// a concept made for an order points at the brief) the loop is broken: those
+// columns are `deferred` — written NULL first and filled in, or cleared, apart.
+function insertOrder(db) {
+  const tables = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT LIKE 'd1_%' ORDER BY rowid")
+    .all()
+    .map(r => r.name)
+  const parents = new Map(
+    tables.map(t => [
+      t,
+      db.prepare(`PRAGMA foreign_key_list("${t}")`).all().map(f => ({ table: f.table, column: f.from })),
+    ])
+  )
+  const placed = []
+  const deferred = new Map() // table → columns written apart
+  const left = new Set(tables)
+  while (left.size > 0) {
+    const unmet = t => parents.get(t).filter(f => f.table !== t && left.has(f.table))
+    let next = [...left].find(t => unmet(t).length === 0)
+    if (!next) {
+      next = [...left].sort((a, b) => unmet(a).length - unmet(b).length)[0]
+      deferred.set(next, unmet(next).map(f => f.column))
+    }
+    placed.push(next)
+    left.delete(next)
+  }
+  return { placed, deferred }
+}
+
 console.log(`\n> drop the stage tables`)
+// Dropping a table deletes its rows, and D1 checks every reference as it goes:
+// the loop columns are cleared first, then tables go children-first.
 const listed = JSON.parse(
   onStage([
     'd1',
@@ -54,15 +86,23 @@ const listed = JSON.parse(
     STAGE_DB,
     '--json',
     '--command',
-    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT LIKE 'd1_%'",
+    "SELECT sql FROM sqlite_master WHERE type = 'table' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT LIKE 'd1_%'",
   ])
 )
-const tables = (listed[0]?.results ?? []).map(r => r.name)
-if (tables.length > 0) {
+const stageSchema = (listed[0]?.results ?? []).map(r => `${r.sql};`)
+if (stageSchema.length > 0) {
+  const shape = new DatabaseSync(':memory:', { enableForeignKeyConstraints: false })
+  shape.exec(stageSchema.join('\n'))
+  const { placed, deferred } = insertOrder(shape)
+  const clear = [...deferred].map(([t, cols]) => `UPDATE "${t}" SET ${cols.map(c => `"${c}" = NULL`).join(', ')};`)
   const drops = resolve(outDir, `stage-drop-${stamp}.sql`)
   writeFileSync(
     drops,
-    ['PRAGMA defer_foreign_keys = TRUE;', ...tables.map(t => `DROP TABLE IF EXISTS "${t}";`)].join('\n') + '\n'
+    [
+      'PRAGMA defer_foreign_keys = TRUE;',
+      ...clear,
+      ...[...placed].reverse().map(t => `DROP TABLE IF EXISTS "${t}";`),
+    ].join('\n') + '\n'
   )
   onStage(['d1', 'execute', STAGE_DB, '--file', drops, '--yes'])
 }
@@ -78,27 +118,7 @@ function loadScript(dumpSql) {
   const objects = db
     .prepare("SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY rowid")
     .all()
-  const tables = objects.filter(o => o.type === 'table').map(o => o.name)
-  const parents = new Map(
-    tables.map(t => [
-      t,
-      db.prepare(`PRAGMA foreign_key_list("${t}")`).all().map(f => ({ table: f.table, column: f.from })),
-    ])
-  )
-
-  const placed = []
-  const deferred = new Map() // table → columns written later
-  const left = new Set(tables)
-  while (left.size > 0) {
-    const unmet = t => parents.get(t).filter(f => f.table !== t && left.has(f.table))
-    let next = [...left].find(t => unmet(t).length === 0)
-    if (!next) {
-      next = [...left].sort((a, b) => unmet(a).length - unmet(b).length)[0]
-      deferred.set(next, unmet(next).map(f => f.column))
-    }
-    placed.push(next)
-    left.delete(next)
-  }
+  const { placed, deferred } = insertOrder(db)
 
   const literal = v =>
     v === null || v === undefined
