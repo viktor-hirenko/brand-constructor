@@ -306,6 +306,15 @@ crud.put('/:id', async c => {
     return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
   }
 
+  // The tab saves on top of the brief it saw. Another tab saved since: this one
+  // would silently overwrite it (H-29, run 02.10: D-60) — tell it to reload.
+  // Before the order checks: a stale tab of a brief in work hears «reload»,
+  // not an order rule it did not break (H-32, D-64).
+  const expected = body.expectedUpdatedAt
+  if (expected !== undefined && expected !== existing.updated_at) {
+    return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+  }
+
   if (existing.status === BRAND_BRIEF_STATUS.IN_WORK) {
     const refusal = checkInWorkEdit(existing, body)
     if (refusal) return c.json({ success: false, error: refusal }, 400)
@@ -342,9 +351,14 @@ crud.put('/:id', async c => {
   values.push(id, existing.status)
 
   // Only if the status is still the one checked above: a save racing a status
-  // change (second tab, double click) must not write into a sent brief.
+  // change (second tab, double click) must not write into a sent brief. And
+  // only over the version checked above: two tabs saving at the same moment
+  // both pass that check; only the first write still finds it (H-29).
+  const versionGuard = expected !== undefined ? ' AND updated_at = ?' : ''
+  if (expected !== undefined) values.push(expected)
+
   const result = await c.env.DB.prepare(
-    `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ?`
+    `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ?${versionGuard}`
   )
     .bind(...values)
     .run()

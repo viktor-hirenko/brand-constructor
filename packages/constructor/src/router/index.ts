@@ -209,7 +209,8 @@ const routes: RouteRecordRaw[] = [
           brand.internalName ?? undefined,
           brand.ceoComments ?? undefined,
           brand.ceoSelections ?? undefined,
-          brand.ordersReadyAt ?? null
+          brand.ordersReadyAt ?? null,
+          brand.updatedAt
         )
 
         // Restore in-progress localStorage drafts (F5-safe).

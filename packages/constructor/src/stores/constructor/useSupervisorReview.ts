@@ -29,6 +29,12 @@ interface UseSupervisorReviewOptions {
   brandId: Ref<string | null>
   /** Brand status ref owned by `useBrandData` — used as stale-protection in the supervisor-comments envelope. */
   brandStatus: Ref<string>
+  /**
+   * Version of the brief this tab saw, owned by `useBrandData`. «Вирішено»
+   * changes the brief on the server, so the tab's next save must carry the
+   * version that answer brought — else it is refused as another tab's (H-29).
+   */
+  serverUpdatedAt: Ref<string | null>
   /** `saveBrand()` from `useBrandData` — applyCeoVariant persists via the same wizard PUT. */
   saveBrand: () => Promise<boolean>
 }
@@ -68,7 +74,7 @@ interface UseSupervisorReviewOptions {
  * function + filename) has been updated to the new `Supervisor` vocabulary.
  */
 export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
-  const { stepData, brandId, brandStatus, saveBrand } = opts
+  const { stepData, brandId, brandStatus, serverUpdatedAt, saveBrand } = opts
 
   const brandCeoComments = ref<BrandCeoComments | null>(null)
   const brandCeoSelections = ref<Record<string, string | string[]> | null>(null)
@@ -160,6 +166,7 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
         { section: sectionKey, resolved }
       )
       brandCeoComments.value = data.ceoComments ?? null
+      if (data.updatedAt) serverUpdatedAt.value = data.updatedAt
       saveCeoCommentResolvedError.value = null
       saveCeoCommentResolvedErrorSection.value = null
       return true

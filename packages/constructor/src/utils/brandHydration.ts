@@ -9,7 +9,8 @@ export interface ConstructorStoreBrandLoader {
     internalName?: string,
     ceoComments?: BrandCeoComments | null,
     ceoSelections?: Record<string, string | string[]> | null,
-    ordersReadyAt?: string | null
+    ordersReadyAt?: string | null,
+    updatedAt?: string
   ) => void
   restoreWizardDraftCopy: (id: string, serverUpdatedAt: string) => void
 }
@@ -101,7 +102,8 @@ export function applyBrandToStore(store: ConstructorStoreBrandLoader, brand: Bra
     brand.internalName ?? undefined,
     brand.ceoComments ?? undefined,
     brand.ceoSelections ?? undefined,
-    brand.ordersReadyAt ?? null
+    brand.ordersReadyAt ?? null,
+    brand.updatedAt
   )
   // After `loadBrand` — overlays the Author's unsaved answers, if any.
   store.restoreWizardDraftCopy(brand.id, brand.updatedAt)

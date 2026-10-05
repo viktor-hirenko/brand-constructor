@@ -62,6 +62,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     stepData: brandDataPublic.stepData,
     brandId: brandDataPublic.brandId,
     brandStatus: brandDataPublic.brandStatus,
+    serverUpdatedAt: brandDataPublic.serverUpdatedAt,
     saveBrand: brandDataPublic.saveBrand,
   })
 
@@ -117,7 +118,7 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
   async function saveBrand(): Promise<boolean> {
     flushWizardDraftCopy()
     const saved = await brandDataPublic.saveBrand()
-    if (saved) markWizardDraftSaved(brandDataPublic.lastSavedUpdatedAt.value)
+    if (saved) markWizardDraftSaved(brandDataPublic.serverUpdatedAt.value)
     return saved
   }
 
@@ -174,13 +175,14 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     internalName?: string,
     ceoComments?: BrandCeoComments | null,
     ceoSelections?: Record<string, string | string[]> | null,
-    ordersReadyAt?: string | null
+    ordersReadyAt?: string | null,
+    updatedAt?: string
   ) {
     resetSupervisorAlternativeSlice()
     resetAuthorRevisionDraftSlice()
     resetPreviewsSlice()
     resetInlineSectionEditSlice()
-    loadWizard(id, data, step, status, internalName, ordersReadyAt)
+    loadWizard(id, data, step, status, internalName, ordersReadyAt, updatedAt)
     loadCeo(ceoComments ?? null, ceoSelections ?? null)
   }
 
