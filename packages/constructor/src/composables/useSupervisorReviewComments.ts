@@ -15,6 +15,12 @@ const SELECTION_REQUIRING_COMMENT: CeoLibraryTab[] = [
   'internalNaming',
 ]
 
+/** «Повернути» with no comment at all. */
+export const REVISION_NEEDS_ANY_COMMENT = 'Додайте хоча б один коментар перед поверненням.'
+/** «Повернути» with a changed choice left without a comment in its section. */
+export const REVISION_NEEDS_COMMENT_PER_CHANGE =
+  'Додайте коментар до кожного розділу, де ви змінили вибір.'
+
 /** Section keys mirrored in `ceoComments` except `general`. */
 const CEO_EDITABLE_SECTION_KEYS = [
   'basics',
@@ -125,10 +131,15 @@ export function useSupervisorReviewComments(opts: UseSupervisorReviewCommentsOpt
   /** True when no CEO comment exists at all and CEO clicked needs_revision. */
   const revisionRequiresAnyComment = ref(false)
 
+  /**
+   * Two refusals, two texts. A CEO who changed a choice and commented one of
+   * the changed sections got «Додайте хоча б один коментар…» while a comment
+   * was right there (H-33, run 02.10: T-042) — what was missing was the comment
+   * on the OTHER changed section, the highlighted one.
+   */
   const revisionWarning = computed<string | null>(() => {
-    if (revisionRequiresAnyComment.value || revisionMissingSections.value.size > 0) {
-      return 'Додайте хоча б один коментар перед поверненням.'
-    }
+    if (revisionRequiresAnyComment.value) return REVISION_NEEDS_ANY_COMMENT
+    if (revisionMissingSections.value.size > 0) return REVISION_NEEDS_COMMENT_PER_CHANGE
     return null
   })
 

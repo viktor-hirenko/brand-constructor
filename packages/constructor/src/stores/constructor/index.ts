@@ -10,6 +10,7 @@ import { useAuthorRevisionDraft } from './useAuthorRevisionDraft'
 import { usePreviews } from './usePreviews'
 import { useInlineSectionEdit } from './useInlineSectionEdit'
 import { useWizardDraftCopy } from './useWizardDraftCopy'
+import { externalIdsOnConceptCancel } from '@/utils/revisionConceptCancel'
 
 export {
   SUPERVISOR_ALTERNATIVE_EXTERNAL_NAMING_LIMIT,
@@ -88,18 +89,12 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     returnToStep: brandDataPublic.returnToStep,
   })
 
-  // `useAuthorRevisionDraft` needs read-access to the active edit-section so
-  // its F5 overlay can capture (and restore) any in-progress inline-edit too.
   const {
     resetSlice: resetAuthorRevisionDraftSlice,
     ...authorRevisionDraftPublic
   } = useAuthorRevisionDraft({
     brandId: brandDataPublic.brandId,
     brandStatus: brandDataPublic.brandStatus,
-    stepData: brandDataPublic.stepData,
-    editingSection: inlineSectionEditPublic.editingSection,
-    editingSectionSnapshot: inlineSectionEditPublic.editingSectionSnapshot,
-    restoreEditingSession: inlineSectionEditPublic.restoreEditingSession,
   })
 
   const {
@@ -124,6 +119,43 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     const saved = await brandDataPublic.saveBrand()
     if (saved) markWizardDraftSaved(brandDataPublic.lastSavedUpdatedAt.value)
     return saved
+  }
+
+  // ─── Leaving an edit screen without saving ────────────────────────────────
+
+  /**
+   * Drops the edit the Author opened from the review and did not save — what
+   * «Скасувати» does on every edit screen, and what leaving one any other way
+   * («назад» of the browser, a link to the review) does too, so the review
+   * never shows a half-done edit as the brief (H-03, H-02; run 02.10: D-12,
+   * D-13). Revision: the External Naming the chained concept → names flow
+   * cleared comes back from its baseline. Draft: `cancelEditSection` brings
+   * back both the concept and the cascaded names.
+   */
+  function discardUnfinishedEdit() {
+    const restoreIds = externalIdsOnConceptCancel(authorRevisionDraftPublic.authorRevisionDraft.value)
+    if (restoreIds) {
+      brandDataPublic.setExternalNaming({ selectedIds: restoreIds, newNamingBrief: null })
+    }
+    authorRevisionDraftPublic.resetAuthorRevisionDraft()
+    inlineSectionEditPublic.cancelEditSection()
+  }
+
+  /**
+   * Revision, names screen after a concept change → back to the concept
+   * screen («Назад» there, or the browser's): the names picked so far are kept
+   * aside for a return, the brief gets its own concept and names back, and the
+   * concept screen opens a fresh edit over them.
+   */
+  function stepBackToRevisionConcept() {
+    authorRevisionDraftPublic.setAuthorRevisionPendingExternal(
+      brandDataPublic.stepData.value.externalNaming.selectedIds ?? []
+    )
+    brandDataPublic.setExternalNaming({
+      selectedIds: [...authorRevisionDraftPublic.authorRevisionDraft.value.baselineExternalIds],
+      newNamingBrief: null,
+    })
+    inlineSectionEditPublic.cancelEditSection()
   }
 
   // ─── Cross-slice orchestrators ─────────────────────────────────────────────
@@ -171,6 +203,8 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     ...inlineSectionEditPublic,
     ...wizardDraftCopyPublic,
     saveBrand,
+    discardUnfinishedEdit,
+    stepBackToRevisionConcept,
     loadBrand,
     reset,
   }

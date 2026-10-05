@@ -180,6 +180,22 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
   }
 
   /**
+   * «Застосувати варіант CEO» answers the CEO's comment in that section: the
+   * Author took exactly what the CEO asked for. The comment is marked resolved
+   * (the Author can still un-mark it), so «N секцій потребують уваги» goes
+   * down. Before 05.10 the comment stayed open and the counter did not move
+   * after the apply (H-11, run 02.10: T-042) — and the CEO must comment every
+   * section they change, so it never could.
+   */
+  async function resolveCeoCommentsOnApply(sections: string[]) {
+    for (const section of sections) {
+      const meta = brandCeoComments.value?.[section]
+      if (!meta || !meta.value.trim() || meta.resolved) continue
+      await setCeoCommentResolved(section, true)
+    }
+  }
+
+  /**
    * Applies CEO's suggested alternative for a single section to PO's stepData,
    * then persists via saveBrand().
    *
@@ -226,7 +242,9 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
         stepData.value.internalNaming.selectedId = ceoInt
         stepData.value.internalNaming.newNamingFeedback = null
       }
-      return await saveBrand()
+      const saved = await saveBrand()
+      if (saved) await resolveCeoCommentsOnApply([section])
+      return saved
     } catch (error) {
       applyCeoVariantError.value =
         error instanceof Error ? error.message : 'Failed to apply CEO variant'
@@ -258,7 +276,11 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
         stepData.value.externalNaming.selectedIds = []
         stepData.value.externalNaming.newNamingBrief = null
       }
-      return await saveBrand()
+      const saved = await saveBrand()
+      if (saved) {
+        await resolveCeoCommentsOnApply(ceoExt.length > 0 ? ['concept', 'externalNaming'] : ['concept'])
+      }
+      return saved
     } catch (error) {
       applyCeoVariantError.value =
         error instanceof Error ? error.message : 'Failed to apply CEO variants'

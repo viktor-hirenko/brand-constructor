@@ -33,44 +33,26 @@ export interface BriefSupervisorAlternativeEnvelope {
 }
 
 /**
- * Cached state for the Author's in-progress revision picks.
+ * What the browser keeps for a brief in `needs_revision`: the sections the
+ * Author resolved with a choice of their own (see `resolvedConflictSections`
+ * below). Nothing else — an edit the Author did not save is dropped, as in a
+ * draft (H-03, run 02.10: D-07, D-13).
  *
- * Covers the full surface area the Author can mutate while the brief is in
- * `needs_revision` state:
- *  - `chainedDraft`             — chained `concept → external-naming` picks
- *    (baseline + pending) — mirrors `AuthorRevisionDraft`.
- *  - `editingSection` / `editingSectionSnapshot` — inline section-edit state
- *    (basics, marketing, deliverables, visualComponents, …). Required so
- *    «Скасувати» can still revert untouched state after a refresh.
- *  - `stepDataOverlay`          — full `stepData` snapshot. Replaces the
- *    server-loaded `stepData` on restore so every uncommitted mutation
- *    (toggling a checkbox, typing a comment, switching a marketing package)
- *    survives F5.
+ * Until 05.10 the envelope also carried the whole `stepData`, the open edit
+ * section and the chained concept → external picks, and put them back after
+ * F5: a half-done edit then looked saved while the server had the old one.
+ * Envelopes of that shape are still read — only their markers are used.
  */
 export interface BriefAuthorRevisionEnvelope {
   briefId: string
   savedAt: number
   briefStatus?: string
   draft: {
-    chainedDraft: {
-      baselineConceptId: string | null
-      baselineExternalIds: string[]
-      /** Absent in envelopes written before 30.09 — see `AuthorRevisionDraft`. */
-      baselineExternalCaptured?: boolean
-      pendingConceptId: string | null
-      pendingExternalIds: string[] | null
-    }
-    editingSection: string | null
-    editingSectionSnapshot: unknown
-    stepDataOverlay: BrandStepData | null
     /**
      * Sections where the Author went through the edit-flow and pressed Save,
      * resolving any Supervisor alternative conflict — regardless of whether
-     * they picked the Supervisor's suggestion or a third option.
-     *
-     * Persisted separately from `chainedDraft` so that `resetAuthorRevisionDraft()`
-     * (called at chained-flow completion) does NOT erase these markers before the
-     * Author returns to the final review screen.
+     * they picked the Supervisor's suggestion or a third option. The server
+     * does not know about them, so this is their only home across F5.
      * Cleared only by `resetSlice()` (= loadBrand / full submit).
      */
     resolvedConflictSections?: string[]

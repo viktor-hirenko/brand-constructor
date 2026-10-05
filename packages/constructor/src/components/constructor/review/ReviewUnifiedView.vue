@@ -31,6 +31,7 @@ import ChatBubbleIcon from '@/components/icons/ChatBubbleIcon.vue'
 import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
 import LinkIcon from '@/components/icons/LinkIcon.vue'
+import { attentionBannerTitle } from '@/utils/attentionBannerTitle'
 
 /**
  * Unified Brand Brief review screen.
@@ -212,16 +213,6 @@ const poDraftInfoOverride = {
 } as const
 
 /**
- * Pluralised section noun for the PO returned-from-CEO attention banner
- * ("4 секції потребують уваги" / "1 секція" / "5 секцій").
- */
-function sectionWord(n: number): string {
-  if (n % 10 === 1 && n % 100 !== 11) return 'секція'
-  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'секції'
-  return 'секцій'
-}
-
-/**
  * ReviewHeader info-block override — varies by reviewMode:
  *  - po-draft     → "Бриф готовий" (check icon) — Figma 5387:91772
  *  - po-returned  → "N секцій потребують уваги" (warning icon), no drawn screen
@@ -254,7 +245,7 @@ const reviewHeaderInfoOverride = computed(() => {
   if (props.reviewMode === 'po-returned') {
     if (props.attentionCounter > 0) {
       return {
-        title: `${props.attentionCounter} ${sectionWord(props.attentionCounter)} потребують уваги`,
+        title: attentionBannerTitle(props.attentionCounter),
         description:
           'Перегляньте коментарі та зміни від СЕО і оновіть бриф перед повторним відправленням.',
         iconVariant: 'warning' as const,

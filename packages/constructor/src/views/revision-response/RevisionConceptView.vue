@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { externalIdsOnConceptCancel } from '@/utils/revisionConceptCancel'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
@@ -229,14 +228,9 @@ function selectConcept(id: string) {
 }
 
 function goCancel() {
-  // Restore externalNaming to the baseline — only if «Далі» captured one.
-  // Straight «Редагувати» → «Скасувати» never touched the names, so they stay.
-  const restoreIds = externalIdsOnConceptCancel(store.authorRevisionDraft)
-  if (restoreIds) {
-    store.setExternalNaming({ selectedIds: restoreIds, newNamingBrief: null })
-  }
-  store.resetAuthorRevisionDraft()
-  store.cancelEditSection()
+  // Brings the names back only if «Далі» captured them — straight
+  // «Редагувати» → «Скасувати» never touched them (`externalIdsOnConceptCancel`).
+  store.discardUnfinishedEdit()
   router.push(`/constructor/brand/${brandId.value}`)
 }
 

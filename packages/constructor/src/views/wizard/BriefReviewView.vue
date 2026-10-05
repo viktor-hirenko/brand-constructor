@@ -22,6 +22,7 @@ import {
 import ReviewUnifiedView from '@/components/constructor/review/ReviewUnifiedView.vue'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
 import { brandHasNewBriefs } from '@brand-constructor/shared'
+import { isExternalNamingMissing } from '@/utils/briefCompleteness'
 import {
   useBrandBriefReviewPhase,
   BRAND_BRIEF_REVIEW_PHASE,
@@ -96,6 +97,17 @@ const apply = useSupervisorApplyVariants({
   internalNamings,
   router,
 })
+
+/**
+ * «На погодження CEO» stays shut on a brief that would reach the CEO without
+ * External Naming (H-02) — on top of the revision gate.
+ */
+const submitBlocked = computed(
+  () =>
+    apply.submitBlocked.value ||
+    ((reviewMode.value === 'po-draft' || reviewMode.value === 'po-returned') &&
+      isExternalNamingMissing(store.stepData))
+)
 
 const comments = useSupervisorReviewComments({
   isPoReturnedView,
@@ -551,7 +563,7 @@ async function handlePrintBrand() {
     :ceo-frozen-view="ceoFrozenView"
     :has-new-brief="hasNewBrief"
     :attention-counter="apply.attentionCounter.value"
-    :submit-blocked="apply.submitBlocked.value"
+    :submit-blocked="submitBlocked"
     :revision-warning="comments.revisionWarning.value"
     :revision-missing-sections="comments.revisionMissingSections.value"
     :is-ceo-concept-applied="apply.isCeoConceptApplied.value"
