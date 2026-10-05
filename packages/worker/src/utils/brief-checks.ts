@@ -53,6 +53,20 @@ function parseIdList(raw: string | null): string[] {
 /** A concurrent request changed the brief's status first (H-23). */
 export const BRIEF_CHANGED_MESSAGE = 'Бриф змінено — оновіть сторінку.'
 
+/** The tab still shows the order waiting for the team; the team has sent it (H-31). */
+export const ORDER_SENT_RELOAD_MESSAGE = 'Замовлення вже відправлено замовнику — оновіть сторінку.'
+
+/**
+ * Why a save from a stale tab is refused. «Відправити замовнику» stamps
+ * `updated_at` with its own time, so when that is the last change the tab
+ * missed, it hears what happened (H-31, D-65), not just «reload».
+ */
+export function staleTabMessage(row: Pick<BrandRow, 'updated_at' | 'orders_ready_at'>): string {
+  return row.orders_ready_at && row.orders_ready_at === row.updated_at
+    ? ORDER_SENT_RELOAD_MESSAGE
+    : BRIEF_CHANGED_MESSAGE
+}
+
 export const BRIEF_HAS_ORDERS_MESSAGE =
   'У брифі є замовлення. Спершу оберіть замовлене з бібліотеки, потім відправляйте CEO.'
 

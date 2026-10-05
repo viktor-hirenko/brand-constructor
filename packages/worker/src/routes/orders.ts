@@ -21,7 +21,7 @@ import type {
 } from '@brand-constructor/shared/types'
 import type { Env, Variables } from '../types'
 import type { BrandRow } from '../utils/brands'
-import { selectionFromRow } from '../utils/brief-checks'
+import { BRIEF_CHANGED_MESSAGE, selectionFromRow } from '../utils/brief-checks'
 import { collectBrandNotificationData } from './brands.notifications'
 import { insertWorkflowEvent, WORKFLOW_EVENT_TYPES } from '../utils/brand-workflow'
 import { dispatchSlack } from '../utils/slack-dispatch'
@@ -309,30 +309,34 @@ function createdNames(created: CreatedForBrief) {
   }
 }
 
+/** Why «Відправити замовнику» cannot go for the brief as it is now, or `null`. */
+function readyRefusal(row: BrandRow): { error: string; status: 400 | 409 } | null {
+  if (row.status !== BRAND_BRIEF_STATUS.IN_WORK) {
+    return { error: 'Бриф уже не в роботі — оновіть сторінку.', status: 409 }
+  }
+  if (row.orders_ready_at) return { error: 'Замовлення вже відправлено замовнику.', status: 409 }
+  if (openOrderKinds(row).length === 0) {
+    return { error: 'Замовник уже обрав з бібліотеки — замовлення скасовано.', status: 400 }
+  }
+  return null
+}
+
 /**
  * «Відправити замовнику». Conditional on the brief being exactly as
  * read: still `in_work`, not marked yet, and its orders untouched — so a team
  * pressing «Відправити замовнику» while the author replaces the order with a library pick
- * gets «оновіть сторінку» instead of announcing an order nobody waits for.
+ * is told so instead of announcing an order nobody waits for (H-31, D-65). It
+ * stamps `updated_at`: the author's tab opened before it is stale now, and its
+ * library pick is refused instead of cancelling the order just sent.
  */
 orders.post('/:brandId/ready', async c => {
   const brandId = c.req.param('brandId')
   const user = c.get('user')
   const row = await loadOrderBrief(c.env.DB, brandId)
   if (!row) return c.json({ success: false, error: 'Order not found' }, 404)
-  if (row.status !== BRAND_BRIEF_STATUS.IN_WORK) {
-    return c.json({ success: false, error: 'Бриф уже не в роботі — оновіть сторінку.' }, 409)
-  }
-  if (row.orders_ready_at) {
-    return c.json({ success: false, error: 'Замовлення вже відправлено замовнику.' }, 409)
-  }
+  const refusal = readyRefusal(row)
+  if (refusal) return c.json({ success: false, error: refusal.error }, refusal.status)
   const openKinds = openOrderKinds(row)
-  if (openKinds.length === 0) {
-    return c.json(
-      { success: false, error: 'Замовник уже обрав з бібліотеки — замовлення скасовано.' },
-      400
-    )
-  }
   const created = createdForKinds(await loadCreatedForBrief(c.env.DB, brandId), openKinds)
   const blockers = readyBlockers(openKinds, created)
   if (blockers.length > 0) {
@@ -341,7 +345,7 @@ orders.post('/:brandId/ready', async c => {
 
   const now = new Date().toISOString()
   const result = await c.env.DB.prepare(
-    `UPDATE brands SET orders_ready_at = ?, orders_ready_by = ?
+    `UPDATE brands SET orders_ready_at = ?, orders_ready_by = ?, updated_at = ?
      WHERE id = ? AND status = 'in_work' AND orders_ready_at IS NULL
        AND new_concept_brief IS ? AND new_naming_brief IS ?
        AND (CASE WHEN json_valid(step_data) THEN json_extract(step_data, '$.internalNaming.newNamingFeedback') END) IS ?`
@@ -349,6 +353,7 @@ orders.post('/:brandId/ready', async c => {
     .bind(
       now,
       user.id,
+      now,
       brandId,
       row.new_concept_brief,
       row.new_naming_brief,
@@ -356,7 +361,10 @@ orders.post('/:brandId/ready', async c => {
     )
     .run()
   if (result.meta.changes !== 1) {
-    return c.json({ success: false, error: 'Бриф змінено — оновіть сторінку.' }, 409)
+    // Lost to a request that landed in between — say which, as if it had come first.
+    const fresh = await loadOrderBrief(c.env.DB, brandId)
+    const error = (fresh && readyRefusal(fresh)?.error) ?? BRIEF_CHANGED_MESSAGE
+    return c.json({ success: false, error }, 409)
   }
 
   try {

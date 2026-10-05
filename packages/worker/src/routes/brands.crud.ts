@@ -26,6 +26,7 @@ import {
   BRIEF_CHANGED_MESSAGE,
   checkInWorkEdit,
   selectionFromRow,
+  staleTabMessage,
   type BriefSelection,
 } from '../utils/brief-checks'
 import {
@@ -312,7 +313,7 @@ crud.put('/:id', async c => {
   // not an order rule it did not break (H-32, D-64).
   const expected = body.expectedUpdatedAt
   if (expected !== undefined && expected !== existing.updated_at) {
-    return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+    return c.json({ success: false, error: staleTabMessage(existing) }, 409)
   }
 
   if (existing.status === BRAND_BRIEF_STATUS.IN_WORK) {
@@ -348,22 +349,26 @@ crud.put('/:id', async c => {
 
   updates.push('updated_at = ?')
   values.push(new Date().toISOString())
-  values.push(id, existing.status)
+  values.push(id, existing.status, existing.orders_ready_at ?? null)
 
   // Only if the status is still the one checked above: a save racing a status
   // change (second tab, double click) must not write into a sent brief. And
   // only over the version checked above: two tabs saving at the same moment
-  // both pass that check; only the first write still finds it (H-29).
+  // both pass that check; only the first write still finds it (H-29). Nor
+  // after «Відправити замовнику» landed in between — also for a tab that
+  // sends no version: a library pick then would cancel an order already sent (H-31).
   const versionGuard = expected !== undefined ? ' AND updated_at = ?' : ''
   if (expected !== undefined) values.push(expected)
 
   const result = await c.env.DB.prepare(
-    `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ?${versionGuard}`
+    `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ? AND orders_ready_at IS ?${versionGuard}`
   )
     .bind(...values)
     .run()
   if (result.meta.changes !== 1) {
-    return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+    const now = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
+    const error = now && now.status === existing.status ? staleTabMessage(now) : BRIEF_CHANGED_MESSAGE
+    return c.json({ success: false, error }, 409)
   }
 
   if (existing.status === BRAND_BRIEF_STATUS.IN_WORK) {
