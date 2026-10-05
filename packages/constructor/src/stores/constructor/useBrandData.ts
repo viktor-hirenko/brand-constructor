@@ -127,8 +127,14 @@ export function useBrandData() {
    * відправлено» window in `BriefShellView`; null while the tab is current.
    */
   const changedElsewhereStatus = ref<string | null>(null)
-  /** Server `updatedAt` of the last successful `saveBrand()` — base for the wizard draft copy. */
-  const lastSavedUpdatedAt = ref<string | null>(null)
+  /**
+   * Server `updatedAt` of the brief as this tab last saw it: on open, after its
+   * own save, after its own «Вирішено». Every save sends it; the server refuses
+   * a save over a brief another tab has changed since — «Бриф змінено —
+   * оновіть сторінку.» under the buttons (H-29, run 02.10: D-60). Also the base
+   * of the wizard draft copy.
+   */
+  const serverUpdatedAt = ref<string | null>(null)
 
   // ─── Wizard state ──────────────────────────────────────────────────────────
   const currentStep = ref(1)
@@ -416,7 +422,20 @@ export function useBrandData() {
   watch(currentStep, saveDraftToStorageDebounced)
 
   // ─── Persistence ───────────────────────────────────────────────────────────
-  async function saveBrand(): Promise<boolean> {
+  let lastSave: Promise<boolean> = Promise.resolve(true)
+
+  /**
+   * One tab's saves go one after another: a save sent before the previous one
+   * answered would carry the version that one is replacing, and be refused as
+   * if another tab had saved.
+   */
+  function saveBrand(): Promise<boolean> {
+    const next = lastSave.then(saveBrandNow, saveBrandNow)
+    lastSave = next
+    return next
+  }
+
+  async function saveBrandNow(): Promise<boolean> {
     isSaving.value = true
     saveError.value = null
 
@@ -454,7 +473,10 @@ export function useBrandData() {
       let result: SaveBrandResult
 
       if (brandId.value) {
-        result = await apiPut<SaveBrandResult>(`/api/brands/${brandId.value}`, payload)
+        result = await apiPut<SaveBrandResult>(`/api/brands/${brandId.value}`, {
+          ...payload,
+          expectedUpdatedAt: serverUpdatedAt.value ?? undefined,
+        })
       } else {
         result = await apiPost<SaveBrandResult>('/api/brands', { internalName: null, ...payload })
         if (result.id) {
@@ -465,7 +487,7 @@ export function useBrandData() {
 
       if (result.status) brandStatus.value = result.status
       if (result.internalName) brandInternalName.value = result.internalName
-      if (result.updatedAt) lastSavedUpdatedAt.value = result.updatedAt
+      if (result.updatedAt) serverUpdatedAt.value = result.updatedAt
 
       return true
     } catch (error) {
@@ -507,11 +529,13 @@ export function useBrandData() {
     data: BrandStepData,
     step: number,
     status?: string,
-    internalName?: string
+    internalName?: string,
+    updatedAt?: string
   ) {
     brandId.value = id
     brandInternalName.value = internalName ?? null
     brandStatus.value = status ?? 'draft'
+    serverUpdatedAt.value = updatedAt ?? null
     stepData.value = normalizeWizardStepData(data)
     currentStep.value = clampWizardStep(step)
     isDraft.value = false
@@ -521,6 +545,7 @@ export function useBrandData() {
     brandId.value = null
     brandInternalName.value = null
     brandStatus.value = 'draft'
+    serverUpdatedAt.value = null
     currentStep.value = 1
     stepData.value = getInitialStepData()
     isDraft.value = true
@@ -539,7 +564,7 @@ export function useBrandData() {
     saveError,
     changedElsewhereStatus,
     detectChangedElsewhere,
-    lastSavedUpdatedAt,
+    serverUpdatedAt,
     setBrandStatus,
     // Wizard state
     currentStep,

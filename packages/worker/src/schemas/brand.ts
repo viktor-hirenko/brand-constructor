@@ -130,4 +130,11 @@ export const brandPayloadSchema = z.object({
 })
 
 export const createBrandSchema = brandPayloadSchema
-export const updateBrandSchema = brandPayloadSchema
+/**
+ * `expectedUpdatedAt` — the brief's `updatedAt` as the saving tab last saw it.
+ * A different one on the server means another tab saved meanwhile (H-29).
+ * Optional: a tab still running an older wizard build does not send it.
+ */
+export const updateBrandSchema = brandPayloadSchema.extend({
+  expectedUpdatedAt: z.string().max(40).optional(),
+})

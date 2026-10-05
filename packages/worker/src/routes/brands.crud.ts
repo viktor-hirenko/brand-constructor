@@ -24,6 +24,9 @@ import {
 
 const crud = new Hono<{ Bindings: Env; Variables: Variables }>()
 
+/** Saved over a brief another tab has changed since — the author reloads (H-29). */
+export const BRIEF_CHANGED_MESSAGE = 'Бриф змінено — оновіть сторінку.'
+
 // FIXME(rbac, 2026-05-23): admin temporarily inherits CEO's read-all access so
 // they can manage briefs in the admin panel without gaining approve/send-back
 // powers. Revert this single line when brand RBAC is finalised — see PRD v2 §2.
@@ -281,6 +284,13 @@ crud.put('/:id', async c => {
     )
   }
 
+  // The tab saves on top of the brief it saw. Another tab saved since: this one
+  // would silently overwrite it (H-29, run 02.10: D-60) — tell it to reload.
+  const expected = body.expectedUpdatedAt
+  if (expected !== undefined && expected !== existing.updated_at) {
+    return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+  }
+
   const updates: string[] = []
   const values: (string | number | null)[] = []
 
@@ -300,9 +310,17 @@ crud.put('/:id', async c => {
   values.push(new Date().toISOString())
   values.push(id)
 
-  await c.env.DB.prepare(`UPDATE brands SET ${updates.join(', ')} WHERE id = ?`)
+  // Two tabs saving at the same moment both pass the check above; only the
+  // first write still finds the version it was checked against.
+  const versionGuard = expected !== undefined ? ' AND updated_at = ?' : ''
+  if (expected !== undefined) values.push(expected)
+
+  const result = await c.env.DB.prepare(`UPDATE brands SET ${updates.join(', ')} WHERE id = ?${versionGuard}`)
     .bind(...values)
     .run()
+  if (result.meta.changes !== 1) {
+    return c.json({ success: false, error: BRIEF_CHANGED_MESSAGE }, 409)
+  }
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
 
