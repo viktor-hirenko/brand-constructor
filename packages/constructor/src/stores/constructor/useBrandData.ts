@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
-import { apiPost, apiPut } from '@/composables/useApi'
+import { apiErrorStatus, apiGet, apiPost, apiPut } from '@/composables/useApi'
+import { isBriefChangedElsewhere } from '@/utils/briefChangedElsewhere'
 import { useLibrariesStore } from '@/stores/libraries'
 import { validateWizardStep } from '@/utils/wizardStepValidation'
 import { logSilent } from '@/utils/log'
@@ -120,6 +121,12 @@ export function useBrandData() {
     return 'saved'
   })
   const saveError = ref<string | null>(null)
+  /**
+   * Status the brief has on the server once this tab turned out to be behind it
+   * (sent to the CEO from another tab, and the like). Drives the «Бриф уже
+   * відправлено» window in `BriefShellView`; null while the tab is current.
+   */
+  const changedElsewhereStatus = ref<string | null>(null)
   /** Server `updatedAt` of the last successful `saveBrand()` — base for the wizard draft copy. */
   const lastSavedUpdatedAt = ref<string | null>(null)
 
@@ -462,10 +469,29 @@ export function useBrandData() {
 
       return true
     } catch (error) {
+      if (await detectChangedElsewhere(error)) return false
       saveError.value = error instanceof Error ? error.message : 'An error occurred'
       return false
     } finally {
       isSaving.value = false
+    }
+  }
+
+  /**
+   * After a 409: ask the server what the brief is now. If its status is no
+   * longer ours, the tab is stale — raise the window instead of an error line.
+   * Any doubt (no id, the check itself failed) falls back to the line.
+   */
+  async function detectChangedElsewhere(error: unknown): Promise<boolean> {
+    if (apiErrorStatus(error) !== 409 || !brandId.value) return false
+    try {
+      const current = await apiGet<{ status?: string }>(`/api/brands/${brandId.value}`)
+      if (!isBriefChangedElsewhere(brandStatus.value, current?.status)) return false
+      changedElsewhereStatus.value = current.status ?? null
+      return true
+    } catch (err) {
+      logSilent('detectChangedElsewhere', err)
+      return false
     }
   }
 
@@ -511,6 +537,8 @@ export function useBrandData() {
     brandStatus,
     successType,
     saveError,
+    changedElsewhereStatus,
+    detectChangedElsewhere,
     lastSavedUpdatedAt,
     setBrandStatus,
     // Wizard state

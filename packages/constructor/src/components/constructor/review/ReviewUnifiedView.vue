@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
 import type {
   Concept,
@@ -116,6 +116,20 @@ interface ReviewUnifiedViewProps {
 }
 
 const props = defineProps<ReviewUnifiedViewProps>()
+
+/**
+ * The error line sits under the last button of the stack, which can be below
+ * the fold on a long review — bring it into view when it appears.
+ */
+const actionErrorEl = ref<HTMLElement | null>(null)
+watch(
+  () => props.statusActionError || props.saveError,
+  async message => {
+    if (!message) return
+    await nextTick()
+    actionErrorEl.value?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }
+)
 
 const emit = defineEmits<{
   'status-change': [newStatus: 'submitted' | 'approved' | 'needs_revision']
@@ -672,13 +686,6 @@ defineExpose({
           />
         </div>
 
-        <div
-          v-if="saveError || statusActionError"
-          class="review-unified-view__error bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm"
-        >
-          {{ statusActionError || saveError }}
-        </div>
-
         <SupervisorActionsFooter
           v-if="reviewMode === 'ceo' && brandStatus === 'submitted'"
           :loading="statusActionLoading"
@@ -714,6 +721,17 @@ defineExpose({
           @share="emit('share')"
           @pdf="emit('pdf')"
         />
+
+        <!-- Under the buttons, as on every step (kit note `4378:16948`); it
+             used to be a pink box above them, a shape the kit does not have. -->
+        <p
+          v-if="saveError || statusActionError"
+          ref="actionErrorEl"
+          class="review-unified-view__error text-center text-sm text-red-600"
+          role="alert"
+        >
+          {{ statusActionError || saveError }}
+        </p>
       </div>
     </div>
   </div>

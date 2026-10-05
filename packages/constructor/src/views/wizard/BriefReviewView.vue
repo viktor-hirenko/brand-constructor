@@ -464,6 +464,8 @@ async function executeStatusChange(newStatus: 'submitted' | 'approved' | 'needs_
       return
     }
   } catch (err) {
+    // Sent or decided in another tab meanwhile — the shell raises its window.
+    if (await store.detectChangedElsewhere(err)) return
     statusActionError.value = err instanceof Error ? err.message : 'Помилка зміни статусу'
   } finally {
     statusActionLoading.value = false

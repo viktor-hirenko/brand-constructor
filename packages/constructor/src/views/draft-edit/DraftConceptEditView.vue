@@ -318,7 +318,13 @@ async function goDali() {
         :loading="isSaving"
         @cancel="goCancel"
         @primary="goDali"
-      />
+      >
+        <template #note>
+          <p v-if="store.saveError" class="text-sm text-red-600">
+            {{ store.saveError }}
+          </p>
+        </template>
+      </UiFooter>
     </template>
 
     <NewConceptModal

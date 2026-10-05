@@ -10,6 +10,7 @@ vi.mock('@/composables/useApi', () => ({
   apiGet: vi.fn(),
   apiPatch: vi.fn(),
   apiDelete: vi.fn(),
+  apiErrorStatus: () => undefined,
 }))
 
 import { useConstructorStore } from '@/stores/constructor'

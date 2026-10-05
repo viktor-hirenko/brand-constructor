@@ -221,7 +221,7 @@ async function createNewBrand() {
               </template>
             </UiButton>
 
-            <p v-if="actionError" class="mt-3 text-sm text-destructive">
+            <p v-if="actionError" class="mt-3 text-sm text-red-600">
               {{ actionError }}
             </p>
           </div>

@@ -10,6 +10,24 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 // the SPA and would be blocked at the CORS preflight stage anyway.
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+/**
+ * What every wizard screen says when the request never reached the server —
+ * the same wording the Admin uses (`admin/src/utils/apiErrorText.ts`). The
+ * browser's own text differs per engine («Failed to fetch», «Load failed»,
+ * «NetworkError when attempting to fetch resource.») and tells the user nothing.
+ */
+export const NETWORK_ERROR_TEXT = 'Немає звʼязку. Перевірте інтернет і спробуйте ще раз.';
+
+/** `fetch` rejects only when no response came back at all, and it does so with a TypeError. */
+export function isNetworkFailure(err: unknown): boolean {
+  return err instanceof TypeError;
+}
+
+/** HTTP status of a failed request, when the server did answer. */
+export function apiErrorStatus(err: unknown): number | undefined {
+  return err instanceof Error ? (err as Error & { status?: number }).status : undefined;
+}
+
 export function getAssetUrl(url: string | null | undefined): string {
   if (!url) return '';
   if (url.startsWith('/api')) return `${API_BASE}${url}`;
@@ -44,7 +62,13 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   // `credentials: 'include'` is required for the HttpOnly auth cookie to
   // flow on both same-origin (Pages → Pages Function proxy) and direct
   // cross-origin (workers.dev) requests.
-  const response = await fetch(fullUrl, { ...options, credentials: 'include', headers });
+  let response: Response;
+  try {
+    response = await fetch(fullUrl, { ...options, credentials: 'include', headers });
+  } catch (err) {
+    if (isNetworkFailure(err)) throw new Error(NETWORK_ERROR_TEXT);
+    throw err;
+  }
   const json = await response.json();
 
   if (!response.ok) {
@@ -62,7 +86,9 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
       handleSessionExpired();
     }
     const errorData = json as ApiErrorResponse;
-    throw new Error(errorData.error || `HTTP ${response.status}`);
+    throw Object.assign(new Error(errorData.error || `HTTP ${response.status}`), {
+      status: response.status,
+    });
   }
 
   return json as T;
