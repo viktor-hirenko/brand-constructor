@@ -14,12 +14,7 @@ function makeDraft() {
   return useAuthorRevisionDraft({
     brandId: ref(null),
     brandStatus: ref('needs_revision'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stepData: ref({} as any),
-    editingSection: ref(null),
-    editingSectionSnapshot: ref(null),
-    restoreEditingSession: () => {},
-  } as unknown as Parameters<typeof useAuthorRevisionDraft>[0])
+  })
 }
 
 describe('«Скасувати» on the revision concept screen and the external names', () => {
@@ -53,13 +48,20 @@ describe('«Скасувати» on the revision concept screen and the external
     expect(externalIdsOnConceptCancel(d.authorRevisionDraft.value)).toBeNull()
   })
 
-  it('the view goes through the guard, not the raw baseline', () => {
-    const src = readFileSync(
+  it('«Скасувати» goes through the guard, not the raw baseline', () => {
+    const view = readFileSync(
       fileURLToPath(new URL('../../../src/views/revision-response/RevisionConceptView.vue', import.meta.url)),
       'utf8',
     )
-    const cancel = src.slice(src.indexOf('function goCancel()'), src.indexOf('async function goDali()'))
-    expect(cancel).toContain('externalIdsOnConceptCancel(store.authorRevisionDraft)')
-    expect(cancel).not.toContain('selectedIds: [...store.authorRevisionDraft.baselineExternalIds]')
+    const cancel = view.slice(view.indexOf('function goCancel()'), view.indexOf('async function goDali()'))
+    expect(cancel).toContain('store.discardUnfinishedEdit()')
+    // …and so does leaving the screen any other way (H-03): one function for both.
+    const store = readFileSync(
+      fileURLToPath(new URL('../../../src/stores/constructor/index.ts', import.meta.url)),
+      'utf8',
+    )
+    const discard = store.slice(store.indexOf('function discardUnfinishedEdit()'), store.indexOf('function stepBackToRevisionConcept()'))
+    expect(discard).toContain('externalIdsOnConceptCancel(authorRevisionDraftPublic.authorRevisionDraft.value)')
+    expect(discard).not.toContain('baselineExternalIds]')
   })
 })

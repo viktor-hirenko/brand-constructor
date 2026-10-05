@@ -205,18 +205,10 @@ watch(
 
 function goCancel() {
   if (isChained.value) {
-    // «Назад» — stash the in-progress external picks so they survive a forward
-    // navigation back to this view, then revert stepData to the captured
-    // baseline so the revision concept view opens with a clean external slice.
-    // NB: draft is NOT reset — the baseline + pending concept must persist
-    // across the hop to keep «Назад» idempotent.
-    store.setAuthorRevisionPendingExternal(store.stepData.externalNaming.selectedIds ?? [])
-    store.setExternalNaming({
-      selectedIds: [...store.authorRevisionDraft.baselineExternalIds],
-      newNamingBrief: null,
-    })
-    // cancelEditSection restores concept.selectedId back to the Author's original.
-    store.cancelEditSection()
+    // «Назад» — the picks so far are kept for a return, the brief gets its own
+    // concept and names back. NB: the draft is NOT reset — the baseline +
+    // pending concept must persist across the hop to keep «Назад» idempotent.
+    store.stepBackToRevisionConcept()
     router.push(`/constructor/brand/${brandId.value}/po-edit/concept`)
   } else {
     store.cancelEditSection()

@@ -11,7 +11,7 @@ describe('resolveColdStartNavigation', () => {
     ).toBe(true)
   })
 
-  it('keeps cold-start navigation to brief review sub-routes (drafts are restored from storage)', () => {
+  it('keeps cold-start navigation to the review and the CEO screens', () => {
     expect(
       resolveColdStartNavigation({
         fromName: undefined,
@@ -56,5 +56,15 @@ describe('resolveColdStartNavigation', () => {
         toParamsId: 'brand-9',
       })
     ).toBe(true)
+  })
+
+  it('redirects cold start on a revision edit screen to the brand review (H-03, D-07)', () => {
+    expect(
+      resolveColdStartNavigation({
+        fromName: undefined,
+        toIsPoEdit: true,
+        toParamsId: 'brand-9',
+      })
+    ).toEqual({ name: 'brand-view-review', params: { id: 'brand-9' } })
   })
 })

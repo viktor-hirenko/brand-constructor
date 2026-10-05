@@ -1,5 +1,4 @@
 import { ref, watch, type Ref } from 'vue'
-import type { BrandStepData } from '@brand-constructor/shared/types'
 import { BRAND_BRIEF_STATUS } from '@brand-constructor/shared/constants'
 import {
   writeAuthorRevisionDraft,
@@ -19,13 +18,6 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
 interface UseAuthorRevisionDraftOptions {
   brandId: Ref<string | null>
   brandStatus: Ref<string>
-  /** From `useBrandData` — replaced on restore by the cached overlay. */
-  stepData: Ref<BrandStepData>
-  /** From `useInlineSectionEdit` — included in the overlay so «Скасувати» still works after F5. */
-  editingSection: Ref<string | null>
-  editingSectionSnapshot: Ref<unknown>
-  /** From `useInlineSectionEdit` — used during restore to re-apply key + snapshot. */
-  restoreEditingSession: (key: string | null, snapshot: unknown) => void
 }
 
 /**
@@ -74,25 +66,18 @@ export interface AuthorRevisionDraft {
  *    Author state with a mid-session value
  *  - pending setters used by «Назад / Далі» navigation inside the flow
  *
- * F5 persistence: while the brief is in `needs_revision`, the slice
- * autosaves a **full overlay** of the Author's in-progress revision state
- * (this draft + active edit section + full `stepData`) into localStorage so
- * any mutation — checkbox toggle, comment, marketing package switch —
- * survives a refresh. Restored from the parent route guard after
- * `loadBrand()`.
+ * F5 persistence: while the brief is in `needs_revision`, only
+ * `resolvedConflictSections` goes to localStorage — the server does not know
+ * about them. The chained picks stay in memory: an edit the Author did not
+ * save is dropped on F5, as in a draft (H-03, run 02.10: D-07, D-13). Until
+ * 05.10 the whole `stepData` and the open edit were stored and put back, and
+ * the review then showed a half-done edit as saved.
  *
  * Sister slice to `useSupervisorAlternativeDraft` — same lifecycle shape
  * (transient, reset on save / cancel / brand load).
  */
 export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
-  const {
-    brandId,
-    brandStatus,
-    stepData,
-    editingSection,
-    editingSectionSnapshot,
-    restoreEditingSession,
-  } = opts
+  const { brandId, brandStatus } = opts
 
   const authorRevisionDraft = ref<AuthorRevisionDraft>({
     baselineConceptId: null,
@@ -155,25 +140,20 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
     return brandStatus.value === BRAND_BRIEF_STATUS.NEEDS_REVISION
   }
 
-  function snapshotEnvelopeDraft() {
-    return {
-      chainedDraft: { ...authorRevisionDraft.value },
-      editingSection: editingSection.value,
-      editingSectionSnapshot: editingSectionSnapshot.value,
-      stepDataOverlay: JSON.parse(JSON.stringify(stepData.value)) as BrandStepData,
-      resolvedConflictSections: [...authorRevisionDraft.value.resolvedConflictSections],
-    }
-  }
-
   const _persistEnvelopeDebounced = debounce(() => {
     const id = brandId.value
     if (!id) return
     if (!shouldPersistAuthorRevision()) return
-    writeAuthorRevisionDraft(id, snapshotEnvelopeDraft(), brandStatus.value)
+    const resolvedConflictSections = [...authorRevisionDraft.value.resolvedConflictSections]
+    if (resolvedConflictSections.length === 0) {
+      clearAuthorRevisionDraft(id)
+      return
+    }
+    writeAuthorRevisionDraft(id, { resolvedConflictSections }, brandStatus.value)
   }, 400)
 
   watch(
-    [authorRevisionDraft, editingSection, editingSectionSnapshot, stepData],
+    () => authorRevisionDraft.value.resolvedConflictSections,
     () => {
       if (isRestoring.value) return
       _persistEnvelopeDebounced()
@@ -182,16 +162,10 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
   )
 
   /**
-   * Called from the parent route guard after `store.loadBrand()` to overlay
-   * any cached in-progress revision state over the freshly loaded server
-   * snapshot.
-   *
-   * Order of operations is critical:
-   *  1. Replace `stepData` with the cached overlay (so the UI re-renders
-   *     with the Author's uncommitted mutations on top).
-   *  2. Restore `editingSection` + its snapshot via the dedicated method so
-   *     «Скасувати» still has the pre-edit baseline.
-   *  3. Re-apply the `authorRevisionDraft` (chained-flow baseline + pending).
+   * Called from the parent route guard after `store.loadBrand()`: puts back
+   * the Author's «resolved» markers. Envelopes from before 05.10 also carry a
+   * `stepData` overlay and an open edit — they are ignored, so the review shows
+   * what the server has.
    *
    * Stale-protection: envelope is dropped when `briefStatus` no longer
    * matches the current status (e.g. Supervisor approved while Author was
@@ -205,59 +179,17 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
         clearAuthorRevisionDraft(briefId)
         return
       }
-      // Envelope-shape guard: silently discard legacy envelopes that pre-date
-      // the `chainedDraft` rename. (`poEditDraft` was the previous key.)
-      if (!envelope.draft || !envelope.draft.chainedDraft) {
+      const markers = envelope.draft?.resolvedConflictSections
+      if (!Array.isArray(markers) || markers.length === 0) {
         clearAuthorRevisionDraft(briefId)
         return
       }
-
       isRestoring.value = true
       try {
-        if (envelope.draft.stepDataOverlay) {
-          stepData.value = {
-            ...envelope.draft.stepDataOverlay,
-            stepLayoutVersion: 2,
-          }
+        authorRevisionDraft.value = {
+          ...authorRevisionDraft.value,
+          resolvedConflictSections: markers.filter((m): m is string => typeof m === 'string'),
         }
-
-        restoreEditingSession(envelope.draft.editingSection, envelope.draft.editingSectionSnapshot)
-
-        const restoredDraft = {
-          ...envelope.draft.chainedDraft,
-          // Envelopes written before the flag existed: a non-empty baseline can
-          // only have come from a capture.
-          baselineExternalCaptured:
-            envelope.draft.chainedDraft.baselineExternalCaptured ??
-            envelope.draft.chainedDraft.baselineExternalIds.length > 0,
-          resolvedConflictSections: envelope.draft.resolvedConflictSections ?? [],
-        }
-
-        // F5-safe chained external-naming fix.
-        //
-        // Scenario: Author is on /po-edit/concept/external-naming and has selected some
-        // external namings. They press F5. At that point:
-        //   - stepDataOverlay.externalNaming.selectedIds = their in-progress picks
-        //   - chainedDraft.pendingExternalIds = null  (only set when they hit "Назад")
-        //
-        // Without this fix, RevisionExternalNamingView.onMounted sees pendingExternalIds=null
-        // and clears store.stepData.externalNaming.selectedIds to [], losing the picks.
-        //
-        // Fix: synthesize pendingExternalIds from the overlay whenever we are in
-        // chained mode (pendingConceptId set) but pendingExternalIds was not yet saved.
-        // This only runs inside restoreAuthorRevisionDraftFromStorage (F5 path), so it
-        // never interferes with normal navigation.
-        const overlayExternalIds =
-          envelope.draft.stepDataOverlay?.externalNaming?.selectedIds ?? []
-        if (
-          restoredDraft.pendingConceptId !== null &&
-          restoredDraft.pendingExternalIds === null &&
-          overlayExternalIds.length > 0
-        ) {
-          restoredDraft.pendingExternalIds = [...overlayExternalIds]
-        }
-
-        authorRevisionDraft.value = restoredDraft
       } finally {
         queueMicrotask(() => {
           isRestoring.value = false
@@ -273,10 +205,9 @@ export function useAuthorRevisionDraft(opts: UseAuthorRevisionDraftOptions) {
    * Called after the chained flow saves — intentionally does NOT clear
    * `resolvedConflictSections` so those markers survive the navigation back
    * to the final review screen (they're cleared by `resetSlice` instead).
+   * The stored envelope holds only those markers, so it stays as it is.
    */
   function resetAuthorRevisionDraft() {
-    const id = brandId.value
-    if (id) clearAuthorRevisionDraft(id)
     authorRevisionDraft.value = {
       baselineConceptId: null,
       baselineExternalIds: [],

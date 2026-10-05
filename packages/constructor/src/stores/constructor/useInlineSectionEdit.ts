@@ -146,24 +146,6 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
     returnToStep.value = null
   }
 
-  /**
-   * Re-apply a previously persisted edit-session (key + snapshot) without
-   * touching `stepData`. Used by the author-revision persistence layer to
-   * restore the in-progress inline-edit state after F5 — `stepData` is
-   * restored separately from the cached overlay.
-   *
-   * No-op when `key` is `null`.
-   */
-  function restoreEditingSession(key: string | null, snapshot: unknown) {
-    if (!key) {
-      editingSection.value = null
-      editingSectionSnapshot.value = null
-      return
-    }
-    editingSection.value = key
-    editingSectionSnapshot.value = snapshot ?? null
-  }
-
   function resetSlice() {
     editingSection.value = null
     editingSectionSnapshot.value = null
@@ -178,7 +160,6 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
     captureCascadeSnapshot,
     commitEditSection,
     cancelEditSection,
-    restoreEditingSession,
     // Facade-internal
     resetSlice,
   }

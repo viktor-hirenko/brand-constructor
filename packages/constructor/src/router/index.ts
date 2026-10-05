@@ -9,6 +9,7 @@ import { useConstructorStore } from '@/stores/constructor'
 import { apiGet } from '@/composables/useApi'
 import type { Brand } from '@brand-constructor/shared/types'
 import { resolveColdStartNavigation } from '@/router/coldStartNavigation'
+import { editFlowLeaveAction } from '@/router/editFlowLeave'
 import { isEmbedded } from '@/composables/useEmbedMode'
 import { postAuthRequired } from '@/composables/useEmbedBridge'
 import { canEnterDraftEdit } from '@/utils/inWorkReview'
@@ -385,12 +386,10 @@ const router = createRouter({
 // Cold-start (F5 / direct-URL) handling. `from.name === undefined` is the
 // Vue Router 4 signal for the initial cold navigation (no prior SPA history).
 //
-// Dedicated review sub-routes (`/po-edit/*`, `/ceo-reselect/*`) keep the
-// user on the page they returned to — in-progress drafts are restored from
-// localStorage by the per-brand `beforeEnter` guard (see
-// `restoreSupervisorAlternativeDraftFromStorage` /
-// `restoreSupervisorCommentsFromStorage` /
-// `restoreAuthorRevisionDraftFromStorage`).
+// `/ceo-reselect/*` keeps the user on the page they returned to — the
+// Supervisor's in-progress picks are restored from localStorage by the
+// per-brand `beforeEnter` guard. The Author's edit screens (`/draft-edit/*`,
+// `/po-edit/*`) go back to the review: an unsaved edit is dropped (H-03).
 //
 // Wizard URLs (`/constructor/step/N`) entered from the review screen for
 // non-naming sections carry `?editBrand=<id>` — on cold start we redirect to
@@ -401,8 +400,27 @@ router.beforeEach((to, from) => {
     fromName: from.name,
     toQueryEditBrand: to.query.editBrand,
     toIsDraftEdit: to.matched.some(r => r.meta.draftEdit === true),
+    toIsPoEdit: to.matched.some(r => r.meta.poEdit === true),
     toParamsId: typeof to.params.id === 'string' ? to.params.id : undefined,
   })
+})
+
+// An edit opened from the review and left without «Зберегти» is dropped,
+// however it is left — `router/editFlowLeave.ts`. `beforeResolve`: only once
+// the navigation is going to happen.
+router.beforeResolve((to, from) => {
+  const isEditScreen = (r: typeof to) =>
+    r.matched.some(m => m.meta.poEdit === true || m.meta.draftEdit === true)
+  const store = useConstructorStore()
+  const action = editFlowLeaveAction({
+    fromName: from.name,
+    fromIsEditScreen: isEditScreen(from),
+    toName: to.name,
+    toIsEditScreen: isEditScreen(to),
+    editingSection: store.editingSection,
+  })
+  if (action === 'discard') store.discardUnfinishedEdit()
+  else if (action === 'step-back') store.stepBackToRevisionConcept()
 })
 
 router.beforeEach(async to => {

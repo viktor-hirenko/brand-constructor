@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
 import { createBrandSchema, updateBrandSchema } from '../schemas/brand'
 import { generateId } from '../utils/id'
+import { nextNewBrandName } from '../utils/brand-number'
 import {
   BRAND_APPROVAL_ROLES,
   BRAND_BRIEF_STATUS,
@@ -191,13 +192,7 @@ crud.post('/', async c => {
   const now = new Date().toISOString()
 
   let internalName = parsed.data.internalName || null
-  if (!internalName) {
-    const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM brands').first<{
-      count: number
-    }>()
-    const brandNumber = (countResult?.count ?? 0) + 1
-    internalName = `New Brand #${brandNumber}`
-  }
+  if (!internalName) internalName = await nextNewBrandName(c.env.DB)
 
   const d = parsed.data
 
