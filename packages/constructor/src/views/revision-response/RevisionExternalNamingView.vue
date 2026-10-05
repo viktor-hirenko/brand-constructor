@@ -380,10 +380,6 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         :required="isCommentRequired"
         :required-hint="commentHint"
       />
-
-      <p v-if="store.saveError" class="text-sm text-red-600">
-        {{ store.saveError }}
-      </p>
     </div>
 
     <template #footer>
@@ -394,7 +390,13 @@ const showSkeleton = computed(() => !hasFetched.value || loading.value)
         :loading="isSaving"
         @cancel="goCancel"
         @primary="goSave"
-      />
+      >
+        <template #note>
+          <p v-if="store.saveError" class="text-sm text-red-600">
+            {{ store.saveError }}
+          </p>
+        </template>
+      </UiFooter>
     </template>
 
     <NewNamingModal

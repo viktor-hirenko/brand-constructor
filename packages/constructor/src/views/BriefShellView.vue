@@ -38,6 +38,9 @@ import CornerUpLeftIcon from '@/components/icons/CornerUpLeftIcon.vue'
 import ConceptPreviewEmptySkeleton from '@/components/constructor/skeletons/ConceptPreviewEmptySkeleton.vue'
 import { wizardStepLocation } from '@/utils/brandHydration'
 import ConfirmationModal from '@/components/ui/ConfirmationModal.vue'
+import UiModal from '@/components/ui/UiModal.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import { briefChangedElsewhereCopy } from '@/utils/briefChangedElsewhere'
 import {
   BRIEF_EXIT_CONFIRM_COPY,
   resolveBriefExitConfirmBody,
@@ -121,6 +124,37 @@ watch(
   },
   { immediate: true }
 )
+
+/**
+ * A failed save is shown under the buttons of the screen it happened on
+ * (H-06). It belongs to that screen: leaving it — «Назад», the browser's back,
+ * an edit screen — must not carry the red line along.
+ */
+watch(
+  () => route.path,
+  () => {
+    store.saveError = null
+  }
+)
+
+/**
+ * The brief was sent (or otherwise moved on) from another tab — H-29, D-61.
+ * This tab cannot save anything any more, so the window has one action and
+ * closing it does the same: a full load of the brief as the server has it.
+ */
+const changedElsewhereCopy = computed(() =>
+  store.changedElsewhereStatus ? briefChangedElsewhereCopy(store.changedElsewhereStatus) : null
+)
+
+function reloadChangedBrief(): void {
+  if (!store.brandId) {
+    window.location.reload()
+    return
+  }
+  window.location.assign(
+    router.resolve({ name: 'brand-view-review', params: { id: store.brandId } }).href
+  )
+}
 
 const stepTitle = computed(() => {
   if (currentStep.value === 8 && store.brandInternalName) {
@@ -738,7 +772,13 @@ watch(currentStep, step => {
             :primary-disabled="!store.isCurrentStepValid"
             @cancel="goBack"
             @primary="goNext"
-          />
+          >
+            <template #note>
+              <p v-if="store.saveError" class="text-sm text-red-600">
+                {{ store.saveError }}
+              </p>
+            </template>
+          </UiFooter>
         </template>
       </template>
 
@@ -829,6 +869,22 @@ watch(currentStep, step => {
           @cancel="exitConfirm.stay"
           @primary="exitConfirm.confirmExit"
         />
+        <UiModal
+          v-if="changedElsewhereCopy"
+          :title="changedElsewhereCopy.title"
+          size="sm"
+          :close-on-backdrop="false"
+          @close="reloadChangedBrief"
+        >
+          <div class="flex flex-col gap-6">
+            <p class="whitespace-pre-line text-base font-normal text-ink-700">
+              {{ changedElsewhereCopy.body }}
+            </p>
+            <UiButton size="L" variant="primary" block @click="reloadChangedBrief">
+              {{ changedElsewhereCopy.primaryLabel }}
+            </UiButton>
+          </div>
+        </UiModal>
       </template>
     </ConstructorDualPaneShell>
   </div>

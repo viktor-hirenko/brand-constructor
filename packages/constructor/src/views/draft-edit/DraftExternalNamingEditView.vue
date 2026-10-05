@@ -261,10 +261,6 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
         :required-hint="commentHint"
       />
 
-      <p v-if="store.saveError" class="text-sm text-red-600">
-        {{ store.saveError }}
-      </p>
-
       <NewNamingModal
         v-if="showNewModal"
         :initial-data="store.stepData.externalNaming.newNamingBrief"
@@ -301,7 +297,13 @@ const subtitleText = 'Оберіть до 3-х назв, що пройдуть �
         :loading="isSaving"
         @cancel="goBack"
         @primary="goSave"
-      />
+      >
+        <template #note>
+          <p v-if="store.saveError" class="text-sm text-red-600">
+            {{ store.saveError }}
+          </p>
+        </template>
+      </UiFooter>
     </template>
   </EditFlowStepShell>
 </template>

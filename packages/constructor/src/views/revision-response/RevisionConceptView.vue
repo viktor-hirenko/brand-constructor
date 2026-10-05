@@ -336,8 +336,11 @@ async function goDali() {
     store.markConflictSectionResolved('concept')
     store.setConcept({ selectedId: selectedId.value, newConceptBrief: null })
     isSaving.value = true
-    await store.saveBrand()
+    const saved = await store.saveBrand()
     isSaving.value = false
+    // H-06: a failed save stays on the screen with the error under the buttons,
+    // instead of returning to the review as if it went through.
+    if (!saved) return
     store.commitEditSection()
     store.resetAuthorRevisionDraft()
     router.push(`/constructor/brand/${brandId.value}`)
@@ -472,10 +475,6 @@ async function saveConceptOrder() {
       :class="EDIT_FLOW_COMMENT_OFFSET_CLASS"
     />
 
-    <p v-if="store.saveError" class="text-sm text-red-600">
-      {{ store.saveError }}
-    </p>
-
     </div>
 
     <template #footer>
@@ -486,7 +485,13 @@ async function saveConceptOrder() {
         :loading="isSaving"
         @cancel="goCancel"
         @primary="goDali"
-      />
+      >
+        <template #note>
+          <p v-if="store.saveError" class="text-sm text-red-600">
+            {{ store.saveError }}
+          </p>
+        </template>
+      </UiFooter>
     </template>
 
     <NewConceptModal
