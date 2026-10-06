@@ -70,7 +70,7 @@ export function initialDomainMode(source: string | null | undefined): DomainMode
  * registrar on purpose, and the server says so in English.
  */
 export function domainPreviewErrorText(message: string | null | undefined): string {
-  if (message === 'Domain check service not configured') return 'Перевірка доменів тут вимкнена'
+  if (message === 'Domain check service not configured') return 'Перевірка доменів на цьому сервері недоступна'
   return 'Не вдалося перевірити домен'
 }
 
