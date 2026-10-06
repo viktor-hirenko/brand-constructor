@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
 import type { BrandListItem } from '@brand-constructor/shared'
 import {
+  brandStatusTabs,
   daysInStatus,
   formatRelativeUk,
   getBrandReviewDisplay,
@@ -89,6 +90,22 @@ describe('getBrandReviewDisplay', () => {
     )
     expect(d.reviewLine).toBe('In work with team')
     expect(d.reviewTitle).toContain('Teams received')
+  })
+
+  it('the CEO never gets the Drafts tab; everyone else does (H-37)', () => {
+    expect(brandStatusTabs({ isCeo: true }).map(t => t.key)).toEqual([
+      'all',
+      'submitted',
+      'approved',
+      'needs_revision',
+    ])
+    expect(brandStatusTabs({ isCeo: false }).map(t => t.key)).toEqual([
+      'all',
+      'draft',
+      'submitted',
+      'approved',
+      'needs_revision',
+    ])
   })
 
   it('submitted shows awaiting approval with resubmit badge', () => {
