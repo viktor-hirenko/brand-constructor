@@ -23,6 +23,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { useErrorDialog } from '@/composables/useErrorDialog'
 import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryModal.vue'
+import { countUk } from '@/utils/pluralUk'
 
 const { showError } = useErrorDialog()
 
@@ -197,13 +198,13 @@ async function confirmDeleteBrand() {
 <template>
   <div class="brands-view">
     <div class="brands-view__header">
-      <span class="brands-view__count">{{ total }} brand{{ total === 1 ? '' : 's' }}</span>
+      <span class="brands-view__count">{{ countUk(total, 'бренд', 'бренди', 'брендів') }}</span>
       <BaseButton
         v-if="canCreateBrand"
         class="brands-view__create"
         @click="createBrandInWizard(router)"
       >
-        Create Brand
+        Створити бренд
       </BaseButton>
     </div>
 
@@ -219,10 +220,10 @@ async function confirmDeleteBrand() {
       </button>
     </div>
 
-    <div v-if="loading" class="brands-view__loading">Loading...</div>
+    <div v-if="loading" class="brands-view__loading">Завантаження…</div>
 
     <div v-else-if="displayBrands.length === 0" class="brands-view__empty">
-      No brands{{ activeTab !== 'all' ? ' with this status' : '' }} found.
+      {{ activeTab !== 'all' ? 'Брендів із цим статусом не знайдено.' : 'Брендів не знайдено.' }}
     </div>
 
     <div v-else class="brands-view__table-wrap">
@@ -230,50 +231,50 @@ async function confirmDeleteBrand() {
         <thead>
           <tr>
             <th class="sortable-th" @click="handleSort('internalName')">
-              Name
+              Назва
               <span v-if="sortField === 'internalName'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
             <th class="sortable-th" @click="handleSort('status')">
-              Status
+              Статус
               <span v-if="sortField === 'status'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
             <th class="sortable-th" @click="handleSort('authorName')">
-              Author
+              Автор
               <span v-if="sortField === 'authorName'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
             <th class="sortable-th" @click="handleSort('createdAt')">
-              Created
+              Створено
               <span v-if="sortField === 'createdAt'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
-            <th class="brands-view__review-col">Review</th>
+            <th class="brands-view__review-col">Розгляд</th>
             <th class="sortable-th brands-view__waiting-col" @click="handleSort('waitingSince')">
-              Waiting
+              Очікує
               <span v-if="sortField === 'waitingSince'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
             <th class="sortable-th" @click="handleSort('geo')">
-              GEO
+              Географія
               <span v-if="sortField === 'geo'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
             <th class="sortable-th" @click="handleSort('launchDate')">
-              Launch Date
+              Дата запуску
               <span v-if="sortField === 'launchDate'" class="sort-arrow">{{
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
             <th class="brands-view__jira-col">Jira</th>
-            <th>Actions</th>
+            <th>Дії</th>
           </tr>
         </thead>
         <TransitionGroup tag="tbody" :name="transitionName">
@@ -341,15 +342,15 @@ async function confirmDeleteBrand() {
               <button
                 class="brands-view__history-btn"
                 type="button"
-                title="Workflow history"
+                title="Історія брифу"
                 @click="openHistory(brand)"
               >
-                History
+                Історія
               </button>
               <button
                 v-if="canDeleteBrand"
                 class="brands-view__delete-btn"
-                title="Delete"
+                title="Видалити"
                 @click="handleDeleteBrand(brand)"
               >
                 <svg
@@ -377,24 +378,24 @@ async function confirmDeleteBrand() {
     <BrandWorkflowHistoryModal
       v-if="historyBrand"
       :brand-id="historyBrand.id"
-      :brand-name="historyBrand.internalName || 'Brand'"
+      :brand-name="historyBrand.internalName || 'Бренд'"
       @close="closeHistory"
     />
 
     <BaseModal
       v-if="showDeleteConfirm"
-      title="Delete Brand"
+      title="Видалити бренд"
       width="420px"
       @close="showDeleteConfirm = false"
     >
       <p class="brands-view__confirm-text">
-        Are you sure you want to delete
-        <strong>"{{ deleteTarget?.internalName || 'this brand' }}"</strong>? This action cannot be
-        undone.
+        Видалити
+        <strong>«{{ deleteTarget?.internalName || 'цей бренд' }}»</strong>? Цю дію не можна
+        скасувати.
       </p>
       <template #footer>
-        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
-        <BaseButton variant="danger" @click="confirmDeleteBrand">Delete</BaseButton>
+        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Скасувати</BaseButton>
+        <BaseButton variant="danger" @click="confirmDeleteBrand">Видалити</BaseButton>
       </template>
     </BaseModal>
   </div>

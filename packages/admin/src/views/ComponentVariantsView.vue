@@ -206,7 +206,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
     <div class="variants-view__back">
       <BaseButton variant="ghost" size="sm" @click="router.push('/components')">
         <PhosphorIcon :svg="arrowLeft" class="variants-view__back-icon" />
-        Back to Components
+        До UI-компонентів
       </BaseButton>
     </div>
 
@@ -216,32 +216,32 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
         :class="{ 'variants-view__status-tab--active': statusFilter === 'all' }"
         @click="statusFilter = 'all'"
       >
-        All
+        Усі
       </button>
       <button
         class="variants-view__status-tab"
         :class="{ 'variants-view__status-tab--active': statusFilter === 'active' }"
         @click="statusFilter = 'active'"
       >
-        Available
+        Не використані
       </button>
     </div>
 
     <div v-if="componentType" class="variants-view__header">
       <div class="variants-view__header-left">
-        <h2>{{ componentType.name }} Variants</h2>
+        <h2>Варіанти: {{ componentType.name }}</h2>
         <select
           :value="variantSortOption"
           class="variants-view__sort-select"
           @change="onVariantSortChange(($event.target as HTMLSelectElement).value)"
         >
-          <option value="created_at:desc">Newest first</option>
-          <option value="created_at:asc">Oldest first</option>
-          <option value="name:asc">Name A-Z</option>
-          <option value="name:desc">Name Z-A</option>
+          <option value="created_at:desc">Спочатку нові</option>
+          <option value="created_at:asc">Спочатку старі</option>
+          <option value="name:asc">За назвою A–Z</option>
+          <option value="name:desc">За назвою Z–A</option>
         </select>
       </div>
-      <BaseButton v-if="canWrite" @click="showCreateModal = true">+ New Variant</BaseButton>
+      <BaseButton v-if="canWrite" @click="showCreateModal = true">+ Новий варіант</BaseButton>
     </div>
 
     <div v-if="canWrite && configRatio !== undefined" class="variants-view__ratio-field">
@@ -255,7 +255,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       </span>
     </div>
 
-    <div v-if="loading" class="variants-view__loading">Loading...</div>
+    <div v-if="loading" class="variants-view__loading">Завантаження…</div>
 
     <TransitionGroup
       v-else
@@ -275,7 +275,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
           />
           <div v-else class="variant-card__placeholder">
             <PhosphorIcon :svg="imageSquare" class="variant-card__placeholder-icon" />
-            <span class="variant-card__placeholder-text">No image yet</span>
+            <span class="variant-card__placeholder-text">Картинки поки немає</span>
           </div>
         </div>
 
@@ -299,19 +299,19 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
                 :disabled="!renameValue.trim()"
                 @click="confirmRename"
               >
-                Save
+                Зберегти
               </BaseButton>
-              <BaseButton variant="ghost" size="sm" @click="cancelRename">Cancel</BaseButton>
+              <BaseButton variant="ghost" size="sm" @click="cancelRename">Скасувати</BaseButton>
             </template>
             <template v-else>
               <h4 class="variant-card__name">{{ v.name }}</h4>
               <BaseButton v-if="canWrite" variant="ghost" size="sm" @click="startRename(v)">
-                Rename
+                Перейменувати
               </BaseButton>
             </template>
           </div>
           <div class="variant-card__meta">
-            <span class="variant-card__author">by {{ v.author_name }}</span>
+            <span class="variant-card__author">Автор: {{ v.author_name }}</span>
             <span class="variant-card__date">{{
               new Date(v.created_at).toLocaleDateString()
             }}</span>
@@ -322,10 +322,10 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
               :loading="uploadingIds.has(v.id)"
               @click="triggerUpload(v.id)"
             >
-              {{ v.thumbnail_url ? 'Change image' : 'Upload image' }}
+              {{ v.thumbnail_url ? 'Замінити картинку' : 'Завантажити картинку' }}
             </BaseButton>
             <BaseButton variant="danger" size="sm" @click="handleDelete(v.id, v.name)">
-              Delete
+              Видалити
             </BaseButton>
           </div>
         </div>
@@ -338,28 +338,28 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       </div>
     </Teleport>
 
-    <BaseModal v-if="showCreateModal" title="Create New Variant" @close="showCreateModal = false">
+    <BaseModal v-if="showCreateModal" title="Новий варіант" @close="showCreateModal = false">
       <form @submit.prevent="handleCreate">
         <BaseInput
           v-model="newName"
-          label="Variant Name"
-          placeholder="e.g. Modern Gradient"
+          label="Назва варіанта"
+          placeholder="напр. Modern Gradient"
           required
         />
       </form>
       <template #footer>
-        <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" @click="showCreateModal = false">Скасувати</BaseButton>
         <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate"
-          >Create</BaseButton
+          >Створити</BaseButton
         >
       </template>
     </BaseModal>
 
-    <BaseModal v-if="deleteTarget" title="Delete Variant" @close="deleteTarget = null">
-      <p>Delete variant "{{ deleteTarget?.name }}"?</p>
+    <BaseModal v-if="deleteTarget" title="Видалити варіант" @close="deleteTarget = null">
+      <p>Видалити варіант «{{ deleteTarget?.name }}»?</p>
       <template #footer>
-        <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>
-        <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Delete</BaseButton>
+        <BaseButton variant="secondary" @click="deleteTarget = null">Скасувати</BaseButton>
+        <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Видалити</BaseButton>
       </template>
     </BaseModal>
   </div>

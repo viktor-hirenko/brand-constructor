@@ -10,18 +10,18 @@ const route = useRoute()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
-    brands: 'Brands',
-    orders: 'Orders',
-    'order-detail': 'Order',
-    concepts: 'Concepts Library',
-    'concept-detail': 'Concept Details',
-    namings: 'Namings Library',
-    'pr-packages': 'PR Packages',
-    'component-variants': 'Component Variants',
-    components: 'UI Components Library',
-    users: 'User Management',
-    'workspace-brand': 'Brand Wizard',
-    'workspace-new': 'New Brand',
+    brands: 'Бренди',
+    orders: 'Замовлення',
+    'order-detail': 'Замовлення',
+    concepts: 'Бібліотека концептів',
+    'concept-detail': 'Концепт',
+    namings: 'Бібліотека неймінгів',
+    'pr-packages': 'PR-пакети',
+    'component-variants': 'Варіанти компонента',
+    components: 'Бібліотека UI-компонентів',
+    users: 'Користувачі',
+    'workspace-brand': 'Бриф бренду',
+    'workspace-new': 'Новий бренд',
   }
   return titles[route.name as string] || 'Brand Constructor'
 })
@@ -45,7 +45,7 @@ const pageTitle = computed(() => {
 
 <template>
   <header class="app-header">
-    <button class="app-header__burger" aria-label="Open menu" @click="emit('toggle-sidebar')">
+    <button class="app-header__burger" aria-label="Відкрити меню" @click="emit('toggle-sidebar')">
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />
       <span class="app-header__burger-line" />

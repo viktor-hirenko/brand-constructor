@@ -56,6 +56,7 @@ export function mockExternalNaming(overrides: Partial<ExternalNaming> = {}): Ext
     tagline: 'Feel the win',
     domain: 'test.com',
     price: 1200,
+    purchase_price: null,
     availability_status: 'available',
     domain_checked_at: NOW,
     domain_check_source: 'manual',

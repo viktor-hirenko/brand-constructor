@@ -56,7 +56,7 @@ onUnmounted(() => {
         <div class="modal" :style="{ maxWidth: width }">
           <div class="modal__header">
             <h3 class="modal__title">{{ title }}</h3>
-            <button class="modal__close" aria-label="Close" @click="handleClose">
+            <button class="modal__close" aria-label="Закрити" @click="handleClose">
               <PhosphorIcon :svg="close" class="modal__close-icon" />
             </button>
           </div>

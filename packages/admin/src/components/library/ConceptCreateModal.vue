@@ -102,35 +102,35 @@ async function handleCreate() {
 </script>
 
 <template>
-  <BaseModal title="Create New Concept" @close="emit('close')">
+  <BaseModal title="Новий концепт" @close="emit('close')">
     <form class="create-form" @submit.prevent="handleCreate">
       <div v-if="props.forBrand" class="create-form__field">
-        <span class="create-form__label">For brief</span>
+        <span class="create-form__label">Для брифу</span>
         <span class="create-form__fixed">{{ props.forBrand.name }}</span>
       </div>
       <div v-else-if="briefOptions.length > 0" class="create-form__field">
         <label class="create-form__label" for="concept-for-brief">
-          For brief
-          <span class="create-form__label-hint">(optional)</span>
+          Для брифу
+          <span class="create-form__label-hint">(необов'язково)</span>
         </label>
         <select id="concept-for-brief" v-model="forBrandId" class="create-form__select">
-          <option :value="null">— Library, no brief —</option>
+          <option :value="null">— Бібліотека, без брифу —</option>
           <option v-for="b in briefOptions" :key="b.id" :value="b.id">{{ b.name }}</option>
         </select>
       </div>
-      <BaseInput v-model="name" label="Concept Name" placeholder="e.g. WonderLand" required />
+      <BaseInput v-model="name" label="Назва концепту" placeholder="напр. WonderLand" required />
       <BaseTextarea
         v-model="description"
-        label="Description"
-        placeholder="Theme, mood, visual direction..."
+        label="Опис"
+        placeholder="Тема, настрій, візуальний напрям…"
         :rows="4"
       />
       <div class="create-form__field">
-        <label class="create-form__label">Mode (Theme)</label>
+        <label class="create-form__label">Тема</label>
         <div class="create-form__mode-options">
           <label class="create-form__mode-option">
             <input v-model="mode" type="radio" :value="null" name="mode" />
-            <span>Not specified</span>
+            <span>Не вказано</span>
           </label>
           <label class="create-form__mode-option">
             <input v-model="mode" type="radio" value="light" name="mode" />
@@ -144,8 +144,8 @@ async function handleCreate() {
       </div>
       <div v-if="!forBrandId && unlinkedNamings.length > 0" class="create-form__field">
         <label class="create-form__label">
-          Link to Naming
-          <span class="create-form__label-hint">(optional)</span>
+          Прив'язати неймінг
+          <span class="create-form__label-hint">(необов'язково)</span>
         </label>
         <div class="create-form__naming-list">
           <label v-for="naming in unlinkedNamings" :key="naming.id" class="create-form__naming-option">
@@ -162,9 +162,9 @@ async function handleCreate() {
       <p v-if="error" class="create-form__error" role="alert">{{ error }}</p>
     </form>
     <template #footer>
-      <BaseButton variant="secondary" @click="emit('close')">Cancel</BaseButton>
+      <BaseButton variant="secondary" @click="emit('close')">Скасувати</BaseButton>
       <BaseButton :loading="creating" :disabled="!name.trim()" @click="handleCreate">
-        Create Concept
+        Створити концепт
       </BaseButton>
     </template>
   </BaseModal>

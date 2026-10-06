@@ -17,6 +17,7 @@ import {
   type LegacySubmittedSnapshot,
 } from '@brand-constructor/shared'
 import { apiGet } from '@/composables/useApi'
+import { countUk } from '@/utils/pluralUk'
 
 export const COMMENT_LONG_THRESHOLD = 72
 export const CEO_STEP_COLLAPSE_THRESHOLD = 5
@@ -221,9 +222,9 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
   }
 
   function submittedDetailsGroupTitle(event: BrandWorkflowEvent): string {
-    if (isFirstSubmit(event)) return 'PO selection'
-    if (submittedIsResubmit(event)) return 'PO updates on resubmit'
-    return 'PO updates'
+    if (isFirstSubmit(event)) return 'Вибір PO'
+    if (submittedIsResubmit(event)) return 'Зміни PO під час повторного надсилання'
+    return 'Зміни PO'
   }
 
   function submittedLegacySnapshot(event: BrandWorkflowEvent): LegacySubmittedSnapshot | null {
@@ -340,17 +341,15 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
   }
 
   function poGroupTitle(count: number): string {
-    return count === 1
-      ? 'PO resolved CEO feedback (1 section)'
-      : `PO resolved CEO feedback (${count} sections)`
+    return `Зауваження CEO опрацьовано (${countUk(count, 'розділ', 'розділи', 'розділів')})`
   }
 
   function poGroupSummary(groupEvents: BrandWorkflowEvent[]): string {
     const items = groupEvents.map(poResolvedItem)
     const reopened = items.filter(i => !i.resolved).length
-    if (reopened === 0) return 'All sections marked resolved'
-    if (reopened === items.length) return 'Sections reopened'
-    return `${items.length - reopened} resolved · ${reopened} reopened`
+    if (reopened === 0) return 'Усі розділи позначено вирішеними'
+    if (reopened === items.length) return 'Розділи відкрито знову'
+    return `вирішено: ${items.length - reopened} · відкрито знову: ${reopened}`
   }
 
   function poGroupSectionsPreview(groupEvents: BrandWorkflowEvent[]): string {
@@ -374,14 +373,14 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
     if (event.eventType === EVT.SUBMITTED) {
       const meta = submittedMeta(event)
       const parts: string[] = []
-      if (meta?.isResubmit) parts.push('Resubmitted')
+      if (meta?.isResubmit) parts.push('Повторне надсилання')
       const ch = meta?.changes ?? []
       const pc = meta?.poComments ?? []
       if (ch.length && !isFirstSubmit(event)) {
-        parts.push(ch.length === 1 ? '1 change' : `${ch.length} changes`)
+        parts.push(countUk(ch.length, 'зміна', 'зміни', 'змін'))
       }
       if (pc.length) {
-        parts.push(pc.length === 1 ? '1 PO comment' : `${pc.length} PO comments`)
+        parts.push(countUk(pc.length, 'коментар PO', 'коментарі PO', 'коментарів PO'))
       }
       return parts.length ? parts.join(' · ') : null
     }
@@ -392,10 +391,10 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
         : []
     const parts: string[] = []
     if (changes.length) {
-      parts.push(changes.length === 1 ? '1 alternative' : `${changes.length} alternatives`)
+      parts.push(countUk(changes.length, 'альтернатива', 'альтернативи', 'альтернатив'))
     }
     if (comments.length) {
-      parts.push(comments.length === 1 ? '1 comment' : `${comments.length} comments`)
+      parts.push(countUk(comments.length, 'коментар', 'коментарі', 'коментарів'))
     }
     return parts.length ? parts.join(' · ') : null
   }
@@ -414,15 +413,13 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
   }
 
   function ceoGroupTitle(count: number): string {
-    return count === 1
-      ? 'CEO edited alternatives (1 edit)'
-      : `CEO edited alternatives (${count} edits)`
+    return `Правки CEO в альтернативах (${countUk(count, 'правка', 'правки', 'правок')})`
   }
 
   function ceoProgressStepLabel(stepIndex: number, total: number, event: BrandWorkflowEvent): string {
     const n = selectionChanges(event).length
-    const fields = n === 1 ? '1 field' : `${n} fields`
-    return `Step ${stepIndex} of ${total} · ${formatDateTime(event.createdAt)} · ${fields}`
+    const fields = countUk(n, 'поле', 'поля', 'полів')
+    return `Крок ${stepIndex} з ${total} · ${formatDateTime(event.createdAt)} · ${fields}`
   }
 
   function ceoGroupRange(groupEvents: BrandWorkflowEvent[]): string {
@@ -530,7 +527,7 @@ export function useWorkflowTimeline(brandId: MaybeRefOrGetter<string>) {
       events.value = await apiGet<BrandWorkflowEvent[]>(`/api/brands/${id}/workflow-events`)
       setDefaultExpanded()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load history'
+      error.value = err instanceof Error ? err.message : 'Не вдалося завантажити історію'
       events.value = []
     } finally {
       loading.value = false

@@ -11,6 +11,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { useErrorDialog } from '@/composables/useErrorDialog'
+import { countUk } from '@/utils/pluralUk'
 
 const { showError } = useErrorDialog()
 
@@ -181,11 +182,11 @@ async function confirmDelete() {
 <template>
   <div class="pr-packages-view">
     <div class="pr-packages-view__toolbar">
-      <span class="pr-packages-view__count">{{ packages.length }} packages</span>
-      <BaseButton v-if="canWrite" @click="openCreate">+ New Package</BaseButton>
+      <span class="pr-packages-view__count">{{ countUk(packages.length, 'пакет', 'пакети', 'пакетів') }}</span>
+      <BaseButton v-if="canWrite" @click="openCreate">+ Новий пакет</BaseButton>
     </div>
 
-    <div v-if="loading" class="pr-packages-view__loading">Loading...</div>
+    <div v-if="loading" class="pr-packages-view__loading">Завантаження…</div>
 
     <TransitionGroup
       v-else
@@ -201,7 +202,7 @@ async function confirmDelete() {
         </div>
         <div class="package-card__body">
           <div v-if="pkg.teams_involved" class="package-card__field">
-            <span class="package-card__label">Teams</span>
+            <span class="package-card__label">Команди</span>
             <div class="team-chips team-chips--sm">
               <span
                 v-for="team in parseTeams(pkg.teams_involved)"
@@ -212,23 +213,23 @@ async function confirmDelete() {
             </div>
           </div>
           <div v-if="pkg.description" class="package-card__field">
-            <span class="package-card__label">Description</span>
+            <span class="package-card__label">Опис</span>
             <p class="package-card__clamp">{{ pkg.description }}</p>
           </div>
           <div v-if="pkg.timeline" class="package-card__field">
-            <span class="package-card__label">Timeline</span>
+            <span class="package-card__label">Терміни</span>
             <p>{{ pkg.timeline }}</p>
           </div>
         </div>
         <div class="package-card__footer">
           <div class="package-card__meta">
-            <span class="package-card__author">by {{ pkg.author_name }}</span>
+            <span class="package-card__author">Автор: {{ pkg.author_name }}</span>
             <span class="package-card__date">{{
               new Date(pkg.created_at).toLocaleDateString()
             }}</span>
           </div>
           <div v-if="canWrite" class="package-card__actions">
-            <BaseButton variant="secondary" size="sm" @click.stop="openEdit(pkg)">Edit</BaseButton>
+            <BaseButton variant="secondary" size="sm" @click.stop="openEdit(pkg)">Редагувати</BaseButton>
             <span
               v-if="pkg.brands_count"
               class="package-card__in-briefs"
@@ -240,7 +241,7 @@ async function confirmDelete() {
               variant="danger"
               size="sm"
               @click.stop="handleDelete(pkg.id, pkg.name)"
-              >Delete</BaseButton
+              >Видалити</BaseButton
             >
           </div>
         </div>
@@ -255,7 +256,7 @@ async function confirmDelete() {
     >
       <div class="package-view">
         <div v-if="viewingPkg.teams_involved" class="package-view__field">
-          <span class="package-view__label">Teams Involved</span>
+          <span class="package-view__label">Залучені команди</span>
           <div class="team-chips">
             <span
               v-for="team in parseTeams(viewingPkg.teams_involved)"
@@ -266,32 +267,32 @@ async function confirmDelete() {
           </div>
         </div>
         <div v-if="viewingPkg.description" class="package-view__field">
-          <span class="package-view__label">Description</span>
+          <span class="package-view__label">Опис</span>
           <p class="package-view__pre">{{ viewingPkg.description }}</p>
         </div>
         <div v-if="viewingPkg.requirements" class="package-view__field">
-          <span class="package-view__label">Requirements</span>
+          <span class="package-view__label">Вимоги</span>
           <p class="package-view__pre">{{ viewingPkg.requirements }}</p>
         </div>
         <div v-if="viewingPkg.goals" class="package-view__field">
-          <span class="package-view__label">Goals</span>
+          <span class="package-view__label">Цілі</span>
           <p class="package-view__pre">{{ viewingPkg.goals }}</p>
         </div>
         <div v-if="viewingPkg.components_list" class="package-view__field">
-          <span class="package-view__label">Package Components</span>
+          <span class="package-view__label">Склад пакета</span>
           <p class="package-view__pre">{{ viewingPkg.components_list }}</p>
         </div>
         <div v-if="viewingPkg.timeline" class="package-view__field">
-          <span class="package-view__label">Timeline</span>
+          <span class="package-view__label">Терміни</span>
           <p>{{ viewingPkg.timeline }}</p>
         </div>
         <div v-if="viewingPkg.expenses" class="package-view__field">
-          <span class="package-view__label">Expenses</span>
+          <span class="package-view__label">Витрати</span>
           <p class="package-view__pre">{{ viewingPkg.expenses }}</p>
         </div>
       </div>
       <template #footer>
-        <BaseButton variant="secondary" @click="viewingPkg = null">Close</BaseButton>
+        <BaseButton variant="secondary" @click="viewingPkg = null">Закрити</BaseButton>
         <BaseButton
           v-if="canWrite"
           @click="
@@ -301,25 +302,25 @@ async function confirmDelete() {
               openEdit(p)
             }
           "
-          >Edit</BaseButton
+          >Редагувати</BaseButton
         >
       </template>
     </BaseModal>
 
     <BaseModal
       v-if="showCreateModal"
-      :title="editingPkg ? 'Edit PR Package' : 'Create PR Package'"
+      :title="editingPkg ? 'Редагувати PR-пакет' : 'Створити PR-пакет'"
       width="680px"
       @close="showCreateModal = false"
     >
       <form class="pr-packages-view__form" @submit.prevent="handleSave">
         <div class="pr-packages-view__form-row">
           <BaseInput v-model.number="form.number" label="№" type="number" required />
-          <BaseInput v-model="form.name" label="Name" placeholder="e.g. Reputation Full" required />
+          <BaseInput v-model="form.name" label="Назва" placeholder="напр. Reputation Full" required />
         </div>
-        <BaseTextarea v-model="form.description" label="Description" :rows="3" />
+        <BaseTextarea v-model="form.description" label="Опис" :rows="3" />
         <div class="teams-selector">
-          <label class="teams-selector__label">Teams Involved</label>
+          <label class="teams-selector__label">Залучені команди</label>
           <div class="teams-selector__chips">
             <button
               v-for="team in ALL_TEAMS"
@@ -333,33 +334,33 @@ async function confirmDelete() {
             </button>
           </div>
           <p v-if="selectedTeams.length === 0" class="teams-selector__hint">
-            Select one or more teams
+            Оберіть одну або кілька команд
           </p>
         </div>
         <BaseTextarea
           v-model="form.requirements"
-          label="Requirements"
-          placeholder="What's needed to start..."
+          label="Вимоги"
+          placeholder="Що потрібно для старту…"
           :rows="2"
         />
-        <BaseTextarea v-model="form.goals" label="Goals" :rows="3" />
-        <BaseTextarea v-model="form.components_list" label="Package Components" :rows="3" />
-        <BaseInput v-model="form.timeline" label="Timeline" placeholder="e.g. 0-6 months" />
-        <BaseTextarea v-model="form.expenses" label="Expenses" :rows="2" />
+        <BaseTextarea v-model="form.goals" label="Цілі" :rows="3" />
+        <BaseTextarea v-model="form.components_list" label="Склад пакета" :rows="3" />
+        <BaseInput v-model="form.timeline" label="Терміни" placeholder="напр. 0–6 місяців" />
+        <BaseTextarea v-model="form.expenses" label="Витрати" :rows="2" />
       </form>
       <template #footer>
-        <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" @click="showCreateModal = false">Скасувати</BaseButton>
         <BaseButton :disabled="!form.name.trim()" @click="handleSave">
-          {{ editingPkg ? 'Save Changes' : 'Create Package' }}
+          {{ editingPkg ? 'Зберегти' : 'Створити пакет' }}
         </BaseButton>
       </template>
     </BaseModal>
 
-    <BaseModal v-if="deleteTarget" title="Delete PR Package" @close="deleteTarget = null">
-      <p>Delete PR package "{{ deleteTarget?.name }}"?</p>
+    <BaseModal v-if="deleteTarget" title="Видалити PR-пакет" @close="deleteTarget = null">
+      <p>Видалити PR-пакет «{{ deleteTarget?.name }}»?</p>
       <template #footer>
-        <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>
-        <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Delete</BaseButton>
+        <BaseButton variant="secondary" @click="deleteTarget = null">Скасувати</BaseButton>
+        <BaseButton variant="danger" :loading="deleting" @click="confirmDelete">Видалити</BaseButton>
       </template>
     </BaseModal>
   </div>

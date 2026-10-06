@@ -54,13 +54,13 @@ interface NavItem {
 // `Users` for it. `Orders` (brief-orders plan, phase 2a) has no row either;
 // the plan names Phosphor `ClipboardText`.
 const navItems: NavItem[] = [
-  { label: 'Brands', path: '/brands', icon: tag },
-  { label: 'Orders', path: '/orders', icon: clipboardText, roles: ORDER_ROLES, counter: 'openOrders' },
-  { label: 'Concepts', path: '/concepts', icon: lightbulb, roles: LIBRARY_TAB_ROLES },
-  { label: 'Namings', path: '/namings', icon: textAa, roles: LIBRARY_TAB_ROLES },
-  { label: 'PR Packages', path: '/pr-packages', icon: megaphone, roles: LIBRARY_TAB_ROLES },
-  { label: 'UI Components', path: '/components', icon: squaresFour, roles: LIBRARY_TAB_ROLES },
-  { label: 'Users', path: '/users', icon: users, adminOnly: true },
+  { label: 'Бренди', path: '/brands', icon: tag },
+  { label: 'Замовлення', path: '/orders', icon: clipboardText, roles: ORDER_ROLES, counter: 'openOrders' },
+  { label: 'Концепти', path: '/concepts', icon: lightbulb, roles: LIBRARY_TAB_ROLES },
+  { label: 'Неймінги', path: '/namings', icon: textAa, roles: LIBRARY_TAB_ROLES },
+  { label: 'PR-пакети', path: '/pr-packages', icon: megaphone, roles: LIBRARY_TAB_ROLES },
+  { label: 'UI-компоненти', path: '/components', icon: squaresFour, roles: LIBRARY_TAB_ROLES },
+  { label: 'Користувачі', path: '/users', icon: users, adminOnly: true },
 ]
 
 const visibleItems = computed(() =>
@@ -117,7 +117,7 @@ async function handleLogout() {
     <div class="sidebar__header">
       <span class="sidebar__logo-text">BC Admin</span>
       <span v-if="isStage" class="sidebar__stage">Stage</span>
-      <button class="sidebar__close" aria-label="Close menu" @click="emit('close')">
+      <button class="sidebar__close" aria-label="Закрити меню" @click="emit('close')">
         <PhosphorIcon :svg="close" class="sidebar__close-icon" />
       </button>
     </div>
@@ -148,7 +148,7 @@ async function handleLogout() {
         <span class="sidebar__user-email" :title="authStore.user.email">{{ authStore.user.email }}</span>
         <span class="sidebar__user-role">{{ ROLE_LABELS[authStore.user.role] ?? authStore.user.role }}</span>
         <button v-if="isProductionMode" class="sidebar__logout" @click="handleLogout">
-          Sign out
+          Вийти
         </button>
       </div>
     </div>

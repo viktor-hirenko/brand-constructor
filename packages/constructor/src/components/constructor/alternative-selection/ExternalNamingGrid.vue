@@ -3,6 +3,10 @@ import { computed } from 'vue'
 import type { ExternalNaming } from '@brand-constructor/shared/types'
 import UiNameCard from '@/components/ui/UiNameCard.vue'
 import { UI_NAME_CARD_LIST_CLASS } from '@/components/ui/uiNameCard'
+import {
+  externalNamingAvailabilityRank,
+  resolveExternalNamingPrice,
+} from '@/utils/externalNamingPrice'
 
 /**
  * Step 3 (external naming) — the designer redrew this screen: the square tiles
@@ -47,11 +51,12 @@ const visibleNamings = computed(() => {
     props.excludeIds.length === 0
       ? [...props.namings]
       : props.namings.filter(n => !excluded.has(n.id))
-  // Available cards always come first; sold/unknown stay below.
-  return filtered.sort((a, b) => {
-    const rank = (n: ExternalNaming) => (n.availability_status === 'available' ? 0 : 1)
-    return rank(a) - rank(b)
-  })
+  // Available first, then For sale, then sold/unknown.
+  return filtered.sort(
+    (a, b) =>
+      externalNamingAvailabilityRank(a.availability_status) -
+      externalNamingAvailabilityRank(b.availability_status)
+  )
 })
 
 function isSelected(naming: ExternalNaming): boolean {
@@ -87,7 +92,7 @@ function handleSelect(naming: ExternalNaming) {
       reserve-badge
       :name="naming.name"
       :domain="naming.domain"
-      :price="naming.price"
+      :price="resolveExternalNamingPrice(naming)"
       :availability="naming.availability_status"
       :selected="isSelected(naming)"
       :disabled="isDisabledForSelection(naming)"

@@ -9,6 +9,13 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vue'
+import {
+  buildDomainModeBody,
+  canSaveDomainMode,
+  domainPreviewErrorText,
+  type DomainMode,
+} from '@/utils/namingDomainStatus'
 
 /**
  * «Create External / Internal Naming» — one form for the Namings page and the
@@ -51,6 +58,8 @@ const tagline = ref('')
 const domain = ref('')
 const conceptId = ref<string | null>(props.defaultConceptId)
 const forBrandId = ref<string | null>(props.forBrand?.id ?? null)
+const domainMode = ref<DomainMode>('automatic')
+const purchasePrice = ref('')
 const creating = ref(false)
 const error = ref<string | null>(null)
 
@@ -117,7 +126,7 @@ async function loadPreview() {
       domain: raw,
     })
   } catch (e) {
-    previewError.value = e instanceof Error ? e.message : 'Could not load domain preview'
+    previewError.value = domainPreviewErrorText(e instanceof Error ? e.message : null)
   } finally {
     previewLoading.value = false
     previewAttempted.value = true
@@ -144,8 +153,14 @@ function formatPreviewPrice(price: number): string {
   return Number.isInteger(price) ? String(price) : price.toFixed(2)
 }
 
+const canCreate = computed(
+  () =>
+    name.value.trim() !== '' &&
+    (props.kind !== 'external' || canSaveDomainMode(domainMode.value, purchasePrice.value))
+)
+
 async function handleCreate() {
-  if (!name.value.trim() || creating.value) return
+  if (!canCreate.value || creating.value) return
   creating.value = true
   error.value = null
   try {
@@ -157,6 +172,7 @@ async function handleCreate() {
             domain: domain.value.trim() || null,
             concept_id: conceptId.value || null,
             for_brand_id: forBrandId.value,
+            ...buildDomainModeBody(domainMode.value, purchasePrice.value, false),
           })
         : await apiPost<InternalNaming>('/api/namings/internal', {
             name: name.value.trim(),
@@ -175,30 +191,30 @@ async function handleCreate() {
 
 <template>
   <BaseModal
-    :title="`Create ${props.kind === 'external' ? 'External' : 'Internal'} Naming`"
+    :title="`Новий ${props.kind === 'external' ? 'External' : 'Internal'} Naming`"
     @close="emit('close')"
   >
     <form class="create-form" @submit.prevent="handleCreate">
       <div v-if="props.forBrand" class="create-form__field">
-        <span class="create-form__label">For brief</span>
+        <span class="create-form__label">Для брифу</span>
         <span class="create-form__fixed">{{ props.forBrand.name }}</span>
       </div>
       <div v-else-if="briefOptions.length > 0" class="create-form__field">
         <label class="create-form__label" for="naming-for-brief">
-          For brief
-          <span class="create-form__label-hint">(optional)</span>
+          Для брифу
+          <span class="create-form__label-hint">(необов'язково)</span>
         </label>
         <select id="naming-for-brief" v-model="forBrandId" class="create-form__select">
-          <option :value="null">— Library, no brief —</option>
+          <option :value="null">— Бібліотека, без брифу —</option>
           <option v-for="b in briefOptions" :key="b.id" :value="b.id">{{ b.name }}</option>
         </select>
       </div>
-      <BaseInput v-model="name" label="Naming" placeholder="Enter naming..." required />
-      <BaseInput v-model="tagline" label="Tagline" placeholder="Short description..." />
+      <BaseInput v-model="name" label="Назва" placeholder="Введіть назву…" required />
+      <BaseInput v-model="tagline" label="Опис" placeholder="Короткий опис…" />
       <template v-if="props.kind === 'external'">
-        <BaseInput v-model="domain" label="Domain" placeholder="e.g. example.com" />
+        <BaseInput v-model="domain" label="Домен" placeholder="напр. example.com" />
         <div v-if="domain.trim() && domain.includes('.')" class="create-form__domain-preview">
-          <p v-if="previewLoading" class="create-form__hint">Checking registration estimate…</p>
+          <p v-if="previewLoading" class="create-form__hint">Перевіряємо домен…</p>
           <p v-else-if="previewError" class="create-form__hint create-form__hint--error">
             {{ previewError }}
           </p>
@@ -210,22 +226,24 @@ async function handleCreate() {
               {{ previewData.available ? 'Available' : 'Sold' }}
             </span>
             <span v-if="previewData.price != null" class="create-form__domain-preview-price">
-              Est. registration:
+              Реєстрація:
               {{ previewData.currency || 'USD' }}
               {{ formatPreviewPrice(previewData.price) }}
             </span>
           </p>
           <p v-else-if="previewAttempted && !previewLoading" class="create-form__hint">
-            Could not retrieve registration estimate. Final price is set when you save.
+            Не вдалося перевірити домен. Статус і ціну буде визначено після збереження.
           </p>
         </div>
-        <p class="create-form__hint">
-          Domain availability will be checked automatically via Pananames API after creation.
-        </p>
+        <NamingDomainModeField
+          v-model:mode="domainMode"
+          v-model:purchase-price="purchasePrice"
+          name="create-domain-mode"
+        />
         <div class="create-form__field">
-          <label class="create-form__label" for="naming-concept">Link to Concept</label>
+          <label class="create-form__label" for="naming-concept">Концепт</label>
           <select id="naming-concept" v-model="conceptId" class="create-form__select">
-            <option v-if="!props.conceptOptions" :value="null">— No concept —</option>
+            <option v-if="!props.conceptOptions" :value="null">— Без концепту —</option>
             <option v-for="c in conceptChoices" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
         </div>
@@ -233,8 +251,8 @@ async function handleCreate() {
       <p v-if="error" class="create-form__error" role="alert">{{ error }}</p>
     </form>
     <template #footer>
-      <BaseButton variant="secondary" @click="emit('close')">Cancel</BaseButton>
-      <BaseButton :loading="creating" :disabled="!name.trim()" @click="handleCreate">Create</BaseButton>
+      <BaseButton variant="secondary" @click="emit('close')">Скасувати</BaseButton>
+      <BaseButton :loading="creating" :disabled="!canCreate" @click="handleCreate">Створити</BaseButton>
     </template>
   </BaseModal>
 </template>

@@ -15,8 +15,8 @@ const isLoading = ref(false)
 // say why, otherwise a bare sign-in button reads as the app having broken.
 const sessionNotice = computed<string | null>(() => {
   const reason = route.query.reason as SessionEndReason | undefined
-  if (reason === 'expired') return 'Your session has expired. Please sign in again to continue.'
-  if (reason === 'signed_out') return 'You signed out in another tab.'
+  if (reason === 'expired') return 'Сесія завершилась. Увійдіть знову, щоб продовжити.'
+  if (reason === 'signed_out') return 'Ви вийшли в іншій вкладці.'
   return null
 })
 
@@ -51,6 +51,7 @@ function initGoogleSignIn() {
     width: 300,
     text: 'signin_with',
     shape: 'rectangular',
+    locale: 'uk',
   })
 }
 
@@ -62,7 +63,7 @@ async function handleCredentialResponse(response: { credential: string }) {
     const redirect = (route.query.redirect as string) || '/'
     router.push(redirect)
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Login failed. Please try again.'
+    error.value = err instanceof Error ? err.message : 'Не вдалося увійти. Спробуйте ще раз.'
   } finally {
     isLoading.value = false
   }
@@ -92,19 +93,19 @@ onUnmounted(() => {
         <span class="login-card__logo-icon">◈</span>
       </div>
       <h1 class="login-card__title">Brand Constructor</h1>
-      <p class="login-card__subtitle">Admin Panel — sign in to continue</p>
+      <p class="login-card__subtitle">Адмінпанель — увійдіть, щоб продовжити</p>
 
       <div class="login-card__body">
         <p v-if="sessionNotice" class="login-card__notice">{{ sessionNotice }}</p>
         <p v-if="error" class="login-card__error">{{ error }}</p>
 
         <div v-if="isLoading" class="login-card__loading">
-          <span>Signing in...</span>
+          <span>Входимо…</span>
         </div>
 
         <div v-show="!isLoading" ref="buttonContainer" class="login-card__google-btn" />
 
-        <p class="login-card__hint">Access is restricted to authorized team members only.</p>
+        <p class="login-card__hint">Доступ лише для учасників команди.</p>
       </div>
     </div>
   </div>

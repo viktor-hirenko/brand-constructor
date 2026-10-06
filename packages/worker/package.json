@@ -24,6 +24,8 @@
     "db:migrate:013:down:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/013_down.sql",
     "db:migrate:014:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/014_for_brand.sql",
     "migrate:013:data": "vite-node scripts/in-work-013.ts --",
+    "db:migrate:015:stage": "wrangler d1 execute DB --remote --env stage --file=./src/db/migrations/015_naming_purchase_price.sql",
+    "db:migrate:015:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/015_naming_purchase_price.sql",
     "deploy:stage": "wrangler deploy --env stage"
   },
   "dependencies": {

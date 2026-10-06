@@ -29,13 +29,13 @@ const STYLE = SOURCE.slice(SOURCE.indexOf('<style'))
 
 /** `5658:39246` "Admin sidebar" rows, plus the owner's `Users` and the plan's `Orders`. */
 const EXPECTED: ReadonlyArray<readonly [label: string, file: string]> = [
-  ['Brands', 'regular/tag.svg'],
-  ['Orders', 'regular/clipboard-text.svg'],
-  ['Concepts', 'regular/lightbulb.svg'],
-  ['Namings', 'regular/text-aa.svg'],
-  ['PR Packages', 'regular/megaphone.svg'],
-  ['UI Components', 'regular/squares-four.svg'],
-  ['Users', 'regular/users.svg'],
+  ['Бренди', 'regular/tag.svg'],
+  ['Замовлення', 'regular/clipboard-text.svg'],
+  ['Концепти', 'regular/lightbulb.svg'],
+  ['Неймінги', 'regular/text-aa.svg'],
+  ['PR-пакети', 'regular/megaphone.svg'],
+  ['UI-компоненти', 'regular/squares-four.svg'],
+  ['Користувачі', 'regular/users.svg'],
 ]
 
 /** identifier → path inside `@phosphor-icons/core`, from the import lines. */

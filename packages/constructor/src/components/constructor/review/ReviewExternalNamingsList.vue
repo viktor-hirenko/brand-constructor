@@ -9,6 +9,8 @@ interface ExternalNamingItem {
   id: string
   name: string
   domain?: string
+  /** «домен треба викупити, $7 888» for a For sale pick (`externalNamingReviewNote`). */
+  note?: string | null
 }
 
 interface ReviewExternalNamingsListProps {
@@ -56,8 +58,13 @@ const layoutModifier = computed(() => {
             class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
             <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
-            <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
+            <!-- One inline run, so a long For sale note wraps like a sentence
+                 instead of as a separate column. -->
+            <span class="min-w-0">
+              <span class="text-ink-900">{{ item.name }}</span>
+              <span v-if="item.domain" class="text-ink-700"> ({{ item.domain }})</span>
+              <span v-if="item.note" class="review-external-list__note text-ink-700"> — {{ item.note }}</span>
+            </span>
           </li>
         </ul>
         <p v-else class="review-external-list__empty text-[0.875rem] text-ink-700 italic">
@@ -73,8 +80,13 @@ const layoutModifier = computed(() => {
             class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
             <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
-            <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
+            <!-- One inline run, so a long For sale note wraps like a sentence
+                 instead of as a separate column. -->
+            <span class="min-w-0">
+              <span class="text-ink-900">{{ item.name }}</span>
+              <span v-if="item.domain" class="text-ink-700"> ({{ item.domain }})</span>
+              <span v-if="item.note" class="review-external-list__note text-ink-700"> — {{ item.note }}</span>
+            </span>
           </li>
         </ul>
         <div
@@ -103,8 +115,13 @@ const layoutModifier = computed(() => {
             class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
             <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
-            <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
+            <!-- One inline run, so a long For sale note wraps like a sentence
+                 instead of as a separate column. -->
+            <span class="min-w-0">
+              <span class="text-ink-900">{{ item.name }}</span>
+              <span v-if="item.domain" class="text-ink-700"> ({{ item.domain }})</span>
+              <span v-if="item.note" class="review-external-list__note text-ink-700"> — {{ item.note }}</span>
+            </span>
           </li>
         </ul>
       </template>
@@ -117,8 +134,13 @@ const layoutModifier = computed(() => {
             class="review-external-list__item flex items-baseline text-[1rem] leading-6"
           >
             <span class="w-6 shrink-0 text-center text-ink-900" aria-hidden="true">•</span>
-            <span class="text-ink-900">{{ item.name }}</span>
-            <span v-if="item.domain" class="ml-1 text-ink-700">({{ item.domain }})</span>
+            <!-- One inline run, so a long For sale note wraps like a sentence
+                 instead of as a separate column. -->
+            <span class="min-w-0">
+              <span class="text-ink-900">{{ item.name }}</span>
+              <span v-if="item.domain" class="text-ink-700"> ({{ item.domain }})</span>
+              <span v-if="item.note" class="review-external-list__note text-ink-700"> — {{ item.note }}</span>
+            </span>
           </li>
         </ul>
         <div

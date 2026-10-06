@@ -2,7 +2,14 @@ import type { ExternalNaming } from '@brand-constructor/shared/types'
 
 type NamingAvailability = Pick<ExternalNaming, 'id' | 'availability_status'>
 
-/** PO/CEO rule: comment required when multiple names or any sold name is selected. */
+/**
+ * Statuses that need the customer to explain the pick: Sold (taken), and For
+ * sale — taken too, and it costs thousands to buy (owner's decision Р3,
+ * domain-status-plan.md).
+ */
+const NEEDS_COMMENT = new Set(['sold', 'for_sale'])
+
+/** PO/CEO rule: comment required when multiple names or any taken name is selected. */
 export function isExternalNamingCommentRequired(
   selectedIds: string[],
   namings: NamingAvailability[]
@@ -10,22 +17,20 @@ export function isExternalNamingCommentRequired(
   if (selectedIds.length > 1) return true
   if (selectedIds.length === 0) return false
   const byId = new Map(namings.map(n => [n.id, n]))
-  return selectedIds.some(id => byId.get(id)?.availability_status === 'sold')
+  return selectedIds.some(id => NEEDS_COMMENT.has(byId.get(id)?.availability_status ?? ''))
 }
 
 export function getExternalNamingCommentHint(
   selectedIds: string[],
   namings: NamingAvailability[]
 ): string {
-  const many = selectedIds.length > 1
-  const sold = selectedIds.some(id => {
-    const status = namings.find(n => n.id === id)?.availability_status
-    return status === 'sold'
-  })
-  if (many && sold) return "Коментар обов'язковий при виборі кількох назв або викупленої назви"
-  if (many) return "Коментар обов'язковий при виборі кількох назв"
-  if (sold) return "Коментар обов'язковий при виборі викупленої назви"
-  return ''
+  const statuses = selectedIds.map(id => namings.find(n => n.id === id)?.availability_status)
+  const reasons: string[] = []
+  if (selectedIds.length > 1) reasons.push('кількох назв')
+  if (statuses.includes('sold')) reasons.push('викупленої назви')
+  if (statuses.includes('for_sale')) reasons.push('назви, яку треба викупити')
+  if (reasons.length === 0) return ''
+  return `Коментар обов'язковий при виборі ${reasons.join(' або ')}`
 }
 
 export function isExternalNamingStepValid(

@@ -426,8 +426,9 @@ describe('step 3 is on the primitive — phase 16', () => {
     expect(grid).toContain('isAtLimit')
     // Sold namings stay selectable; only unselected cards are blocked at limit.
     expect(grid).toContain('if (!isSelected(naming) && isAtLimit.value) return true')
-    // Available sorts above sold.
-    expect(grid).toContain("n.availability_status === 'available' ? 0 : 1")
+    // Available sorts above For sale, For sale above sold — the order itself
+    // is pinned in `externalNamingPrice.test.ts`.
+    expect(grid).toContain('externalNamingAvailabilityRank(a.availability_status)')
     expect(authorRow).toContain("toggle: [namingId: string]")
     expect(authorRow).toContain("'select-all': []")
   })

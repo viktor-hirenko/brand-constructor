@@ -69,21 +69,21 @@ const {
 </script>
 
 <template>
-  <BaseModal :title="`History — ${brandName}`" width="min(100vw - 2rem, 780px)" @close="emit('close')">
+  <BaseModal :title="`Історія — ${brandName}`" width="min(100vw - 2rem, 780px)" @close="emit('close')">
     <div class="workflow-modal">
-      <div v-if="loading" class="workflow-modal__state">Loading history…</div>
+      <div v-if="loading" class="workflow-modal__state">Завантаження історії…</div>
       <div v-else-if="error" class="workflow-modal__state workflow-modal__state--error">{{ error }}</div>
       <div v-else-if="events.length === 0" class="workflow-modal__state">
-        No workflow history recorded yet. Events appear after the next submit, revision, or
-        approval.
+        Поки немає історії. Події з'являться після наступного надсилання, повернення на
+        доопрацювання або погодження.
       </div>
       <template v-else>
         <div class="workflow-modal__toolbar">
           <button type="button" class="workflow-modal__toolbar-btn" @click="expandAll">
-            Expand all
+            Розгорнути все
           </button>
           <button type="button" class="workflow-modal__toolbar-btn" @click="collapseAll">
-            Collapse all
+            Згорнути все
           </button>
         </div>
 
@@ -110,7 +110,7 @@ const {
                       <span class="workflow-modal__badge tone--indigo">
                         {{ ceoGroupTitle(row.events.length) }}
                       </span>
-                      <span class="workflow-modal__summary">While reviewing (auto-saved)</span>
+                      <span class="workflow-modal__summary">Під час розгляду (автозбереження)</span>
                     </div>
                     <p class="workflow-modal__meta">
                       <time>{{ ceoGroupRange(row.events) }}</time>
@@ -210,7 +210,7 @@ const {
                                   <span class="workflow-modal__diff-arrow">→</span>
                                 </template>
                                 <span v-else-if="ch.toName" class="workflow-modal__diff-set"
-                                  >Set to</span
+                                  >Обрано</span
                                 >
                                 <span class="workflow-modal__diff-to">{{ ch.toName ?? '—' }}</span>
                               </span>
@@ -287,7 +287,7 @@ const {
                           <strong>{{ poResolvedItem(item).sectionLabel }}</strong>
                           —
                           {{
-                            poResolvedItem(item).resolved ? 'marked resolved' : 'reopened'
+                            poResolvedItem(item).resolved ? 'позначено вирішеним' : 'відкрито знову'
                           }}
                         </p>
                       </li>
@@ -357,7 +357,7 @@ const {
                             v-if="submittedIsResubmit(row.event)"
                             class="workflow-modal__resubmit-note"
                           >
-                            Resubmitted after CEO revision
+                            Надіслано повторно після повернення від CEO
                           </p>
 
                           <template v-if="buildSubmittedSectionBlocks(row.event).length">
@@ -379,7 +379,7 @@ const {
                                   <span class="workflow-modal__diff-arrow">→</span>
                                 </template>
                                 <span v-else-if="block.change.toName" class="workflow-modal__diff-set"
-                                  >Set to</span
+                                  >Обрано</span
                                 >
                                 <span class="workflow-modal__diff-to">{{
                                   block.change.toName ?? '—'
@@ -394,7 +394,7 @@ const {
                                   v-if="block.poComment.fromExcerpt"
                                   class="workflow-modal__diff workflow-modal__diff--compact"
                                 >
-                                  <span class="workflow-modal__comment-label">Comment</span>
+                                  <span class="workflow-modal__comment-label">Коментар</span>
                                   <span class="workflow-modal__diff-from">{{
                                     block.poComment.fromExcerpt
                                   }}</span>
@@ -407,11 +407,11 @@ const {
                                   v-else-if="isLongComment(block.poComment.excerpt)"
                                   class="workflow-modal__quote"
                                 >
-                                  <span class="workflow-modal__quote-label">Comment</span>
+                                  <span class="workflow-modal__quote-label">Коментар</span>
                                   {{ block.poComment.excerpt }}
                                 </blockquote>
                                 <p v-else class="workflow-modal__comment">
-                                  <span class="workflow-modal__comment-label">Comment</span>
+                                  <span class="workflow-modal__comment-label">Коментар</span>
                                   {{ block.poComment.excerpt }}
                                 </p>
                               </template>
@@ -426,11 +426,11 @@ const {
                             class="workflow-modal__facts workflow-modal__facts--legacy"
                           >
                             <li v-if="submittedLegacySnapshot(row.event)?.internalName">
-                              <span class="workflow-modal__fact-label">Brand</span>
+                              <span class="workflow-modal__fact-label">Бренд</span>
                               {{ submittedLegacySnapshot(row.event)?.internalName }}
                             </li>
                             <li v-if="submittedLegacySnapshot(row.event)?.geo">
-                              <span class="workflow-modal__fact-label">GEO</span>
+                              <span class="workflow-modal__fact-label">Географія</span>
                               {{ submittedLegacySnapshot(row.event)?.geo }}
                             </li>
                           </ul>
@@ -474,7 +474,7 @@ const {
                           <p class="workflow-modal__section-title">{{ block.label }}</p>
 
                           <p v-if="block.finalName" class="workflow-modal__final">
-                            Final: <strong>{{ block.finalName }}</strong>
+                            Остаточно: <strong>{{ block.finalName }}</strong>
                           </p>
 
                           <p v-if="block.change" class="workflow-modal__diff">
@@ -483,7 +483,7 @@ const {
                               <span class="workflow-modal__diff-arrow">→</span>
                             </template>
                             <span v-else-if="block.change.toName" class="workflow-modal__diff-set"
-                              >Set to</span
+                              >Обрано</span
                             >
                             <span class="workflow-modal__diff-to">{{ block.change.toName ?? '—' }}</span>
                           </p>
@@ -492,14 +492,14 @@ const {
                             v-if="block.comment && isLongComment(block.comment)"
                             class="workflow-modal__quote"
                           >
-                            <span class="workflow-modal__quote-label">Comment</span>
+                            <span class="workflow-modal__quote-label">Коментар</span>
                             {{ block.comment }}
                           </blockquote>
                           <p
                             v-else-if="block.comment"
                             class="workflow-modal__comment"
                           >
-                            <span class="workflow-modal__comment-label">Comment</span>
+                            <span class="workflow-modal__comment-label">Коментар</span>
                             {{ block.comment }}
                           </p>
                         </div>

@@ -43,10 +43,10 @@ export function waitingToneFromDays(days: number): WaitingTone {
 export function formatRelativeUk(sinceIso: string, now = Date.now()): string {
   const ms = Math.max(0, now - new Date(sinceIso).getTime())
   const hours = Math.floor(ms / (1000 * 60 * 60))
-  if (hours < 1) return '<1h'
-  if (hours < 24) return `${hours}h`
+  if (hours < 1) return '<1 год'
+  if (hours < 24) return `${hours} год`
   const days = Math.floor(hours / 24)
-  return `${days}d`
+  return `${days} дн.`
 }
 
 interface WaitingSinceResult {
@@ -69,7 +69,7 @@ export function isBriefInWork(brand: BrandListItem): boolean {
  */
 export function brandStatusTabs(opts: { isCeo: boolean }): { key: string; label: string }[] {
   return [
-    { key: 'all', label: 'All' },
+    { key: 'all', label: 'Усі' },
     ...(opts.isCeo
       ? []
       : [
@@ -123,7 +123,7 @@ function resubmitSuffix(brand: BrandListItem): string {
 }
 
 const APPROX_DATE_NOTE =
-  'Date estimated from last update; open History for full audit trail.'
+  'Дата приблизна — за останнім оновленням; усі події — в «Історії».'
 
 function approverLabel(name: string | null | undefined): string {
   return name?.trim() || 'CPO/CEO'
@@ -135,10 +135,10 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
   switch (brand.status) {
     case BRAND_BRIEF_STATUS.DRAFT:
       return {
-        reviewLine: 'Not submitted',
+        reviewLine: 'Не надіслано',
         waitingLine: '—',
         waitingTone: 'normal',
-        reviewTitle: 'Draft — not yet sent for approval.',
+        reviewTitle: 'Draft — ще не надіслано на погодження.',
         waitingTitle: null,
         waitingSince: null,
         isApproxDate: false,
@@ -166,30 +166,30 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
           waitingLine,
           waitingTone: since.iso ? waitingToneFromDays(days) : 'normal',
           reviewTitle:
-            'Teams received the new concept/naming order in Slack. Waiting for Product Owner to pick from the library and send to CEO.',
+            'Команди отримали в Slack замовлення на новий концепт або неймінг. Далі Product Owner обирає з бібліотеки й надсилає CEO.',
           waitingTitle: since.iso
-            ? `In work since ${formatDate(since.iso)}`
+            ? `У роботі з ${formatDate(since.iso)}`
             : null,
           waitingSince: since.iso,
           isApproxDate: since.isApprox,
         }
       }
 
-      const reviewLine = `Awaiting approval${resubmitSuffix(brand)}`
+      const reviewLine = `Очікує погодження${resubmitSuffix(brand)}`
       const waitingLine = formatWaitingLine(since, { showRelative: true })
       const days = since.iso ? daysInStatus(since.iso) : 0
       const reviewParts = [
-        'Awaiting CPO/CEO decision.',
-        brand.submittedByName ? `Submitted by ${brand.submittedByName}.` : null,
-        (brand.submitCount ?? 0) > 1 ? `Submission #${brand.submitCount}.` : null,
+        'Очікує рішення CPO/CEO.',
+        brand.submittedByName ? `Надіслано: ${brand.submittedByName}.` : null,
+        (brand.submitCount ?? 0) > 1 ? `Надсилання #${brand.submitCount}.` : null,
         since.iso && !since.isApprox
-          ? `In queue since ${formatDate(since.iso)}.`
+          ? `У черзі з ${formatDate(since.iso)}.`
           : null,
       ]
       const waitingTitle = since.isApprox
         ? `${waitingLine}. ${APPROX_DATE_NOTE}`
         : since.iso
-          ? `Waiting for approval · ${formatRelativeUk(since.iso)} since ${formatDate(since.iso)}`
+          ? `Очікує погодження · ${formatRelativeUk(since.iso)}, з ${formatDate(since.iso)}`
           : null
 
       return {
@@ -204,19 +204,19 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
     }
 
     case BRAND_BRIEF_STATUS.NEEDS_REVISION: {
-      const reviewLine = 'Awaiting PO'
+      const reviewLine = 'Очікує PO'
       const waitingLine = formatWaitingLine(since, { showRelative: true })
       const days = since.iso ? daysInStatus(since.iso) : 0
       const returnedBy = approverLabel(brand.needsRevisionByName)
       const reviewParts = [
-        `Waiting for ${brand.authorName} (Product Owner) to revise.`,
+        `Доопрацьовує: ${brand.authorName} (Product Owner).`,
         since.iso
-          ? `Returned by ${returnedBy} · ${formatDate(since.iso)}.`
-          : `Returned by ${returnedBy}.`,
+          ? `Повернуто: ${returnedBy} · ${formatDate(since.iso)}.`
+          : `Повернуто: ${returnedBy}.`,
       ]
       const waitingTitle = since.isApprox
         ? `${waitingLine}. ${APPROX_DATE_NOTE}`
-        : `PO revision pending · ${waitingLine}`
+        : `Доопрацювання в PO · ${waitingLine}`
 
       return {
         reviewLine,
@@ -235,8 +235,8 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
       const approvedOn = since.iso ? formatDate(since.iso) : null
       const submitted = brand.submittedAt ? formatDate(brand.submittedAt) : null
       const reviewParts = [
-        approvedOn ? `Approved by ${approver} · ${approvedOn}.` : `Approved by ${approver}.`,
-        submitted ? `Originally submitted ${submitted}.` : null,
+        approvedOn ? `Погоджено: ${approver} · ${approvedOn}.` : `Погоджено: ${approver}.`,
+        submitted ? `Уперше надіслано ${submitted}.` : null,
       ]
 
       return {
@@ -247,7 +247,7 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
         waitingTitle: since.isApprox
           ? `${waitingLine}. ${APPROX_DATE_NOTE}`
           : approvedOn
-            ? `Approved ${approvedOn}`
+            ? `Погоджено ${approvedOn}`
             : null,
         waitingSince: since.iso,
         isApproxDate: since.isApprox,

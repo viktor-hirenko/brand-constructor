@@ -44,11 +44,11 @@ describe('library tabs by role', () => {
 
   it('the sidebar shows the four library items only to those roles', () => {
     const sidebar = read('components/ui/AppSidebar.vue')
-    for (const label of ['Concepts', 'Namings', 'PR Packages', 'UI Components']) {
+    for (const label of ['Концепти', 'Неймінги', 'PR-пакети', 'UI-компоненти']) {
       expect(sidebar).toMatch(new RegExp(`label: '${label}'[^}]*roles: LIBRARY_TAB_ROLES`))
     }
     expect(sidebar).toMatch(/item\.roles\.includes\(authStore\.user\?\.role/)
-    expect(sidebar).toMatch(/label: 'Brands', path: '\/brands', icon: tag \}/)
+    expect(sidebar).toMatch(/label: 'Бренди', path: '\/brands', icon: tag \}/)
   })
 })
 
@@ -70,10 +70,10 @@ describe('Orders by role (brief-orders plan, phase 2a)', () => {
 
   it('the sidebar shows «Orders» between Brands and Concepts, only to those roles', () => {
     const sidebar = read('components/ui/AppSidebar.vue')
-    expect(sidebar).toMatch(/label: 'Orders', path: '\/orders', icon: clipboardText, roles: ORDER_ROLES/)
-    const brands = sidebar.indexOf("label: 'Brands'")
-    const orders = sidebar.indexOf("label: 'Orders'")
-    const concepts = sidebar.indexOf("label: 'Concepts'")
+    expect(sidebar).toMatch(/label: 'Замовлення', path: '\/orders', icon: clipboardText, roles: ORDER_ROLES/)
+    const brands = sidebar.indexOf("label: 'Бренди'")
+    const orders = sidebar.indexOf("label: 'Замовлення'")
+    const concepts = sidebar.indexOf("label: 'Концепти'")
     expect(brands).toBeLessThan(orders)
     expect(orders).toBeLessThan(concepts)
   })

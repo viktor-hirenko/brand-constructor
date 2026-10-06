@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resolveExternalNamingPrice } from '@/utils/externalNamingPrice'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -76,7 +77,7 @@ const poExternalMini = computed<ExternalNamingMini[]>(() =>
       id: n.id,
       name: n.name,
       domain: (n as ExternalNaming & { domain?: string }).domain,
-      price: n.price ?? null,
+      price: resolveExternalNamingPrice(n),
     }))
 )
 
