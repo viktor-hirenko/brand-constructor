@@ -160,3 +160,28 @@ describe('step 8 header text — Figma 5387:91772', () => {
     expect(router).not.toContain("subtitle: 'Фінальний огляд'")
   })
 })
+
+describe('final brief: the concept card is one size whether there is one card or two — owner 06.10', () => {
+  const block = read('components/constructor/review/ReviewConceptBlock.vue')
+  const group = read('components/constructor/review/ReviewChoiceGroup.vue')
+  const visual = read('constants/conceptCardVisual.ts')
+
+  it('both sizes come from one place and match the 1440 canvas (243.5 in a 495 row)', () => {
+    expect(visual).toContain("REVIEW_CONCEPT_ROW_MAX_CLASS = 'max-w-[30.9375rem]'")
+    expect(visual).toContain("REVIEW_CONCEPT_CARD_WIDTH_CLASS = 'w-[calc((100%-0.5rem)/2)] max-w-[15.21875rem]'")
+    expect(30.9375 * 16).toBe(495)
+    expect((30.9375 - 0.5) / 2).toBe(15.21875)
+    expect(15.21875 * 16).toBe(243.5)
+  })
+
+  it('the twin grid takes the shared row cap, not a number of its own', () => {
+    expect(group).toContain('REVIEW_CONCEPT_ROW_MAX_CLASS')
+    expect(group).not.toMatch(/max-w-\[[\d.]+rem\]/)
+  })
+
+  it('every card on its own (single, applied, new-concept brief) takes the shared card size', () => {
+    const tpl = block.slice(block.indexOf('<template>'))
+    expect(tpl.match(/:class="REVIEW_CONCEPT_CARD_WIDTH_CLASS"/g)).toHaveLength(3)
+    expect(tpl).not.toMatch(/w-\[calc\(\(100%-0\.5rem\)\/2\)\]/)
+  })
+})

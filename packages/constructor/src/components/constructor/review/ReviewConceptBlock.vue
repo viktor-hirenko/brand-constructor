@@ -3,7 +3,10 @@ import { computed } from 'vue'
 import type { Concept } from '@brand-constructor/shared/types'
 import { getAssetUrl } from '@/composables/useApi'
 import UiAssetImage from '@/components/ui/UiAssetImage.vue'
-import { CONCEPT_CARD_TITLE_GRADIENT } from '@/constants/conceptCardVisual'
+import {
+  CONCEPT_CARD_TITLE_GRADIENT,
+  REVIEW_CONCEPT_CARD_WIDTH_CLASS,
+} from '@/constants/conceptCardVisual'
 import ApplyCeoVariantButton from './ApplyCeoVariantButton.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiProperty from '@/components/ui/UiProperty.vue'
@@ -213,7 +216,8 @@ const singlePoLabel = 'Вибір Замовника'
       <template #applied>
         <div
           v-if="concept && previewUrl"
-          class="review-concept-block__card relative w-[calc((100%-0.5rem)/2)] aspect-square rounded-2xl overflow-hidden bg-muted"
+          :class="REVIEW_CONCEPT_CARD_WIDTH_CLASS"
+          class="review-concept-block__card relative aspect-square rounded-2xl overflow-hidden bg-muted"
         >
           <UiAssetImage :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" />
           <div
@@ -247,7 +251,8 @@ const singlePoLabel = 'Вибір Замовника'
       <template #single>
         <div
           v-if="concept && previewUrl"
-          class="review-concept-block__card relative w-[calc((100%-0.5rem)/2)] aspect-square rounded-2xl overflow-hidden bg-muted"
+          :class="REVIEW_CONCEPT_CARD_WIDTH_CLASS"
+          class="review-concept-block__card relative aspect-square rounded-2xl overflow-hidden bg-muted"
         >
           <UiAssetImage :src="previewUrl" :alt="concept.name" class="w-full h-full object-cover" />
           <div
@@ -272,7 +277,8 @@ const singlePoLabel = 'Вибір Замовника'
         </div>
         <div
           v-else-if="isNewConcept"
-          class="review-concept-block__card review-concept-block__card--brief relative w-[calc((100%-0.5rem)/2)] aspect-square rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
+          :class="REVIEW_CONCEPT_CARD_WIDTH_CLASS"
+          class="review-concept-block__card review-concept-block__card--brief relative aspect-square rounded-2xl overflow-hidden bg-ink-200 flex flex-col items-center justify-center gap-3 text-ink-700"
         >
           <FileIcon class="size-10 opacity-60" :stroke-width="1.5" />
           <p class="text-[0.875rem] font-medium leading-5 text-ink-900 text-center px-4">
