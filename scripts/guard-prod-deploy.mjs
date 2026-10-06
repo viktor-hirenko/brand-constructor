@@ -1,14 +1,15 @@
 #!/usr/bin/env node
-// Production is deployed only from `phase/cleanup`, committed (owner, 02.10.2026).
+// Production is deployed only from `main`, committed (owner, 05.10.2026;
+// until then `phase/cleanup`).
 //
 // Every production deploy script runs this first. A feature branch goes to the
 // stage (`pnpm deploy:stage`) until the owner agrees to it; it reaches
-// production only by being merged into `phase/cleanup`. Uncommitted changes
+// production only by being merged into `main`. Uncommitted changes
 // are refused too, so production is always a commit one can name and return to.
 
 import { execFileSync } from 'node:child_process'
 
-const PROD_BRANCH = 'phase/cleanup'
+const PROD_BRANCH = 'main'
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
 
