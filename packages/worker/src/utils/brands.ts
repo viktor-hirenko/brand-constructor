@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
+import { BRAND_APPROVAL_ROLES, BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
 import { updateBrandSchema } from '../schemas/brand'
 import type {
   Brand,
@@ -77,6 +77,15 @@ export const updateStatusSchema = z.object({
 
 export const patchCeoSelectionsSchema = z.object({
   ceoSelections: z.record(ceoSelectionValueSchema),
+})
+
+/** Sections a CEO comment can sit on: the seven review sections + «Загальний коментар». */
+export const CEO_COMMENT_SECTION_KEYS = new Set([...RESOLVABLE_SECTION_KEYS, 'general'])
+
+/** One CEO comment saved while the CEO types — before «Повернути» / «Затвердити» (H-04). */
+export const patchCeoCommentDraftSchema = z.object({
+  section: z.string().min(1).max(100),
+  value: z.string().max(5000),
 })
 
 /** Body schema for `PATCH /:id/ceo-comments/resolve`. */
@@ -325,6 +334,21 @@ export function rowToBrand(row: BrandRow): Brand {
     jiraInitiativeUrl: row.jira_initiative_url ?? null,
     jiraInitiativeCreatedAt: row.jira_initiative_created_at ?? null,
   }
+}
+
+export function isBrandApprovalRole(role: string): boolean {
+  return (BRAND_APPROVAL_ROLES as readonly string[]).includes(role)
+}
+
+/**
+ * The brief as `role` may read it. While the brief is `submitted`, its
+ * `ceo_comments` are the CEO's unsent draft — only the approval roles read
+ * them; everyone else gets them once «Повернути» (`needs_revision`) or
+ * approval sends them.
+ */
+export function brandForRole<T extends Brand>(brand: T, role: string): T {
+  if (brand.status !== BRAND_BRIEF_STATUS.SUBMITTED || isBrandApprovalRole(role)) return brand
+  return { ...brand, ceoComments: null }
 }
 
 export function rowToBrandListItem(row: BrandListRow) {

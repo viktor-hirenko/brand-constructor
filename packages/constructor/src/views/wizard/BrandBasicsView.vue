@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useConstructorStore } from '@/stores/constructor'
+import { useTouchedFields } from '@/composables/useTouchedFields'
+import { useWizardBlockedNext } from '@/composables/wizardBlockedNextContext'
 import GeoMultiSelect from '@/components/constructor/fields/GeoMultiSelect.vue'
 import DatePicker from '@/components/constructor/fields/DatePicker.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
@@ -13,7 +15,9 @@ import UiTextField from '@/components/ui/UiTextField.vue'
 
 const store = useConstructorStore()
 
-const touched = ref({ geo: false, launchDate: false })
+// A hint shows once the field was changed, left empty, or the grey «Далі» was
+// pressed — never on a fresh screen (H-38).
+const { touched, touch } = useTouchedFields(['geo', 'launchDate'] as const, useWizardBlockedNext())
 
 const todayISO = new Date().toISOString().split('T')[0]
 
@@ -55,7 +59,11 @@ const comment = computed({
         </template>
         GEO (Географія)
       </UiFieldLabel>
-      <GeoMultiSelect v-model="geo" @update:model-value="touched.geo = true" />
+      <GeoMultiSelect
+        v-model="geo"
+        @update:model-value="touch('geo')"
+        @blur="touch('geo')"
+      />
       <UiFieldHint v-if="touched.geo && geo.length === 0" tone="error" class="mt-1">
         Оберіть хоча б одну ГЕО
       </UiFieldHint>
@@ -72,7 +80,8 @@ const comment = computed({
       <DatePicker
         v-model="launchDate"
         :min-date="todayISO"
-        @update:model-value="touched.launchDate = true"
+        @update:model-value="touch('launchDate')"
+        @blur="touch('launchDate')"
       />
       <UiFieldHint v-if="touched.launchDate && !launchDate" tone="error" class="mt-1">
         Вкажіть дату запуску

@@ -63,12 +63,19 @@ export function isBriefInWork(brand: BrandListItem): boolean {
   return brand.status === BRAND_BRIEF_STATUS.SUBMITTED && brandHasNewBriefsFromBrand(brand)
 }
 
-/** Status tabs of the Brands list. The CEO never gets «In Work» — those briefs are not hers yet. */
+/**
+ * Status tabs of the Brands list. The CEO never gets «Drafts» or «In Work» —
+ * those briefs are not hers yet (the server does not list drafts to her, H-37).
+ */
 export function brandStatusTabs(opts: { isCeo: boolean }): { key: string; label: string }[] {
   return [
     { key: 'all', label: 'All' },
-    { key: 'draft', label: 'Drafts' },
-    ...(opts.isCeo ? [] : [{ key: BRAND_BRIEF_STATUS.IN_WORK, label: 'In Work' }]),
+    ...(opts.isCeo
+      ? []
+      : [
+          { key: BRAND_BRIEF_STATUS.DRAFT, label: 'Drafts' },
+          { key: BRAND_BRIEF_STATUS.IN_WORK, label: 'In Work' },
+        ]),
     { key: 'submitted', label: 'Submitted' },
     { key: 'approved', label: 'Approved' },
     { key: 'needs_revision', label: 'Needs Revision' },

@@ -4,8 +4,10 @@ import { BRAND_APPROVAL_ROLES, BRAND_BRIEF_STATUS } from '@brand-constructor/sha
 import type { BrandStatus } from '@brand-constructor/shared/types'
 import {
   asIdArray,
+  brandForRole,
   firstId,
   normaliseCeoCommentsForStorage,
+  parseCeoCommentsFromRow,
   rowToBrand,
   STATUS_TRANSITIONS,
   updateStatusSchema,
@@ -80,6 +82,18 @@ status.patch('/:id/status', async c => {
 
   if (!existing) {
     return c.json({ success: false, error: 'Brand not found' }, 404)
+  }
+
+  // CEO comments and picks come only from the CEO (H-22): the author's
+  // submission must not carry «CEO picks» that approval would then write.
+  if (
+    (body.ceoComments !== undefined || body.ceoSelections !== undefined) &&
+    !(BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)
+  ) {
+    return c.json(
+      { success: false, error: 'Forbidden: only CPO/CEO can send CEO comments or selections' },
+      403
+    )
   }
 
   const currentStatus = existing.status as BrandStatus
@@ -183,12 +197,29 @@ status.patch('/:id/status', async c => {
   if (targetStatus === BRAND_BRIEF_STATUS.SUBMITTED && wasReturnedByCeo(existing)) {
     updates.push('ceo_comments = ?', 'ceo_selections = ?')
     values.push(null, null)
+    // The author's «свій варіант» marks answered this round's CEO alternatives
+    // (`stepData.revisionKeptOwn`); the next round starts without them.
+    updates.push(
+      `step_data = CASE WHEN step_data IS NULL THEN NULL ELSE json_remove(step_data, '$.revisionKeptOwn') END`
+    )
   }
 
+  // The comments the CEO saved while typing (`PATCH /:id/ceo-comments`) stay;
+  // what this request sends wins per section. A second CEO tab's comments are
+  // on the brief even if the returning tab never saw them (H-30).
+  const decidingFromReview = currentStatus === BRAND_BRIEF_STATUS.SUBMITTED
+  const ceoComments =
+    body.ceoComments !== undefined
+      ? {
+          ...(decidingFromReview ? parseCeoCommentsFromRow(existing.ceo_comments) ?? {} : {}),
+          ...normaliseCeoCommentsForStorage(body.ceoComments),
+        }
+      : decidingFromReview
+        ? parseCeoCommentsFromRow(existing.ceo_comments) ?? undefined
+        : undefined
   if (body.ceoComments !== undefined) {
-    const normalised = normaliseCeoCommentsForStorage(body.ceoComments)
     updates.push('ceo_comments = ?')
-    values.push(JSON.stringify(normalised))
+    values.push(JSON.stringify(ceoComments))
   }
   if (body.ceoSelections !== undefined) {
     updates.push('ceo_selections = ?')
@@ -216,7 +247,7 @@ status.patch('/:id/status', async c => {
         targetStatus,
         currentStatus,
         existing,
-        ceoComments: body.ceoComments,
+        ceoComments: ceoComments ?? body.ceoComments,
         ceoSelections: body.ceoSelections,
       })
     } catch (err) {
@@ -278,7 +309,7 @@ status.patch('/:id/status', async c => {
         } else {
           // Slack message builders take flat `Record<string, string>`; pull
           // `.value` out of any meta-form entries before forwarding.
-          const ceoCommentsRaw = body.ceoComments ?? {}
+          const ceoCommentsRaw = ceoComments ?? body.ceoComments ?? {}
           const ceoCommentsData: Record<string, string> = {}
           for (const [k, v] of Object.entries(ceoCommentsRaw)) {
             const text = typeof v === 'string' ? v : v.value
@@ -412,7 +443,7 @@ status.patch('/:id/status', async c => {
         targetStatus,
         currentStatus,
         existing,
-        ceoComments: body.ceoComments,
+        ceoComments: ceoComments ?? body.ceoComments,
         ceoSelections: body.ceoSelections,
       })
     } catch (err) {
@@ -461,7 +492,7 @@ status.patch('/:id/status', async c => {
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
 
-  return c.json({ success: true, data: rowToBrand(row!) })
+  return c.json({ success: true, data: brandForRole(rowToBrand(row!), user.role) })
 })
 
 type StatusContext = Context<{ Bindings: Env; Variables: Variables }>

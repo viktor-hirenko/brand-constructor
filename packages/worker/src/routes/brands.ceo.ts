@@ -3,7 +3,9 @@ import type { Env, Variables } from '../types'
 import { BRAND_APPROVAL_ROLES, BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
 import type { BrandCeoComments, BrandStatus } from '@brand-constructor/shared/types'
 import {
+  CEO_COMMENT_SECTION_KEYS,
   parseCeoCommentsFromRow,
+  patchCeoCommentDraftSchema,
   patchCeoCommentResolveSchema,
   patchCeoSelectionsSchema,
   RESOLVABLE_SECTION_KEYS,
@@ -88,6 +90,69 @@ ceo.patch('/:id/ceo-selections', async c => {
     })
   } catch (err) {
     console.error('Workflow event insert failed (ceo-selections):', err)
+  }
+
+  const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
+  return c.json({ success: true, data: rowToBrand(row!) })
+})
+
+/**
+ * Saves one CEO comment while the CEO types, before «Повернути» / «Затвердити».
+ *
+ * Until 05.10 the comments reached the server only with the status change, so
+ * another computer showed none (H-04) and a second CEO tab lost its comments to
+ * the return from the first (H-30). One section per request, written with
+ * `json_set` / `json_remove` in a single UPDATE: two tabs saving different
+ * sections never overwrite each other. An empty value removes the comment.
+ *
+ * Only the CEO, only while the brief is `submitted`. The brief's version
+ * (`updated_at`) does not move: a comment is the CEO's note on the brief, not
+ * a change of it. The author does not see these until the return
+ * (`GET /:id` hides them while `submitted`).
+ */
+ceo.patch('/:id/ceo-comments', async c => {
+  const id = c.req.param('id')
+  const user = c.get('user')
+  const parsed = patchCeoCommentDraftSchema.safeParse(await c.req.json())
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+      400
+    )
+  }
+
+  if (!(BRAND_APPROVAL_ROLES as readonly string[]).includes(user.role)) {
+    return c.json({ success: false, error: 'Forbidden: only CPO/CEO can write CEO comments' }, 403)
+  }
+
+  const { section } = parsed.data
+  if (!CEO_COMMENT_SECTION_KEYS.has(section)) {
+    return c.json({ success: false, error: `Section "${section}" takes no CEO comment` }, 400)
+  }
+
+  const value = parsed.data.value.trim()
+  const path = `$.${section}`
+  const statement = value
+    ? c.env.DB.prepare(
+        `UPDATE brands SET ceo_comments = json_set(COALESCE(ceo_comments, '{}'), ?, json(?))
+         WHERE id = ? AND status = ?`
+      ).bind(path, JSON.stringify({ value, resolved: false, resolvedAt: null }), id, BRAND_BRIEF_STATUS.SUBMITTED)
+    : c.env.DB.prepare(
+        `UPDATE brands SET ceo_comments = CASE
+           WHEN json_remove(COALESCE(ceo_comments, '{}'), ?) = '{}' THEN NULL
+           ELSE json_remove(COALESCE(ceo_comments, '{}'), ?) END
+         WHERE id = ? AND status = ?`
+      ).bind(path, path, id, BRAND_BRIEF_STATUS.SUBMITTED)
+
+  const result = await statement.run()
+  if (result.meta.changes !== 1) {
+    const exists = await c.env.DB.prepare('SELECT 1 FROM brands WHERE id = ?').bind(id).first()
+    if (!exists) return c.json({ success: false, error: 'Brand not found' }, 404)
+    return c.json(
+      { success: false, error: 'CEO comments can be written only while the brief is submitted' },
+      400
+    )
   }
 
   const row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()

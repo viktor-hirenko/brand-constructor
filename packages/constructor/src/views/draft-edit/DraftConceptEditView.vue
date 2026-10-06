@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
-import { isBriefOrderLocked } from '@/utils/briefOrderLock'
+import { briefThemeOptions, isBriefOrderLocked } from '@/utils/briefOrderLock'
 import { useApiList } from '@/composables/useApi'
 import type {
   Concept,
@@ -84,10 +84,10 @@ const comment = computed({
   set: (val: string) => store.setConcept({ comment: val }),
 })
 
-const themeOptions = [
-  { value: 'light', label: 'Світла тема' },
-  { value: 'dark', label: 'Темна тема' },
-] as const
+/** A brief «В роботі» keeps its theme: the other one is disabled (H-24). */
+const themeSegmentOptions = computed(() =>
+  briefThemeOptions(store.stepData.mode, store.brandStatus)
+)
 
 const themeMode = computed({
   get: () => store.stepData.mode ?? 'light',
@@ -316,7 +316,7 @@ async function goDali() {
       <div :class="EDIT_FLOW_POST_DIVIDER_CONTROL_SECTION_CLASS">
         <SegmentedControl
           v-model="themeMode"
-          :options="[...themeOptions]"
+          :options="themeSegmentOptions"
           aria-label="Тема інтерфейсу"
         />
 

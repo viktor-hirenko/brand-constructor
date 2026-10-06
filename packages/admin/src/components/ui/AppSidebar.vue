@@ -10,7 +10,7 @@ import textAa from '@phosphor-icons/core/regular/text-aa.svg?raw'
 import users from '@phosphor-icons/core/regular/users.svg?raw'
 import close from '@phosphor-icons/core/regular/x.svg?raw'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
-import { LIBRARY_TAB_ROLES, ORDER_ROLES, isOrderRole } from '@brand-constructor/shared'
+import { LIBRARY_TAB_ROLES, ORDER_ROLES, ROLE_LABELS, isOrderRole } from '@brand-constructor/shared'
 import type { OrderListResponse } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 import { apiGet } from '@/composables/useApi'
@@ -146,7 +146,7 @@ async function handleLogout() {
       <div v-if="authStore.user" class="sidebar__user">
         <span class="sidebar__user-name">{{ authStore.user.name }}</span>
         <span class="sidebar__user-email" :title="authStore.user.email">{{ authStore.user.email }}</span>
-        <span class="sidebar__user-role">{{ authStore.user.role }}</span>
+        <span class="sidebar__user-role">{{ ROLE_LABELS[authStore.user.role] ?? authStore.user.role }}</span>
         <button v-if="isProductionMode" class="sidebar__logout" @click="handleLogout">
           Sign out
         </button>
@@ -340,7 +340,6 @@ async function handleLogout() {
   &__user-role {
     font-size: $font-size-xs;
     color: $color-text-muted;
-    text-transform: capitalize;
   }
 
   &__logout {

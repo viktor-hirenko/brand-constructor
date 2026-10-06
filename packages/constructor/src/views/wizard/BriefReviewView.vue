@@ -428,6 +428,9 @@ async function executeStatusChange(newStatus: BriefStatusTarget) {
   statusActionError.value = null
 
   try {
+    // Comments still waiting out the pause in typing reach the server first,
+    // so the decision and the saved comments agree (H-04).
+    if (isCeoView.value) await store.flushCeoCommentSaves()
     const payload: Record<string, unknown> = { status: newStatus }
     if (isCeoView.value && Object.keys(comments.nonEmptyCeoComments.value).length > 0) {
       payload.ceoComments = comments.nonEmptyCeoComments.value
@@ -628,7 +631,9 @@ async function handlePrintBrand() {
     :primary-label="approveConfirmCopy.primaryLabel"
     :actions-layout="approveConfirmMode === 'warning' ? 'stack' : 'row'"
     :primary-loading="statusActionLoading"
+    separate-dismiss
     @cancel="approveConfirmMode === 'warning' ? handleApproveWarningReturn() : cancelApproveConfirm()"
+    @dismiss="cancelApproveConfirm"
     @primary="confirmApprove"
   />
 </template>

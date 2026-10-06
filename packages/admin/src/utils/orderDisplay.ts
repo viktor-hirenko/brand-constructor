@@ -88,13 +88,17 @@ export function orderSectionBadge(section: { open: boolean; cancelled: boolean }
   return !section.open && section.cancelled ? { label: 'Скасовано', cls: 'badge--gray' } : null
 }
 
-const ORDER_KIND_PHRASES: Record<OrderKind, string> = {
-  concept: 'новий концепт',
-  externalNaming: 'нові назви (External Naming)',
-  internalNaming: 'нова Internal Naming',
-}
+/**
+ * The Orders list's words in lower case — «новий концепт», «новий External
+ * Naming», «новий Internal Naming» (full run 06.10, bug 3: the header said
+ * «нова Internal Naming» and «нові назви (External Naming)», the list —
+ * «Новий Internal Naming», «Новий External Naming»).
+ */
+const ORDER_KIND_PHRASES = Object.fromEntries(
+  Object.entries(ORDER_KIND_LABELS).map(([k, v]) => [k, v.charAt(0).toLowerCase() + v.slice(1)])
+) as Record<OrderKind, string>
 
-/** «новий концепт і нова Internal Naming» — what this order is, for the page header. */
+/** «новий концепт і новий Internal Naming» — what this order is, for the page header. */
 export function orderedSummary(kinds: OrderKind[]): string {
   const parts = kinds.map(k => ORDER_KIND_PHRASES[k])
   if (parts.length <= 1) return parts[0] ?? ''

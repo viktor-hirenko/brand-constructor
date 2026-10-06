@@ -25,6 +25,13 @@ import { UI_FIELD_CONTROL_BASE_CLASS, resolveUiFieldSurfaceClasses } from '@/com
  */
 const model = defineModel<string[]>({ required: true });
 
+/**
+ * `blur` — the person is done with the field: the list closed (a click
+ * outside, or Tab out of the search). Step 1 shows «Оберіть хоча б одну ГЕО»
+ * on it when nothing was picked (H-38).
+ */
+const emit = defineEmits<{ blur: [] }>();
+
 const isOpen = ref(false);
 const search = ref('');
 const containerRef = ref<HTMLElement | null>(null);
@@ -85,6 +92,18 @@ function handleDocumentPointerDown(event: MouseEvent) {
   }
 }
 
+/**
+ * Tab out of the search closes the list too. Only when focus lands on
+ * something outside: a click on the list's own non-focusable parts (a section
+ * header) blurs the search with no `relatedTarget`, and must not close it.
+ */
+function handleFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget;
+  if (isOpen.value && next instanceof Node && !containerRef.value?.contains(next)) {
+    closeDropdown();
+  }
+}
+
 watch(isOpen, (open) => {
   if (open) {
     // Defer so the opening click does not immediately close the dropdown.
@@ -93,6 +112,7 @@ watch(isOpen, (open) => {
     });
   } else {
     document.removeEventListener('mousedown', handleDocumentPointerDown);
+    emit('blur');
   }
 });
 
@@ -102,7 +122,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="relative">
+  <div ref="containerRef" class="relative" @focusout="handleFocusOut">
     <!-- Kit Input surface, Type = fluid — see the note in <script>. -->
     <div :class="[triggerClass, 'cursor-text']" @click="openDropdown(); searchInputRef?.focus()">
       <!--

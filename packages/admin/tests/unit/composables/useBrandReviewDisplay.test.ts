@@ -129,6 +129,23 @@ describe('getBrandReviewDisplay', () => {
     expect(brandStatusTabs({ isCeo: false }).map(t => t.key)).toContain('in_work')
   })
 
+  it('the CEO never gets the Drafts tab; everyone else does (H-37)', () => {
+    expect(brandStatusTabs({ isCeo: true }).map(t => t.key)).toEqual([
+      'all',
+      'submitted',
+      'approved',
+      'needs_revision',
+    ])
+    expect(brandStatusTabs({ isCeo: false }).map(t => t.key)).toEqual([
+      'all',
+      'draft',
+      'in_work',
+      'submitted',
+      'approved',
+      'needs_revision',
+    ])
+  })
+
   it('submitted shows awaiting approval with resubmit badge', () => {
     const submittedAt = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
     const d = getBrandReviewDisplay(

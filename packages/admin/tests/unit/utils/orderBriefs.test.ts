@@ -110,7 +110,10 @@ describe('order page statuses (owner, 01.10: «пішов далі» said nothin
 describe('order page words (owner, 01.10)', () => {
   it('says what was ordered', () => {
     expect(orderedSummary(['concept'])).toBe('новий концепт')
-    expect(orderedSummary(['concept', 'internalNaming'])).toBe('новий концепт і нова Internal Naming')
+    expect(orderedSummary(['concept', 'internalNaming'])).toBe('новий концепт і новий Internal Naming')
+    // bug 3 of the full run 06.10: the header uses the Orders list's words
+    expect(orderedSummary(['externalNaming'])).toBe('новий External Naming')
+    expect(orderedSummary(['internalNaming'])).toBe('новий Internal Naming')
   })
 
   it('names the domain check as the Namings table does', () => {

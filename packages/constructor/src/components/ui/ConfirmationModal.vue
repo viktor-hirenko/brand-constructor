@@ -19,22 +19,36 @@ interface ConfirmationModalProps {
   primaryLoading?: boolean
   /** `row` — side-by-side (default). `stack` — full-width buttons in a column. */
   actionsLayout?: 'row' | 'stack'
+  /**
+   * The cross, Esc and the backdrop emit `dismiss` instead of `cancel`. For a
+   * dialog whose second button is an action of its own («Повернути на
+   * доопрацювання»), not a way out: closing it must not press that button
+   * (C-29 of `edit-flow-scenarios.md`).
+   */
+  separateDismiss?: boolean
 }
 
-withDefaults(defineProps<ConfirmationModalProps>(), {
+const props = withDefaults(defineProps<ConfirmationModalProps>(), {
   cancelLabel: 'Скасувати',
   primaryLoading: false,
   actionsLayout: 'row',
+  separateDismiss: false,
 })
 
 const emit = defineEmits<{
   cancel: []
   primary: []
+  dismiss: []
 }>()
+
+function onModalClose() {
+  if (props.separateDismiss) emit('dismiss')
+  else emit('cancel')
+}
 </script>
 
 <template>
-  <UiModal :title="title" size="sm" @close="emit('cancel')">
+  <UiModal :title="title" size="sm" @close="onModalClose">
     <div class="confirmation-modal__content flex flex-col gap-6">
       <p
         class="confirmation-modal__text whitespace-pre-line text-base font-normal text-ink-700"

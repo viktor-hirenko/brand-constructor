@@ -334,7 +334,10 @@ async function goDali() {
     isSaving.value = false
     // H-06: a failed save stays on the screen with the error under the buttons,
     // instead of returning to the review as if it went through.
-    if (!saved) return
+    if (!saved) {
+      store.unmarkConflictSections(['concept'])
+      return
+    }
     store.commitEditSection()
     store.resetAuthorRevisionDraft()
     router.push(`/constructor/brand/${brandId.value}`)
@@ -357,7 +360,10 @@ async function saveConceptOrder() {
   isSaving.value = true
   const saved = await store.saveBrand()
   isSaving.value = false
-  if (!saved) return
+  if (!saved) {
+    store.unmarkConflictSections(['concept', 'externalNaming'])
+    return
+  }
   store.commitEditSection()
   store.resetAuthorRevisionDraft()
   router.push(`/constructor/brand/${brandId.value}`)

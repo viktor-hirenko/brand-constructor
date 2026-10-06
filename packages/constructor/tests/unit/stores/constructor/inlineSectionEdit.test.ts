@@ -127,3 +127,46 @@ describe('useInlineSectionEdit', () => {
     })
   })
 })
+
+/**
+ * A-39 / BD-15 of `docs/design-audit/edit-flow-scenarios.md`: Final review →
+ * «Редагувати» Concept → «Темна тема» → «Скасувати» left the brief dark. The
+ * theme lives outside the concept slice (`stepData.mode`), so the concept
+ * snapshot did not carry it.
+ */
+describe('«Скасувати» in the concept edit brings the theme back', () => {
+  it('cancel restores the theme the brief had when the edit began', () => {
+    const stepData = ref(makeStepData({ mode: 'light' }))
+    const sut = useInlineSectionEdit({ stepData, returnToStep: ref<number | null>(null) })
+    sut.beginEditSection('concept', 8)
+    stepData.value.mode = 'dark'
+    stepData.value.concept.selectedId = 'concept-dark'
+
+    sut.cancelEditSection()
+
+    expect(stepData.value.mode).toBe('light')
+    expect(stepData.value.concept.selectedId).toBe('concept-a')
+  })
+
+  it('«Зберегти» keeps the new theme', () => {
+    const stepData = ref(makeStepData({ mode: 'light' }))
+    const sut = useInlineSectionEdit({ stepData, returnToStep: ref<number | null>(null) })
+    sut.beginEditSection('concept', 8)
+    stepData.value.mode = 'dark'
+
+    sut.commitEditSection()
+
+    expect(stepData.value.mode).toBe('dark')
+  })
+
+  it('cancelling another section does not touch the theme', () => {
+    const stepData = ref(makeStepData({ mode: 'light' }))
+    const sut = useInlineSectionEdit({ stepData, returnToStep: ref<number | null>(null) })
+    sut.beginEditSection('brandBasics', 8)
+    stepData.value.mode = 'dark'
+
+    sut.cancelEditSection()
+
+    expect(stepData.value.mode).toBe('dark')
+  })
+})

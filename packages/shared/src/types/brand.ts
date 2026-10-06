@@ -132,6 +132,14 @@ export interface BrandStepData {
   marketingPackage: BrandMarketingPackageData
   deliverables: BrandDeliverablesData
   visualComponents: BrandVisualComponentsData
+  /**
+   * Brief Revision: sections where the author kept a choice of their own over
+   * the CEO's alternative, each with the CEO's alternative it answered
+   * (`ownVariantKey`). Saved with the brief so the answer holds on another
+   * computer and the next day; a different CEO alternative is a new question.
+   * The server drops it when the author sends the brief back.
+   */
+  revisionKeptOwn?: Record<string, string>
 }
 
 export interface Brand {

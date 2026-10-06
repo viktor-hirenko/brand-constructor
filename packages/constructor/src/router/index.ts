@@ -10,6 +10,8 @@ import { apiGet } from '@/composables/useApi'
 import type { Brand } from '@brand-constructor/shared/types'
 import { resolveColdStartNavigation } from '@/router/coldStartNavigation'
 import { editFlowLeaveAction } from '@/router/editFlowLeave'
+import { BRIEF_NO_ACCESS_ROUTE_NAME, briefLoadFailureRedirect } from '@/router/briefLoadFailure'
+import { draftLinkStepRedirect } from '@/router/draftLinkStep'
 import { isEmbedded } from '@/composables/useEmbedMode'
 import { postAuthRequired } from '@/composables/useEmbedBridge'
 import { canEnterDraftEdit } from '@/utils/inWorkReview'
@@ -194,7 +196,7 @@ const routes: RouteRecordRaw[] = [
         beforeEnter: draftEditGuard,
       },
     ],
-    beforeEnter: async to => {
+    beforeEnter: async (to, from) => {
       const brandId = to.params.id as string
       const store = useConstructorStore()
 
@@ -216,14 +218,16 @@ const routes: RouteRecordRaw[] = [
         // Restore in-progress localStorage drafts (F5-safe).
         // Called AFTER loadBrand so it overlays the freshly-reset slices.
         store.restoreSupervisorAlternativeDraftFromStorage(brandId)
-        store.restoreSupervisorCommentsFromStorage(brandId)
+        // Only the CEO's own unsent comments: another person in the same
+        // browser must not see them as the brief's (E-23 / E-24).
+        if (useAuthStore().isCeo) store.restoreSupervisorCommentsFromStorage(brandId)
         store.restoreAuthorRevisionDraftFromStorage(brandId)
         store.restorePreviewSlidesFromStorage(brandId)
         store.restoreWizardDraftCopy(brandId, brand.updatedAt)
 
-        return true
-      } catch {
-        return { path: '/' }
+        return draftLinkStepRedirect(to.name, from.name, brand) ?? true
+      } catch (err) {
+        return briefLoadFailureRedirect(err)
       }
     },
   },
@@ -246,8 +250,8 @@ const routes: RouteRecordRaw[] = [
             return { path: `/constructor/brand/${brandQuery}` }
           }
           applyBrandToStore(store, brand)
-        } catch {
-          return { path: '/' }
+        } catch (err) {
+          return briefLoadFailureRedirect(err)
         }
       } else if (!store.brandId) {
         store.restoreDraftFromStorage()
@@ -366,6 +370,13 @@ const routes: RouteRecordRaw[] = [
     // after dispatching needs_revision / approved. Role-specific UI (e.g.
     // "Створити новий бриф") is gated inside BrandSuccessView via
     // `authStore.canStartNewBrandBrief` at the template level.
+    meta: { requiresAuth: true },
+  },
+  {
+    // A direct link to a brief the person may not open — `router/briefLoadFailure.ts`.
+    path: '/constructor/no-access',
+    name: BRIEF_NO_ACCESS_ROUTE_NAME,
+    component: () => import('@/views/BriefNoAccessView.vue'),
     meta: { requiresAuth: true },
   },
   {
