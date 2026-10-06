@@ -8,16 +8,32 @@ const { execSync } = require('child_process')
 // Stand working dir: local D1 copy, screenshots, run state. Never committed.
 const SP = process.env.STAND_DIR || path.join(__dirname, '.stand')
 const WORKER = path.resolve(__dirname, '../../packages/worker')
+// STAND_TARGET=stage: the deployed stage itself (its site, its server, its base) as
+// the QA people of docs/qa/stage-full-run-plan.md — the cookie is signed with the
+// stage's own JWT_SECRET, kept outside git in docs/local/stage-qa/stage.env.
+const STAGE = process.env.STAND_TARGET === 'stage'
 // Same secret the stand worker gets from stand.env (see README) — never .dev.vars.
-const ENV_FILE = process.env.STAND_ENV || path.join(SP, 'stand.env')
+const ENV_FILE = process.env.STAND_ENV || (STAGE ? path.resolve(__dirname, '../../docs/local/stage-qa/stage.env') : path.join(SP, 'stand.env'))
 const SECRET = fs.readFileSync(ENV_FILE, 'utf8').match(/^JWT_SECRET=(.*)$/m)[1].trim()
-const O = 'https://brand-constructor.pages.dev'
-const USERS = {
-  po: { sub: 'usr_f8e2a1b3c4d54e01', email: 'ritasiropulo@gmail.com', name: 'PO', role: 'product_owner' },
-  po2: { sub: 'usr_ad7987044775410c', email: 'viktor.hirenko@gmail.com', name: 'PO2', role: 'product_owner' },
-  strategy: { sub: 'usr_edade59813104803', email: 'v.paitian@upstars.com', name: 'Valentyn Paitian', role: 'strategy_identity' },
-  ceo: { sub: 'usr_179922a1565e4c22', email: 'viktor.hirenko.dev@gmail.com', name: 'CEO', role: 'cpo_ceo' },
-}
+const O = STAGE ? 'https://brand-constructor-stage.pages.dev' : 'https://brand-constructor.pages.dev'
+// STAND_QA=1: the QA people on the local stand too (phase 4 of the full-run plan).
+const USERS = STAGE || process.env.STAND_QA === '1'
+  ? {
+      po: { sub: 'usr_qa_po', email: 'qa.po@example.test', name: 'QA Product Owner', role: 'product_owner' },
+      po2: { sub: 'usr_qa_po2', email: 'qa.po2@example.test', name: 'QA Product Owner 2', role: 'product_owner' },
+      ceo: { sub: 'usr_qa_ceo', email: 'qa.ceo@example.test', name: 'QA CEO', role: 'cpo_ceo' },
+      strategy: { sub: 'usr_qa_strategy', email: 'qa.strategy@example.test', name: 'QA Strategy', role: 'strategy_identity' },
+      admin: { sub: 'usr_qa_admin', email: 'qa.admin@example.test', name: 'QA Admin', role: 'admin' },
+      head: { sub: 'usr_qa_head', email: 'qa.head@example.test', name: 'QA Head DHC', role: 'head_dhc' },
+      pr: { sub: 'usr_qa_pr', email: 'qa.pr@example.test', name: 'QA PR', role: 'pr_marketing' },
+      design: { sub: 'usr_qa_design', email: 'qa.design@example.test', name: 'QA Designer', role: 'product_designer' },
+    }
+  : {
+      po: { sub: 'usr_f8e2a1b3c4d54e01', email: 'ritasiropulo@gmail.com', name: 'PO', role: 'product_owner' },
+      po2: { sub: 'usr_ad7987044775410c', email: 'viktor.hirenko@gmail.com', name: 'PO2', role: 'product_owner' },
+      strategy: { sub: 'usr_edade59813104803', email: 'v.paitian@upstars.com', name: 'Valentyn Paitian', role: 'strategy_identity' },
+      ceo: { sub: 'usr_179922a1565e4c22', email: 'viktor.hirenko.dev@gmail.com', name: 'CEO', role: 'cpo_ceo' },
+    }
 
 function token(u, expired = false) {
   const b64 = s => Buffer.from(s).toString('base64url')
@@ -44,7 +60,35 @@ async function serveFront(route) {
   await route.fulfill({ status: 200, contentType: MIME[path.extname(file)] || 'application/octet-stream', body: fs.readFileSync(file) })
 }
 
+// What the stage answered: every write, and every answer >= 400 — the run's bug evidence.
+const net = []
+async function stageSession(browser, who, opts = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts })
+  await ctx.addCookies([{ name: 'auth_token', value: token(USERS[who]), domain: new URL(O).hostname, path: '/', httpOnly: true, secure: true, sameSite: 'Lax' }])
+  await ctx.route(`${O}/api/**`, async route => {
+    if (state.offline) return route.abort('internetdisconnected')
+    return route.continue()
+  })
+  const page = await ctx.newPage()
+  page.on('pageerror', e => { net.push({ who, kind: 'pageerror', text: String(e).slice(0, 300) }); console.log(`[${who} pageerror]`, String(e).slice(0, 200)) })
+  page.on('response', async res => {
+    const u = new URL(res.url())
+    if (!u.pathname.startsWith('/api/')) return
+    const m = res.request().method()
+    if (m !== 'GET' || res.status() >= 400) {
+      let body = ''
+      try { body = (await res.text()).slice(0, 200) } catch {}
+      const ct = res.request().headers()['content-type'] || ''
+      const r = { who, m, p: u.pathname, status: res.status(), req: ct.includes('multipart') ? '[file]' : (res.request().postData() || '').slice(0, 300), res: body }
+      state.writes.push(r)
+      if (res.status() >= 400) net.push({ kind: 'http', ...r })
+    }
+  })
+  return { ctx, page, who }
+}
+
 async function session(browser, who, opts = {}) {
+  if (STAGE) return stageSession(browser, who, opts)
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts })
   const tk = token(USERS[who])
   const deadTk = token(USERS[who], true)
@@ -100,7 +144,8 @@ async function shot(page, name) {
 }
 
 function sql(q) {
-  const out = execSync(`cd ${WORKER} && npx wrangler d1 execute brand-constructor-db --env production --local --persist-to ${SP}/d1 --json --command ${JSON.stringify(q)}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+  const where = STAGE ? 'brand-constructor-db-stage --env stage --remote' : `brand-constructor-db --env production --local --persist-to ${SP}/d1`
+  const out = execSync(`cd ${WORKER} && npx wrangler d1 execute ${where} --json --command ${JSON.stringify(q)}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
   return JSON.parse(out)[0].results
 }
 
@@ -115,7 +160,7 @@ function brand(id) {
 
 async function launch() { return chromium.launch() }
 
-module.exports = { O, SP, USERS, state, session, wiz, wait, clickText, buttons, text, shot, sql, brand, launch }
+module.exports = { O, SP, USERS, STAGE, net, state, session, wiz, wait, clickText, buttons, text, shot, sql, brand, launch }
 
 async function form(frame) {
   return frame.evaluate(() => [...document.querySelectorAll('input, textarea, select, [role=combobox], [role=switch], [role=checkbox], [role=radio]')].filter(e => e.offsetParent || e.type === 'checkbox' || e.type === 'radio').map(e => `${e.tagName.toLowerCase()}[${e.type || e.getAttribute('role') || ''}] name=${e.name || ''} ph=${e.placeholder || ''} aria=${e.getAttribute('aria-label') || ''} val=${(e.value || '').slice(0, 40)} checked=${e.checked ?? e.getAttribute('aria-checked')}`))

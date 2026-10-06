@@ -1,0 +1,5 @@
+const L = require('../lib')
+;(async () => { const b = await L.launch(); const { page, ctx } = await L.session(b, 'po')
+  await page.goto(`${L.O}/workspace/brand/${process.argv[2]}?step=3`, { waitUntil: 'networkidle' }); await L.wait(page, 3500)
+  console.log(await L.wiz(page).evaluate(() => [...document.querySelectorAll('button, [role=checkbox], [role=option], label')].filter(e => /QA Ext/.test(e.innerText) && e.innerText.length < 60).map(e => `${e.tagName} role=${e.getAttribute('role')} aria-pressed=${e.getAttribute('aria-pressed')} aria-checked=${e.getAttribute('aria-checked')} aria-selected=${e.getAttribute('aria-selected')} cls=${e.className.toString().slice(0, 140)} :: ${e.innerText.trim()}`).join('\n')))
+  await ctx.close(); await b.close() })()

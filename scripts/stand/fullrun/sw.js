@@ -1,0 +1,5 @@
+const L = require('../lib')
+;(async () => { const b = await L.launch(); const { page, ctx } = await L.session(b, 'po')
+  await page.goto(`${L.O}/workspace/brand/${process.argv[2]}?step=6`, { waitUntil: 'networkidle' }); await L.wait(page, 3500)
+  console.log(await L.wiz(page).evaluate(() => [...document.querySelectorAll('button[aria-label$="Landing"]')].map(e => `${e.getAttribute('aria-label')} aria-checked=${e.getAttribute('aria-checked')} role=${e.getAttribute('role')} cls=${e.className.slice(0, 120)}`).join('\n')))
+  await ctx.close(); await b.close() })()
