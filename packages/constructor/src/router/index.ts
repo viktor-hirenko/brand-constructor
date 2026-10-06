@@ -12,6 +12,7 @@ import type { Brand } from '@brand-constructor/shared/types'
 import { resolveColdStartNavigation } from '@/router/coldStartNavigation'
 import { editFlowLeaveAction } from '@/router/editFlowLeave'
 import { BRIEF_NO_ACCESS_ROUTE_NAME, briefLoadFailureRedirect } from '@/router/briefLoadFailure'
+import { draftLinkStepRedirect } from '@/router/draftLinkStep'
 import { isEmbedded } from '@/composables/useEmbedMode'
 import { postAuthRequired } from '@/composables/useEmbedBridge'
 import { applyBrandToStore, buildStepDataFromBrand, clampWizardStep, wizardStepLocation } from '@/utils/brandHydration'
@@ -200,7 +201,7 @@ const routes: RouteRecordRaw[] = [
         beforeEnter: draftEditGuard,
       },
     ],
-    beforeEnter: async to => {
+    beforeEnter: async (to, from) => {
       const brandId = to.params.id as string
       const store = useConstructorStore()
 
@@ -228,7 +229,7 @@ const routes: RouteRecordRaw[] = [
         store.restorePreviewSlidesFromStorage(brandId)
         store.restoreWizardDraftCopy(brandId, brand.updatedAt)
 
-        return true
+        return draftLinkStepRedirect(to.name, from.name, brand) ?? true
       } catch (err) {
         return briefLoadFailureRedirect(err)
       }

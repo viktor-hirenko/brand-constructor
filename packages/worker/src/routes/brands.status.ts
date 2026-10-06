@@ -33,6 +33,8 @@ import {
   appendWorkflowSnapshot,
   recordStatusWorkflowEvents,
 } from '../utils/brand-workflow'
+import { freeOfOtherBrands, pickedIds, takenByAnotherBrand } from '../utils/selection-taken'
+import { BRIEF_CHANGED_MESSAGE } from './brands.crud'
 
 const status = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -339,6 +341,12 @@ status.patch('/:id/status', async c => {
     const finalIntId =
       firstId(effectiveCeoSel.internalNaming) || existing.internal_naming_id || null
 
+    // H-09 (full run 06.10, bug 4): a concept or name another brand already
+    // owns is not taken over — the CEO gets the reason, nothing is written.
+    const picked = pickedIds({ conceptId: finalConceptId, externalIds: finalExtIds, internalId: finalIntId })
+    const taken = await takenByAnotherBrand(c.env.DB, id, picked)
+    if (taken) return c.json({ success: false, error: taken }, 409)
+
     // Append CEO override columns to the brand UPDATE (shared columns were
     // already collected above: status, updated_at, optional ceo_comments,
     // optional ceo_selections).
@@ -354,17 +362,25 @@ status.patch('/:id/status', async c => {
       updates.push('internal_naming_id = ?')
       values.push(finalIntId)
     }
-    values.push(id)
+    values.push(id, currentStatus)
+
+    // The brief flips only if none of its picks was taken in between by another
+    // approval, and the library marks run only if THIS request flipped it — two
+    // approvals in the same second cannot both take the same concept.
+    const free = freeOfOtherBrands(id, picked)
+    const wonThisRequest = `EXISTS (SELECT 1 FROM brands WHERE id = ? AND status = 'approved' AND approved_at = ?)`
 
     const batchStatements: ReturnType<typeof c.env.DB.prepare>[] = [
-      c.env.DB.prepare(`UPDATE brands SET ${updates.join(', ')} WHERE id = ?`).bind(...values),
+      c.env.DB.prepare(
+        `UPDATE brands SET ${updates.join(', ')} WHERE id = ? AND status = ?${free.sql}`
+      ).bind(...values, ...free.binds),
     ]
 
     if (finalConceptId) {
       batchStatements.push(
         c.env.DB.prepare(
-          "UPDATE concepts SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-        ).bind(id, finalConceptId)
+          `UPDATE concepts SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ? AND ${wonThisRequest}`
+        ).bind(id, finalConceptId, id, now)
       )
     }
 
@@ -372,8 +388,8 @@ status.patch('/:id/status', async c => {
       if (extId) {
         batchStatements.push(
           c.env.DB.prepare(
-            "UPDATE external_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-          ).bind(id, extId)
+            `UPDATE external_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ? AND ${wonThisRequest}`
+          ).bind(id, extId, id, now)
         )
       }
     }
@@ -381,13 +397,14 @@ status.patch('/:id/status', async c => {
     if (finalIntId) {
       batchStatements.push(
         c.env.DB.prepare(
-          "UPDATE internal_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ?"
-        ).bind(id, finalIntId)
+          `UPDATE internal_namings SET used_in_brand_id = ?, status = 'used', updated_at = datetime('now') WHERE id = ? AND ${wonThisRequest}`
+        ).bind(id, finalIntId, id, now)
       )
     }
 
+    let batchResults: D1Result[]
     try {
-      await c.env.DB.batch(batchStatements)
+      batchResults = await c.env.DB.batch(batchStatements)
     } catch (err) {
       console.error('Approve atomic batch failed:', err)
       return c.json(
@@ -398,6 +415,10 @@ status.patch('/:id/status', async c => {
         },
         500
       )
+    }
+    if (batchResults[0]?.meta.changes !== 1) {
+      const lost = await takenByAnotherBrand(c.env.DB, id, picked)
+      return c.json({ success: false, error: lost ?? BRIEF_CHANGED_MESSAGE }, 409)
     }
 
     try {
