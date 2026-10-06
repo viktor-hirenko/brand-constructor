@@ -3,14 +3,12 @@ import type { Env, Variables } from '../types'
 import { createBrandSchema, updateBrandSchema } from '../schemas/brand'
 import { generateId } from '../utils/id'
 import { nextNewBrandName } from '../utils/brand-number'
-import {
-  BRAND_APPROVAL_ROLES,
-  BRAND_BRIEF_STATUS,
-  isBrandBriefCreatorRole,
-} from '@brand-constructor/shared'
+import { BRAND_BRIEF_STATUS, isBrandBriefCreatorRole } from '@brand-constructor/shared'
 import type { BrandStatus } from '@brand-constructor/shared/types'
 import {
   applyFieldTransform,
+  brandForRole,
+  isBrandApprovalRole,
   rowToBrand,
   rowToBrandListItem,
   UPDATABLE_FIELDS,
@@ -31,8 +29,13 @@ export const BRIEF_CHANGED_MESSAGE = 'Бриф змінено — оновіть
 // they can manage briefs in the admin panel without gaining approve/send-back
 // powers. Revert this single line when brand RBAC is finalised — see PRD v2 §2.
 function canListAllBrands(role: string): boolean {
-  return (BRAND_APPROVAL_ROLES as readonly string[]).includes(role) || role === 'admin'
+  return isBrandApprovalRole(role) || role === 'admin'
 }
+
+// The CEO works with a sent brief (PRD v2 «Етап 2»): an author's draft is not
+// listed, counted or opened for the approval roles (H-37). Nor can the CEO
+// author one — POST is Product Owner only — so no own draft is lost here.
+const NOT_DRAFT = `status != '${BRAND_BRIEF_STATUS.DRAFT}'`
 
 const BRAND_LIST_FROM = `
   FROM brands b
@@ -61,12 +64,13 @@ crud.get('/', async c => {
 
   const canSeeAll = canListAllBrands(user.role)
   const isCreator = isBrandBriefCreatorRole(user.role)
+  const isApprover = isBrandApprovalRole(user.role)
 
   let query: string
   const params: (string | number)[] = []
 
   if (canSeeAll) {
-    query = `${BRAND_LIST_SELECT} WHERE 1=1`
+    query = `${BRAND_LIST_SELECT} WHERE ${isApprover ? `b.${NOT_DRAFT}` : '1=1'}`
   } else if (isCreator) {
     query = `${BRAND_LIST_SELECT} WHERE b.created_by = ?`
     params.push(user.id)
@@ -90,7 +94,7 @@ crud.get('/', async c => {
   const countParams: (string | number)[] = []
 
   if (canSeeAll) {
-    countQuery = 'SELECT COUNT(*) as count FROM brands WHERE 1=1'
+    countQuery = `SELECT COUNT(*) as count FROM brands WHERE ${isApprover ? NOT_DRAFT : '1=1'}`
   } else if (isCreator) {
     countQuery = 'SELECT COUNT(*) as count FROM brands WHERE created_by = ?'
     countParams.push(user.id)
@@ -109,7 +113,7 @@ crud.get('/', async c => {
 
   return c.json({
     success: true,
-    data: result.results.map(rowToBrandListItem),
+    data: result.results.map(row => brandForRole(rowToBrandListItem(row), user.role)),
     total: countResult?.count || 0,
     page,
     perPage,
@@ -125,8 +129,13 @@ crud.get('/:id', async c => {
   let row: BrandRow | null
 
   if (canSeeAll) {
-    // cpo_ceo (per PRD v2) + admin (temporary, see canListAllBrands FIXME)
-    row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(id).first<BrandRow>()
+    // cpo_ceo (per PRD v2) + admin (temporary, see canListAllBrands FIXME).
+    // An author's draft is «not found» for the CEO, as any brief a role may
+    // not read — the wizard handles that answer already (H-37).
+    const scope = isBrandApprovalRole(user.role) ? ` AND ${NOT_DRAFT}` : ''
+    row = await c.env.DB.prepare(`SELECT * FROM brands WHERE id = ?${scope}`)
+      .bind(id)
+      .first<BrandRow>()
   } else if (isCreator) {
     // product_owner sees only their own brands (any status)
     row = await c.env.DB.prepare('SELECT * FROM brands WHERE id = ? AND created_by = ?')
@@ -144,7 +153,7 @@ crud.get('/:id', async c => {
     return c.json({ success: false, error: 'Brand not found' }, 404)
   }
 
-  return c.json({ success: true, data: rowToBrand(row) })
+  return c.json({ success: true, data: brandForRole(rowToBrand(row), user.role) })
 })
 
 crud.post('/', async c => {

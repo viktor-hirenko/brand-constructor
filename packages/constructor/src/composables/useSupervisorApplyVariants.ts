@@ -1,4 +1,5 @@
 import { computed, ref, type ComputedRef } from 'vue'
+import { isOwnVariantKept } from '@/utils/revisionKeptOwn'
 import type { Router } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import {
@@ -122,7 +123,10 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
     const ceoConcept = ceoSelectionAsString(store.brandCeoSelections?.concept)
     if (!ceoConcept) return false
     if (store.stepData.concept.selectedId === ceoConcept) return true
-    return store.authorRevisionDraft.resolvedConflictSections.includes('concept')
+    return (
+      store.authorRevisionDraft.resolvedConflictSections.includes('concept') ||
+      isOwnVariantKept(store.stepData, 'concept', store.brandCeoSelections)
+    )
   })
 
   const isCeoExternalApplied = computed(() => {
@@ -133,7 +137,10 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
     const poExt = store.stepData.externalNaming.selectedIds
     if (poExt.length === ceoExt.length && ceoExt.every(id => poExt.includes(id))) return true
     // Author resolved via edit-flow with a third-option pick
-    return store.authorRevisionDraft.resolvedConflictSections.includes('externalNaming')
+    return (
+      store.authorRevisionDraft.resolvedConflictSections.includes('externalNaming') ||
+      isOwnVariantKept(store.stepData, 'externalNaming', store.brandCeoSelections)
+    )
   })
 
   const isCeoInternalApplied = computed(() => {
@@ -141,7 +148,10 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
     const ceoInt = ceoSelectionAsString(store.brandCeoSelections?.internalNaming)
     if (!ceoInt) return false
     if (store.stepData.internalNaming.selectedId === ceoInt) return true
-    return store.authorRevisionDraft.resolvedConflictSections.includes('internalNaming')
+    return (
+      store.authorRevisionDraft.resolvedConflictSections.includes('internalNaming') ||
+      isOwnVariantKept(store.stepData, 'internalNaming', store.brandCeoSelections)
+    )
   })
 
   /**

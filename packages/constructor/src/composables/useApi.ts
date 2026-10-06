@@ -181,3 +181,8 @@ export async function apiGet<T>(url: string): Promise<T> {
   const result = await request<ApiResponse<T>>(url);
   return result.data;
 }
+
+/** A list endpoint's page together with its `total` — for callers that page through it. */
+export async function apiGetList<T>(url: string): Promise<ApiListResponse<T>> {
+  return request<ApiListResponse<T>>(url);
+}

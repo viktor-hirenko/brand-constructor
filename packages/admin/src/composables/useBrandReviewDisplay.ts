@@ -54,6 +54,20 @@ interface WaitingSinceResult {
   isApprox: boolean
 }
 
+/**
+ * Status tabs of the Brands list. The CEO never gets «Drafts» — those briefs
+ * are not hers yet (the server does not list drafts to her, H-37).
+ */
+export function brandStatusTabs(opts: { isCeo: boolean }): { key: string; label: string }[] {
+  return [
+    { key: 'all', label: 'All' },
+    ...(opts.isCeo ? [] : [{ key: BRAND_BRIEF_STATUS.DRAFT, label: 'Drafts' }]),
+    { key: 'submitted', label: 'Submitted' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'needs_revision', label: 'Needs Revision' },
+  ]
+}
+
 export function getWaitingSince(brand: BrandListItem): WaitingSinceResult {
   switch (brand.status) {
     case BRAND_BRIEF_STATUS.DRAFT:

@@ -49,6 +49,14 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
    */
   const cascadeSnapshots = ref<Record<string, unknown>>({})
 
+  /**
+   * The brief's theme when a concept edit began. The theme switch sits on the
+   * concept screen but lives outside the concept slice (`stepData.mode`), so
+   * the slice snapshot alone let «Скасувати» leave the new theme in the brief
+   * (A-39 / BD-15 of `edit-flow-scenarios.md`).
+   */
+  const editingModeSnapshot = ref<BrandStepData['mode'] | undefined>(undefined)
+
   /** Maps a Review section key to the matching slice of stepData. */
   function getSectionStateByKey(key: string): unknown {
     switch (key) {
@@ -108,6 +116,7 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
     editingSection.value = key
     editingSectionSnapshot.value =
       snapshot == null ? null : JSON.parse(JSON.stringify(snapshot))
+    editingModeSnapshot.value = key === 'concept' ? stepData.value.mode : undefined
     returnToStep.value = fromStep
   }
 
@@ -127,6 +136,7 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
   function commitEditSection() {
     editingSection.value = null
     editingSectionSnapshot.value = null
+    editingModeSnapshot.value = undefined
     cascadeSnapshots.value = {}
     returnToStep.value = null
   }
@@ -137,6 +147,10 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
     if (key) {
       restoreSectionStateByKey(key, editingSectionSnapshot.value)
     }
+    if (key === 'concept' && editingModeSnapshot.value !== undefined) {
+      stepData.value.mode = editingModeSnapshot.value
+    }
+    editingModeSnapshot.value = undefined
     for (const [cascadeKey, cascadeValue] of Object.entries(cascadeSnapshots.value)) {
       restoreSectionStateByKey(cascadeKey, cascadeValue)
     }
@@ -149,6 +163,7 @@ export function useInlineSectionEdit(opts: UseInlineSectionEditOptions) {
   function resetSlice() {
     editingSection.value = null
     editingSectionSnapshot.value = null
+    editingModeSnapshot.value = undefined
     cascadeSnapshots.value = {}
   }
 

@@ -1,5 +1,22 @@
 <script setup lang="ts">
 import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
+
+/**
+ * A brief the person cannot work with here. Its defaults are the CEO's
+ * «Бриф ще в роботі»; `BriefNoAccessView` passes its own words and a way out
+ * through the default slot, so both stubs look the same (H-52, U-13).
+ */
+withDefaults(
+  defineProps<{
+    title?: string
+    description?: string
+  }>(),
+  {
+    title: 'Бриф ще в роботі',
+    description:
+      'CEO-ревʼю буде доступне після того, як Product Owner обере готовий концепт і відправить бриф на погодження.',
+  }
+)
 </script>
 
 <template>
@@ -13,11 +30,13 @@ import InfoCircleFilledIcon from '@/components/icons/InfoCircleFilledIcon.vue'
           <InfoCircleFilledIcon class="size-8 text-orange-600" />
         </div>
 
-        <h1 class="text-2xl font-medium text-foreground mb-2">Бриф ще в роботі</h1>
-        <p class="text-muted-foreground">
-          CEO-ревʼю буде доступне після того, як Product Owner обере готовий концепт і відправить
-          бриф на погодження.
-        </p>
+        <h1 class="text-2xl font-medium text-foreground mb-2">{{ title }}</h1>
+        <p class="text-muted-foreground">{{ description }}</p>
+
+        <!-- 32 from the text to the buttons, as on BrandSuccessView. -->
+        <div v-if="$slots.default" class="mt-8 flex flex-col gap-3">
+          <slot />
+        </div>
       </div>
     </div>
   </div>

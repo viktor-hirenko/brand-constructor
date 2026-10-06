@@ -29,6 +29,14 @@ const props = defineProps<{
 
 const model = defineModel<string>({ required: true })
 
+/**
+ * `blur` — the person is done with the field: the calendar closed (a day
+ * picked, the trigger pressed again, a click outside), or focus left the
+ * trigger while the calendar was shut (Tab past it). Step 1 shows «Вкажіть
+ * дату запуску» on it when no day was picked (H-38).
+ */
+const emit = defineEmits<{ blur: [] }>()
+
 const isOpen = ref(false)
 const containerRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLButtonElement | null>(null)
@@ -77,8 +85,14 @@ watch(isOpen, open => {
     })
   } else {
     document.removeEventListener('mousedown', handleDocumentPointerDown)
+    emit('blur')
   }
 })
+
+/** While the calendar is open the trigger loses focus to its days — that is not leaving. */
+function handleTriggerBlur() {
+  if (!isOpen.value) emit('blur')
+}
 
 function popoverElement(): HTMLElement | null {
   const value = popoverRef.value
@@ -239,6 +253,7 @@ async function toggle() {
       type="button"
       :class="[triggerClass, 'justify-between text-left']"
       @click="toggle"
+      @blur="handleTriggerBlur"
     >
       <span
         class="min-w-0 flex-1 truncate text-base"

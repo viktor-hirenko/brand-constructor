@@ -112,11 +112,13 @@ function goCancel() {
 }
 
 async function goSave() {
+  // Mark internalNaming as explicitly resolved — covers the «third-option» case
+  // where PO picks neither their original nor the Supervisor's suggestion. The
+  // mark is in the brief before the save, so it is saved with it (D-33).
+  store.markConflictSectionResolved('internalNaming')
   const saved = await store.saveBrand()
+  if (!saved) store.unmarkConflictSections(['internalNaming'])
   if (saved) {
-    // Mark internalNaming as explicitly resolved — covers the «third-option» case
-    // where PO picks neither their original nor the Supervisor's suggestion.
-    store.markConflictSectionResolved('internalNaming')
     store.commitEditSection()
     router.push(`/constructor/brand/${brandId.value}`)
   }

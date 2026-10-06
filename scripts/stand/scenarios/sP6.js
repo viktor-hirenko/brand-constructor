@@ -1,4 +1,5 @@
-// Portion 6 of docs/architecture/wizard-fixes-plan.md — the rest of the run of 02.10.
+// Portion 6 of docs/architecture/wizard-fixes-plan.md — the rest of the run of 02.10,
+// on main without the orders feature (no H-24: there is no brief «В роботі»).
 // node scenarios/sP6.js [C-29 …]   (no args = all). Run with STAND_FRONT for a local build.
 const fs = require('fs')
 const L = require('../lib'); const F = require('../flow')
@@ -9,17 +10,6 @@ function verdict(id, ok, note) { const r = { id, verdict: ok ? 'pass' : 'fail', 
 const has = async (page, re) => re.test(await L.text(L.wiz(page)))
 const btn = async (page, re) => (await L.buttons(L.wiz(page))).filter(x => re.test(x)).join(', ') || 'нет'
 const NO_ACCESS = /Немає доступу до цього брифу/
-
-/** A brief «В роботі»: a concept on order → «Відправити в роботу». */
-async function inWorkBrief(b) {
-  const { page, ctx } = await L.session(b, 'po')
-  const { id } = await F.newBrief(page)
-  await F.step1(page); await F.orderConcept(page); await F.next(page)
-  await F.step4(page, 'Luna'); await F.step5(page, 'Trust Focus'); await F.next(page); await F.step7delegate(page)
-  await L.clickText(L.wiz(page), 'Відправити в роботу'); await L.wait(page, 3000)
-  await ctx.close()
-  return id
-}
 
 /** CEO «Змінити вибір» Internal Naming → another name → «Зберегти». */
 async function ceoPicksInternal(page) {
@@ -33,7 +23,6 @@ async function ceoPicksInternal(page) {
   return pick
 }
 
-let inWorkId = null
 let draftId = null
 
 const CHECKS = {
@@ -69,17 +58,6 @@ const CHECKS = {
     const db = L.brand(id).mode
     verdict('A-39', /Mode \| Light/.test(concept) && /Mode \| Light/.test(afterF5) && db === 'light',
       `Final review → «Редагувати» Concept → «Темна тема» → «Скасувати»: ${concept}; после F5: ${afterF5}; в базе mode=${db}`)
-    await ctx.close()
-  },
-  // H-24: a brief «В роботі» — the other theme cannot be pressed.
-  'H-24': async b => {
-    inWorkId = await inWorkBrief(b)
-    const { page, ctx } = await L.session(b, 'po'); await F.open(page, inWorkId)
-    await F.editSection(page, 'Concept')
-    const themes = await btn(page, /тема/)
-    await L.shot(page, 'P6-H-24-theme-locked')
-    verdict('H-24', L.brand(inWorkId).status === 'in_work' && /Темна тема \[off\]/.test(themes) && /Світла тема(?! \[off\])/.test(themes),
-      `бриф ${L.brand(inWorkId).status} → «Редагувати» Concept → переключатель: ${themes}`)
     await ctx.close()
   },
   // H-04 / H-30: the CEO's comments are on the server while typing; two tabs keep both.
@@ -154,17 +132,15 @@ const CHECKS = {
   // H-41 / H-52 / H-37: a link to a brief the person may not open.
   'H-41': async b => {
     const id = draftId || (L.sql(`select id from brands where created_by='${L.USERS.po.sub}' and status='draft' limit 1`)[0] || {}).id
-    const inWork = inWorkId || (L.sql(`select id from brands where status='in_work' limit 1`)[0] || {}).id
+    const submitted = await F.submitted(b)
     const po2 = await L.session(b, 'po2'); await F.open(po2.page, id)
     const po2Sees = await has(po2.page, NO_ACCESS); const po2Landing = await has(po2.page, /Order New Brand/); await L.shot(po2.page, 'P6-H-41-po2'); await po2.ctx.close()
-    const st = await L.session(b, 'strategy'); await F.open(st.page, inWork)
+    const st = await L.session(b, 'strategy'); await F.open(st.page, submitted)
     const stSees = await has(st.page, NO_ACCESS); const stButtons = await btn(st.page, /./); await L.shot(st.page, 'P6-H-52-strategy'); await st.ctx.close()
     const ceo = await L.session(b, 'ceo'); await F.open(ceo.page, id)
     const ceoSees = await has(ceo.page, NO_ACCESS); await ceo.ctx.close()
-    const ceoInWork = await L.session(b, 'ceo'); await F.open(ceoInWork.page, inWork)
-    const ceoGate = await has(ceoInWork.page, /Бриф ще в роботі/); await ceoInWork.ctx.close()
-    verdict('H-41', po2Sees && !po2Landing && stSees && ceoSees && ceoGate,
-      `второй PO по ссылке на чужой черновик — «Немає доступу»: ${po2Sees}, заставка «Order New Brand»: ${po2Landing}; Strategy по ссылке на бриф «В роботі» — «Немає доступу»: ${stSees} (кнопки: ${stButtons}); CEO по ссылке на черновик — «Немає доступу»: ${ceoSees}; CEO на бриф «В роботі» — прежняя заглушка «Бриф ще в роботі»: ${ceoGate}`)
+    verdict('H-41', po2Sees && !po2Landing && stSees && ceoSees,
+      `второй PO по ссылке на чужой черновик — «Немає доступу»: ${po2Sees}, заставка «Order New Brand»: ${po2Landing}; Strategy по ссылке на бриф «На розгляді» — «Немає доступу»: ${stSees} (кнопки: ${stButtons}); CEO по ссылке на черновик — «Немає доступу»: ${ceoSees}`)
   },
   // H-37: the CEO's Brands has no «Drafts» and lists no drafts.
   'H-37': async b => {

@@ -5,6 +5,7 @@ import type {
 } from '@brand-constructor/shared/types'
 import { useBrandData } from './useBrandData'
 import { useSupervisorReview } from './useSupervisorReview'
+import { forgetOwnVariant, keepOwnVariant } from '@/utils/revisionKeptOwn'
 import { useSupervisorAlternativeDraft } from './useSupervisorAlternativeDraft'
 import { useAuthorRevisionDraft } from './useAuthorRevisionDraft'
 import { usePreviews } from './usePreviews'
@@ -196,11 +197,30 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
     resetInlineSectionEditSlice()
   }
 
+  /**
+   * «Свій варіант»: the section is answered with the author's own choice. The
+   * mark goes into the brief's step data too, so the next save carries it to
+   * the server (D-33, E-27) — the browser list alone lasted 24 hours.
+   */
+  function markConflictSectionResolved(section: string) {
+    authorRevisionDraftPublic.markConflictSectionResolved(section)
+    keepOwnVariant(brandDataPublic.stepData.value, section, supervisorReviewPublic.brandCeoSelections.value)
+  }
+
+  /** A save that failed takes its marks back: the brief kept its old choice. */
+  function unmarkConflictSections(sections: string[]) {
+    const draft = authorRevisionDraftPublic.authorRevisionDraft.value
+    draft.resolvedConflictSections = draft.resolvedConflictSections.filter(s => !sections.includes(s))
+    forgetOwnVariant(brandDataPublic.stepData.value, sections)
+  }
+
   return {
     ...brandDataPublic,
     ...supervisorReviewPublic,
     ...supervisorAlternativePublic,
     ...authorRevisionDraftPublic,
+    markConflictSectionResolved,
+    unmarkConflictSections,
     ...previewsPublic,
     ...inlineSectionEditPublic,
     ...wizardDraftCopyPublic,

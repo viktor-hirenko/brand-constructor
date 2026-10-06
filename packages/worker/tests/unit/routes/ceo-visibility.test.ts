@@ -40,7 +40,6 @@ const CEO_COMMENTS = {
 function seedEveryStatus(app: BrandApp): void {
   insertBrand(app.db, { id: 'b_draft', status: 'draft' })
   insertBrand(app.db, { id: 'b_draft_po2', status: 'draft', created_by: 'usr_po2' })
-  insertBrand(app.db, { id: 'b_in_work', status: 'in_work' })
   insertBrand(app.db, { id: 'b_submitted', status: 'submitted' })
   insertBrand(app.db, { id: 'b_revision', status: 'needs_revision' })
   insertBrand(app.db, { id: 'b_approved', status: 'approved' })
@@ -70,11 +69,10 @@ d('H-37: the CEO does not see drafts', () => {
     const body = await list(app, 'ceo')
     expect(body.data.map(b => b.status).sort()).toEqual([
       'approved',
-      'in_work',
       'needs_revision',
       'submitted',
     ])
-    expect(body.total).toBe(4)
+    expect(body.total).toBe(3)
   })
 
   it('the «draft» filter answers empty, with a zero count', async () => {
@@ -91,12 +89,6 @@ d('H-37: the CEO does not see drafts', () => {
     const res = await getBrand(app, 'ceo', 'b_draft')
     expect(res.status).toBe(404)
     expect(res.body).toEqual({ success: false, error: 'Brand not found' })
-  })
-
-  it('a brief in work still opens for the CEO — the wizard shows «Бриф ще в роботі»', async () => {
-    const app = createBrandApp()
-    seedEveryStatus(app)
-    expect((await getBrand(app, 'ceo', 'b_in_work')).status).toBe(200)
   })
 
   it('the admin and the author keep their drafts', async () => {

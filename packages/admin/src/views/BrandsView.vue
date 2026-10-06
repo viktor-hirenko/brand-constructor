@@ -14,6 +14,7 @@ import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import {
   formatAuthorRole,
+  brandStatusTabs,
   getBrandReviewDisplay,
 } from '@/composables/useBrandReviewDisplay'
 import { useAuthStore } from '@/stores/auth'
@@ -92,13 +93,7 @@ function handleSort(field: string) {
 
 const activeTab = ref<string>('all')
 
-const STATUS_TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'draft', label: 'Drafts' },
-  { key: 'submitted', label: 'Submitted' },
-  { key: 'approved', label: 'Approved' },
-  { key: 'needs_revision', label: 'Needs Revision' },
-]
+const statusTabs = computed(() => brandStatusTabs({ isCeo: isCeoUser.value }))
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 'badge--gray' },
@@ -215,7 +210,7 @@ async function confirmDeleteBrand() {
 
     <div class="brands-view__tabs">
       <button
-        v-for="tab in STATUS_TABS"
+        v-for="tab in statusTabs"
         :key="tab.key"
         class="brands-view__tab"
         :class="{ 'brands-view__tab--active': activeTab === tab.key }"

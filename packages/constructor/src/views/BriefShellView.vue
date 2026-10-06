@@ -29,6 +29,7 @@ import {
 import {
   VISUAL_COMPONENT_PREVIEW_KEY,
 } from '@/composables/visualComponentPreviewContext'
+import { WIZARD_BLOCKED_NEXT_KEY } from '@/composables/wizardBlockedNextContext'
 import UiFooter from '@/components/ui/UiFooter.vue'
 import UiStepHeader from '@/components/ui/UiStepHeader.vue'
 import UiWizardHeader from '@/components/ui/UiWizardHeader.vue'
@@ -629,6 +630,20 @@ provide(VISUAL_COMPONENT_PREVIEW_KEY, {
   toggleSidebarPreview,
 })
 
+/**
+ * Presses on the greyed-out «Далі» — see `wizardBlockedNextContext`. A disabled
+ * button swallows its `click`, but its `pointerdown` still bubbles to the
+ * footer, so the footer counts the press for the step to show its hints (H-38).
+ */
+const blockedNextPresses = ref(0)
+provide(WIZARD_BLOCKED_NEXT_KEY, blockedNextPresses)
+
+function handleWizardFooterPointerDown(event: PointerEvent) {
+  if (store.isCurrentStepValid) return
+  const target = event.target
+  if (target instanceof Element && target.closest('button:disabled')) blockedNextPresses.value++
+}
+
 onUnmounted(dismissSidebarHiddenCallout)
 
 const prevSelections = ref<Record<string, string>>({})
@@ -761,6 +776,7 @@ watch(currentStep, step => {
             :primary-disabled="!store.isCurrentStepValid"
             @cancel="goBack"
             @primary="goNext"
+            @pointerdown="handleWizardFooterPointerDown"
           >
             <template #note>
               <p v-if="store.saveError" class="text-sm text-red-600">

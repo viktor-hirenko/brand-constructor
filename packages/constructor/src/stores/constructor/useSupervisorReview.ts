@@ -1,5 +1,6 @@
 import { ref, watch, type Ref } from 'vue'
 import { apiPatch } from '@/composables/useApi'
+import { BRAND_BRIEF_STATUS } from '@brand-constructor/shared'
 import {
   clearSupervisorCommentsDraft,
   clearSupervisorAlternativeDraft,
@@ -52,8 +53,10 @@ interface UseSupervisorReviewOptions {
  *    `applyCeoConceptAndExternal` (concept + external together, used by the
  *    "Застосувати все" modal)
  *  - mutation helpers `setCeoCommentValue` / `setCeoSelectionValue` that
- *    perform optimistic local edits — persistence happens later through the
- *    status-change handler (`PATCH /:id/status`)
+ *    perform optimistic local edits. A comment written while the brief is
+ *    «На розгляді» also goes to the server shortly after the CEO stops typing
+ *    (`PATCH /:id/ceo-comments`, one section per request — H-04, H-30); the
+ *    status change sends the whole map once more after `flushCeoCommentSaves`
  *  - `setCeoCommentResolved` + `isCeoCommentResolveLoading` — the per-section
  *    resolve toggle that hits `PATCH /:id/ceo-comments/resolve` with optimistic
  *    update + rollback on failure
@@ -95,6 +98,17 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
   const applyCeoVariantError = ref<string | null>(null)
 
   /**
+   * Comments typed while the brief is «На розгляді» and not on the server yet:
+   * waiting out the pause in typing, on their way, or refused (no network).
+   * Only these go to the browser copy — a saved comment has its home on the
+   * server, and a browser copy of it would later override a newer text written
+   * on another computer.
+   */
+  const unsavedCommentSections = ref<Set<string>>(new Set())
+  const commentSaveTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const commentSavesInFlight = new Set<Promise<void>>()
+
+  /**
    * Updates a single CEO comment section locally. Empty string removes the key.
    * Persistence happens later when CEO triggers approve/needs_revision via
    * PATCH /:id/status, which accepts the full `ceoComments` payload.
@@ -120,6 +134,82 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
       delete current[sectionKey]
     }
     brandCeoComments.value = Object.keys(current).length > 0 ? current : null
+    queueCeoCommentSave(sectionKey)
+  }
+
+  // ─── CEO comments on the server while the CEO types (H-04, H-30) ───────────
+
+  /** The pause in typing after which a comment goes to the server. */
+  const CEO_COMMENT_SAVE_DELAY_MS = 600
+
+  function markCommentUnsaved(section: string, unsaved: boolean) {
+    const next = new Set(unsavedCommentSections.value)
+    if (unsaved) next.add(section)
+    else next.delete(section)
+    unsavedCommentSections.value = next
+  }
+
+  function queueCeoCommentSave(section: string) {
+    const id = brandId.value
+    if (!id || brandStatus.value !== BRAND_BRIEF_STATUS.SUBMITTED) return
+    markCommentUnsaved(section, true)
+    clearTimeout(commentSaveTimers.get(section))
+    commentSaveTimers.set(
+      section,
+      setTimeout(() => void saveCeoComment(id, section), CEO_COMMENT_SAVE_DELAY_MS)
+    )
+  }
+
+  /**
+   * One section to the server. The answer carries every saved comment of the
+   * brief — also those another tab of the CEO wrote — and is taken over the
+   * local map, except for sections still unsaved here: the CEO may have typed
+   * on while the request was on its way.
+   */
+  function saveCeoComment(id: string, section: string): Promise<void> {
+    commentSaveTimers.delete(section)
+    const sent = brandCeoComments.value?.[section]?.value ?? ''
+    const run = (async () => {
+      try {
+        const data = await apiPatch<Brand>(`/api/brands/${id}/ceo-comments`, {
+          section,
+          value: sent,
+        })
+        if (brandId.value !== id) return
+        const local = brandCeoComments.value?.[section]?.value ?? ''
+        if (local === sent && !commentSaveTimers.has(section)) markCommentUnsaved(section, false)
+        const merged: BrandCeoComments = { ...(data.ceoComments ?? {}) }
+        for (const key of unsavedCommentSections.value) {
+          const mine = brandCeoComments.value?.[key]
+          if (mine) merged[key] = mine
+          else delete merged[key]
+        }
+        brandCeoComments.value = Object.keys(merged).length > 0 ? merged : null
+      } catch {
+        // Stays unsaved: the browser copy keeps it for F5, and the decision
+        // («Повернути» / «Затвердити») sends the whole map anyway.
+      }
+    })()
+    commentSavesInFlight.add(run)
+    void run.finally(() => commentSavesInFlight.delete(run))
+    return run
+  }
+
+  /** Sends what is still waiting out the pause and waits for every save on its way. */
+  async function flushCeoCommentSaves(): Promise<void> {
+    const id = brandId.value
+    for (const [section, timer] of [...commentSaveTimers]) {
+      clearTimeout(timer)
+      if (id) void saveCeoComment(id, section)
+    }
+    commentSaveTimers.clear()
+    await Promise.all([...commentSavesInFlight])
+  }
+
+  function dropPendingCommentSaves() {
+    for (const timer of commentSaveTimers.values()) clearTimeout(timer)
+    commentSaveTimers.clear()
+    unsavedCommentSections.value = new Set()
   }
 
   /**
@@ -362,14 +452,12 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
   // ─── F5 persistence of Supervisor comments ─────────────────────────────────
 
   /**
-   * Persists `brandCeoComments` to localStorage on every change (debounced).
-   *
-   * Why this exists: comments only reach the server on a status-change PATCH
-   * (Approve / Needs Revision). Between typing and pressing the button — and
-   * across page refreshes during that window — the only durable home for the
-   * comment text is the supervisor-comments envelope. The status-change
-   * handler in `BriefReviewView` purges this envelope after a successful
-   * PATCH via `purgeSupervisorCommentsCache`.
+   * Keeps the comments that are not on the server yet in localStorage
+   * (debounced): a refused save (no network) survives F5. Saved comments are
+   * not copied — the server holds them, and since 05.10 it holds them while
+   * the CEO types (H-04). The status-change handler in `BriefReviewView`
+   * purges this envelope after a successful PATCH via
+   * `purgeSupervisorCommentsCache`.
    *
    * The `isRestoringComments` guard prevents the watcher from echoing the
    * just-restored overlay back to storage (which would reset `savedAt` and
@@ -380,15 +468,19 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
   const persistSupervisorComments = debounce(() => {
     if (isRestoringComments.value) return
     if (!brandId.value) return
-    const map = brandCeoComments.value
-    if (map && Object.keys(map).length > 0) {
+    const map: BrandCeoComments = {}
+    for (const key of unsavedCommentSections.value) {
+      const meta = brandCeoComments.value?.[key]
+      if (meta) map[key] = meta
+    }
+    if (Object.keys(map).length > 0) {
       writeSupervisorCommentsDraft(brandId.value, map, brandStatus.value)
     } else {
       clearSupervisorCommentsDraft(brandId.value)
     }
   }, 400)
 
-  watch(brandCeoComments, persistSupervisorComments, { deep: true })
+  watch([brandCeoComments, unsavedCommentSections], persistSupervisorComments, { deep: true })
 
   /**
    * Overlays cached Supervisor comments over the freshly loaded server state.
@@ -408,12 +500,16 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
       clearSupervisorCommentsDraft(briefId)
       return
     }
-    const overlay = envelope.draft.commentsOverlay
+    // The copy holds only what had not reached the server: it goes over the
+    // server's comments, section by section, and is sent again.
+    const overlay = envelope.draft.commentsOverlay ?? {}
+    const merged: BrandCeoComments = { ...(brandCeoComments.value ?? {}), ...overlay }
     isRestoringComments.value = true
-    brandCeoComments.value = overlay && Object.keys(overlay).length > 0 ? overlay : null
+    brandCeoComments.value = Object.keys(merged).length > 0 ? merged : null
     queueMicrotask(() => {
       isRestoringComments.value = false
     })
+    for (const section of Object.keys(overlay)) queueCeoCommentSave(section)
   }
 
   /** Drop the cached envelope — called after PATCH /status succeeds. */
@@ -434,6 +530,7 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
     saveCeoCommentResolvedLoading.value = new Set()
     isApplyingCeoVariant.value = false
     applyCeoVariantError.value = null
+    dropPendingCommentSaves()
     // Guard the watcher: server hydration must NOT overwrite a still-valid
     // supervisor-comments envelope before the router has a chance to call
     // `restoreSupervisorCommentsFromStorage`.
@@ -446,6 +543,7 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
   }
 
   function resetSlice() {
+    dropPendingCommentSaves()
     isRestoringComments.value = true
     brandCeoComments.value = null
     brandCeoSelections.value = null
@@ -478,6 +576,7 @@ export function useSupervisorReview(opts: UseSupervisorReviewOptions) {
     // F5 persistence of Supervisor comments
     restoreSupervisorCommentsFromStorage,
     purgeSupervisorCommentsCache,
+    flushCeoCommentSaves,
     // Facade-internal
     loadCeo,
     resetSlice,
