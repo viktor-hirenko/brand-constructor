@@ -41,3 +41,27 @@ export const CONCEPT_CARD_DIM_OVERLAY_COLOR = 'rgba(0,0,0,0.45)'
  */
 export const CONCEPT_CARD_TITLE_GRADIENT =
   'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 95%)'
+
+/*
+ * ── The concept card on the final brief: one size, one or two cards ─────────
+ *
+ * Every final-brief screen of the refactor canvas `5382:36911` — the author's
+ * draft `5387:91764`, the CEO's `5387:78989` / `5387:83810` / `5387:103629`,
+ * the returned brief `5387:105225` / `5395:107395` — draws the Concept row the
+ * same way: a two-column grid, gap 8, one card per column, the second column
+ * simply empty when there is one card (`4131:8345`, `Concept 2` hidden). At
+ * 1440 that is 243.5 × 243.5 for one card and for two.
+ *
+ * The canvas draws this screen at 1440 only. Wider than that the row grew and
+ * so did a single card (338 on a 1728 window, 387 at 1920), while two cards
+ * stopped at 249 under a 506 cap left over from the July canvas. Same block,
+ * two sizes. Owner 06.10: «по смыслу одно и то же, а отображается по-разному».
+ *
+ * One rule now, for both: half the row, never larger than the 1440 card.
+ *   row   ≤ 2 × 243.5 + 8 = 495 → 30.9375rem  (the twin grid)
+ *   card  ≤ 243.5               → 15.21875rem (a card on its own)
+ * Below 1440 the row is narrower than 495 and both shrink exactly as before.
+ * Literal strings so Tailwind sees them.
+ */
+export const REVIEW_CONCEPT_ROW_MAX_CLASS = 'max-w-[30.9375rem]'
+export const REVIEW_CONCEPT_CARD_WIDTH_CLASS = 'w-[calc((100%-0.5rem)/2)] max-w-[15.21875rem]'

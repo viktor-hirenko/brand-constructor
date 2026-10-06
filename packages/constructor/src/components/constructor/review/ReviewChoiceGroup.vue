@@ -11,6 +11,7 @@
  * screen carried 4 in three of these five places and 8 in the other two.
  */
 import UiProperty from '@/components/ui/UiProperty.vue'
+import { REVIEW_CONCEPT_ROW_MAX_CLASS } from '@/constants/conceptCardVisual'
 
 type ReviewChoiceLayout = 'applied' | 'dual' | 'single'
 
@@ -55,12 +56,12 @@ withDefaults(defineProps<ReviewChoiceGroupProps>(), {
       <slot name="applied" />
     </UiProperty>
 
-    <!-- Dual: PO + CEO (+ optional actions). Max width 506px → 31.625rem @16. -->
+    <!-- Dual: PO + CEO (+ optional actions). Row cap — REVIEW_CONCEPT_ROW_MAX_CLASS. -->
     <template v-else-if="layout === 'dual'">
       <div
         :class="[
           dualGrid
-            ? 'review-choice-group__choice review-choice-group__choice--dual grid grid-cols-2 gap-2 max-w-[31.625rem]'
+            ? ['review-choice-group__choice review-choice-group__choice--dual grid grid-cols-2 gap-2', REVIEW_CONCEPT_ROW_MAX_CLASS]
             : ['review-choice-group__choice review-choice-group__choice--dual flex flex-col', dualOuterGap],
         ]"
       >
