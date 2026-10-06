@@ -75,7 +75,7 @@ describe('getWaitingSince', () => {
 describe('getBrandReviewDisplay', () => {
   it('draft shows not submitted and empty waiting', () => {
     const d = getBrandReviewDisplay(baseBrand())
-    expect(d.reviewLine).toBe('Not submitted')
+    expect(d.reviewLine).toBe('Не надіслано')
     expect(d.waitingLine).toBe('—')
     expect(d.waitingSince).toBeNull()
   })
@@ -89,7 +89,7 @@ describe('getBrandReviewDisplay', () => {
       })
     )
     expect(d.reviewLine).toBe('In work with team')
-    expect(d.reviewTitle).toContain('Teams received')
+    expect(d.reviewTitle).toContain('Команди отримали')
   })
 
   it('the CEO never gets the Drafts tab; everyone else does (H-37)', () => {
@@ -118,13 +118,13 @@ describe('getBrandReviewDisplay', () => {
         submittedByName: 'PO User',
       })
     )
-    expect(d.reviewLine).toBe('Awaiting approval · #2')
+    expect(d.reviewLine).toBe('Очікує погодження · #2')
     expect(d.reviewTitle).toContain('CPO/CEO')
     expect(d.reviewTitle).toContain('PO User')
     expect(d.waitingLine).toContain('·')
     expect(daysInStatus(submittedAt)).toBeGreaterThanOrEqual(3)
     expect(d.waitingTone).toBe('warn')
-    expect(formatRelativeUk(submittedAt)).toMatch(/\d+d/)
+    expect(formatRelativeUk(submittedAt)).toMatch(/\d+ дн\./)
   })
 
   it('needs revision shows awaiting PO, not approver in cell', () => {
@@ -135,7 +135,7 @@ describe('getBrandReviewDisplay', () => {
         needsRevisionByName: 'Viktor Hirenko',
       })
     )
-    expect(d.reviewLine).toBe('Awaiting PO')
+    expect(d.reviewLine).toBe('Очікує PO')
     expect(d.reviewTitle).toContain('PO User')
     expect(d.reviewTitle).toContain('Viktor Hirenko')
     expect(d.waitingLine).toMatch(/26\.05\.2026/)
@@ -165,6 +165,6 @@ describe('getBrandReviewDisplay', () => {
     )
     expect(d.waitingLine.startsWith('~')).toBe(true)
     expect(d.isApproxDate).toBe(true)
-    expect(d.waitingTitle).toContain('estimated')
+    expect(d.waitingTitle).toContain('приблизна')
   })
 })

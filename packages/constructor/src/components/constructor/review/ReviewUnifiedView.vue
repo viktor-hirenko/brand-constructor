@@ -32,6 +32,7 @@ import CalendarIcon from '@/components/icons/CalendarIcon.vue'
 import GlobeIcon from '@/components/icons/GlobeIcon.vue'
 import LinkIcon from '@/components/icons/LinkIcon.vue'
 import { attentionBannerTitle } from '@/utils/attentionBannerTitle'
+import { externalNamingReviewNote } from '@/utils/externalNamingPrice'
 
 /**
  * Unified Brand Brief review screen.
@@ -83,7 +84,7 @@ interface ReviewUnifiedViewProps {
 
   // CEO display items (precomputed in parent)
   reviewCeoConceptForBlock: Concept | null
-  ceoExternalItemsForReview: Array<{ id: string; name: string; domain?: string }>
+  ceoExternalItemsForReview: Array<{ id: string; name: string; domain?: string; note?: string | null }>
   ceoInternalNameForReview: string | null
 
   // CEO comments mirror (parent owns the reactive state)
@@ -298,6 +299,7 @@ const externalNamingItems = computed(() =>
     id: n.id,
     name: n.name,
     domain: (n as ExternalNaming & { domain?: string }).domain,
+    note: externalNamingReviewNote(n),
   }))
 )
 

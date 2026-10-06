@@ -84,8 +84,8 @@ describe('lists without a page switcher load everything', () => {
   it('Brands asks for 500', () => {
     expect(read('views/BrandsView.vue')).toContain('perPage.value = 500')
   })
-  it('Namings and Concepts ask for the server maximum, 100', () => {
-    expect(read('views/NamingsView.vue')).toMatch(/status: statusFilter\.value, per_page: '100'/)
+  it('Namings ask for the namings maximum, 500; Concepts for the server maximum, 100', () => {
+    expect(read('views/NamingsView.vue')).toMatch(/status: statusFilter\.value, per_page: '500'/)
     expect(read('views/ConceptsView.vue')).toMatch(/status: statusFilter\.value, per_page: '100'/)
   })
 })

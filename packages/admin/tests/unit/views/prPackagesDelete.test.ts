@@ -20,12 +20,12 @@ const actions = template.slice(
 
 describe('PR package card actions', () => {
   it('offers Edit with no condition beyond the write right', () => {
-    expect(actions).toMatch(/<BaseButton variant="secondary" size="sm" @click\.stop="openEdit\(pkg\)">Edit/)
+    expect(actions).toMatch(/<BaseButton variant="secondary" size="sm" @click\.stop="openEdit\(pkg\)">Редагувати/)
   })
 
   it('offers Delete only when no brief picked the package', () => {
     expect(actions).toMatch(/v-if="pkg\.brands_count"[\s\S]*briefsLabel\(pkg\.brands_count\)/)
-    expect(actions).toMatch(/v-else[\s\S]*handleDelete\(pkg\.id, pkg\.name\)[\s\S]*>Delete</)
+    expect(actions).toMatch(/v-else[\s\S]*handleDelete\(pkg\.id, pkg\.name\)[\s\S]*>Видалити</)
   })
 
   it('names the count in Ukrainian with the right ending', () => {

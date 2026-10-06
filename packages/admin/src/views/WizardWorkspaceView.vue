@@ -210,7 +210,7 @@ onBeforeUnmount(() => {
   <div class="wizard-workspace">
     <div v-if="isLoading || isSessionEnding" class="wizard-workspace__loading">
       <span class="wizard-workspace__spinner" />
-      <span>{{ isSessionEnding ? 'Session expired — redirecting to sign in…' : 'Loading wizard…' }}</span>
+      <span>{{ isSessionEnding ? 'Сесія завершилась — переходимо до входу…' : 'Завантаження брифу…' }}</span>
     </div>
     <iframe
       v-show="!isSessionEnding"
@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
       :key="iframeKey"
       :src="iframeSrc"
       class="wizard-workspace__frame"
-      title="Brand Wizard"
+      title="Бриф бренду"
       @load="handleIframeLoad"
     />
     <Teleport to="body">

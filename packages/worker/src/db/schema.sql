@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS external_namings (
   tagline TEXT NOT NULL DEFAULT '',
   domain TEXT,
   price REAL,
+  purchase_price REAL,
   availability_status TEXT DEFAULT 'unknown',
   domain_checked_at TEXT,
   domain_check_source TEXT DEFAULT 'manual',

@@ -1,5 +1,6 @@
 import { computed, ref, type ComputedRef } from 'vue'
 import { isOwnVariantKept } from '@/utils/revisionKeptOwn'
+import { externalNamingReviewNote } from '@/utils/externalNamingPrice'
 import type { Router } from 'vue-router'
 import { useConstructorStore } from '@/stores/constructor'
 import {
@@ -267,6 +268,7 @@ export function useSupervisorApplyVariants(opts: UseSupervisorApplyVariantsOptio
         id: n.id,
         name: n.name,
         domain: (n as ExternalNaming & { domain?: string }).domain,
+        note: externalNamingReviewNote(n),
       }))
   })
 

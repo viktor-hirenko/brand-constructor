@@ -9,6 +9,20 @@ import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vue'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
+import pencilSimple from '@phosphor-icons/core/regular/pencil-simple.svg?raw'
+import trash from '@phosphor-icons/core/regular/trash.svg?raw'
+import { countUk } from '@/utils/pluralUk'
+import {
+  buildDomainModeBody,
+  domainPreviewErrorText,
+  canSaveDomainMode,
+  initialDomainMode,
+  resolveNamingPrice,
+  resolveNamingStatusBadge,
+  type DomainMode,
+} from '@/utils/namingDomainStatus'
 
 interface DomainPreview {
   available: boolean
@@ -80,6 +94,8 @@ const newName = ref('')
 const newTagline = ref('')
 const newDomain = ref('')
 const newConceptId = ref<string | null>(null)
+const newDomainMode = ref<DomainMode>('automatic')
+const newPurchasePrice = ref('')
 const creating = ref(false)
 
 const createPreviewLoading = ref(false)
@@ -97,8 +113,8 @@ const editPreviewError = ref<string | null>(null)
 const editPreviewData = ref<DomainPreview | null>(null)
 const editPreviewAttempted = ref(false)
 let editPreviewTimer: ReturnType<typeof setTimeout> | null = null
-const editOverrideStatus = ref<'available' | 'sold' | 'unknown' | null>(null)
-const editIsOverride = ref(false)
+const editDomainMode = ref<DomainMode>('automatic')
+const editPurchasePrice = ref('')
 const editConceptId = ref<string | null>(null)
 const editDomainCheckSource = ref<string | null>(null)
 const saving = ref(false)
@@ -151,7 +167,7 @@ async function loadCreateDomainPreview() {
     })
     createPreviewData.value = data
   } catch (e) {
-    createPreviewError.value = e instanceof Error ? e.message : 'Could not load domain preview'
+    createPreviewError.value = domainPreviewErrorText(e instanceof Error ? e.message : null)
   } finally {
     createPreviewLoading.value = false
     createPreviewAttempted.value = true
@@ -182,7 +198,7 @@ async function loadEditDomainPreview() {
     })
     editPreviewData.value = data
   } catch (e) {
-    editPreviewError.value = e instanceof Error ? e.message : 'Could not load domain preview'
+    editPreviewError.value = domainPreviewErrorText(e instanceof Error ? e.message : null)
   } finally {
     editPreviewLoading.value = false
     editPreviewAttempted.value = true
@@ -198,9 +214,10 @@ function scheduleEditDomainPreview() {
 }
 
 function refreshList(options?: { silent?: boolean }) {
-  // No page switcher: ask for the server's maximum (100). The default 20 hid
-  // every naming past the twentieth — 38 external ones in prod on 29.09.
-  const params: Record<string, string> = { status: statusFilter.value, per_page: '100' }
+  // No page switcher: ask for the server's maximum (500). The default 20 hid
+  // every naming past the twentieth — 38 external ones in prod on 29.09 — and
+  // 100 hid the older ones on the stage, 160 on 06.10.
+  const params: Record<string, string> = { status: statusFilter.value, per_page: '500' }
   if (activeTab.value === 'external') {
     if (conceptFilter.value !== 'all') {
       params.filter = conceptFilter.value
@@ -263,13 +280,29 @@ function openCreateModal() {
   newTagline.value = ''
   newDomain.value = ''
   newConceptId.value = null
+  newDomainMode.value = 'automatic'
+  newPurchasePrice.value = ''
   resetCreateDomainPreview()
   fetchConcepts({ per_page: '100' })
   showCreateModal.value = true
 }
 
+const canCreate = computed(
+  () =>
+    newName.value.trim() !== '' &&
+    (activeTab.value !== 'external' || canSaveDomainMode(newDomainMode.value, newPurchasePrice.value))
+)
+
+const editWasForSale = computed(() => editDomainCheckSource.value === 'admin_override')
+
+const canSaveEdit = computed(
+  () =>
+    editName.value.trim() !== '' &&
+    (activeTab.value !== 'external' || canSaveDomainMode(editDomainMode.value, editPurchasePrice.value))
+)
+
 async function handleCreate() {
-  if (!newName.value.trim()) return
+  if (!canCreate.value) return
   creating.value = true
   try {
     if (activeTab.value === 'external') {
@@ -278,6 +311,7 @@ async function handleCreate() {
         tagline: newTagline.value.trim(),
         domain: newDomain.value.trim() || null,
         concept_id: newConceptId.value || null,
+        ...buildDomainModeBody(newDomainMode.value, newPurchasePrice.value, false),
       })
     } else {
       await apiPost('/api/namings/internal', {
@@ -305,23 +339,22 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
     editConceptId.value = extNaming.concept_id
     editDomain.value = extNaming.domain || ''
     editDomainCheckSource.value = extNaming.domain_check_source || null
-    editIsOverride.value = extNaming.domain_check_source === 'admin_override'
-    editOverrideStatus.value = editIsOverride.value
-      ? extNaming.availability_status || 'unknown'
-      : null
+    editDomainMode.value = initialDomainMode(extNaming.domain_check_source)
+    editPurchasePrice.value =
+      extNaming.purchase_price != null ? String(extNaming.purchase_price) : ''
   } else {
     editConceptId.value = null
     editDomain.value = ''
     editDomainCheckSource.value = null
-    editIsOverride.value = false
-    editOverrideStatus.value = null
+    editDomainMode.value = 'automatic'
+    editPurchasePrice.value = ''
   }
   fetchConcepts({ per_page: '100' })
   showEditModal.value = true
 }
 
 async function handleSaveEdit() {
-  if (!editName.value.trim()) return
+  if (!canSaveEdit.value) return
   saving.value = true
   try {
     const type = activeTab.value
@@ -332,12 +365,10 @@ async function handleSaveEdit() {
     if (type === 'external') {
       body.concept_id = editConceptId.value || null
       body.domain = editDomain.value.trim() || null
-      if (editIsOverride.value && editOverrideStatus.value) {
-        body.availability_status = editOverrideStatus.value
-        body.domain_check_source = 'admin_override'
-      } else if (!editIsOverride.value && editDomainCheckSource.value === 'admin_override') {
-        body.domain_check_source = 'manual'
-      }
+      Object.assign(
+        body,
+        buildDomainModeBody(editDomainMode.value, editPurchasePrice.value, editWasForSale.value)
+      )
     }
     await apiPut(`/api/namings/${type}/${editId.value}`, body)
     showEditModal.value = false
@@ -395,11 +426,11 @@ function getSourceLetter(n: ExternalNamingRow): string {
 function getSourceTooltip(n: ExternalNamingRow): string {
   switch (getSourceKind(n)) {
     case 'override':
-      return 'Override — set manually by admin'
+      return 'Вручну — встановила команда, нічна перевірка пропускає'
     case 'auto':
-      return 'Auto — Pananames API'
+      return 'Автоматично — перевірка Pananames'
     default:
-      return 'Manual — not from automatic check'
+      return 'Вручну — автоматично не перевірялось'
   }
 }
 
@@ -430,7 +461,7 @@ async function confirmDeleteNaming() {
       else internalNamings.value = internalNamings.value.filter(n => n.id !== id)
     }, () => refreshList({ silent: true }))
   } catch (e) {
-    deleteError.value = e instanceof Error ? e.message : 'Failed to delete naming'
+    deleteError.value = e instanceof Error ? e.message : 'Не вдалося видалити неймінг'
   }
 }
 </script>
@@ -443,14 +474,14 @@ async function confirmDeleteNaming() {
         :class="{ 'namings-view__tab--active': activeTab === 'external' }"
         @click="activeTab = 'external'"
       >
-        External Namings
+        External Naming
       </button>
       <button
         class="namings-view__tab"
         :class="{ 'namings-view__tab--active': activeTab === 'internal' }"
         @click="activeTab = 'internal'"
       >
-        Internal Namings
+        Internal Naming
       </button>
     </div>
 
@@ -460,21 +491,21 @@ async function confirmDeleteNaming() {
         :class="{ 'namings-view__status-tab--active': statusFilter === 'all' }"
         @click="statusFilter = 'all'"
       >
-        All
+        Усі
       </button>
       <button
         class="namings-view__status-tab"
         :class="{ 'namings-view__status-tab--active': statusFilter === 'active' }"
         @click="statusFilter = 'active'"
       >
-        Available
+        Не використані
       </button>
       <button
         class="namings-view__status-tab"
         :class="{ 'namings-view__status-tab--active': statusFilter === 'used' }"
         @click="statusFilter = 'used'"
       >
-        Used
+        Використані
       </button>
     </div>
 
@@ -485,19 +516,19 @@ async function confirmDeleteNaming() {
           v-model="conceptFilter"
           class="namings-view__select"
         >
-          <option value="all">All namings</option>
-          <option value="linked">Linked to concept</option>
-          <option value="standalone">Standalone</option>
+          <option value="all">Усі неймінги</option>
+          <option value="linked">З концептом</option>
+          <option value="standalone">Без концепту</option>
         </select>
         <span class="namings-view__count">
-          {{ activeTab === 'external' ? extTotal : intTotal }} namings
+          {{ countUk(activeTab === 'external' ? extTotal : intTotal, 'неймінг', 'неймінги', 'неймінгів') }}
         </span>
       </div>
-      <BaseButton v-if="canWrite" @click="openCreateModal"> + New Naming </BaseButton>
+      <BaseButton v-if="canWrite" @click="openCreateModal"> + Новий неймінг </BaseButton>
     </div>
 
     <div v-if="activeTab === 'external' ? extLoading : intLoading" class="namings-view__loading">
-      Loading...
+      Завантаження…
     </div>
 
     <div v-else class="namings-view__table-wrap">
@@ -506,73 +537,73 @@ async function confirmDeleteNaming() {
           <template v-if="activeTab === 'external'">
             <tr>
               <th class="sortable-th" @click="toggleExtSort('name')">
-                Name
+                Назва
                 <span v-if="extSortField === 'name'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('domain')">
-                Domain
+                Домен
                 <span v-if="extSortField === 'domain'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('price')">
-                Price
+                Ціна
                 <span v-if="extSortField === 'price'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('availability_status')">
-                Availability
+                Статус домену
                 <span v-if="extSortField === 'availability_status'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th>Usage</th>
+              <th>Використання</th>
               <th class="sortable-th" @click="toggleExtSort('concept_name')">
-                Linked Concept
+                Концепт
                 <span v-if="extSortField === 'concept_name'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('author_name')">
-                Author
+                Автор
                 <span v-if="extSortField === 'author_name'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('created_at')">
-                Created
+                Створено
                 <span v-if="extSortField === 'created_at'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th v-if="canWrite">Actions</th>
+              <th v-if="canWrite">Дії</th>
             </tr>
           </template>
           <template v-else>
             <tr>
               <th class="sortable-th" @click="toggleIntSort('name')">
-                Name
+                Назва
                 <span v-if="intSortField === 'name'" class="sort-arrow">{{
                   intSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th>Usage</th>
+              <th>Використання</th>
               <th class="sortable-th" @click="toggleIntSort('author_name')">
-                Author
+                Автор
                 <span v-if="intSortField === 'author_name'" class="sort-arrow">{{
                   intSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleIntSort('created_at')">
-                Created
+                Створено
                 <span v-if="intSortField === 'created_at'" class="sort-arrow">{{
                   intSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th v-if="canWrite">Actions</th>
+              <th v-if="canWrite">Дії</th>
             </tr>
           </template>
         </thead>
@@ -586,21 +617,20 @@ async function confirmDeleteNaming() {
                 </div>
               </td>
               <td>{{ n.domain || '—' }}</td>
-              <td>{{ n.price != null ? `$${n.price}` : '—' }}</td>
+              <td>
+                <span v-if="resolveNamingPrice(n)" class="namings-view__price-cell">
+                  {{ resolveNamingPrice(n)?.amount }}
+                </span>
+                <span v-else>—</span>
+              </td>
               <td>
                 <div class="namings-view__availability-cell">
                   <div class="namings-view__availability-row">
                     <span
                       class="namings-view__status-badge"
-                      :class="`namings-view__status-badge--${n.availability_status || 'unknown'}`"
+                      :class="`namings-view__status-badge--${resolveNamingStatusBadge(n.availability_status).modifier}`"
                     >
-                      {{
-                        n.availability_status === 'available'
-                          ? '✓ Available'
-                          : n.availability_status === 'sold'
-                            ? '✗ Sold'
-                            : '? Unknown'
-                      }}
+                      {{ resolveNamingStatusBadge(n.availability_status).label }}
                     </span>
                     <span
                       class="namings-view__source-badge"
@@ -621,8 +651,8 @@ async function confirmDeleteNaming() {
                       size="sm"
                       :loading="checkingDomainId === n.id"
                       class="namings-view__recheck-btn"
-                      title="Recheck domain via Pananames"
-                      aria-label="Recheck domain via Pananames"
+                      title="Перевірити домен ще раз"
+                      aria-label="Перевірити домен ще раз"
                       @click.stop="handleCheckDomain(n.id)"
                     >
                       <svg
@@ -649,7 +679,7 @@ async function confirmDeleteNaming() {
                   v-if="n.status === 'used'"
                   class="namings-view__usage-badge namings-view__usage-badge--used"
                 >
-                  Used in {{ n.brand_name || '—' }}
+                  У бренді {{ n.brand_name || '—' }}
                 </span>
                 <span v-else>—</span>
               </td>
@@ -661,17 +691,23 @@ async function confirmDeleteNaming() {
                   v-if="!n.used_in_brand_id"
                   variant="secondary"
                   size="sm"
+                  class="namings-view__icon-btn"
+                  title="Редагувати"
+                  aria-label="Редагувати"
                   @click="openEditModal(n)"
                 >
-                  Edit
+                  <PhosphorIcon :svg="pencilSimple" class="namings-view__icon" />
                 </BaseButton>
                 <BaseButton
                   v-if="!n.used_in_brand_id"
                   variant="danger"
                   size="sm"
+                  class="namings-view__icon-btn"
+                  title="Видалити"
+                  aria-label="Видалити"
                   @click="handleDeleteNaming(n.id, n.name)"
                 >
-                  Delete
+                  <PhosphorIcon :svg="trash" class="namings-view__icon" />
                 </BaseButton>
               </td>
             </tr>
@@ -689,7 +725,7 @@ async function confirmDeleteNaming() {
                   v-if="n.status === 'used'"
                   class="namings-view__usage-badge namings-view__usage-badge--used"
                 >
-                  Used in {{ n.brand_name || '—' }}
+                  У бренді {{ n.brand_name || '—' }}
                 </span>
                 <span v-else>—</span>
               </td>
@@ -700,17 +736,23 @@ async function confirmDeleteNaming() {
                   v-if="!n.used_in_brand_id"
                   variant="secondary"
                   size="sm"
+                  class="namings-view__icon-btn"
+                  title="Редагувати"
+                  aria-label="Редагувати"
                   @click="openEditModal(n)"
                 >
-                  Edit
+                  <PhosphorIcon :svg="pencilSimple" class="namings-view__icon" />
                 </BaseButton>
                 <BaseButton
                   v-if="!n.used_in_brand_id"
                   variant="danger"
                   size="sm"
+                  class="namings-view__icon-btn"
+                  title="Видалити"
+                  aria-label="Видалити"
                   @click="handleDeleteNaming(n.id, n.name)"
                 >
-                  Delete
+                  <PhosphorIcon :svg="trash" class="namings-view__icon" />
                 </BaseButton>
               </td>
             </tr>
@@ -721,20 +763,20 @@ async function confirmDeleteNaming() {
 
     <BaseModal
       v-if="showCreateModal"
-      :title="`Create ${activeTab === 'external' ? 'External' : 'Internal'} Naming`"
+      :title="`Новий ${activeTab === 'external' ? 'External' : 'Internal'} Naming`"
       @close="showCreateModal = false"
     >
       <form class="namings-view__form" @submit.prevent="handleCreate">
-        <BaseInput v-model="newName" label="Naming" placeholder="Enter naming..." required />
-        <BaseInput v-model="newTagline" label="Tagline" placeholder="Short description..." />
+        <BaseInput v-model="newName" label="Назва" placeholder="Введіть назву…" required />
+        <BaseInput v-model="newTagline" label="Опис" placeholder="Короткий опис…" />
         <template v-if="activeTab === 'external'">
-          <BaseInput v-model="newDomain" label="Domain" placeholder="e.g. example.com" />
+          <BaseInput v-model="newDomain" label="Домен" placeholder="напр. example.com" />
           <div
             v-if="newDomain.trim() && newDomain.includes('.')"
             class="namings-view__domain-preview"
           >
             <p v-if="createPreviewLoading" class="namings-view__hint">
-              Checking registration estimate…
+              Перевіряємо домен…
             </p>
             <p v-else-if="createPreviewError" class="namings-view__hint namings-view__hint--error">
               {{ createPreviewError }}
@@ -755,7 +797,7 @@ async function confirmDeleteNaming() {
                   v-if="createPreviewData.price != null"
                   class="namings-view__domain-preview-price"
                 >
-                  Est. registration:
+                  Реєстрація:
                   {{ createPreviewData.currency || 'USD' }}
                   {{ formatPreviewPrice(createPreviewData.price) }}
                 </span>
@@ -765,61 +807,62 @@ async function confirmDeleteNaming() {
               v-else-if="createPreviewAttempted && !createPreviewLoading"
               class="namings-view__hint"
             >
-              Could not retrieve registration estimate. Final price is set when you save.
+              Не вдалося перевірити домен. Статус і ціна з'являться після збереження.
             </p>
           </div>
-          <p class="namings-view__hint">
-            Domain availability will be checked automatically via Pananames API after creation.
-          </p>
+          <NamingDomainModeField
+            v-model:mode="newDomainMode"
+            v-model:purchase-price="newPurchasePrice"
+            name="create-domain-mode"
+          />
           <div class="namings-view__field">
-            <label class="namings-view__label">Link to Concept</label>
+            <label class="namings-view__label">Концепт</label>
             <select v-model="newConceptId" class="namings-view__select namings-view__select--full">
-              <option :value="null">— No concept —</option>
+              <option :value="null">— Без концепту —</option>
               <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
           </div>
         </template>
       </form>
       <template #footer>
-        <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
-        <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
-          Create
+        <BaseButton variant="secondary" @click="showCreateModal = false">Скасувати</BaseButton>
+        <BaseButton :loading="creating" :disabled="!canCreate" @click="handleCreate">
+          Створити
         </BaseButton>
       </template>
     </BaseModal>
 
     <BaseModal
       v-if="showDeleteConfirm"
-      title="Delete Naming"
+      title="Видалити неймінг"
       width="420px"
       @close="showDeleteConfirm = false"
     >
       <p class="namings-view__confirm-text">
-        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action
-        cannot be undone.
+        Видалити <strong>«{{ deleteTargetName }}»</strong>? Цю дію не можна скасувати.
       </p>
       <template #footer>
-        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
-        <BaseButton variant="danger" @click="confirmDeleteNaming">Delete</BaseButton>
+        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Скасувати</BaseButton>
+        <BaseButton variant="danger" @click="confirmDeleteNaming">Видалити</BaseButton>
       </template>
     </BaseModal>
 
     <BaseModal
       v-if="showEditModal"
-      :title="`Edit ${activeTab === 'external' ? 'External' : 'Internal'} Naming`"
+      :title="`Редагувати ${activeTab === 'external' ? 'External' : 'Internal'} Naming`"
       @close="showEditModal = false"
     >
       <form class="namings-view__form" @submit.prevent="handleSaveEdit">
-        <BaseInput v-model="editName" label="Naming" placeholder="Enter naming..." required />
-        <BaseInput v-model="editTagline" label="Tagline" placeholder="Short description..." />
+        <BaseInput v-model="editName" label="Назва" placeholder="Введіть назву…" required />
+        <BaseInput v-model="editTagline" label="Опис" placeholder="Короткий опис…" />
         <template v-if="activeTab === 'external'">
-          <BaseInput v-model="editDomain" label="Domain" placeholder="e.g. example.com" />
+          <BaseInput v-model="editDomain" label="Домен" placeholder="напр. example.com" />
           <div
             v-if="editDomain.trim() && editDomain.includes('.')"
             class="namings-view__domain-preview"
           >
             <p v-if="editPreviewLoading" class="namings-view__hint">
-              Checking registration estimate…
+              Перевіряємо домен…
             </p>
             <p v-else-if="editPreviewError" class="namings-view__hint namings-view__hint--error">
               {{ editPreviewError }}
@@ -840,51 +883,35 @@ async function confirmDeleteNaming() {
                   v-if="editPreviewData.price != null"
                   class="namings-view__domain-preview-price"
                 >
-                  Est. registration:
+                  Реєстрація:
                   {{ editPreviewData.currency || 'USD' }}
                   {{ formatPreviewPrice(editPreviewData.price) }}
                 </span>
               </p>
             </template>
             <p v-else-if="editPreviewAttempted && !editPreviewLoading" class="namings-view__hint">
-              Could not retrieve registration estimate. Final price is set when you save.
+              Не вдалося перевірити домен. Статус і ціна з'являться після збереження.
             </p>
           </div>
+          <NamingDomainModeField
+            v-model:mode="editDomainMode"
+            v-model:purchase-price="editPurchasePrice"
+            name="edit-domain-mode"
+            :was-for-sale="editWasForSale"
+          />
           <div class="namings-view__field">
-            <label class="namings-view__label">Domain Availability</label>
-            <div class="namings-view__override-section">
-              <label class="namings-view__checkbox-label">
-                <input type="checkbox" v-model="editIsOverride" class="namings-view__checkbox" />
-                <span>Override auto-check (set status manually)</span>
-              </label>
-              <select
-                v-if="editIsOverride"
-                v-model="editOverrideStatus"
-                class="namings-view__select namings-view__select--full"
-              >
-                <option value="unknown">Unknown</option>
-                <option value="available">Available</option>
-                <option value="sold">Sold</option>
-              </select>
-              <p v-else class="namings-view__hint">
-                Status is determined automatically via Pananames API. Enable override to set
-                manually.
-              </p>
-            </div>
-          </div>
-          <div class="namings-view__field">
-            <label class="namings-view__label">Link to Concept</label>
+            <label class="namings-view__label">Концепт</label>
             <select v-model="editConceptId" class="namings-view__select namings-view__select--full">
-              <option :value="null">— No concept —</option>
+              <option :value="null">— Без концепту —</option>
               <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
           </div>
         </template>
       </form>
       <template #footer>
-        <BaseButton variant="secondary" @click="showEditModal = false">Cancel</BaseButton>
-        <BaseButton :loading="saving" :disabled="!editName.trim()" @click="handleSaveEdit">
-          Save
+        <BaseButton variant="secondary" @click="showEditModal = false">Скасувати</BaseButton>
+        <BaseButton :loading="saving" :disabled="!canSaveEdit" @click="handleSaveEdit">
+          Зберегти
         </BaseButton>
       </template>
     </BaseModal>
@@ -1073,6 +1100,9 @@ async function confirmDeleteNaming() {
     line-height: 1.3;
   }
 
+  // Pencil and bin instead of «Редагувати» / «Видалити», side by side: the
+  // Ukrainian words pushed «Видалити» off a 1440 screen, and stacking them was
+  // rejected by the owner (06.10). The word stays as the tooltip and label.
   &__actions {
     white-space: nowrap;
 
@@ -1083,6 +1113,20 @@ async function confirmDeleteNaming() {
         margin-right: 0;
       }
     }
+  }
+
+  :deep(.namings-view__icon-btn) {
+    padding: $spacing-1 $spacing-2;
+  }
+
+  :deep(.namings-view__icon-btn .btn__content) {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__icon {
+    width: 16px;
+    height: 16px;
   }
 
   &__form {
@@ -1146,11 +1190,23 @@ async function confirmDeleteNaming() {
       color: #721c24;
     }
 
+    &--for-sale {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
     &--unknown {
       background-color: $color-bg;
       color: $color-text-muted;
     }
   }
+
+  // Amount only: the status badge next to it already says whether it is the
+  // registration or the purchase price (owner, 06.10).
+  &__price-cell {
+    white-space: nowrap;
+  }
+
 
   &__status-tabs {
     display: flex;
@@ -1276,25 +1332,5 @@ async function confirmDeleteNaming() {
     }
   }
 
-  &__override-section {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-2;
-  }
-
-  &__checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2;
-    font-size: $font-size-sm;
-    color: $color-text;
-    cursor: pointer;
-  }
-
-  &__checkbox {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-  }
 }
 </style>

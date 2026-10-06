@@ -36,8 +36,8 @@ const form = ref<{ name: string; email: string; role: UserRole }>({
 })
 
 const isEditing = computed(() => editingUser.value !== null)
-const modalTitle = computed(() => (isEditing.value ? 'Edit User' : 'Add User'))
-const submitLabel = computed(() => (isEditing.value ? 'Save Changes' : 'Add User'))
+const modalTitle = computed(() => (isEditing.value ? 'Редагувати користувача' : 'Новий користувач'))
+const submitLabel = computed(() => (isEditing.value ? 'Зберегти' : 'Додати'))
 
 const roleOptions = Object.entries(USER_ROLES).map(([, value]) => ({
   value,
@@ -56,14 +56,14 @@ interface RolePermission {
 }
 
 const rolePermissions: RolePermission[] = [
-  { role: 'Admin', canWrite: 'Everything' },
-  { role: 'Head of DHC', canWrite: 'Everything' },
-  { role: 'Product Owner', canWrite: 'View only' },
-  { role: 'CPO / CEO', canWrite: 'View only' },
-  { role: 'Strategy & Identity', canWrite: 'Concepts, Namings' },
-  { role: 'UI Designer', canWrite: 'UI Components' },
-  { role: 'PR & Marketing', canWrite: 'PR Packages' },
-  { role: 'Product Designer', canWrite: 'View only' },
+  { role: 'Admin', canWrite: 'Усе' },
+  { role: 'Head of DHC', canWrite: 'Усе' },
+  { role: 'Product Owner', canWrite: 'Лише перегляд' },
+  { role: 'CPO / CEO', canWrite: 'Лише перегляд' },
+  { role: 'Strategy & Identity', canWrite: 'Концепти, неймінги' },
+  { role: 'UI Designer', canWrite: 'UI-компоненти' },
+  { role: 'PR & Marketing', canWrite: 'PR-пакети' },
+  { role: 'Product Designer', canWrite: 'Лише перегляд' },
 ]
 
 function handleClickOutsideRolesInfo(event: MouseEvent) {
@@ -140,23 +140,23 @@ async function confirmDelete() {
 <template>
   <div class="users-view">
     <div v-if="!authStore.isStrictAdmin" class="users-view__forbidden">
-      Access denied. Admin role required.
+      Немає доступу. Потрібна роль Admin.
     </div>
 
     <template v-else>
       <div class="users-view__toolbar">
         <span class="users-view__count">{{ users.length }} users</span>
-        <BaseButton @click="openCreate">+ Add User</BaseButton>
+        <BaseButton @click="openCreate">+ Додати користувача</BaseButton>
       </div>
 
-      <div v-if="loading" class="users-view__loading">Loading...</div>
+      <div v-if="loading" class="users-view__loading">Завантаження…</div>
 
       <div v-else class="users-view__table-wrap">
         <table class="users-view__table">
           <thead>
             <tr>
               <th class="sortable-th" @click="toggleSort('name')">
-                Name
+                Ім'я
                 <span v-if="sortField === 'name'" class="sort-arrow">{{
                   sortDirection === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
@@ -168,18 +168,18 @@ async function confirmDelete() {
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleSort('role')">
-                Role
+                Роль
                 <span v-if="sortField === 'role'" class="sort-arrow">{{
                   sortDirection === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleSort('created_at')">
-                Joined
+                Додано
                 <span v-if="sortField === 'created_at'" class="sort-arrow">{{
                   sortDirection === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th>Actions</th>
+              <th>Дії</th>
             </tr>
           </thead>
           <TransitionGroup tag="tbody" :name="transitionName">
@@ -189,14 +189,14 @@ async function confirmDelete() {
               <td>{{ ROLE_LABELS[u.role] || u.role }}</td>
               <td>{{ new Date(u.created_at).toLocaleDateString() }}</td>
               <td class="users-view__actions">
-                <BaseButton variant="secondary" size="sm" @click="openEdit(u)">Edit</BaseButton>
+                <BaseButton variant="secondary" size="sm" @click="openEdit(u)">Редагувати</BaseButton>
                 <BaseButton
                   v-if="u.id !== authStore.user?.id"
                   variant="danger"
                   size="sm"
                   @click="handleDelete(u)"
                 >
-                  Delete
+                  Видалити
                 </BaseButton>
               </td>
             </tr>
@@ -206,23 +206,23 @@ async function confirmDelete() {
 
       <BaseModal v-if="showModal" :title="modalTitle" @close="closeModal">
         <form class="users-view__form" @submit.prevent="handleSubmit">
-          <BaseInput v-model="form.name" label="Name" placeholder="e.g. John Smith" required />
+          <BaseInput v-model="form.name" label="Ім'я" placeholder="напр. Олена Коваль" required />
           <BaseInput
             v-model="form.email"
             label="Email"
             type="email"
-            placeholder="e.g. john@company.com"
+            placeholder="напр. olena@upstars.com"
             required
           />
           <div class="users-view__field">
             <div class="users-view__label-row">
-              <label class="users-view__label">Role</label>
+              <label class="users-view__label">Роль</label>
               <div ref="rolesInfoRef" class="users-view__role-info">
                 <button
                   type="button"
                   class="users-view__info-btn"
                   :class="{ 'users-view__info-btn--active': showRolesInfo }"
-                  aria-label="View role permissions"
+                  aria-label="Права ролей"
                   @click="showRolesInfo = !showRolesInfo"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -232,17 +232,17 @@ async function confirmDelete() {
                       clip-rule="evenodd"
                     />
                   </svg>
-                  Role permissions
+                  Права ролей
                 </button>
 
                 <Transition name="popover">
                   <div v-if="showRolesInfo" class="roles-popover">
                     <div class="roles-popover__header">
-                      <span class="roles-popover__title">Role permissions</span>
+                      <span class="roles-popover__title">Права ролей</span>
                       <button
                         type="button"
                         class="roles-popover__close"
-                        aria-label="Close"
+                        aria-label="Закрити"
                         @click="showRolesInfo = false"
                       >
                         <PhosphorIcon :svg="close" class="roles-popover__close-icon" />
@@ -251,8 +251,8 @@ async function confirmDelete() {
                     <table class="roles-popover__table">
                       <thead>
                         <tr>
-                          <th>Role</th>
-                          <th>Can edit</th>
+                          <th>Роль</th>
+                          <th>Може змінювати</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -262,10 +262,10 @@ async function confirmDelete() {
                             <span
                               class="roles-popover__badge"
                               :class="{
-                                'roles-popover__badge--full': r.canWrite === 'Everything',
-                                'roles-popover__badge--view': r.canWrite === 'View only',
+                                'roles-popover__badge--full': r.canWrite === 'Усе',
+                                'roles-popover__badge--view': r.canWrite === 'Лише перегляд',
                                 'roles-popover__badge--partial':
-                                  r.canWrite !== 'Everything' && r.canWrite !== 'View only',
+                                  r.canWrite !== 'Усе' && r.canWrite !== 'Лише перегляд',
                               }"
                               >{{ r.canWrite }}</span
                             >
@@ -288,19 +288,19 @@ async function confirmDelete() {
           </div>
         </form>
         <template #footer>
-          <BaseButton variant="secondary" @click="closeModal">Cancel</BaseButton>
+          <BaseButton variant="secondary" @click="closeModal">Скасувати</BaseButton>
           <BaseButton :disabled="!form.name.trim() || !form.email.trim()" @click="handleSubmit">
             {{ submitLabel }}
           </BaseButton>
         </template>
       </BaseModal>
 
-      <BaseModal v-if="deleteTarget" title="Delete User" @close="deleteTarget = null">
-        <p>Delete user "{{ deleteTarget?.name }}" ({{ deleteTarget?.email }})?</p>
+      <BaseModal v-if="deleteTarget" title="Видалити користувача" @close="deleteTarget = null">
+        <p>Видалити користувача «{{ deleteTarget?.name }}» ({{ deleteTarget?.email }})?</p>
         <template #footer>
-          <BaseButton variant="secondary" @click="deleteTarget = null">Cancel</BaseButton>
+          <BaseButton variant="secondary" @click="deleteTarget = null">Скасувати</BaseButton>
           <BaseButton variant="danger" :loading="deleting" @click="confirmDelete"
-            >Delete</BaseButton
+            >Видалити</BaseButton
           >
         </template>
       </BaseModal>

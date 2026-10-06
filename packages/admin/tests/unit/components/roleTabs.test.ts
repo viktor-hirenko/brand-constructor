@@ -44,10 +44,10 @@ describe('library tabs by role', () => {
 
   it('the sidebar shows the four library items only to those roles', () => {
     const sidebar = read('components/ui/AppSidebar.vue')
-    for (const label of ['Concepts', 'Namings', 'PR Packages', 'UI Components']) {
+    for (const label of ['Концепти', 'Неймінги', 'PR-пакети', 'UI-компоненти']) {
       expect(sidebar).toMatch(new RegExp(`label: '${label}'[^}]*roles: LIBRARY_TAB_ROLES`))
     }
     expect(sidebar).toMatch(/item\.roles\.includes\(authStore\.user\?\.role/)
-    expect(sidebar).toMatch(/label: 'Brands', path: '\/brands', icon: tag \}/)
+    expect(sidebar).toMatch(/label: 'Бренди', path: '\/brands', icon: tag \}/)
   })
 })

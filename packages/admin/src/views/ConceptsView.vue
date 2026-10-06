@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import type { Concept, ExternalNaming } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiDelete, getAssetUrl } from '@/composables/useApi'
 import { describeApiError } from '@/utils/apiErrorText'
+import { countUk } from '@/utils/pluralUk'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
@@ -149,45 +150,45 @@ async function confirmDelete() {
         :class="{ 'concepts-view__status-tab--active': statusFilter === 'all' }"
         @click="statusFilter = 'all'"
       >
-        All
+        Усі
       </button>
       <button
         class="concepts-view__status-tab"
         :class="{ 'concepts-view__status-tab--active': statusFilter === 'active' }"
         @click="statusFilter = 'active'"
       >
-        Available
+        Не використані
       </button>
       <button
         class="concepts-view__status-tab"
         :class="{ 'concepts-view__status-tab--active': statusFilter === 'used' }"
         @click="statusFilter = 'used'"
       >
-        Used
+        Використані
       </button>
     </div>
 
     <div class="concepts-view__toolbar">
       <div class="concepts-view__toolbar-left">
-        <span class="concepts-view__count">{{ total }} concepts</span>
+        <span class="concepts-view__count">{{ countUk(total, 'концепт', 'концепти', 'концептів') }}</span>
         <select
           :value="conceptSortOption"
           class="concepts-view__sort-select"
           @change="onConceptSortChange(($event.target as HTMLSelectElement).value)"
         >
-          <option value="created_at:desc">Newest first</option>
-          <option value="created_at:asc">Oldest first</option>
-          <option value="name:asc">Name A-Z</option>
-          <option value="name:desc">Name Z-A</option>
+          <option value="created_at:desc">Спочатку нові</option>
+          <option value="created_at:asc">Спочатку старі</option>
+          <option value="name:asc">За назвою A–Z</option>
+          <option value="name:desc">За назвою Z–A</option>
         </select>
       </div>
-      <BaseButton v-if="canWrite" @click="openCreateModal"> + New Concept </BaseButton>
+      <BaseButton v-if="canWrite" @click="openCreateModal"> + Новий концепт </BaseButton>
     </div>
 
-    <div v-if="loading" class="concepts-view__loading">Loading...</div>
+    <div v-if="loading" class="concepts-view__loading">Завантаження…</div>
 
     <div v-else-if="concepts.length === 0" class="concepts-view__empty">
-      No concepts found. Create your first concept to get started.
+      Концептів не знайдено. Створіть перший концепт.
     </div>
 
     <TransitionGroup
@@ -209,7 +210,7 @@ async function confirmDelete() {
             :src="getAssetUrl(concept.visual_url)"
             :alt="concept.name"
           />
-          <div v-else class="concept-card__placeholder">No visual</div>
+          <div v-else class="concept-card__placeholder">Без візуалу</div>
         </div>
         <div class="concept-card__body">
           <div class="concept-card__header-row">
@@ -217,15 +218,15 @@ async function confirmDelete() {
             <span
               v-if="concept.status === 'used'"
               class="concept-card__usage-badge concept-card__usage-badge--used"
-              >Used in {{ concept.brand_name || '—' }}</span
+              >У бренді {{ concept.brand_name || '—' }}</span
             >
           </div>
           <p class="concept-card__description">
-            {{ concept.description || 'No description' }}
+            {{ concept.description || 'Без опису' }}
           </p>
           <div class="concept-card__footer">
             <span class="concept-card__meta">
-              <span class="concept-card__author">by {{ concept.author_name }}</span>
+              <span class="concept-card__author">Автор: {{ concept.author_name }}</span>
               <span class="concept-card__date">{{
                 new Date(concept.created_at).toLocaleDateString()
               }}</span>
@@ -236,7 +237,7 @@ async function confirmDelete() {
               size="sm"
               @click.stop="handleDelete(concept.id, concept.name)"
             >
-              Delete
+              Видалити
             </BaseButton>
           </div>
         </div>
@@ -245,35 +246,34 @@ async function confirmDelete() {
 
     <BaseModal
       v-if="showDeleteConfirm"
-      title="Delete Concept"
+      title="Видалити концепт"
       width="420px"
       @close="showDeleteConfirm = false"
     >
       <p class="concepts-view__confirm-text">
-        Are you sure you want to delete <strong>"{{ deleteTargetName }}"</strong>? This action
-        cannot be undone.
+        Видалити <strong>«{{ deleteTargetName }}»</strong>? Цю дію не можна скасувати.
       </p>
       <template #footer>
-        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Cancel</BaseButton>
-        <BaseButton variant="danger" @click="confirmDelete">Delete</BaseButton>
+        <BaseButton variant="secondary" @click="showDeleteConfirm = false">Скасувати</BaseButton>
+        <BaseButton variant="danger" @click="confirmDelete">Видалити</BaseButton>
       </template>
     </BaseModal>
 
-    <BaseModal v-if="showCreateModal" title="Create New Concept" @close="showCreateModal = false">
+    <BaseModal v-if="showCreateModal" title="Новий концепт" @close="showCreateModal = false">
       <form class="concepts-view__form" @submit.prevent="handleCreate">
-        <BaseInput v-model="newName" label="Concept Name" placeholder="e.g. WonderLand" required />
+        <BaseInput v-model="newName" label="Назва концепту" placeholder="напр. WonderLand" required />
         <BaseTextarea
           v-model="newDescription"
-          label="Description"
-          placeholder="Theme, mood, visual direction..."
+          label="Опис"
+          placeholder="Тема, настрій, візуальний напрям…"
           :rows="4"
         />
         <div class="concepts-view__field">
-          <label class="concepts-view__label">Mode (Theme)</label>
+          <label class="concepts-view__label">Тема</label>
           <div class="concepts-view__mode-options">
             <label class="concepts-view__mode-option">
               <input type="radio" :value="null" v-model="newMode" name="mode" />
-              <span>Not specified</span>
+              <span>Не вказано</span>
             </label>
             <label class="concepts-view__mode-option">
               <input type="radio" value="light" v-model="newMode" name="mode" />
@@ -287,8 +287,8 @@ async function confirmDelete() {
         </div>
         <div v-if="unlinkedNamings.length > 0" class="concepts-view__field">
           <label class="concepts-view__label">
-            Link to Naming
-            <span class="concepts-view__label-hint">(optional)</span>
+            Прив'язати неймінг
+            <span class="concepts-view__label-hint">(необов'язково)</span>
           </label>
           <div class="concepts-view__naming-list">
             <label
@@ -310,9 +310,9 @@ async function confirmDelete() {
         </div>
       </form>
       <template #footer>
-        <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" @click="showCreateModal = false">Скасувати</BaseButton>
         <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
-          Create Concept
+          Створити концепт
         </BaseButton>
       </template>
     </BaseModal>

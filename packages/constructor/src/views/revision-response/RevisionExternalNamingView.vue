@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resolveExternalNamingPrice } from '@/utils/externalNamingPrice'
 import ConceptCascadeBanner from '@/components/constructor/edit-flow/ConceptCascadeBanner.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -53,7 +54,7 @@ const poExternalMini = computed<ExternalNamingMini[]>(() =>
   (store.stepData.externalNaming.selectedIds ?? [])
     .map(id => namings.value.find(n => n.id === id))
     .filter((n): n is ExternalNaming => n != null)
-    .map(n => ({ id: n.id, name: n.name, domain: n.domain ?? undefined, price: n.price ?? null }))
+    .map(n => ({ id: n.id, name: n.name, domain: n.domain ?? undefined, price: resolveExternalNamingPrice(n) }))
 )
 
 const ceoExternalIds = computed<string[]>(() => {

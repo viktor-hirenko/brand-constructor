@@ -20,6 +20,8 @@
     "db:seed:components": "wrangler d1 execute brand-constructor-db --env production --local --file=./src/db/seed-components.sql",
     "db:seed:remote": "wrangler d1 execute brand-constructor-db --remote --file=./src/db/seed.sql",
     "db:migrate:012:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/012_add_jira_initiative.sql",
+    "db:migrate:015:stage": "wrangler d1 execute DB --remote --env stage --file=./src/db/migrations/015_naming_purchase_price.sql",
+    "db:migrate:015:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/015_naming_purchase_price.sql",
     "deploy:stage": "wrangler deploy --env stage"
   },
   "dependencies": {

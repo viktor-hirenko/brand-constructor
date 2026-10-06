@@ -77,14 +77,21 @@ export async function checkDomainAvailability(
 
     const json: { data: PananamesDomainCheckResponse } = await response.json()
     const data = json.data
+    // `premium` and the promo price are logged to learn what Pananames says
+    // about a domain an owner resells (domain-status-plan.md, «Причина»).
     console.log(
-      `Pananames check for "${cleanDomain}": available=${data.available}, price=${data.prices?.register}, currency=${data.prices?.currency}`
+      `Pananames check for "${cleanDomain}": available=${data.available}, premium=${data.premium}, price=${data.prices?.register}, promo=${data.promo_prices?.register}, currency=${data.prices?.currency}`
     )
 
     return {
       available: data.available,
+      // A registration price means something only for a domain one can
+      // register; a taken one used to show «$15» it would never cost.
       price:
-        data.prices && typeof data.prices.register === 'number' && data.prices.register > 0
+        data.available &&
+        data.prices &&
+        typeof data.prices.register === 'number' &&
+        data.prices.register > 0
           ? Math.round(data.prices.register)
           : null,
       currency: data.prices?.currency || 'USD',
@@ -110,17 +117,19 @@ export async function updateNamingDomainStatus(
 ): Promise<void> {
   const status = result.available ? 'available' : 'sold'
 
+  // Taken → no registration price at all; free → the new one, or the last
+  // known if the registrar sent none this time.
   await db
     .prepare(
       `UPDATE external_namings
        SET availability_status = ?,
-           price = COALESCE(?, price),
+           price = CASE WHEN ? = 'available' THEN COALESCE(?, price) ELSE NULL END,
            domain_checked_at = ?,
            domain_check_source = ?,
            updated_at = datetime('now')
        WHERE id = ? AND domain_check_source != 'admin_override'`
     )
-    .bind(status, result.price, result.checkedAt, result.source, namingId)
+    .bind(status, status, result.price, result.checkedAt, result.source, namingId)
     .run()
 }
 

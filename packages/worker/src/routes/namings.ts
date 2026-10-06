@@ -9,15 +9,25 @@ import {
   shouldRecheck,
   isPananamesConfigured,
 } from '../utils/domain-check'
+import { resolveAvailabilityChange, type AvailabilityRow } from '../utils/naming-availability'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
+/**
+ * The admin's naming tables have no page switcher and ask for one page: at
+ * 100 the stage (160 external namings, 06.10) hid every older row. Rows are
+ * small; 500 leaves room for years of the library.
+ */
+export const NAMINGS_PAGE_MAX = 500
+
+// The registration price comes only from the registrar, and the only status a
+// person sets is «For sale» (`utils/naming-availability.ts`).
 const createExternalSchema = z.object({
   name: z.string().min(1).max(200),
   tagline: z.string().max(500).optional().default(''),
   domain: z.string().max(255).nullable().optional(),
-  price: z.number().min(0).nullable().optional(),
-  availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
+  purchase_price: z.number().min(0).nullable().optional(),
+  availability_status: z.enum(['for_sale']).nullable().optional(),
   domain_check_source: z.enum(['manual', 'pananames', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
 })
@@ -31,8 +41,8 @@ const updateExternalSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   tagline: z.string().max(500).optional(),
   domain: z.string().max(255).nullable().optional(),
-  price: z.number().min(0).nullable().optional(),
-  availability_status: z.enum(['available', 'sold', 'unknown']).nullable().optional(),
+  purchase_price: z.number().min(0).nullable().optional(),
+  availability_status: z.enum(['for_sale']).nullable().optional(),
   domain_check_source: z.enum(['manual', 'pananames', 'admin_override']).nullable().optional(),
   concept_id: z.string().nullable().optional(),
   status: z.enum(['active', 'archived', 'draft']).optional(),
@@ -71,7 +81,7 @@ app.get('/external', async c => {
   const filter = c.req.query('filter') // 'all' | 'linked' | 'standalone'
   const availableForBrand = c.req.query('available_for_brand')
   const page = parseInt(c.req.query('page') || '1')
-  const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100)
+  const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), NAMINGS_PAGE_MAX)
   const offset = (page - 1) * perPage
 
   let where = '1=1'
@@ -142,19 +152,26 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
     }
   }
 
+  const change = resolveAvailabilityChange(parsed.data, null)
+  if ('error' in change) {
+    return c.json({ success: false, error: change.error }, 400)
+  }
+  const forSale = change.fields.availability_status === 'for_sale'
+
   const user = c.get('user')
   const id = generateId('exn')
 
   await c.env.DB.prepare(
-    'INSERT INTO external_namings (id, name, tagline, domain, price, availability_status, concept_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO external_namings (id, name, tagline, domain, purchase_price, availability_status, domain_check_source, concept_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
   )
     .bind(
       id,
       parsed.data.name,
       parsed.data.tagline || '',
       parsed.data.domain || null,
-      parsed.data.price ?? null,
-      parsed.data.availability_status || 'unknown',
+      change.fields.purchase_price ?? null,
+      forSale ? 'for_sale' : 'unknown',
+      forSale ? 'admin_override' : 'manual',
       parsed.data.concept_id || null,
       user.id
     )
@@ -164,7 +181,7 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
     .bind(id)
     .first()
 
-  if (parsed.data.domain && isPananamesConfigured(c.env)) {
+  if (!forSale && parsed.data.domain && isPananamesConfigured(c.env)) {
     const result = await checkDomainAvailability(parsed.data.domain, c.env)
     if (result) {
       await updateNamingDomainStatus(c.env.DB, id, result)
@@ -236,13 +253,22 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
     return c.json({ success: false, error: 'Cannot modify a naming used in a brand' }, 409)
   }
 
-  const updates: string[] = []
-  const values: (string | null)[] = []
+  const { availability_status, domain_check_source, purchase_price, ...rest } = parsed.data
+  const change = resolveAvailabilityChange(
+    { availability_status, domain_check_source, purchase_price },
+    existing as unknown as AvailabilityRow
+  )
+  if ('error' in change) {
+    return c.json({ success: false, error: change.error }, 400)
+  }
 
-  for (const [key, value] of Object.entries(parsed.data)) {
+  const updates: string[] = []
+  const values: (string | number | null)[] = []
+
+  for (const [key, value] of Object.entries({ ...rest, ...change.fields })) {
     if (value !== undefined) {
       updates.push(`${key} = ?`)
-      values.push(value as string | null)
+      values.push(value as string | number | null)
     }
   }
 
@@ -259,18 +285,25 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
 
   let updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
     .bind(id)
-    .first()
+    .first<{ domain: string | null; domain_check_source: string | null }>()
 
+  // A new domain, or back to Automatic from «For sale»: ask the registrar now
+  // instead of leaving the row to the nightly job.
   const domainChanged = parsed.data.domain !== undefined && parsed.data.domain !== existing.domain
-  const isAdminOverride = parsed.data.domain_check_source === 'admin_override'
+  const domain = updated?.domain
 
-  if (!isAdminOverride && domainChanged && parsed.data.domain && isPananamesConfigured(c.env)) {
-    const result = await checkDomainAvailability(parsed.data.domain, c.env)
+  if (
+    updated?.domain_check_source !== 'admin_override' &&
+    (domainChanged || change.recheck) &&
+    domain &&
+    isPananamesConfigured(c.env)
+  ) {
+    const result = await checkDomainAvailability(domain, c.env)
     if (result) {
       await updateNamingDomainStatus(c.env.DB, id, result)
       updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
         .bind(id)
-        .first()
+        .first<{ domain: string | null; domain_check_source: string | null }>()
     }
   }
 
@@ -361,7 +394,7 @@ app.get('/internal', async c => {
   const status = c.req.query('status') || 'active'
   const availableForBrand = c.req.query('available_for_brand')
   const page = parseInt(c.req.query('page') || '1')
-  const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), 100)
+  const perPage = Math.min(parseInt(c.req.query('per_page') || '20'), NAMINGS_PAGE_MAX)
   const offset = (page - 1) * perPage
 
   let where = '1=1'

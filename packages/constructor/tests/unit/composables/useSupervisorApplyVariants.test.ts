@@ -59,9 +59,9 @@ describe('useSupervisorApplyVariants — ceoExternalItemsForReview', () => {
     const apply = createApplyVariants()
 
     expect(apply.ceoExternalItemsForReview.value).toEqual([
-      { id: 'ext-a', name: 'Alpha', domain: 'alpha.test' },
-      { id: 'ext-b', name: 'Beta', domain: 'beta.test' },
-      { id: 'ext-d', name: 'Delta', domain: 'delta.test' },
+      { id: 'ext-a', name: 'Alpha', domain: 'alpha.test', note: null },
+      { id: 'ext-b', name: 'Beta', domain: 'beta.test', note: null },
+      { id: 'ext-d', name: 'Delta', domain: 'delta.test', note: null },
     ])
   })
 
@@ -71,7 +71,7 @@ describe('useSupervisorApplyVariants — ceoExternalItemsForReview', () => {
     const apply = createApplyVariants()
 
     expect(apply.ceoExternalItemsForReview.value).toEqual([
-      { id: 'ext-d', name: 'Delta', domain: 'delta.test' },
+      { id: 'ext-d', name: 'Delta', domain: 'delta.test', note: null },
     ])
   })
 
@@ -80,8 +80,8 @@ describe('useSupervisorApplyVariants — ceoExternalItemsForReview', () => {
     const apply = createApplyVariants()
 
     expect(apply.ceoExternalItemsForReview.value).toEqual([
-      { id: 'ext-a', name: 'Alpha', domain: 'alpha.test' },
-      { id: 'ext-b', name: 'Beta', domain: 'beta.test' },
+      { id: 'ext-a', name: 'Alpha', domain: 'alpha.test', note: null },
+      { id: 'ext-b', name: 'Beta', domain: 'beta.test', note: null },
     ])
   })
 })

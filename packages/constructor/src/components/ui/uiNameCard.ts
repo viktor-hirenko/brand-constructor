@@ -324,9 +324,14 @@ export function formatUiNameCardPrice(price: number | null | undefined): string 
  * `badge/bg/green` + `badge/content/green` and `5382:48314` paints Sold with
  * `badge/bg/red` + `badge/content/red`; `unknown` is drawn nowhere, so it gets
  * no badge rather than an invented one.
+ *
+ * For sale (a taken domain its owner sells, domain-status-plan.md) is not in
+ * the mockup either, but it is a real status with a real price: it takes the
+ * kit's existing `amber` tone rather than a new colour. «For sale» measures
+ * under «Available», so the reserved badge column still holds it.
  */
 export interface UiNameCardBadge {
-  tone: 'green' | 'red'
+  tone: 'green' | 'red' | 'amber'
   label: string
 }
 
@@ -335,5 +340,6 @@ export function resolveUiNameCardBadge(
 ): UiNameCardBadge | null {
   if (availability === 'available') return { tone: 'green', label: 'Available' }
   if (availability === 'sold') return { tone: 'red', label: 'Sold' }
+  if (availability === 'for_sale') return { tone: 'amber', label: 'For sale' }
   return null
 }

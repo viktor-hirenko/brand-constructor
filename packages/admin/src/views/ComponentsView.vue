@@ -5,6 +5,7 @@ import type { ComponentType } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
 import { useApiList, apiPost } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
+import { countUk } from '@/utils/pluralUk'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -62,14 +63,14 @@ useListPolling(() => reloadTypes({ silent: true }), { paused: pollingPaused })
 <template>
   <div class="components-view">
     <div class="components-view__toolbar">
-      <span class="components-view__count">{{ types.length }} component types</span>
-      <BaseButton v-if="canWrite" @click="showCreateModal = true">+ New Component Type</BaseButton>
+      <span class="components-view__count">{{ countUk(types.length, 'тип компонента', 'типи компонентів', 'типів компонентів') }}</span>
+      <BaseButton v-if="canWrite" @click="showCreateModal = true">+ Новий тип компонента</BaseButton>
     </div>
 
-    <div v-if="loading" class="components-view__loading">Loading...</div>
+    <div v-if="loading" class="components-view__loading">Завантаження…</div>
 
     <div v-else-if="types.length === 0" class="components-view__empty">
-      No component types found. Create your first component type to get started.
+      Типів компонентів не знайдено. Створіть перший тип компонента.
     </div>
 
     <div v-else class="components-view__grid">
@@ -81,33 +82,33 @@ useListPolling(() => reloadTypes({ silent: true }), { paused: pollingPaused })
       >
         <PhosphorIcon :svg="squaresFour" class="type-card__icon" />
         <h3 class="type-card__name">{{ type.name }}</h3>
-        <p class="type-card__description">{{ type.description || 'No description' }}</p>
-        <span class="type-card__count">{{ type.variant_count }} variants</span>
+        <p class="type-card__description">{{ type.description || 'Без опису' }}</p>
+        <span class="type-card__count">{{ countUk(type.variant_count, 'варіант', 'варіанти', 'варіантів') }}</span>
       </div>
     </div>
 
     <BaseModal
       v-if="showCreateModal"
-      title="Create Component Type"
+      title="Новий тип компонента"
       @close="showCreateModal = false"
     >
       <form class="components-view__form" @submit.prevent="handleCreate">
         <BaseInput
           v-model="newName"
-          label="Name"
-          placeholder="e.g. Banners, Header, Tabbar..."
+          label="Назва"
+          placeholder="напр. Banners, Header, Tabbar…"
           required
         />
         <BaseTextarea
           v-model="newDescription"
-          label="Description"
-          placeholder="Brief description of this component type..."
+          label="Опис"
+          placeholder="Коротко про цей тип компонента…"
           :rows="3"
         />
         <div class="components-view__form-actions">
-          <BaseButton variant="secondary" @click="showCreateModal = false">Cancel</BaseButton>
+          <BaseButton variant="secondary" @click="showCreateModal = false">Скасувати</BaseButton>
           <BaseButton :loading="creating" :disabled="!newName.trim()" @click="handleCreate">
-            Create
+            Створити
           </BaseButton>
         </div>
       </form>

@@ -48,10 +48,10 @@ const GALLERY_SLOTS: GallerySlot[] = Array.from({ length: 10 }, (_, i) => {
   const fieldKey = `gallery_url_${n}` as GallerySlot['fieldKey']
   const label =
     n === 1
-      ? 'Gallery Image 1 (Mobile Preview)'
+      ? 'Картинка галереї 1 (перегляд на мобільному)'
       : n === 2
-        ? 'Gallery Image 2 (Desktop preview)'
-        : `Gallery Image ${n}`
+        ? 'Картинка галереї 2 (перегляд на десктопі)'
+        : `Картинка галереї ${n}`
   return {
     fieldKey,
     entityType: `concept_gallery_${n}` as `concept_gallery_${number}`,
@@ -197,9 +197,9 @@ function assetUploaderMeta(entityType: string, fileUrl: string | null): string |
   const name =
     (asset as Asset & { uploader_name?: string | null }).uploader_name ??
     concept.value?.author_name ??
-    'Unknown'
+    'невідомо'
   const date = new Date(asset.created_at).toLocaleDateString('uk-UA')
-  return `by ${name} · ${date}`
+  return `Автор: ${name} · ${date}`
 }
 
 function requestAssetDelete(entityType: string, label: string) {
@@ -243,15 +243,15 @@ async function confirmAssetDelete() {
     <div class="concept-detail__back">
       <BaseButton variant="ghost" size="sm" @click="router.push('/concepts')">
         <PhosphorIcon :svg="arrowLeft" class="concept-detail__back-icon" />
-        Back to Concepts
+        До концептів
       </BaseButton>
     </div>
 
-    <div v-if="loading" class="concept-detail__loading">Loading...</div>
+    <div v-if="loading" class="concept-detail__loading">Завантаження…</div>
 
     <div v-else-if="error" class="concept-detail__error">
-      <p>Failed to load concept: {{ error }}</p>
-      <BaseButton variant="secondary" size="sm" @click="reloadConcept()">Retry</BaseButton>
+      <p>Не вдалося завантажити концепт: {{ error }}</p>
+      <BaseButton variant="secondary" size="sm" @click="reloadConcept()">Спробувати ще раз</BaseButton>
     </div>
 
     <template v-else-if="concept">
@@ -259,19 +259,19 @@ async function confirmAssetDelete() {
         <div>
           <div class="concept-detail__title-row">
             <h2 v-if="!isEditing">{{ concept.name }}</h2>
-            <BaseInput v-else v-model="editName" placeholder="Concept name" />
+            <BaseInput v-else v-model="editName" placeholder="Назва концепту" />
           </div>
           <p class="concept-detail__meta">
-            by {{ concept.author_name }}
+            Автор: {{ concept.author_name }} ·
             {{ new Date(concept.created_at).toLocaleDateString() }}
           </p>
         </div>
         <div v-if="canEdit" class="concept-detail__actions">
           <template v-if="isEditing">
-            <BaseButton variant="secondary" @click="isEditing = false">Cancel</BaseButton>
-            <BaseButton @click="saveChanges">Save</BaseButton>
+            <BaseButton variant="secondary" @click="isEditing = false">Скасувати</BaseButton>
+            <BaseButton @click="saveChanges">Зберегти</BaseButton>
           </template>
-          <BaseButton v-else variant="secondary" @click="startEditing">Edit</BaseButton>
+          <BaseButton v-else variant="secondary" @click="startEditing">Редагувати</BaseButton>
         </div>
       </div>
 
@@ -285,19 +285,19 @@ async function confirmAssetDelete() {
       </div>
 
       <div class="concept-detail__section">
-        <h3>Description</h3>
+        <h3>Опис</h3>
         <BaseTextarea v-if="isEditing" v-model="editDescription" :rows="4" />
         <p v-else class="concept-detail__text">
-          {{ concept.description || 'No description provided.' }}
+          {{ concept.description || 'Опису немає.' }}
         </p>
       </div>
 
       <div class="concept-detail__section">
-        <h3>Mode (Theme)</h3>
+        <h3>Тема</h3>
         <div v-if="isEditing" class="concept-detail__mode-options">
           <label class="concept-detail__mode-option">
             <input type="radio" :value="null" v-model="editMode" name="editMode" />
-            <span>Not specified</span>
+            <span>Не вказано</span>
           </label>
           <label class="concept-detail__mode-option">
             <input type="radio" value="light" v-model="editMode" name="editMode" />
@@ -313,21 +313,21 @@ async function confirmAssetDelete() {
           <span v-else-if="concept.mode === 'dark'" class="mode-badge mode-badge--dark"
             >🌙 Dark</span
           >
-          <span v-else class="mode-badge mode-badge--none">Not specified</span>
+          <span v-else class="mode-badge mode-badge--none">Не вказано</span>
         </p>
       </div>
 
       <div class="concept-detail__section">
-        <h3>Visual Assets</h3>
+        <h3>Картинки</h3>
         <div class="concept-detail__assets">
           <!-- Visual -->
           <div class="asset-slot">
             <div class="asset-slot__preview">
-              <img v-if="concept.visual_url" :src="getAssetUrl(concept.visual_url)" alt="Visual" />
-              <span v-else class="asset-slot__empty-text">No visual uploaded</span>
+              <img v-if="concept.visual_url" :src="getAssetUrl(concept.visual_url)" alt="Візуал" />
+              <span v-else class="asset-slot__empty-text">Візуал не завантажено</span>
             </div>
             <div class="asset-slot__body">
-              <span class="asset-slot__label">Visual</span>
+              <span class="asset-slot__label">Візуал</span>
               <template v-if="canEdit">
                 <BaseInput
                   v-model="visualAspectRatio"
@@ -350,7 +350,7 @@ async function confirmAssetDelete() {
                     :disabled="uploadingType !== null || deletingType !== null"
                     @click="visualInputRef?.click()"
                   >
-                    {{ concept.visual_url ? 'Change image' : 'Upload image' }}
+                    {{ concept.visual_url ? 'Замінити картинку' : 'Завантажити картинку' }}
                   </BaseButton>
                   <BaseButton
                     v-if="concept.visual_url"
@@ -358,9 +358,9 @@ async function confirmAssetDelete() {
                     size="sm"
                     :loading="deletingType === 'concept_visual'"
                     :disabled="uploadingType !== null || deletingType !== null"
-                    @click="requestAssetDelete('concept_visual', 'Visual')"
+                    @click="requestAssetDelete('concept_visual', 'Візуал')"
                   >
-                    Delete
+                    Видалити
                   </BaseButton>
                 </div>
               </template>
@@ -383,7 +383,7 @@ async function confirmAssetDelete() {
                 :src="getAssetUrl(galleryUrl(concept, slot)!)"
                 :alt="slot.label"
               />
-              <span v-else class="asset-slot__empty-text">No image uploaded</span>
+              <span v-else class="asset-slot__empty-text">Картинку не завантажено</span>
             </div>
             <div class="asset-slot__body">
               <span class="asset-slot__label">{{ slot.label }}</span>
@@ -409,7 +409,7 @@ async function confirmAssetDelete() {
                     :disabled="uploadingType !== null || deletingType !== null"
                     @click="openGalleryFileInput(slot.entityType)"
                   >
-                    {{ galleryUrl(concept, slot) ? 'Change image' : 'Upload image' }}
+                    {{ galleryUrl(concept, slot) ? 'Замінити картинку' : 'Завантажити картинку' }}
                   </BaseButton>
                   <BaseButton
                     v-if="galleryUrl(concept, slot)"
@@ -419,7 +419,7 @@ async function confirmAssetDelete() {
                     :disabled="uploadingType !== null || deletingType !== null"
                     @click="requestAssetDelete(slot.entityType, slot.label)"
                   >
-                    Delete
+                    Видалити
                   </BaseButton>
                 </div>
               </template>
@@ -437,9 +437,9 @@ async function confirmAssetDelete() {
       </div>
 
       <div class="concept-detail__section">
-        <h3>Linked External Namings ({{ concept.namings.length }})</h3>
+        <h3>Прив'язані External Namings ({{ concept.namings.length }})</h3>
         <div v-if="concept.namings.length === 0" class="concept-detail__empty">
-          No namings linked to this concept yet.
+          До концепту поки не прив'язано жодного неймінгу.
         </div>
         <div v-else class="concept-detail__namings">
           <div v-for="naming in concept.namings" :key="naming.id" class="naming-chip">
@@ -451,17 +451,17 @@ async function confirmAssetDelete() {
 
     <BaseModal
       v-if="deleteAssetTarget"
-      title="Delete Image"
+      title="Видалити картинку"
       width="420px"
       @close="deleteAssetTarget = null"
     >
       <p class="concept-detail__confirm-text">
-        Remove <strong>"{{ deleteAssetTarget.label }}"</strong> from this concept?
+        Видалити <strong>«{{ deleteAssetTarget.label }}»</strong> з концепту?
       </p>
       <template #footer>
-        <BaseButton variant="secondary" @click="deleteAssetTarget = null">Cancel</BaseButton>
+        <BaseButton variant="secondary" @click="deleteAssetTarget = null">Скасувати</BaseButton>
         <BaseButton variant="danger" :loading="deletingType !== null" @click="confirmAssetDelete">
-          Delete
+          Видалити
         </BaseButton>
       </template>
     </BaseModal>
