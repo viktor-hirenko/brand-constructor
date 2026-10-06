@@ -426,11 +426,11 @@ function getSourceLetter(n: ExternalNamingRow): string {
 function getSourceTooltip(n: ExternalNamingRow): string {
   switch (getSourceKind(n)) {
     case 'override':
-      return 'Вручну — встановила команда, нічна перевірка пропускає'
+      return 'Статус встановлено вручну'
     case 'auto':
-      return 'Автоматично — перевірка Pananames'
+      return 'Статус перевірено автоматично'
     default:
-      return 'Вручну — автоматично не перевірялось'
+      return 'Статус ще не перевірено автоматично'
   }
 }
 
@@ -807,7 +807,7 @@ async function confirmDeleteNaming() {
               v-else-if="createPreviewAttempted && !createPreviewLoading"
               class="namings-view__hint"
             >
-              Не вдалося перевірити домен. Статус і ціна з'являться після збереження.
+              Не вдалося перевірити домен. Статус і ціну буде визначено після збереження.
             </p>
           </div>
           <NamingDomainModeField
@@ -890,7 +890,7 @@ async function confirmDeleteNaming() {
               </p>
             </template>
             <p v-else-if="editPreviewAttempted && !editPreviewLoading" class="namings-view__hint">
-              Не вдалося перевірити домен. Статус і ціна з'являться після збереження.
+              Не вдалося перевірити домен. Статус і ціну буде визначено після збереження.
             </p>
           </div>
           <NamingDomainModeField

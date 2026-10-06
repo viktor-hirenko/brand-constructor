@@ -21,14 +21,14 @@ const purchasePrice = defineModel<string>('purchasePrice', { required: true })
 
 const priceError = computed(() =>
   mode.value === 'for_sale' && purchasePrice.value.trim() !== '' && parsePurchasePrice(purchasePrice.value) === null
-    ? 'Введіть ціну в доларах, напр. 2685'
+    ? 'Ціна має бути додатним числом, наприклад 2685'
     : ''
 )
 
 const automaticHint = computed(() =>
   props.wasForSale
-    ? 'Домен перевіриться одразу після збереження.'
-    : 'Система сама перевіряє домен через Pananames: після збереження і щоночі.'
+    ? 'Статус буде оновлено одразу після збереження.'
+    : 'Статус визначається автоматично та оновлюється щодня.'
 )
 </script>
 
@@ -45,8 +45,8 @@ const automaticHint = computed(() =>
     <label class="naming-domain-mode__option">
       <input v-model="mode" type="radio" :name="name" value="for_sale" class="naming-domain-mode__radio" />
       <span>
-        <span class="naming-domain-mode__title">Зайнятий, але власник його продає (For sale)</span>
-        <span class="naming-domain-mode__hint">Ставите вручну разом із ціною викупу. Нічна перевірка його не змінює.</span>
+        <span class="naming-domain-mode__title">Продається власником (For sale)</span>
+        <span class="naming-domain-mode__hint">Статус і ціна викупу задаються вручну та не оновлюються автоматично.</span>
       </span>
     </label>
     <BaseInput
@@ -54,7 +54,7 @@ const automaticHint = computed(() =>
       v-model="purchasePrice"
       class="naming-domain-mode__price"
       label="Ціна викупу, USD"
-      placeholder="напр. 2685"
+      placeholder="Наприклад, 2685"
       required
       :error="priceError"
     />

@@ -42,7 +42,7 @@ describe('resolveNamingPrice', () => {
 
 describe('domainPreviewErrorText', () => {
   it('says in Ukrainian why the stage shows no check', () => {
-    expect(domainPreviewErrorText('Domain check service not configured')).toBe('Перевірка доменів тут вимкнена')
+    expect(domainPreviewErrorText('Domain check service not configured')).toBe('Перевірка доменів на цьому сервері недоступна')
     expect(domainPreviewErrorText('HTTP 502')).toBe('Не вдалося перевірити домен')
   })
 })
@@ -126,6 +126,15 @@ describe('NamingsView wiring', () => {
     const badge = view.slice(view.indexOf('&__usage-badge {'), view.indexOf('&--used {', view.indexOf('&__usage-badge {')))
     expect(badge).toContain('white-space: nowrap')
     expect(badge).not.toContain('max-width')
+  })
+
+  it('hints describe the status plainly, without orders to the reader or «команда» (owner, 06.10)', () => {
+    const field = readFileSync(resolve(__dirname, '../../../src/components/namings/NamingDomainModeField.vue'), 'utf8')
+    for (const text of [view, field]) {
+      expect(text).not.toMatch(/Ставите|команда|нічна перевірка|Система сама/)
+    }
+    expect(view).toContain("'Статус встановлено вручну'")
+    expect(field).toContain('Статус і ціна викупу задаються вручну та не оновлюються автоматично.')
   })
 
   it('Save and Create stay off while For sale has no price', () => {
