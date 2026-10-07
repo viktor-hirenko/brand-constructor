@@ -11,7 +11,11 @@ compatibility_flags = ["nodejs_compat"]
 # ─────────────────────────────────────────────────────────────────────────────
 
 [triggers]
-crons = ["0 6 * * *"] # Daily domain availability check at 6:00 AM UTC
+# 06:00 UTC — domain availability at the registrar (needs PANANAMES_SIGNATURE).
+# 06:30 UTC — purchase price of «For sale» domains at the marketplaces.
+# 06:45 UTC — taken domains: is one of them for sale now.
+# The last two do nothing unless PRICE_CHECK_ENABLED = "true" (`utils/price-check.ts`).
+crons = ["0 6 * * *", "30 6 * * *", "45 6 * * *"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Default (top-level) environment is intentionally empty — NO production bindings.
@@ -81,14 +85,15 @@ simple = { limit = 5, period = 60 }
 # Its own D1: a copy of production, refreshed on demand
 # (`pnpm stage:db:refresh`); nothing flows back to production.
 # Secrets: JWT_SECRET only. No SLACK_BOT_TOKEN → no Slack messages; no
-# PANANAMES_SIGNATURE → no domain checks; Jira off.
+# PANANAMES_SIGNATURE → no domain checks; Jira off. The nightly jobs here are
+# the two price checks only (06:30 and 06:45 UTC).
 # DEPLOY: wrangler deploy --env stage
 # ─────────────────────────────────────────────────────────────────────────────
 
 [env.stage]
 
 [env.stage.triggers]
-crons = []
+crons = ["30 6 * * *", "45 6 * * *"]
 
 [env.stage.vars]
 ENVIRONMENT = "stage"
@@ -101,6 +106,9 @@ JIRA_INITIATIVE_ENABLED = "false"
 # Pictures live in the production bucket (the copied base points at them):
 # the stage never deletes a file there (`routes/assets.ts`).
 SHARED_ASSETS_BUCKET = "true"
+# The switch of the nightly price check and of its recheck button: anything
+# but "true" and the server asks no marketplace.
+PRICE_CHECK_ENABLED = "true"
 
 [[env.stage.d1_databases]]
 binding = "DB"

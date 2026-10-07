@@ -10,6 +10,61 @@ export type DomainAvailabilityStatus = 'available' | 'sold' | 'unknown' | 'for_s
 
 export type DomainCheckSource = 'manual' | 'pananames' | 'admin_override'
 
+/** Marketplaces the server reads a «For sale» domain's price from. */
+export type NamingPriceSource = 'afternic' | 'sedo' | 'namecheap'
+
+/**
+ * What one marketplace answered: a fixed USD price, a listing without one
+ * (offers only, another currency), no listing, or nothing readable.
+ */
+export type NamingPriceOutcome = 'listed' | 'no_fixed_price' | 'absent' | 'unread'
+
+export interface NamingPriceSourceReading {
+  source: NamingPriceSource
+  outcome: NamingPriceOutcome
+  amount: number | null
+  currency: string | null
+  min_offer: number | null
+  url: string | null
+  /** When the answer was last read; an unread attempt keeps the older date. */
+  read_at: string | null
+}
+
+/**
+ * The line under a «For sale» price in the admin, decided on the server
+ * (`worker/src/utils/price-check-rules.ts`):
+ *
+ *   verified         — the price equals the marketplace's
+ *   updated          — the marketplace changed it and the server followed
+ *   differs          — the marketplace has another price; nothing to decide
+ *   proposal         — the same, and a person has to decide
+ *   no_fixed_price   — listed, but with no fixed USD price
+ *   not_found        — the listing is gone (the row will leave «For sale»)
+ *   not_found_manual — no listing, and the price was never a marketplace's
+ *   unread           — the marketplace did not answer
+ *   delisted         — «For sale» was taken off automatically
+ */
+export interface NamingPriceCheck {
+  kind:
+    | 'verified'
+    | 'updated'
+    | 'differs'
+    | 'proposal'
+    | 'no_fixed_price'
+    | 'not_found'
+    | 'not_found_manual'
+    | 'unread'
+    | 'delisted'
+  date: string | null
+  source: NamingPriceSource | null
+  url: string | null
+  /** The marketplace's price, when it is not the one in the record. */
+  amount: number | null
+  /** The price before the automatic update or removal. */
+  prev: number | null
+  sources: NamingPriceSourceReading[]
+}
+
 export interface ExternalNaming {
   id: string
   name: string
@@ -28,6 +83,10 @@ export interface ExternalNaming {
   used_in_brand_id: string | null
   created_at: string
   updated_at: string
+  /** Only in list rows of a «For sale» naming that has been checked. */
+  price_check?: NamingPriceCheck | null
+  /** List rows: the «For sale» price is a marketplace's and follows it, not typed by a person. */
+  price_auto?: boolean
 }
 
 export interface InternalNaming {

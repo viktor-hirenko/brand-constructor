@@ -14,6 +14,13 @@ import authRoutes from './routes/auth'
 import brandsRoutes from './routes/brands'
 import { batchCheckDomains, isPananamesConfigured } from './utils/domain-check'
 import {
+  PRICE_CHECK_CRON,
+  PRICE_DISCOVERY_CRON,
+  isPriceCheckEnabled,
+  runPriceCheck,
+  runPriceDiscovery,
+} from './utils/price-check'
+import {
   assetKeysToTry,
   ASSET_CACHE_CONTROL,
   ASSET_FALLBACK_CACHE_CONTROL,
@@ -102,6 +109,20 @@ export default {
   fetch: app.fetch,
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    // Their own schedule entries: the stage has no registrar key, and one run
+    // has its own allowance of requests out (utils/price-check.ts).
+    if (event.cron === PRICE_CHECK_CRON || event.cron === PRICE_DISCOVERY_CRON) {
+      const name = event.cron === PRICE_CHECK_CRON ? 'price check' : 'price discovery'
+      if (!isPriceCheckEnabled(env)) {
+        console.log(`Scheduled ${name}: PRICE_CHECK_ENABLED is not "true", skipping`)
+        return
+      }
+      console.log(`Scheduled ${name} started:`, new Date().toISOString())
+      const summary = event.cron === PRICE_CHECK_CRON ? await runPriceCheck(env) : await runPriceDiscovery(env)
+      console.log(`Scheduled ${name} completed:`, JSON.stringify(summary))
+      return
+    }
+
     if (!isPananamesConfigured(env)) {
       console.log('Scheduled domain check: Pananames API signature not configured, skipping')
       return

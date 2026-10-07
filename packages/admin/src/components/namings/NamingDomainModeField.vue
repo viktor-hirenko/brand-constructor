@@ -2,18 +2,20 @@
 import { computed } from 'vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import { parsePurchasePrice, type DomainMode } from '@/utils/namingDomainStatus'
+import type { DomainCard } from '@/utils/namingPriceCheck'
 
 /**
- * Domain availability in the create and edit modals: the registrar decides
- * (Automatic), or the team marks a taken domain the owner sells and enters
- * what it costs (docs/architecture/domain-status-plan.md). Replaces «Override
- * auto-check» with its manual Unknown / Available / Sold.
+ * Domain status and price in the create and edit modals. The system decides
+ * both — free, taken, or for sale by its owner at the marketplace's price
+ * (docs/architecture/domain-price-sync-plan.md) — and a person only says when
+ * the price is their own: a domain sold elsewhere, or a price agreed with the
+ * seller. One question, where there used to be a status to pick by hand.
  */
-const props = defineProps<{
+defineProps<{
   /** Radio group name — unique per modal. */
   name: string
-  /** Edit of a row that is For sale now: Automatic rechecks on save. */
-  wasForSale?: boolean
+  /** Edit: what the system knows of the saved domain, shown above the choice. */
+  found?: DomainCard | null
 }>()
 
 const mode = defineModel<DomainMode>('mode', { required: true })
@@ -24,29 +26,32 @@ const priceError = computed(() =>
     ? 'Ціна має бути додатним числом, наприклад 2685'
     : ''
 )
-
-const automaticHint = computed(() =>
-  props.wasForSale
-    ? 'Статус буде оновлено одразу після збереження.'
-    : 'Статус визначається автоматично та оновлюється щодня.'
-)
 </script>
 
 <template>
   <div class="naming-domain-mode">
-    <span class="naming-domain-mode__label">Статус домену</span>
+    <span class="naming-domain-mode__label">Статус і ціна домену</span>
+    <p v-if="found" class="naming-domain-mode__found">
+      <strong>{{ found.headline }}</strong>
+      <span v-for="line in found.details" :key="line">{{ line }}</span>
+    </p>
     <label class="naming-domain-mode__option">
       <input v-model="mode" type="radio" :name="name" value="automatic" class="naming-domain-mode__radio" />
       <span>
         <span class="naming-domain-mode__title">Автоматично</span>
-        <span class="naming-domain-mode__hint">{{ automaticHint }}</span>
+        <span class="naming-domain-mode__hint">
+          Статус і ціна визначаються автоматично: домен вільний, зайнятий або продається власником.
+          Перевіряється щодня.
+        </span>
       </span>
     </label>
     <label class="naming-domain-mode__option">
       <input v-model="mode" type="radio" :name="name" value="for_sale" class="naming-domain-mode__radio" />
       <span>
-        <span class="naming-domain-mode__title">Продається власником (For sale)</span>
-        <span class="naming-domain-mode__hint">Статус і ціна викупу задаються вручну та не оновлюються автоматично.</span>
+        <span class="naming-domain-mode__title">Своя ціна викупу (For sale)</span>
+        <span class="naming-domain-mode__hint">
+          Для домену, що продається на іншому сайті або за домовленою ціною. Автоматично не змінюється.
+        </span>
       </span>
     </label>
     <BaseInput
@@ -62,6 +67,25 @@ const automaticHint = computed(() =>
 </template>
 
 <style lang="scss" scoped>
+.naming-domain-mode__found {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $radius-md;
+  background-color: $color-primary-light;
+  font-size: $font-size-xs;
+  line-height: $line-height-normal;
+  color: $color-text-secondary;
+
+  strong {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text;
+  }
+}
+
 .naming-domain-mode {
   display: flex;
   flex-direction: column;

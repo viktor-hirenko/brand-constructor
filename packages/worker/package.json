@@ -22,6 +22,8 @@
     "db:migrate:012:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/012_add_jira_initiative.sql",
     "db:migrate:015:stage": "wrangler d1 execute DB --remote --env stage --file=./src/db/migrations/015_naming_purchase_price.sql",
     "db:migrate:015:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/015_naming_purchase_price.sql",
+    "db:migrate:016:stage": "wrangler d1 execute DB --remote --env stage --file=./src/db/migrations/016_naming_price_checks.sql",
+    "db:migrate:016:remote": "wrangler d1 execute brand-constructor-db --remote --env production --file=./src/db/migrations/016_naming_price_checks.sql",
     "deploy:stage": "wrangler deploy --env stage"
   },
   "dependencies": {

@@ -111,6 +111,12 @@ describe('NamingsView wiring', () => {
     expect(view).not.toMatch(/<option value="available">/)
   })
 
+  it('a concept is picked by typing — in the filter and in both windows (owner, 07.10)', () => {
+    // The filter and the edit window here; the create window too, wherever it lives.
+    expect((view.match(/<SearchSelect/g) ?? []).length).toBeGreaterThanOrEqual(2)
+    expect(view).not.toMatch(/<select/)
+  })
+
   it('the table shows the price by status, not the raw column', () => {
     expect(view).toContain('resolveNamingPrice(n)')
     expect(view).not.toContain("n.price != null ? `$${n.price}`")
@@ -119,22 +125,37 @@ describe('NamingsView wiring', () => {
   })
 
   it('row actions are a pencil and a bin in one line, the brand badge never wraps (owner, 06.10)', () => {
-    expect(view).toContain("import pencilSimple from '@phosphor-icons/core/regular/pencil-simple.svg?raw'")
-    expect(view).toContain("import trash from '@phosphor-icons/core/regular/trash.svg?raw'")
-    expect(view.match(/aria-label="Редагувати"/g)).toHaveLength(2)
-    expect(view.match(/aria-label="Видалити"/g)).toHaveLength(2)
+    // Since 07.10 every table's row actions are one component, `RowAction`.
+    expect(view.match(/<RowAction[^>]*kind="edit"/g)).toHaveLength(2)
+    expect(view.match(/<RowAction[^>]*kind="delete"/g)).toHaveLength(2)
+    const rowAction = readFileSync(resolve(__dirname, '../../../src/components/ui/RowAction.vue'), 'utf8')
+    expect(rowAction).toContain("'@phosphor-icons/core/regular/pencil-simple.svg?raw'")
+    expect(rowAction).toContain("'@phosphor-icons/core/regular/trash.svg?raw'")
+    // Marks in the table are Phosphor glyphs through PhosphorIcon, like every icon of the admin.
+    for (const glyph of ['regular/arrow-up', 'regular/arrow-down', 'fill/warning-circle-fill']) {
+      expect(view).toContain(`'@phosphor-icons/core/${glyph}.svg?raw'`)
+    }
+    expect(view).not.toMatch(/<svg|<path/)
+    expect(view.match(/label="Редагувати"/g)).toHaveLength(2)
+    expect(view.match(/label="Видалити"/g)).toHaveLength(2)
     const badge = view.slice(view.indexOf('&__usage-badge {'), view.indexOf('&--used {', view.indexOf('&__usage-badge {')))
     expect(badge).toContain('white-space: nowrap')
     expect(badge).not.toContain('max-width')
   })
 
   it('hints describe the status plainly, without orders to the reader or «команда» (owner, 06.10)', () => {
-    const field = readFileSync(resolve(__dirname, '../../../src/components/namings/NamingDomainModeField.vue'), 'utf8')
-    for (const text of [view, field]) {
-      expect(text).not.toMatch(/Ставите|команда|нічна перевірка|Система сама/)
+    const src = (path: string) => readFileSync(resolve(__dirname, '../../../src', path), 'utf8')
+    const field = src('components/namings/NamingDomainModeField.vue')
+    // Since 07.10 the status words live in the card behind a price or a status.
+    const card = src('utils/namingPriceCheck.ts')
+    for (const text of [view, field, card, src('components/namings/NamingPriceCheckModal.vue')]) {
+      expect(text).not.toMatch(/Ставите|команда|нічна перевірка|[Сс]истема сама/)
     }
-    expect(view).toContain("'Статус встановлено вручну'")
-    expect(field).toContain('Статус і ціна викупу задаються вручну та не оновлюються автоматично.')
+    expect(card).toContain("'Статус встановлено вручну.'")
+    // The 06.10 hint «…не оновлюються автоматично» stopped being true on 07.10:
+    // the price of a domain for sale is now set and kept by the price check.
+    expect(field).not.toContain('не оновлюються автоматично')
+    expect(field).toContain('Статус і ціна визначаються автоматично')
   })
 
   it('Save and Create stay off while For sale has no price', () => {
