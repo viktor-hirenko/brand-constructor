@@ -43,6 +43,25 @@ const BRAND_LIST_FROM = `
   LEFT JOIN users u_submitted ON u_submitted.id = b.submitted_by
   LEFT JOIN users u_approved ON u_approved.id = b.approved_by
   LEFT JOIN users u_revision ON u_revision.id = b.needs_revision_by
+  LEFT JOIN concepts c_picked ON c_picked.id = b.concept_id
+  LEFT JOIN internal_namings n_picked ON n_picked.id = b.internal_naming_id
+`
+
+// The names of what the brief picked, for the Brands table: «New Brand #122»
+// alone does not say which brand it is (owner, 07.10). External names come as
+// a JSON array in the order they were picked; a broken `external_naming_ids`
+// gives no names instead of failing the whole list.
+const BRAND_PICKED_NAMES = `
+    c_picked.name AS concept_name,
+    n_picked.name AS internal_naming_name,
+    CASE WHEN json_valid(b.external_naming_ids) THEN (
+      SELECT json_group_array(name) FROM (
+        SELECT en.name AS name
+        FROM json_each(b.external_naming_ids) je
+        JOIN external_namings en ON en.id = je.value
+        ORDER BY je.key
+      )
+    ) END AS external_naming_names
 `
 
 const BRAND_LIST_SELECT = `
@@ -51,7 +70,8 @@ const BRAND_LIST_SELECT = `
     u_creator.role AS author_role,
     u_submitted.name AS submitted_by_name,
     u_approved.name AS approved_by_name,
-    u_revision.name AS needs_revision_by_name
+    u_revision.name AS needs_revision_by_name,
+    ${BRAND_PICKED_NAMES}
   ${BRAND_LIST_FROM}
 `
 

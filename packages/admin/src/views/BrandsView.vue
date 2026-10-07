@@ -25,6 +25,7 @@ import RowAction from '@/components/ui/RowAction.vue'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import SearchSelect from '@/components/ui/SearchSelect.vue'
 import { ALL, distinctOptions, matchesChoice, matchesText, shownOf } from '@/utils/tableSearch'
+import { brandSearchValues, conceptPick, internalNamingPick, pickSortValue, pickText } from '@/utils/brandPicks'
 import { useErrorDialog } from '@/composables/useErrorDialog'
 import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryModal.vue'
 import { countUk } from '@/utils/pluralUk'
@@ -57,6 +58,8 @@ function brandsSortValue(brand: BrandListItem, field: string): unknown {
     return getBrandReviewDisplay(brand).waitingSince ?? ''
   }
   if (field === 'internalName') return brand.internalName ?? ''
+  if (field === 'concept') return pickSortValue(conceptPick(brand))
+  if (field === 'internalNaming') return pickSortValue(internalNamingPick(brand))
   if (field === 'authorName') return brand.authorName
   if (field === 'status') return brand.status
   if (field === 'createdAt') return brand.createdAt
@@ -72,7 +75,8 @@ const { sortedData, sortField, sortDirection, toggleSort, setSort } = useTableSo
   brandsSortValue
 )
 
-// Search by the brief's name and a «whose» filter, over the rows of the tab.
+// Search by any name the brief is known by — its number, concept, namings —
+// and a «whose» filter, over the rows of the tab.
 const searchQuery = ref('')
 const authorFilter = ref<string | null>(ALL)
 const authorOptions = computed(() => distinctOptions(brands.value.map(b => b.authorName), 'Усі автори'))
@@ -87,7 +91,8 @@ const tabBrands = computed(() =>
 
 const displayBrands = computed(() =>
   tabBrands.value.filter(
-    brand => matchesText([brand.internalName], searchQuery.value) && matchesChoice(brand.authorName, authorFilter.value)
+    brand =>
+      matchesText(brandSearchValues(brand), searchQuery.value) && matchesChoice(brand.authorName, authorFilter.value)
   )
 )
 const isFiltered = computed(() => displayBrands.value.length !== tabBrands.value.length)
@@ -215,7 +220,7 @@ async function confirmDeleteBrand() {
 <template>
   <div class="brands-view">
     <div class="brands-view__header">
-      <SearchInput id="brands-search" v-model="searchQuery" placeholder="Пошук за назвою" />
+      <SearchInput id="brands-search" v-model="searchQuery" placeholder="Назва, концепт або неймінг" />
       <!-- One author — a customer seeing only their own briefs — needs no «whose». -->
       <SearchSelect
         v-if="authorOptions.length > 2"
@@ -271,6 +276,18 @@ async function confirmDeleteBrand() {
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
+            <th class="sortable-th" @click="handleSort('concept')">
+              Концепт
+              <span v-if="sortField === 'concept'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
+            </th>
+            <th class="sortable-th" @click="handleSort('internalNaming')">
+              Internal Naming
+              <span v-if="sortField === 'internalNaming'" class="sort-arrow">{{
+                sortDirection === 'asc' ? '↑' : '↓'
+              }}</span>
+            </th>
             <th class="sortable-th" @click="handleSort('status')">
               Статус
               <span v-if="sortField === 'status'" class="sort-arrow">{{
@@ -321,6 +338,12 @@ async function confirmDeleteBrand() {
           >
             <td class="brands-view__name-cell">
               {{ brand.internalName || brand.id.substring(0, 12) + '...' }}
+            </td>
+            <td :class="{ 'brands-view__pick--muted': conceptPick(brand).kind !== 'picked' }">
+              {{ pickText(conceptPick(brand)) }}
+            </td>
+            <td :class="{ 'brands-view__pick--muted': internalNamingPick(brand).kind !== 'picked' }">
+              {{ pickText(internalNamingPick(brand)) }}
             </td>
             <td>
               <span class="badge" :class="STATUS_BADGES[brand.status]?.cls ?? 'badge--gray'">
@@ -577,6 +600,11 @@ async function confirmDeleteBrand() {
 
   &__name-cell {
     font-weight: $font-weight-medium;
+  }
+
+  // «замовлено» and the dash: the cell has no name of its own yet.
+  &__pick--muted {
+    color: $color-text-secondary;
   }
 
   &__author-cell {

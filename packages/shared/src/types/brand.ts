@@ -192,6 +192,10 @@ export interface BrandListItem extends Brand {
   submittedByName?: string | null
   approvedByName?: string | null
   needsRevisionByName?: string | null
+  /** Names of what the brief picked — the Brands table shows and searches them. */
+  conceptName?: string | null
+  internalNamingName?: string | null
+  externalNamingNames?: string[]
 }
 
 export interface BrandWorkflowEvent {
