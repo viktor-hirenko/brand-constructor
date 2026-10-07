@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { LIBRARY_TAB_ROLES, USER_ROLES } from '@brand-constructor/shared'
 import { useAuthStore } from '@/stores/auth'
+import { isStaleChunkError, reloadAddress } from '@/utils/staleRelease'
 
 function getRequiredRoles(
   matched: { meta: { roles?: readonly string[] } }[]
@@ -94,7 +95,53 @@ const router = createRouter({
   ],
 })
 
+// A release replaces the files of every screen. A page opened before it still
+// asks for the old ones, the request fails, and the click on a tab does
+// nothing (owner, 07.10: «нажимаю вкладку, а переход не переходит»). Loading
+// the clicked tab's address brings the new files; once per address, so a real
+// outage is not a reload loop.
+const RELOADED_FOR = 'bc-admin-reloaded-for'
+
+/** The tab being opened right now; null when no click is in progress. */
+let clicked: string | null = null
+
+/** Loads the page anew at the clicked tab. False: already done for this address. */
+export function reloadAfterRelease(): boolean {
+  const { pathname, search, hash } = window.location
+  let reloadedFor: string | null = null
+  try {
+    reloadedFor = sessionStorage.getItem(RELOADED_FOR)
+  } catch {
+    // No session storage: reload anyway, the new page will not fail the same way.
+  }
+  const target = reloadAddress(clicked, pathname + search + hash, reloadedFor)
+  if (!target) return false
+  try {
+    sessionStorage.setItem(RELOADED_FOR, target)
+  } catch {
+    // Nothing to remember it in.
+  }
+  window.location.assign(target)
+  return true
+}
+
+router.onError(error => {
+  if (isStaleChunkError(error)) reloadAfterRelease()
+})
+
+router.afterEach((_to, _from, failure) => {
+  clicked = null
+  if (failure) return
+  try {
+    sessionStorage.removeItem(RELOADED_FOR)
+  } catch {
+    // Nothing to forget.
+  }
+})
+
 router.beforeEach(async to => {
+  clicked = to.fullPath
+
   // Skip auth checks in local development mode.
   // `import.meta.env.DEV` is a Vite compile-time constant — statically `false`
   // in `vite build`, so an env-variable typo cannot disable guards in prod.

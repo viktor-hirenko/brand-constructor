@@ -21,6 +21,10 @@ import { useAuthStore } from '@/stores/auth'
 import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import RowAction from '@/components/ui/RowAction.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
+import SearchSelect from '@/components/ui/SearchSelect.vue'
+import { ALL, distinctOptions, matchesChoice, matchesText, shownOf } from '@/utils/tableSearch'
 import { useErrorDialog } from '@/composables/useErrorDialog'
 import BrandWorkflowHistoryModal from '@/components/brands/BrandWorkflowHistoryModal.vue'
 import { countUk } from '@/utils/pluralUk'
@@ -68,13 +72,25 @@ const { sortedData, sortField, sortDirection, toggleSort, setSort } = useTableSo
   brandsSortValue
 )
 
-const displayBrands = computed(() =>
+// Search by the brief's name and a «whose» filter, over the rows of the tab.
+const searchQuery = ref('')
+const authorFilter = ref<string | null>(ALL)
+const authorOptions = computed(() => distinctOptions(brands.value.map(b => b.authorName), 'Усі автори'))
+
+const tabBrands = computed(() =>
   sortedData.value.filter(brand => {
     if (!isCeoUser.value) return true
     if (brand.status !== BRAND_BRIEF_STATUS.SUBMITTED) return true
     return !brandHasNewBriefsFromBrand(brand)
   })
 )
+
+const displayBrands = computed(() =>
+  tabBrands.value.filter(
+    brand => matchesText([brand.internalName], searchQuery.value) && matchesChoice(brand.authorName, authorFilter.value)
+  )
+)
+const isFiltered = computed(() => displayBrands.value.length !== tabBrands.value.length)
 
 function applyDefaultSortForTab(tab: string) {
   if (tab === 'submitted' || tab === 'all') {
@@ -199,7 +215,19 @@ async function confirmDeleteBrand() {
 <template>
   <div class="brands-view">
     <div class="brands-view__header">
-      <span class="brands-view__count">{{ countUk(total, 'бренд', 'бренди', 'брендів') }}</span>
+      <SearchInput id="brands-search" v-model="searchQuery" placeholder="Пошук за назвою" />
+      <!-- One author — a customer seeing only their own briefs — needs no «whose». -->
+      <SearchSelect
+        v-if="authorOptions.length > 2"
+        id="brands-author"
+        v-model="authorFilter"
+        class="brands-view__author"
+        :options="authorOptions"
+        aria-label="Автор"
+      />
+      <span class="brands-view__count">
+        {{ shownOf(displayBrands.length, tabBrands.length) }}{{ countUk(total, 'бренд', 'бренди', 'брендів') }}
+      </span>
       <BaseButton
         v-if="canCreateBrand"
         class="brands-view__create"
@@ -224,7 +252,13 @@ async function confirmDeleteBrand() {
     <div v-if="loading" class="brands-view__loading">Завантаження…</div>
 
     <div v-else-if="displayBrands.length === 0" class="brands-view__empty">
-      {{ activeTab !== 'all' ? 'Брендів із цим статусом не знайдено.' : 'Брендів не знайдено.' }}
+      {{
+        isFiltered
+          ? 'Нічого не знайдено.'
+          : activeTab !== 'all'
+            ? 'Брендів із цим статусом не знайдено.'
+            : 'Брендів не знайдено.'
+      }}
     </div>
 
     <div v-else class="brands-view__table-wrap">
@@ -275,7 +309,7 @@ async function confirmDeleteBrand() {
               }}</span>
             </th>
             <th class="brands-view__jira-col">Jira</th>
-            <th>Дії</th>
+            <th class="brands-view__actions-head">Дії</th>
           </tr>
         </thead>
         <TransitionGroup tag="tbody" :name="transitionName">
@@ -340,36 +374,8 @@ async function confirmDeleteBrand() {
               <span v-else class="brands-view__cell-line brands-view__cell-line--muted">—</span>
             </td>
             <td class="brands-view__actions" @click.stop>
-              <button
-                class="brands-view__history-btn"
-                type="button"
-                title="Історія брифу"
-                @click="openHistory(brand)"
-              >
-                Історія
-              </button>
-              <button
-                v-if="canDeleteBrand"
-                class="brands-view__delete-btn"
-                title="Видалити"
-                @click="handleDeleteBrand(brand)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
-              </button>
+              <RowAction kind="history" label="Історія брифу" @click="openHistory(brand)" />
+              <RowAction v-if="canDeleteBrand" kind="delete" label="Видалити" @click="handleDeleteBrand(brand)" />
             </td>
           </tr>
         </TransitionGroup>
@@ -437,6 +443,11 @@ async function confirmDeleteBrand() {
 
   &__create {
     margin-left: auto;
+  }
+
+  &__author {
+    width: 220px;
+    max-width: 100%;
   }
 
   &__tabs {
@@ -557,6 +568,11 @@ async function confirmDeleteBrand() {
     &:hover {
       background-color: $color-bg;
     }
+
+    // The sticky cell has a ground of its own: it follows the row's.
+    &:hover .brands-view__actions {
+      background-color: $color-bg;
+    }
   }
 
   &__name-cell {
@@ -633,51 +649,16 @@ async function confirmDeleteBrand() {
     }
   }
 
+  // History and bin — `RowAction`, the one look of row actions in the admin.
+  // In view while the table is scrolled sideways.
   &__actions {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2;
+    @include sticky-actions($color-bg-white);
   }
 
-  &__history-btn {
-    padding: $spacing-1 $spacing-2;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    color: $color-primary;
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-      background-color: $color-bg;
-      border-color: $color-primary;
-    }
-  }
-
-  &__confirm-text {
-    font-size: $font-size-sm;
-    color: $color-text;
-    line-height: $line-height-normal;
-  }
-
-  &__delete-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: $spacing-1;
-    border: none;
-    border-radius: $radius-sm;
-    background: none;
-    color: $color-text-secondary;
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-      color: #b91c1c;
-      background-color: #fee2e2;
-    }
+  // Over the other headers, which are sticky to the top themselves.
+  &__table &__actions-head {
+    @include sticky-actions($color-bg);
+    z-index: 2;
   }
 }
 
