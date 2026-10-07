@@ -374,6 +374,20 @@ d('the reserve', () => {
     expect(detail.data.created.externalNamings[0]).toMatchObject({ id: name, usedInBrand: true })
   })
 
+  // The Archive showed «—» for every order: the list read the deadline from the
+  // brief, and a closed order's answers are no longer there (owner, 07.10).
+  it('a closed order keeps its deadline in the list', async () => {
+    const app = createBrandApp()
+    const id = await briefInWork(app)
+    const open = await json(await app.request('strategy', 'GET', '/api/orders?tab=open'))
+    expect(open.data.items[0]).toMatchObject({ brandId: id, deadline: '2026-11-01' })
+    const concept = await makeConcept(app, id)
+    const name = await makeName(app, id, concept)
+    await app.request('po', 'PUT', `/api/brands/${id}`, wizardSave({ conceptId: concept, externalNamingIds: [name], newConceptBrief: null }))
+    const archive = await json(await app.request('strategy', 'GET', '/api/orders?tab=archive'))
+    expect(archive.data.items[0]).toMatchObject({ brandId: id, state: 'closed', deadline: '2026-11-01' })
+  })
+
   it('picking from the library instead cancels the order and frees what was made', async () => {
     const app = createBrandApp()
     const id = await briefInWork(app)

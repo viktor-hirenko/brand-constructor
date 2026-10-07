@@ -174,7 +174,7 @@ orders.get('/', async c => {
       cancelledKinds,
       sentToWorkAt: row.sent_to_work_at ?? null,
       readyAt: row.orders_ready_at ?? null,
-      deadline: orderDeadline(row),
+      deadline: orderDeadline(row, lastEventMeta.get(row.id)),
       created: {
         concepts: showConcepts ? made.concepts : 0,
         externalNamings: showExternal ? made.externalNamings : 0,

@@ -112,13 +112,7 @@ export async function loadOrderedKinds(
     )
     .bind(row.id)
     .first<{ meta: string }>()
-  let snapshot: Record<string, unknown> = {}
-  try {
-    const answers = event?.meta ? (JSON.parse(event.meta) as { answers?: unknown }).answers : null
-    if (answers && typeof answers === 'object') snapshot = answers as Record<string, unknown>
-  } catch {
-    /* no copy kept (sent before it existed) */
-  }
+  const snapshot = orderAnswersKept(event?.meta)
   const kinds = orderedKinds(event?.meta, row, {
     concepts: created.concepts.length,
     externalNamings: created.externalNamings.length,
@@ -151,11 +145,30 @@ export function namingOrder(row: BrandRow): Record<string, unknown> | null {
   return parseJson(row.new_naming_brief)
 }
 
-/** The earliest deadline among the orders, as the author typed it. */
-export function orderDeadline(row: BrandRow): string | null {
-  const dates = [conceptOrder(row)?.namingDeadline, namingOrder(row)?.namingDeadline].filter(
-    (d): d is string => typeof d === 'string' && d !== ''
-  )
+/** The copy of the order's answers kept on the `sent_to_work` event, by kind. */
+export function orderAnswersKept(sentMeta: string | null | undefined): Record<string, unknown> {
+  try {
+    const answers = sentMeta ? (JSON.parse(sentMeta) as { answers?: unknown }).answers : null
+    return answers && typeof answers === 'object' ? (answers as Record<string, unknown>) : {}
+  } catch {
+    /* no copy kept (sent before it existed) */
+    return {}
+  }
+}
+
+/**
+ * The earliest deadline among the orders, as the author typed it. A closed
+ * order's answers left the brief with it, so the date is then read from the
+ * copy on the `sent_to_work` event — or every order in the Archive would have
+ * no deadline (owner, 07.10: «почему дедлайн пустой»).
+ */
+export function orderDeadline(row: BrandRow, sentMeta?: string | null): string | null {
+  const kept = orderAnswersKept(sentMeta)
+  const deadlineOf = (order: unknown) => (order as { namingDeadline?: unknown } | null | undefined)?.namingDeadline
+  const dates = [
+    deadlineOf(conceptOrder(row) ?? kept[ORDER_KINDS.CONCEPT]),
+    deadlineOf(namingOrder(row) ?? kept[ORDER_KINDS.EXTERNAL_NAMING]),
+  ].filter((d): d is string => typeof d === 'string' && d !== '')
   return dates.sort()[0] ?? null
 }
 
