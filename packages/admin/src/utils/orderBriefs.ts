@@ -23,5 +23,5 @@ export function briefsForKind(items: OrderListItem[], kind: LibraryItemKind): Or
 /** «For New Brand #N» — the plate on a library item made for a brief. */
 export function forBriefLabel(item: { for_brand_id?: string | null; for_brand_name?: string | null }): string | null {
   if (!item.for_brand_id) return null
-  return `For ${item.for_brand_name || 'a brief'}`
+  return `Для ${item.for_brand_name || 'брифу'}`
 }

@@ -26,17 +26,17 @@ export type BrandWorkflowEventType =
 
 /** Admin History modal — human-readable event titles. */
 export const BRAND_WORKFLOW_EVENT_LABELS: Record<BrandWorkflowEventType, string> = {
-  [BRAND_WORKFLOW_EVENT_TYPES.CREATED]: 'Created',
-  [BRAND_WORKFLOW_EVENT_TYPES.SENT_TO_WORK]: 'Sent to teams (in work)',
-  [BRAND_WORKFLOW_EVENT_TYPES.SUBMITTED]: 'Submitted for review',
-  [BRAND_WORKFLOW_EVENT_TYPES.CEO_FEEDBACK]: 'Sent back for revision',
-  [BRAND_WORKFLOW_EVENT_TYPES.APPROVED]: 'Approved',
-  [BRAND_WORKFLOW_EVENT_TYPES.CEO_SELECTION_UPDATE]: 'CEO updated alternatives',
-  [BRAND_WORKFLOW_EVENT_TYPES.PO_COMMENT_RESOLVED]: 'PO comment status',
-  [BRAND_WORKFLOW_EVENT_TYPES.RESUBMIT_CLEARED_CEO]: 'Resubmitted (CEO feedback cleared)',
-  [BRAND_WORKFLOW_EVENT_TYPES.SLACK_FAILED]: 'Slack message not delivered',
-  [BRAND_WORKFLOW_EVENT_TYPES.ORDERS_READY]: 'Order sent to the author',
-  [BRAND_WORKFLOW_EVENT_TYPES.ORDER_CANCELLED]: 'Order cancelled (picked from library)',
+  [BRAND_WORKFLOW_EVENT_TYPES.CREATED]: 'Створено',
+  [BRAND_WORKFLOW_EVENT_TYPES.SENT_TO_WORK]: 'Відправлено командам (в роботу)',
+  [BRAND_WORKFLOW_EVENT_TYPES.SUBMITTED]: 'Надіслано на погодження',
+  [BRAND_WORKFLOW_EVENT_TYPES.CEO_FEEDBACK]: 'Повернуто на доопрацювання',
+  [BRAND_WORKFLOW_EVENT_TYPES.APPROVED]: 'Затверджено',
+  [BRAND_WORKFLOW_EVENT_TYPES.CEO_SELECTION_UPDATE]: 'CEO змінив альтернативи',
+  [BRAND_WORKFLOW_EVENT_TYPES.PO_COMMENT_RESOLVED]: 'Статус коментаря PO',
+  [BRAND_WORKFLOW_EVENT_TYPES.RESUBMIT_CLEARED_CEO]: 'Повторно надіслано (зауваження CEO знято)',
+  [BRAND_WORKFLOW_EVENT_TYPES.SLACK_FAILED]: 'Повідомлення в Slack не доставлено',
+  [BRAND_WORKFLOW_EVENT_TYPES.ORDERS_READY]: 'Замовлення відправлено замовнику',
+  [BRAND_WORKFLOW_EVENT_TYPES.ORDER_CANCELLED]: 'Замовлення скасовано (обрано з бібліотеки)',
 }
 
 /** Brief section keys used in CEO comments, PO comments, and workflow meta. */

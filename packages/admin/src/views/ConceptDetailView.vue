@@ -86,7 +86,7 @@ const orderLink = computed(() =>
   concept.value?.for_brand_id && isOrderRole(authStore.user?.role ?? '')
     ? {
         to: `/orders/${concept.value.for_brand_id}`,
-        label: concept.value.for_brand_name || 'the order',
+        label: concept.value.for_brand_name || 'брифу',
       }
     : null,
 )
@@ -260,7 +260,7 @@ async function confirmAssetDelete() {
       </BaseButton>
       <BaseButton v-if="orderLink" variant="ghost" size="sm" @click="router.push(orderLink.to)">
         <PhosphorIcon :svg="arrowLeft" class="concept-detail__back-icon" />
-        Back to order {{ orderLink.label }}
+        До замовлення {{ orderLink.label }}
       </BaseButton>
     </div>
 

@@ -9,6 +9,7 @@ import { useErrorDialog } from '@/composables/useErrorDialog'
 import {
   availabilityLabel,
   formatOrderDate,
+  formatAnswerValue,
   orderBadge,
   orderedSummary,
   orderSectionBadge,
@@ -54,7 +55,7 @@ async function load(options?: { silent?: boolean }) {
   try {
     order.value = await apiGet<OrderDetail>(`/api/orders/${brandId.value}`)
   } catch (e) {
-    if (!options?.silent) error.value = e instanceof Error ? e.message : 'Unknown error'
+    if (!options?.silent) error.value = e instanceof Error ? e.message : 'Невідома помилка'
   } finally {
     if (!options?.silent) loading.value = false
   }
@@ -134,7 +135,8 @@ const badge = computed(() => (order.value ? orderBadge(order.value.state, order.
 const orderedText = computed(() => (order.value ? orderedSummary(order.value.sections.map(s => s.kind)) : ''))
 const deadline = computed(() => {
   const answers = order.value?.sections.flatMap(s => s.answers) ?? []
-  return answers.find(a => a.label === 'Дедлайн')?.value ?? null
+  const value = answers.find(a => a.label === 'Дедлайн')?.value
+  return value ? formatAnswerValue(value) : null
 })
 </script>
 
@@ -143,14 +145,14 @@ const deadline = computed(() => {
     <div class="order-detail__back">
       <BaseButton variant="ghost" size="sm" @click="router.push('/orders')">
         <PhosphorIcon :svg="arrowLeft" class="order-detail__back-icon" />
-        Back to Orders
+        До замовлень
       </BaseButton>
     </div>
 
-    <div v-if="loading && !order" class="order-detail__loading">Loading...</div>
+    <div v-if="loading && !order" class="order-detail__loading">Завантаження…</div>
     <div v-else-if="error" class="order-detail__error">
-      <p>Failed to load the order: {{ error }}</p>
-      <BaseButton variant="secondary" size="sm" @click="load()">Retry</BaseButton>
+      <p>Не вдалося завантажити замовлення: {{ error }}</p>
+      <BaseButton variant="secondary" size="sm" @click="load()">Спробувати ще раз</BaseButton>
     </div>
 
     <template v-else-if="order">
@@ -181,10 +183,10 @@ const deadline = computed(() => {
       <div class="order-detail__section">
         <h3>Базова інформація</h3>
         <dl class="order-detail__fields">
-          <dt>GEO</dt>
+          <dt>Географія</dt>
           <dd>{{ order.geo || '—' }}</dd>
           <dt>Дата запуску</dt>
-          <dd>{{ order.launchDate || '—' }}</dd>
+          <dd>{{ order.launchDate ? formatAnswerValue(order.launchDate) : '—' }}</dd>
           <dt>Тема</dt>
           <dd>{{ order.mode === 'dark' ? 'Dark' : 'Light' }}</dd>
           <template v-if="order.basicsComment">
@@ -207,7 +209,7 @@ const deadline = computed(() => {
           <dl v-if="s.answers.length > 0" class="order-detail__fields">
             <template v-for="a in s.answers" :key="a.label">
               <dt>{{ a.label }}</dt>
-              <dd>{{ a.value }}</dd>
+              <dd>{{ formatAnswerValue(a.value) }}</dd>
             </template>
             <template v-if="commentFor(s.kind)">
               <dt>Коментар замовника</dt>
@@ -249,8 +251,8 @@ const deadline = computed(() => {
                   <p class="concept-card__description">{{ c.description || 'No description' }}</p>
                   <div class="concept-card__footer">
                     <span class="concept-card__meta">
-                      <span class="concept-card__author">by {{ c.authorName || '—' }}</span>
-                      <span class="concept-card__date">{{ new Date(c.createdAt).toLocaleDateString() }}</span>
+                      <span class="concept-card__author">Автор: {{ c.authorName || '—' }}</span>
+                      <span class="concept-card__date">{{ new Date(c.createdAt).toLocaleDateString('uk-UA') }}</span>
                     </span>
                   </div>
                 </div>
@@ -284,15 +286,15 @@ const deadline = computed(() => {
                   </div>
                   <p class="concept-card__description">{{ n.tagline || 'No tagline' }}</p>
                 <p class="naming-card__domain">
-                  <span>{{ n.domain || 'No domain' }}</span>
+                  <span>{{ n.domain || 'Без домену' }}</span>
                   <span v-if="n.domain" class="availability" :class="`availability--${n.availability || 'unknown'}`">
                     {{ availabilityLabel(n.availability) }}
                   </span>
                 </p>
                   <div class="concept-card__footer">
                     <span class="concept-card__meta">
-                      <span class="concept-card__author">by {{ n.authorName || '—' }}</span>
-                      <span class="concept-card__date">{{ new Date(n.createdAt).toLocaleDateString() }}</span>
+                      <span class="concept-card__author">Автор: {{ n.authorName || '—' }}</span>
+                      <span class="concept-card__date">{{ new Date(n.createdAt).toLocaleDateString('uk-UA') }}</span>
                     </span>
                   </div>
                 </div>
@@ -325,15 +327,15 @@ const deadline = computed(() => {
                   </div>
                   <p class="concept-card__description">{{ n.tagline || 'No tagline' }}</p>
                 <p class="naming-card__domain">
-                  <span>{{ n.domain || 'No domain' }}</span>
+                  <span>{{ n.domain || 'Без домену' }}</span>
                   <span v-if="n.domain" class="availability" :class="`availability--${n.availability || 'unknown'}`">
                     {{ availabilityLabel(n.availability) }}
                   </span>
                 </p>
                   <div class="concept-card__footer">
                     <span class="concept-card__meta">
-                      <span class="concept-card__author">by {{ n.authorName || '—' }}</span>
-                      <span class="concept-card__date">{{ new Date(n.createdAt).toLocaleDateString() }}</span>
+                      <span class="concept-card__author">Автор: {{ n.authorName || '—' }}</span>
+                      <span class="concept-card__date">{{ new Date(n.createdAt).toLocaleDateString('uk-UA') }}</span>
                     </span>
                   </div>
                 </div>
@@ -363,8 +365,8 @@ const deadline = computed(() => {
                   <p class="concept-card__description">{{ n.tagline || 'No tagline' }}</p>
                   <div class="concept-card__footer">
                     <span class="concept-card__meta">
-                      <span class="concept-card__author">by {{ n.authorName || '—' }}</span>
-                      <span class="concept-card__date">{{ new Date(n.createdAt).toLocaleDateString() }}</span>
+                      <span class="concept-card__author">Автор: {{ n.authorName || '—' }}</span>
+                      <span class="concept-card__date">{{ new Date(n.createdAt).toLocaleDateString('uk-UA') }}</span>
                     </span>
                   </div>
                 </div>

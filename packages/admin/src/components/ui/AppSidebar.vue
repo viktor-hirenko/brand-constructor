@@ -136,7 +136,7 @@ async function handleLogout() {
         <span
           v-if="item.counter === 'openOrders' && openOrders > 0"
           class="sidebar__link-counter"
-          :aria-label="`${openOrders} open orders`"
+          :aria-label="`Відкритих замовлень: ${openOrders}`"
           >{{ openOrders }}</span
         >
       </RouterLink>

@@ -8,6 +8,7 @@ import {
   orderBadge,
   createdSummary,
   formatOrderDate,
+  formatAnswerValue,
   orderKindLabel,
 } from '@/utils/orderDisplay'
 
@@ -20,9 +21,9 @@ import {
 const router = useRouter()
 
 const TABS: { key: OrderTab; label: string }[] = [
-  { key: 'open', label: 'Open' },
-  { key: 'ready', label: 'Ready' },
-  { key: 'archive', label: 'Archive' },
+  { key: 'open', label: 'Відкриті' },
+  { key: 'ready', label: 'Готові' },
+  { key: 'archive', label: 'Архів' },
 ]
 
 const activeTab = ref<OrderTab>('open')
@@ -40,7 +41,7 @@ async function load(options?: { silent?: boolean }) {
   try {
     result.value = await apiGet<OrderListResponse>(`/api/orders?tab=${activeTab.value}`)
   } catch (e) {
-    if (!options?.silent) error.value = e instanceof Error ? e.message : 'Unknown error'
+    if (!options?.silent) error.value = e instanceof Error ? e.message : 'Невідома помилка'
   } finally {
     if (!options?.silent) loading.value = false
   }
@@ -66,25 +67,25 @@ useListPolling(() => load({ silent: true }))
       </button>
     </div>
 
-    <div v-if="loading && !result" class="orders-view__loading">Loading...</div>
-    <div v-else-if="error" class="orders-view__empty">Failed to load orders: {{ error }}</div>
+    <div v-if="loading && !result" class="orders-view__loading">Завантаження…</div>
+    <div v-else-if="error" class="orders-view__empty">Не вдалося завантажити замовлення: {{ error }}</div>
     <div v-else-if="items.length === 0" class="orders-view__empty">
-      <template v-if="activeTab === 'open'">No open orders. A brief sent to the teams shows up here.</template>
-      <template v-else-if="activeTab === 'ready'">No orders marked ready.</template>
-      <template v-else>Nothing in the archive for the last 30 days.</template>
+      <template v-if="activeTab === 'open'">Відкритих замовлень немає. Тут з'являються брифи, відправлені командам.</template>
+      <template v-else-if="activeTab === 'ready'">Немає замовлень, що чекають на замовника.</template>
+      <template v-else>За останні 30 днів в архіві нічого немає.</template>
     </div>
 
     <div v-else class="orders-view__table-wrap">
       <table class="orders-view__table">
         <thead>
           <tr>
-            <th>Brief</th>
-            <th>Ordered</th>
-            <th>Author</th>
-            <th>Sent</th>
-            <th>Deadline</th>
-            <th>Made</th>
-            <th>State</th>
+            <th>Бриф</th>
+            <th>Замовлено</th>
+            <th>Замовник</th>
+            <th>Відправлено</th>
+            <th>Дедлайн</th>
+            <th>Створено</th>
+            <th>Стан</th>
           </tr>
         </thead>
         <tbody>
@@ -107,7 +108,7 @@ useListPolling(() => load({ silent: true }))
             </td>
             <td>{{ item.authorName }}</td>
             <td>{{ formatOrderDate(item.sentToWorkAt) }}</td>
-            <td>{{ item.deadline || '—' }}</td>
+            <td>{{ item.deadline ? formatAnswerValue(item.deadline) : '—' }}</td>
             <td>{{ createdSummary(item.created) }}</td>
             <td>
               <span class="badge" :class="orderBadge(item.state, item.briefStatus).cls">

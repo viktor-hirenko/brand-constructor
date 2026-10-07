@@ -339,7 +339,7 @@ const {
                 </component>
 
                 <p v-if="showsOrderLink(row.event.eventType)" class="workflow-modal__order-link">
-                  <RouterLink :to="`/orders/${props.brandId}`" @click="emit('close')">Open order →</RouterLink>
+                  <RouterLink :to="`/orders/${props.brandId}`" @click="emit('close')">Відкрити замовлення →</RouterLink>
                 </p>
 
                 <div
@@ -449,8 +449,8 @@ const {
                         <p class="workflow-modal__group-heading">
                           {{
                             row.event.eventType === EVT.ORDERS_READY
-                              ? 'Made by the team for the order'
-                              : 'The author picked from the library'
+                              ? 'Створено командою під замовлення'
+                              : 'Замовник обрав із бібліотеки'
                           }}
                         </p>
                         <div

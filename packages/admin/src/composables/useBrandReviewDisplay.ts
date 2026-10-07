@@ -152,17 +152,17 @@ export function getBrandReviewDisplay(brand: BrandListItem): BrandReviewDisplay 
         // The status stays In Work; only this line says the team is done (owner, 02.10).
         if (brand.status === BRAND_BRIEF_STATUS.IN_WORK && brand.ordersReadyAt) {
           return {
-            reviewLine: 'Order ready',
+            reviewLine: 'Замовлення готове',
             waitingLine,
             waitingTone: since.iso ? waitingToneFromDays(days) : 'normal',
-            reviewTitle: 'Team sent the order. Waiting for Product Owner to pick and send to CEO.',
-            waitingTitle: since.iso ? `Order ready since ${formatDate(since.iso)}` : null,
+            reviewTitle: 'Команда виконала замовлення. Product Owner обирає створене й надсилає бриф на погодження.',
+            waitingTitle: since.iso ? `Замовлення готове з ${formatDate(since.iso)}` : null,
             waitingSince: since.iso,
             isApproxDate: since.isApprox,
           }
         }
         return {
-          reviewLine: 'In work with team',
+          reviewLine: 'У роботі в команд',
           waitingLine,
           waitingTone: since.iso ? waitingToneFromDays(days) : 'normal',
           reviewTitle:

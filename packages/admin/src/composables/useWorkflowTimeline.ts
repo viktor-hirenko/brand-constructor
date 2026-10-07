@@ -69,12 +69,11 @@ function names(value: unknown): string[] {
 export function orderEventSummary(eventType: string, meta: Record<string, unknown>): string | null {
   if (eventType === EVT.ORDERS_READY) {
     const created = (meta.created ?? {}) as Record<string, unknown>
-    const count = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`)
     const parts = [
-      names(created.concepts).length ? count(names(created.concepts).length, 'concept', 'concepts') : null,
-      names(created.externalNamings).length ? count(names(created.externalNamings).length, 'name', 'names') : null,
+      names(created.concepts).length ? countUk(names(created.concepts).length, 'концепт', 'концепти', 'концептів') : null,
+      names(created.externalNamings).length ? countUk(names(created.externalNamings).length, 'назва', 'назви', 'назв') : null,
       names(created.internalNamings).length
-        ? count(names(created.internalNamings).length, 'internal name', 'internal names')
+        ? countUk(names(created.internalNamings).length, 'внутрішня назва', 'внутрішні назви', 'внутрішніх назв')
         : null,
     ].filter((p): p is string => p !== null)
     return parts.length > 0 ? parts.join(' · ') : null
@@ -100,7 +99,7 @@ export function orderEventBlocks(eventType: string, meta: Record<string, unknown
     return [
       {
         label: ORDER_KIND_SHORT[meta.kind] ?? meta.kind,
-        value: picked.length > 0 ? `Picked from the library instead: ${picked.join(', ')}` : 'Order dropped',
+        value: picked.length > 0 ? `Замість цього обрано з бібліотеки: ${picked.join(', ')}` : 'Замовлення скасовано',
       },
     ]
   }

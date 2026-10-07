@@ -52,12 +52,12 @@ describe('briefsForKind', () => {
 
 describe('the words', () => {
   it('names the brief a library item was made for', () => {
-    expect(forBriefLabel({ for_brand_id: 'b', for_brand_name: 'New Brand #7' })).toBe('For New Brand #7')
+    expect(forBriefLabel({ for_brand_id: 'b', for_brand_name: 'New Brand #7' })).toBe('Для New Brand #7')
     expect(forBriefLabel({ for_brand_id: null })).toBeNull()
   })
 
   it('sums up what was made', () => {
-    expect(createdSummary({ concepts: 1, externalNamings: 3, internalNamings: 0 })).toBe('1 concept · 3 names')
+    expect(createdSummary({ concepts: 1, externalNamings: 3, internalNamings: 0 })).toBe('1 концепт · 3 назви')
     expect(createdSummary({ concepts: 0, externalNamings: 0, internalNamings: 0 })).toBe('—')
   })
 

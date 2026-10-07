@@ -89,7 +89,7 @@ describe('getBrandReviewDisplay', () => {
         newConceptBrief: { isNewGeo: true } as never,
       })
     )
-    expect(d.reviewLine).toBe('In work with team')
+    expect(d.reviewLine).toBe('У роботі в команд')
     expect(d.reviewTitle).toContain('Команди отримали')
   })
 
@@ -100,7 +100,7 @@ describe('getBrandReviewDisplay', () => {
       updatedAt: '2026-10-01T12:00:00.000Z',
     })
     const d = getBrandReviewDisplay(brand)
-    expect(d.reviewLine).toBe('In work with team')
+    expect(d.reviewLine).toBe('У роботі в команд')
     expect(getWaitingSince(brand)).toEqual({ iso: '2026-09-30T09:00:00.000Z', isApprox: false })
   })
 
@@ -112,8 +112,8 @@ describe('getBrandReviewDisplay', () => {
       updatedAt: '2026-10-01T16:00:00.000Z',
     })
     const d = getBrandReviewDisplay(brand)
-    expect(d.reviewLine).toBe('Order ready')
-    expect(d.reviewTitle).toBe('Team sent the order. Waiting for Product Owner to pick and send to CEO.')
+    expect(d.reviewLine).toBe('Замовлення готове')
+    expect(d.reviewTitle).toBe('Команда виконала замовлення. Product Owner обирає створене й надсилає бриф на погодження.')
     expect(getWaitingSince(brand)).toEqual({ iso: '2026-10-01T15:00:00.000Z', isApprox: false })
     expect(brand.status).toBe(BRAND_BRIEF_STATUS.IN_WORK)
   })

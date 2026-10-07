@@ -1,4 +1,5 @@
 import { ORDER_KIND_LABELS } from '@brand-constructor/shared'
+import { countUk } from '@/utils/pluralUk'
 import type { OrderCreatedCounts, OrderKind, OrderState } from '@brand-constructor/shared'
 
 /**
@@ -20,23 +21,29 @@ export function orderKindLabel(kind: OrderKind): string {
   return ORDER_KIND_LABELS[kind]
 }
 
-function plural(n: number, one: string, many: string): string {
-  return `${n} ${n === 1 ? one : many}`
+function plural(n: number, one: string, few: string, many: string): string {
+  return countUk(n, one, few, many)
 }
 
-/** «1 concept · 3 names · 1 internal», or «—» when nothing is made yet. */
+/** «1 концепт · 3 назви · 1 внутрішня», or «—» when nothing is made yet. */
 export function createdSummary(c: OrderCreatedCounts): string {
   const parts: string[] = []
-  if (c.concepts) parts.push(plural(c.concepts, 'concept', 'concepts'))
-  if (c.externalNamings) parts.push(plural(c.externalNamings, 'name', 'names'))
-  if (c.internalNamings) parts.push(plural(c.internalNamings, 'internal', 'internal'))
+  if (c.concepts) parts.push(plural(c.concepts, 'концепт', 'концепти', 'концептів'))
+  if (c.externalNamings) parts.push(plural(c.externalNamings, 'назва', 'назви', 'назв'))
+  if (c.internalNamings) parts.push(plural(c.internalNamings, 'внутрішня', 'внутрішні', 'внутрішніх'))
   return parts.length > 0 ? parts.join(' · ') : '—'
 }
 
 export function formatOrderDate(value: string | null | undefined): string {
   if (!value) return '—'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString()
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('uk-UA')
+}
+
+/** A bare `2026-11-20` from a form answer as `20.11.2026`; any other text as is. */
+export function formatAnswerValue(value: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : value
 }
 
 /**
