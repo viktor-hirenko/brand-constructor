@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { OrderListItem } from '@brand-constructor/shared'
 import { briefsForKind, forBriefLabel } from '@/utils/orderBriefs'
-import { createdNamesGroups, createdNamesSummary, createdSummary, availabilityLabel, ORDER_STATE_BADGES, orderBadge, orderedSummary, orderSectionBadge, orderStatusNote } from '@/utils/orderDisplay'
+import { createdNamesGroups, createdNamesSummary, createdSummary, availabilityLabel, ORDER_STATE_BADGES, orderBadge, orderedSummary, orderKindLabel, orderSectionBadge, orderStatusNote } from '@/utils/orderDisplay'
 
 /*
  * «For brief» on the library pages and the words of the Orders pages
@@ -93,6 +93,17 @@ describe('the words', () => {
 
   it('nothing made yet — a dash and no tooltip', () => {
     expect(createdNamesSummary({ concepts: [], externalNamings: [], internalNamings: [] })).toEqual({ text: '—', full: '' })
+  })
+
+  // «Новий концепт», «Новий External Naming» down the whole column: an order is always for something new (owner, 07.10).
+  it('the «Замовлено» column names the kind without «Новий»', () => {
+    expect(orderKindLabel('concept')).toBe('Концепт')
+    expect(orderKindLabel('externalNaming')).toBe('External Naming')
+    expect(orderKindLabel('internalNaming')).toBe('Internal Naming')
+  })
+
+  it('the order page still says what is new', () => {
+    expect(orderedSummary(['concept', 'internalNaming'])).toBe('новий концепт і новий Internal Naming')
   })
 
   it('has a badge for every state', () => {

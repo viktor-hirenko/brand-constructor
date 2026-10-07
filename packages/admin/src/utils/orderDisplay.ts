@@ -16,9 +16,21 @@ export const ORDER_STATE_BADGES: Record<OrderState, { label: string; cls: string
   closed: { label: 'Завершено', cls: 'badge--blue' },
 }
 
-/** «Новий концепт, Новий Internal Naming»; a cancelled one is struck through by the caller. */
+/**
+ * The «Замовлено» column of the orders table: «Концепт», «External Naming»,
+ * «Internal Naming». Without «Новий» — an order is always for something new,
+ * and the word only repeated itself down the column (owner, 07.10). The order
+ * page keeps its own sentence («новий концепт і новий Internal Naming»).
+ */
+const ORDER_KIND_COLUMN_LABELS: Record<OrderKind, string> = {
+  concept: 'Концепт',
+  externalNaming: 'External Naming',
+  internalNaming: 'Internal Naming',
+}
+
+/** «Концепт, Internal Naming»; a cancelled one is struck through by the caller. */
 export function orderKindLabel(kind: OrderKind): string {
-  return ORDER_KIND_LABELS[kind]
+  return ORDER_KIND_COLUMN_LABELS[kind]
 }
 
 function plural(n: number, one: string, few: string, many: string): string {
