@@ -42,3 +42,23 @@
 @mixin sidebar-collapsed {
   @include mq(null, $bp-sidebar) { @content; }
 }
+
+// A table that scrolls sideways keeps every cell and every header on one
+// line: a row looks the same at any width, and what does not fit is scrolled
+// to instead of being stacked inside its cell (owner, 07.10).
+@mixin scroll-table-cells {
+  th,
+  td {
+    white-space: nowrap;
+  }
+}
+
+// The row's actions stay in view while such a table is scrolled sideways —
+// since 06.10 the owner's rule is that «Видалити» never leaves the screen.
+// No line on its left: the column is part of the row, not a panel beside it
+// (owner, 07.10).
+@mixin sticky-actions($background) {
+  position: sticky;
+  right: 0;
+  background-color: $background;
+}

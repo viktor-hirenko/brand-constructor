@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
-import { router } from './router';
+import { reloadAfterRelease, router } from './router';
 import { useAuthStore } from './stores/auth';
 import './styles/global.scss';
 
@@ -19,9 +19,11 @@ try {
 }
 
 // After a release the old page asks for code chunks that no longer exist and
-// a screen opens blank. Vite reports it as `vite:preloadError`: reload once to
-// get the new build. The 10-second mark stops a loop if the chunk is really
-// missing from the new build too.
+// a screen opens blank. Vite reports it as `vite:preloadError`: load the page
+// anew once to get the new build — at the tab that was clicked, not at the
+// address the page is on, or the click looks like it did nothing (owner,
+// 07.10). The 10-second mark stops a loop if the chunk is really missing from
+// the new build too.
 window.addEventListener('vite:preloadError', event => {
   const KEY = 'preload-error-reload-at';
   let last = 0;
@@ -32,8 +34,7 @@ window.addEventListener('vite:preloadError', event => {
     // no sessionStorage: still reload once, the browser is in a broken state
   }
   if (Date.now() - last < 10_000) return;
-  event.preventDefault();
-  window.location.reload();
+  if (reloadAfterRelease()) event.preventDefault();
 });
 
 const app = createApp(App);

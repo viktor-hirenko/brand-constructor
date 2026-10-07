@@ -4,6 +4,10 @@ import type { User, UserRole } from '@brand-constructor/shared'
 import { ROLE_LABELS, USER_ROLES } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
 import { useTableSort } from '@/composables/useTableSort'
+import RowAction from '@/components/ui/RowAction.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
+import SearchSelect from '@/components/ui/SearchSelect.vue'
+import { ALL, distinctOptions, matchesChoice, matchesText, shownOf } from '@/utils/tableSearch'
 import { useAuthStore } from '@/stores/auth'
 import { useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -20,12 +24,22 @@ const { transitionName, playDelete } = useDeleteAnimation()
 const authStore = useAuthStore()
 const { data: users, loading, fetchData: fetchUsers } = useApiList<User>('/api/users')
 
+// Search by name or e-mail and a filter by role, over the loaded rows.
+const searchQuery = ref('')
+const roleFilter = ref<string | null>(ALL)
+const roleFilterOptions = computed(() =>
+  distinctOptions(users.value.map(u => u.role), 'Усі ролі', role => ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role)
+)
+const foundUsers = computed(() =>
+  users.value.filter(u => matchesText([u.name, u.email], searchQuery.value) && matchesChoice(u.role, roleFilter.value))
+)
+
 const {
   sortedData: sortedUsers,
   sortField,
   sortDirection,
   toggleSort,
-} = useTableSort(users, 'created_at', 'desc')
+} = useTableSort(foundUsers, 'created_at', 'desc')
 
 const showModal = ref(false)
 const editingUser = ref<User | null>(null)
@@ -145,7 +159,17 @@ async function confirmDelete() {
 
     <template v-else>
       <div class="users-view__toolbar">
-        <span class="users-view__count">{{ users.length }} users</span>
+        <div class="users-view__filters">
+          <SearchInput id="users-search" v-model="searchQuery" placeholder="Пошук за ім’ям або поштою" />
+          <SearchSelect
+            id="users-role"
+            v-model="roleFilter"
+            class="users-view__role"
+            :options="roleFilterOptions"
+            aria-label="Роль"
+          />
+          <span class="users-view__count">{{ shownOf(foundUsers.length, users.length) }}{{ users.length }} users</span>
+        </div>
         <BaseButton @click="openCreate">+ Додати користувача</BaseButton>
       </div>
 
@@ -179,25 +203,21 @@ async function confirmDelete() {
                   sortDirection === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th>Дії</th>
+              <th class="users-view__actions-head">Дії</th>
             </tr>
           </thead>
           <TransitionGroup tag="tbody" :name="transitionName">
+            <tr v-if="sortedUsers.length === 0" key="empty">
+              <td colspan="5" class="users-view__empty">Нічого не знайдено</td>
+            </tr>
             <tr v-for="u in sortedUsers" :key="u.id">
               <td class="users-view__name">{{ u.name }}</td>
               <td>{{ u.email }}</td>
               <td>{{ ROLE_LABELS[u.role] || u.role }}</td>
               <td>{{ new Date(u.created_at).toLocaleDateString() }}</td>
               <td class="users-view__actions">
-                <BaseButton variant="secondary" size="sm" @click="openEdit(u)">Редагувати</BaseButton>
-                <BaseButton
-                  v-if="u.id !== authStore.user?.id"
-                  variant="danger"
-                  size="sm"
-                  @click="handleDelete(u)"
-                >
-                  Видалити
-                </BaseButton>
+                <RowAction kind="edit" label="Редагувати" @click="openEdit(u)" />
+                <RowAction v-if="u.id !== authStore.user?.id" kind="delete" label="Видалити" @click="handleDelete(u)" />
               </td>
             </tr>
           </TransitionGroup>
@@ -319,6 +339,24 @@ async function confirmDelete() {
     font-size: $font-size-lg;
   }
 
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-3;
+  }
+
+  &__role {
+    width: 220px;
+    max-width: 100%;
+  }
+
+  &__empty {
+    padding: $spacing-8 $spacing-3;
+    text-align: center;
+    color: $color-text-secondary;
+  }
+
   &__toolbar {
     display: flex;
     align-items: center;
@@ -357,9 +395,7 @@ async function confirmDelete() {
     border-spacing: 0;
     background-color: $color-bg-white;
 
-    @include mobile {
-      min-width: 600px;
-    }
+    @include scroll-table-cells;
 
     th,
     td {
@@ -408,15 +444,12 @@ async function confirmDelete() {
   }
 
   &__actions {
-    white-space: nowrap;
+    @include sticky-actions($color-bg-white);
+  }
 
-    :deep(button) {
-      margin-right: $spacing-2;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
+  &__table &__actions-head {
+    @include sticky-actions($color-bg);
+    z-index: 2;
   }
 
   &__role-select {

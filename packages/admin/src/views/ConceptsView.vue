@@ -10,6 +10,8 @@ import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
 import { pinLeavingCard, useDeleteAnimation } from '@/composables/useDeleteAnimation'
 import { forBriefLabel } from '@/utils/orderBriefs'
+import SearchInput from '@/components/ui/SearchInput.vue'
+import { matchesText, shownOf } from '@/utils/tableSearch'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import ConceptCreateModal from '@/components/library/ConceptCreateModal.vue'
@@ -22,8 +24,11 @@ const statusFilter = ref<'all' | 'active' | 'used'>('all')
 type ConceptWithAuthor = Concept & { author_name: string; brand_name: string | null }
 const { data: concepts, loading, total, fetchData } = useApiList<ConceptWithAuthor>('/api/concepts')
 
+const searchQuery = ref('')
+const foundConcepts = computed(() => concepts.value.filter(c => matchesText([c.name], searchQuery.value)))
+
 const { sortedData: sortedConcepts, setSort: setConceptSort } = useTableSort(
-  concepts,
+  foundConcepts,
   'created_at',
   'desc'
 )
@@ -124,7 +129,10 @@ async function confirmDelete() {
 
     <div class="concepts-view__toolbar">
       <div class="concepts-view__toolbar-left">
-        <span class="concepts-view__count">{{ countUk(total, 'концепт', 'концепти', 'концептів') }}</span>
+        <SearchInput id="concepts-search" v-model="searchQuery" placeholder="Пошук за назвою" />
+        <span class="concepts-view__count">
+          {{ shownOf(foundConcepts.length, concepts.length) }}{{ countUk(total, 'концепт', 'концепти', 'концептів') }}
+        </span>
         <select
           :value="conceptSortOption"
           class="concepts-view__sort-select"
@@ -144,6 +152,8 @@ async function confirmDelete() {
     <div v-else-if="concepts.length === 0" class="concepts-view__empty">
       Концептів не знайдено. Створіть перший концепт.
     </div>
+
+    <div v-else-if="foundConcepts.length === 0" class="concepts-view__empty">Нічого не знайдено.</div>
 
     <TransitionGroup
       v-else
