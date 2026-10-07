@@ -40,6 +40,11 @@ export interface Env {
   AUTH_RATE_LIMITER?: RateLimit
   /** `"true"` on the stage: the R2 bucket is production's, so files are never deleted from it. */
   SHARED_ASSETS_BUCKET?: string
+  /**
+   * `"true"` lets the server read marketplace prices of «For sale» domains —
+   * the nightly run and the recheck button (`utils/price-check.ts`).
+   */
+  PRICE_CHECK_ENABLED?: string
 }
 
 export interface AuthUser {

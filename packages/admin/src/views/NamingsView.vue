@@ -11,20 +11,45 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import NamingCreateModal from '@/components/library/NamingCreateModal.vue'
 import { forBriefLabel } from '@/utils/orderBriefs'
+import RowAction from '@/components/ui/RowAction.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
+import SearchSelect from '@/components/ui/SearchSelect.vue'
 import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vue'
+import NamingPriceCheckModal from '@/components/namings/NamingPriceCheckModal.vue'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
-import pencilSimple from '@phosphor-icons/core/regular/pencil-simple.svg?raw'
-import trash from '@phosphor-icons/core/regular/trash.svg?raw'
+import arrowUp from '@phosphor-icons/core/regular/arrow-up.svg?raw'
+import arrowDown from '@phosphor-icons/core/regular/arrow-down.svg?raw'
+import warningCircle from '@phosphor-icons/core/fill/warning-circle-fill.svg?raw'
 import { countUk } from '@/utils/pluralUk'
+import {
+  DOMAIN_FILTERS,
+  OPTIONAL_FILTERS,
+  countDomainFilters,
+  decisionTitle,
+  displayedPrice,
+  filterNamings,
+  isForBrief,
+  matchesQuery,
+  type DomainFilter,
+} from '@/utils/namingFilters'
 import {
   buildDomainModeBody,
   domainPreviewErrorText,
   canSaveDomainMode,
-  initialDomainMode,
   resolveNamingPrice,
   resolveNamingStatusBadge,
   type DomainMode,
 } from '@/utils/namingDomainStatus'
+import {
+  describeDomainCard,
+  initialPriceMode,
+  needsDecision,
+  priceCellExtras,
+  priceDecisionErrorText,
+  priceOffer,
+  recheckKind,
+  type DomainCard,
+} from '@/utils/namingPriceCheck'
 
 interface DomainPreview {
   available: boolean
@@ -37,7 +62,11 @@ const authStore = useAuthStore()
 const canWrite = computed(() => authStore.canWriteLibrary('external_namings'))
 
 const activeTab = ref<'external' | 'internal'>('external')
+// 'all' | 'linked' | 'standalone' | a concept's id
 const conceptFilter = ref<string>('all')
+// Search and the quick filters work on the rows already loaded.
+const searchQuery = ref('')
+const domainFilter = ref<DomainFilter | null>(null)
 const statusFilter = ref<'all' | 'active' | 'used'>('all')
 
 type ExternalNamingRow = ExternalNaming & {
@@ -76,19 +105,66 @@ const sortedConcepts = computed(() =>
   [...concepts.value].sort((a, b) => a.name.localeCompare(b.name))
 )
 
+// Concepts are picked by typing (SearchSelect): the list grows with the library.
+const conceptOptions = computed(() => sortedConcepts.value.map(c => ({ value: c.id, label: c.name })))
+/** The «Концепт» field of the create and edit windows. */
+const conceptChoiceOptions = computed(() => [{ value: null, label: '— Без концепту —' }, ...conceptOptions.value])
+/** The filter above the table. */
+const conceptFilterOptions = computed(() => [
+  { value: 'all', label: 'Усі концепти' },
+  { value: 'linked', label: 'З концептом' },
+  { value: 'standalone', label: 'Без концепту' },
+  ...conceptOptions.value,
+])
+
+const searchedExternal = computed(() =>
+  filterNamings(externalNamings.value, { query: searchQuery.value, domain: null })
+)
+const filteredExternal = computed(() =>
+  filterNamings(externalNamings.value, { query: searchQuery.value, domain: domainFilter.value })
+)
+// An internal naming has no domain: of the quick filters only «Для брифу» is its own.
+const searchedInternal = computed(() => internalNamings.value.filter(n => matchesQuery(n, searchQuery.value)))
+const filteredInternal = computed(() =>
+  domainFilter.value === 'for_brief' ? searchedInternal.value.filter(isForBrief) : searchedInternal.value
+)
+/** The number on each quick filter: what it would leave of the rows found. */
+const domainFilterCounts = computed(() =>
+  activeTab.value === 'external'
+    ? countDomainFilters(searchedExternal.value)
+    : { ...countDomainFilters([]), for_brief: searchedInternal.value.filter(isForBrief).length }
+)
+const visibleDomainFilters = computed(() =>
+  // «Потрібне рішення» and «Для брифу» are there only while they would leave something.
+  DOMAIN_FILTERS.filter(f => {
+    if (activeTab.value === 'internal' && f.id !== 'for_brief') return false
+    return !OPTIONAL_FILTERS.includes(f.id) || domainFilterCounts.value[f.id] > 0 || domainFilter.value === f.id
+  })
+)
+
 const {
   sortedData: sortedExternal,
   sortField: extSortField,
   sortDirection: extSortDir,
   toggleSort: toggleExtSort,
-} = useTableSort(externalNamings, 'created_at', 'desc')
+} = useTableSort(filteredExternal, 'created_at', 'desc', (n, field) =>
+  // «Ціна» sorts by the price the row shows, not by the registration column.
+  field === 'price' ? displayedPrice(n) : (n as unknown as Record<string, unknown>)[field]
+)
 
 const {
   sortedData: sortedInternal,
   sortField: intSortField,
   sortDirection: intSortDir,
   toggleSort: toggleIntSort,
-} = useTableSort(internalNamings, 'created_at', 'desc')
+} = useTableSort(filteredInternal, 'created_at', 'desc')
+
+const shownCount = computed(() =>
+  activeTab.value === 'external' ? filteredExternal.value.length : filteredInternal.value.length
+)
+const loadedCount = computed(() =>
+  activeTab.value === 'external' ? externalNamings.value.length : internalNamings.value.length
+)
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
@@ -105,9 +181,20 @@ const editDomainMode = ref<DomainMode>('automatic')
 const editPurchasePrice = ref('')
 const editConceptId = ref<string | null>(null)
 const editDomainCheckSource = ref<string | null>(null)
+const editPriceAuto = ref(false)
+/** What the system found for the domain being edited, shown above the choice. */
+const editFound = ref<DomainCard | null>(null)
 const saving = ref(false)
 
 const checkingDomainId = ref<string | null>(null)
+
+// The card behind a price or a status: what the system knows of the domain.
+const priceWindowId = ref<string | null>(null)
+const priceWindowNaming = computed(
+  () => externalNamings.value.find(n => n.id === priceWindowId.value) ?? null
+)
+const priceDeciding = ref<'accept' | 'keep' | null>(null)
+const priceDecisionError = ref<string | null>(null)
 
 function clearEditPreviewTimer() {
   if (editPreviewTimer) {
@@ -162,8 +249,10 @@ function refreshList(options?: { silent?: boolean }) {
   // `include_reserved`: the Admin also lists what was made for a brief's order.
   const params: Record<string, string> = { status: statusFilter.value, per_page: '500', include_reserved: '1' }
   if (activeTab.value === 'external') {
-    if (conceptFilter.value !== 'all') {
+    if (conceptFilter.value === 'linked' || conceptFilter.value === 'standalone') {
       params.filter = conceptFilter.value
+    } else if (conceptFilter.value !== 'all') {
+      params.concept_id = conceptFilter.value
     }
     fetchExternal({ queryParams: params, silent: options?.silent })
   } else {
@@ -176,8 +265,14 @@ onMounted(() => {
   fetchConcepts({ per_page: '100', status: 'all', include_reserved: '1' })
 })
 watch([activeTab, conceptFilter, statusFilter], () => refreshList())
+// A quick filter of one tab means nothing on the other.
+watch(activeTab, () => {
+  domainFilter.value = null
+})
 
-const pollingPaused = computed(() => showCreateModal.value || showEditModal.value)
+const pollingPaused = computed(
+  () => showCreateModal.value || showEditModal.value || priceWindowId.value !== null
+)
 useListPolling(() => refreshList({ silent: true }), { paused: pollingPaused })
 
 watch([editDomain, showEditModal, activeTab], () => {
@@ -210,7 +305,11 @@ function onNamingCreated() {
   refreshList({ silent: true })
 }
 
-const editWasForSale = computed(() => editDomainCheckSource.value === 'admin_override')
+// A price a person typed (or an old manual status): «Автоматично» hands the
+// row back to the system. A marketplace's price is automatic already.
+const editWasForSale = computed(
+  () => editDomainCheckSource.value === 'admin_override' && !editPriceAuto.value
+)
 
 const canSaveEdit = computed(
   () =>
@@ -230,13 +329,17 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
     editConceptId.value = extNaming.concept_id
     editDomain.value = extNaming.domain || ''
     editDomainCheckSource.value = extNaming.domain_check_source || null
-    editDomainMode.value = initialDomainMode(extNaming.domain_check_source)
+    editPriceAuto.value = extNaming.price_auto === true
+    editFound.value = extNaming.domain ? describeDomainCard(extNaming) : null
+    editDomainMode.value = initialPriceMode(extNaming)
     editPurchasePrice.value =
       extNaming.purchase_price != null ? String(extNaming.purchase_price) : ''
   } else {
     editConceptId.value = null
     editDomain.value = ''
     editDomainCheckSource.value = null
+    editPriceAuto.value = false
+    editFound.value = null
     editDomainMode.value = 'automatic'
     editPurchasePrice.value = ''
   }
@@ -270,24 +373,30 @@ async function handleSaveEdit() {
   }
 }
 
-async function handleCheckDomain(namingId: string) {
+function replaceExternalRow(row: ExternalNamingRow) {
+  const idx = externalNamings.value.findIndex((n) => n.id === row.id)
+  if (idx === -1) return false
+  const next = externalNamings.value.slice()
+  next[idx] = row
+  externalNamings.value = next
+  return true
+}
+
+/** «Перевірити зараз» in the card: the registrar and the marketplaces, as the row needs. */
+async function handleCheckDomain(namingId: string, kind: 'domain' | 'price' = 'domain') {
   checkingDomainId.value = namingId
   try {
     const data = await apiPost<CheckDomainPostResult>(
-      `/api/namings/external/${namingId}/check-domain`,
+      `/api/namings/external/${namingId}/${kind === 'price' ? 'check-price' : 'check-domain'}`,
       {}
     )
     if (isCheckDomainSkipped(data)) {
       return
     }
-    const idx = externalNamings.value.findIndex((n) => n.id === namingId)
-    if (idx === -1) {
+    if (!replaceExternalRow(data)) {
       await fetchExternal()
       return
     }
-    const next = externalNamings.value.slice()
-    next[idx] = data
-    externalNamings.value = next
   } catch {
     // Silently handle — status will remain as-is
   } finally {
@@ -295,33 +404,29 @@ async function handleCheckDomain(namingId: string) {
   }
 }
 
-type SourceKind = 'auto' | 'manual' | 'override'
-
-function getSourceKind(n: ExternalNamingRow): SourceKind {
-  if (n.domain_check_source === 'admin_override') return 'override'
-  if (n.domain_check_source === 'pananames') return 'auto'
-  return 'manual'
+function openPriceWindow(namingId: string) {
+  priceDecisionError.value = null
+  priceWindowId.value = namingId
 }
 
-function getSourceLetter(n: ExternalNamingRow): string {
-  switch (getSourceKind(n)) {
-    case 'override':
-      return 'O'
-    case 'auto':
-      return 'A'
-    default:
-      return 'M'
-  }
-}
-
-function getSourceTooltip(n: ExternalNamingRow): string {
-  switch (getSourceKind(n)) {
-    case 'override':
-      return 'Статус встановлено вручну'
-    case 'auto':
-      return 'Статус перевірено автоматично'
-    default:
-      return 'Статус ще не перевірено автоматично'
+async function handlePriceDecision(action: 'accept' | 'keep') {
+  const naming = priceWindowNaming.value
+  const offer = priceOffer(naming?.price_check)
+  if (!naming || !offer) return
+  priceDeciding.value = action
+  priceDecisionError.value = null
+  try {
+    const row = await apiPost<ExternalNamingRow>(
+      `/api/namings/external/${naming.id}/price-decision`,
+      { action, ...offer }
+    )
+    replaceExternalRow(row)
+    priceWindowId.value = null
+  } catch (e) {
+    priceDecisionError.value = priceDecisionErrorText(e instanceof Error ? e.message : null)
+    refreshList({ silent: true })
+  } finally {
+    priceDeciding.value = null
   }
 }
 
@@ -402,20 +507,43 @@ async function confirmDeleteNaming() {
 
     <div class="namings-view__toolbar">
       <div class="namings-view__filters">
-        <select
+        <SearchInput
+          id="namings-search"
+          v-model="searchQuery"
+          :placeholder="activeTab === 'external' ? 'Пошук за назвою або доменом' : 'Пошук за назвою'"
+        />
+        <SearchSelect
           v-if="activeTab === 'external'"
+          id="namings-concept-filter"
           v-model="conceptFilter"
-          class="namings-view__select"
-        >
-          <option value="all">Усі неймінги</option>
-          <option value="linked">З концептом</option>
-          <option value="standalone">Без концепту</option>
-        </select>
+          class="namings-view__concept-filter"
+          :options="conceptFilterOptions"
+          aria-label="Концепт"
+        />
         <span class="namings-view__count">
+          <template v-if="shownCount !== loadedCount">{{ shownCount }} із </template>
           {{ countUk(activeTab === 'external' ? extTotal : intTotal, 'неймінг', 'неймінги', 'неймінгів') }}
         </span>
       </div>
       <BaseButton v-if="canWrite" @click="openCreateModal"> + Новий неймінг </BaseButton>
+    </div>
+
+    <div v-if="visibleDomainFilters.length > 0" class="namings-view__domain-filters">
+      <button
+        v-for="f in visibleDomainFilters"
+        :key="f.id"
+        type="button"
+        class="namings-view__status-tab"
+        :class="{
+          'namings-view__status-tab--active': domainFilter === f.id,
+          'namings-view__status-tab--alert': f.id === 'decision',
+        }"
+        :aria-pressed="domainFilter === f.id"
+        @click="domainFilter = domainFilter === f.id ? null : f.id"
+      >
+        {{ f.label }}
+        <span class="namings-view__filter-count">{{ domainFilterCounts[f.id] }}</span>
+      </button>
     </div>
 
     <div v-if="activeTab === 'external' ? extLoading : intLoading" class="namings-view__loading">
@@ -470,7 +598,7 @@ async function confirmDeleteNaming() {
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th v-if="canWrite">Дії</th>
+              <th v-if="canWrite" class="namings-view__actions-head">Дії</th>
             </tr>
           </template>
           <template v-else>
@@ -494,74 +622,79 @@ async function confirmDeleteNaming() {
                   intSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
-              <th v-if="canWrite">Дії</th>
+              <th v-if="canWrite" class="namings-view__actions-head">Дії</th>
             </tr>
           </template>
         </thead>
         <TransitionGroup tag="tbody" :name="transitionName">
           <template v-if="activeTab === 'external'">
+            <tr v-if="sortedExternal.length === 0" key="empty">
+              <td :colspan="canWrite ? 9 : 8" class="namings-view__empty">Нічого не знайдено</td>
+            </tr>
             <tr v-for="n in sortedExternal" :key="n.id">
               <td>
                 <div class="namings-view__name-cell">
                   <span class="namings-view__name">{{ n.name }}</span>
-                  <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+                  <span v-if="n.tagline" class="namings-view__tagline" :title="n.tagline">{{ n.tagline }}</span>
                 </div>
               </td>
               <td>{{ n.domain || '—' }}</td>
               <td>
-                <span v-if="resolveNamingPrice(n)" class="namings-view__price-cell">
+                <button
+                  v-if="resolveNamingPrice(n)"
+                  type="button"
+                  class="namings-view__cell-button namings-view__price-cell"
+                  title="Докладніше про ціну"
+                  @click.stop="openPriceWindow(n.id)"
+                >
                   {{ resolveNamingPrice(n)?.amount }}
-                </span>
+                </button>
                 <span v-else>—</span>
+                <template v-if="priceCellExtras(n).trend">
+                  <span
+                    class="namings-view__price-trend"
+                    :class="`namings-view__price-trend--${priceCellExtras(n).trend}`"
+                    :title="priceCellExtras(n).trendTitle ?? undefined"
+                    :aria-label="priceCellExtras(n).trendTitle ?? undefined"
+                    role="img"
+                  >
+                    <PhosphorIcon
+                      :svg="priceCellExtras(n).trend === 'up' ? arrowUp : arrowDown"
+                      class="namings-view__price-trend-icon"
+                    />
+                  </span>
+                  <span class="namings-view__price-was">{{ priceCellExtras(n).previous }}</span>
+                </template>
+                <span v-else-if="priceCellExtras(n).manual" class="namings-view__price-manual">
+                  вручну
+                </span>
               </td>
               <td>
                 <div class="namings-view__availability-cell">
                   <div class="namings-view__availability-row">
-                    <span
+                    <component
+                      :is="n.domain ? 'button' : 'span'"
+                      :type="n.domain ? 'button' : undefined"
                       class="namings-view__status-badge"
-                      :class="`namings-view__status-badge--${resolveNamingStatusBadge(n.availability_status).modifier}`"
+                      :class="[
+                        `namings-view__status-badge--${resolveNamingStatusBadge(n.availability_status).modifier}`,
+                        { 'namings-view__cell-button': n.domain },
+                      ]"
+                      :title="n.domain ? 'Докладніше про домен' : undefined"
+                      @click.stop="n.domain && openPriceWindow(n.id)"
                     >
                       {{ resolveNamingStatusBadge(n.availability_status).label }}
-                    </span>
-                    <span
-                      class="namings-view__source-badge"
-                      :class="`namings-view__source-badge--${getSourceKind(n)}`"
-                      :title="getSourceTooltip(n)"
-                      :aria-label="getSourceTooltip(n)"
+                    </component>
+                    <button
+                      v-if="needsDecision(n)"
+                      type="button"
+                      class="namings-view__decision"
+                      :title="decisionTitle(n)"
+                      :aria-label="decisionTitle(n)"
+                      @click.stop="openPriceWindow(n.id)"
                     >
-                      {{ getSourceLetter(n) }}
-                    </span>
-                    <BaseButton
-                      v-if="
-                        canWrite &&
-                        n.domain &&
-                        !n.used_in_brand_id &&
-                        n.domain_check_source !== 'admin_override'
-                      "
-                      variant="ghost"
-                      size="sm"
-                      :loading="checkingDomainId === n.id"
-                      class="namings-view__recheck-btn"
-                      title="Перевірити домен ще раз"
-                      aria-label="Перевірити домен ще раз"
-                      @click.stop="handleCheckDomain(n.id)"
-                    >
-                      <svg
-                        class="namings-view__recheck-icon"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        stroke="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
-                        />
-                      </svg>
-                    </BaseButton>
+                      <PhosphorIcon :svg="warningCircle" class="namings-view__decision-icon" />
+                    </button>
                   </div>
                 </div>
               </td>
@@ -584,37 +717,25 @@ async function confirmDeleteNaming() {
               <td>{{ n.author_name }}</td>
               <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
               <td v-if="canWrite" class="namings-view__actions">
-                <BaseButton
+                <RowAction v-if="!n.used_in_brand_id" kind="edit" label="Редагувати" @click="openEditModal(n)" />
+                <RowAction
                   v-if="!n.used_in_brand_id"
-                  variant="secondary"
-                  size="sm"
-                  class="namings-view__icon-btn"
-                  title="Редагувати"
-                  aria-label="Редагувати"
-                  @click="openEditModal(n)"
-                >
-                  <PhosphorIcon :svg="pencilSimple" class="namings-view__icon" />
-                </BaseButton>
-                <BaseButton
-                  v-if="!n.used_in_brand_id"
-                  variant="danger"
-                  size="sm"
-                  class="namings-view__icon-btn"
-                  title="Видалити"
-                  aria-label="Видалити"
+                  kind="delete"
+                  label="Видалити"
                   @click="handleDeleteNaming(n.id, n.name)"
-                >
-                  <PhosphorIcon :svg="trash" class="namings-view__icon" />
-                </BaseButton>
+                />
               </td>
             </tr>
           </template>
           <template v-else>
+            <tr v-if="sortedInternal.length === 0" key="empty">
+              <td :colspan="canWrite ? 5 : 4" class="namings-view__empty">Нічого не знайдено</td>
+            </tr>
             <tr v-for="n in sortedInternal" :key="n.id">
               <td>
                 <div class="namings-view__name-cell">
                   <span class="namings-view__name">{{ n.name }}</span>
-                  <span v-if="n.tagline" class="namings-view__tagline">{{ n.tagline }}</span>
+                  <span v-if="n.tagline" class="namings-view__tagline" :title="n.tagline">{{ n.tagline }}</span>
                 </div>
               </td>
               <td>
@@ -635,28 +756,13 @@ async function confirmDeleteNaming() {
               <td>{{ n.author_name }}</td>
               <td>{{ new Date(n.created_at).toLocaleDateString() }}</td>
               <td v-if="canWrite" class="namings-view__actions">
-                <BaseButton
+                <RowAction v-if="!n.used_in_brand_id" kind="edit" label="Редагувати" @click="openEditModal(n)" />
+                <RowAction
                   v-if="!n.used_in_brand_id"
-                  variant="secondary"
-                  size="sm"
-                  class="namings-view__icon-btn"
-                  title="Редагувати"
-                  aria-label="Редагувати"
-                  @click="openEditModal(n)"
-                >
-                  <PhosphorIcon :svg="pencilSimple" class="namings-view__icon" />
-                </BaseButton>
-                <BaseButton
-                  v-if="!n.used_in_brand_id"
-                  variant="danger"
-                  size="sm"
-                  class="namings-view__icon-btn"
-                  title="Видалити"
-                  aria-label="Видалити"
+                  kind="delete"
+                  label="Видалити"
                   @click="handleDeleteNaming(n.id, n.name)"
-                >
-                  <PhosphorIcon :svg="trash" class="namings-view__icon" />
-                </BaseButton>
+                />
               </td>
             </tr>
           </template>
@@ -669,6 +775,18 @@ async function confirmDeleteNaming() {
       :kind="activeTab"
       @close="showCreateModal = false"
       @created="onNamingCreated"
+    />
+
+    <NamingPriceCheckModal
+      v-if="priceWindowNaming"
+      :naming="priceWindowNaming"
+      :can-write="canWrite"
+      :saving="priceDeciding"
+      :checking="checkingDomainId === priceWindowNaming.id"
+      :error="priceDecisionError"
+      @close="priceWindowId = null"
+      @decide="handlePriceDecision"
+      @recheck="handleCheckDomain(priceWindowNaming.id, recheckKind(priceWindowNaming) ?? 'domain')"
     />
 
     <BaseModal
@@ -736,14 +854,11 @@ async function confirmDeleteNaming() {
             v-model:mode="editDomainMode"
             v-model:purchase-price="editPurchasePrice"
             name="edit-domain-mode"
-            :was-for-sale="editWasForSale"
+            :found="editFound"
           />
           <div class="namings-view__field">
-            <label class="namings-view__label">Концепт</label>
-            <select v-model="editConceptId" class="namings-view__select namings-view__select--full">
-              <option :value="null">— Без концепту —</option>
-              <option v-for="c in sortedConcepts" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+            <label class="namings-view__label" for="edit-naming-concept">Концепт</label>
+            <SearchSelect id="edit-naming-concept" v-model="editConceptId" :options="conceptChoiceOptions" />
           </div>
         </template>
       </form>
@@ -829,14 +944,6 @@ async function confirmDeleteNaming() {
     }
   }
 
-  &__select {
-    padding: $spacing-2 $spacing-3;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    font-size: $font-size-sm;
-    background-color: $color-bg-white;
-  }
-
   &__count {
     font-size: $font-size-sm;
     color: $color-text-secondary;
@@ -865,12 +972,10 @@ async function confirmDeleteNaming() {
   &__table {
     width: 100%;
     border-spacing: 0;
-
-    @include mobile {
-      min-width: 560px;
-    }
     border-collapse: separate;
     background-color: $color-bg-white;
+
+    @include scroll-table-cells;
 
     th,
     td {
@@ -933,39 +1038,26 @@ async function confirmDeleteNaming() {
     line-height: 1.4;
   }
 
+  // One line like every cell; a long description is cut, whole in the tooltip.
   &__tagline {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: $font-size-xs;
     color: $color-text-secondary;
     line-height: 1.3;
   }
 
-  // Pencil and bin instead of «Редагувати» / «Видалити», side by side: the
-  // Ukrainian words pushed «Видалити» off a 1440 screen, and stacking them was
-  // rejected by the owner (06.10). The word stays as the tooltip and label.
+  // Pencil and bin, not words (owner, 06.10) — `RowAction`, one look in every
+  // table. They stay in view while the table is scrolled sideways.
   &__actions {
-    white-space: nowrap;
-
-    :deep(button) {
-      margin-right: $spacing-2;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
+    @include sticky-actions($color-bg-white);
   }
 
-  :deep(.namings-view__icon-btn) {
-    padding: $spacing-1 $spacing-2;
-  }
-
-  :deep(.namings-view__icon-btn .btn__content) {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  &__icon {
-    width: 16px;
-    height: 16px;
+  // Over the other headers, which are sticky to the top themselves.
+  &__table &__actions-head {
+    @include sticky-actions($color-bg);
+    z-index: 2;
   }
 
   &__form {
@@ -986,14 +1078,14 @@ async function confirmDeleteNaming() {
     color: $color-text;
   }
 
-  &__select--full {
-    width: 100%;
-  }
-
+  // One line high from the start: «checking…», the answer and the wait before
+  // them take the same room, so the form below does not jump (owner, 07.10).
   &__domain-preview {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: $spacing-1;
+    min-height: 24px;
   }
 
   &__domain-preview-row {
@@ -1012,7 +1104,6 @@ async function confirmDeleteNaming() {
   &__status-badge {
     display: inline-flex;
     align-items: center;
-    margin-right: auto;
     padding: $spacing-1 $spacing-2;
     border-radius: $radius-sm;
     font-size: $font-size-xs;
@@ -1046,6 +1137,118 @@ async function confirmDeleteNaming() {
     white-space: nowrap;
   }
 
+  // A price and a status open the card with everything the system knows of
+  // the domain: they look as before and answer to the pointer.
+  &__cell-button {
+    border: 0;
+    font-family: inherit;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-border-focus;
+      outline-offset: 2px;
+    }
+  }
+
+  button.namings-view__price-cell {
+    padding: 0;
+    background: none;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  // Beside the price and nothing more: what it was before the marketplace
+  // changed it, or that a person typed it. The rest is in the card.
+  &__price-was,
+  &__price-manual {
+    margin-left: $spacing-1;
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    white-space: nowrap;
+  }
+
+  &__price-was {
+    text-decoration: line-through;
+  }
+
+  // Which way the marketplace moved the price: up costs the buyer more.
+  &__price-trend {
+    display: inline-flex;
+    margin-left: 2px;
+    vertical-align: -2px;
+
+    &--up {
+      color: #b91c1c;
+    }
+
+    &--down {
+      color: #15803d;
+    }
+  }
+
+  &__price-trend-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  // The one thing in a row a person has to act on: a red mark beside the
+  // status, loud on purpose — there are few of them. Its tooltip says what is
+  // to be decided; the card behind it has the two buttons.
+  &__decision {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: #dc2626;
+    cursor: pointer;
+
+    &:hover {
+      color: #b91c1c;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-border-focus;
+      outline-offset: 2px;
+    }
+  }
+
+  &__decision-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  &__concept-filter {
+    width: 220px;
+    max-width: 100%;
+  }
+
+  // Quick filters by the domain: one click each, a second click takes it off.
+  &__domain-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+    margin-bottom: $spacing-4;
+  }
+
+  &__filter-count {
+    margin-left: $spacing-1;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+  }
+
+  &__empty {
+    padding: $spacing-8 $spacing-3;
+    text-align: center;
+    color: $color-text-secondary;
+  }
 
   &__status-tabs {
     display: flex;
@@ -1073,6 +1276,12 @@ async function confirmDeleteNaming() {
       background: $color-primary;
       border-color: $color-primary;
       color: #fff;
+    }
+
+    // «Потрібне рішення»: the same red as the mark in the rows it finds.
+    &--alert:not(&--active) {
+      border-color: #fca5a5;
+      color: #b91c1c;
     }
   }
 
@@ -1111,60 +1320,7 @@ async function confirmDeleteNaming() {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: $spacing-1 $spacing-2;
-  }
-
-  &__source-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 26px;
-    height: 26px;
-    padding: 4px 6px;
-    border-radius: $radius-sm;
-    font-size: 11px;
-    font-weight: $font-weight-semibold;
-    line-height: 1.2;
-    cursor: default;
-    user-select: none;
-
-    &--auto {
-      color: #334155;
-      background-color: #e2e8f0;
-    }
-
-    &--manual {
-      color: #475569;
-      background-color: #f1f5f9;
-    }
-
-    &--override {
-      color: #92400e;
-      background-color: #fef3c7;
-    }
-  }
-
-  :deep(.namings-view__recheck-btn) {
-    flex-shrink: 0;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    padding: $spacing-1 $spacing-1;
-
-    &:hover:not(:disabled) {
-      background-color: $color-bg;
-    }
-  }
-
-  :deep(.namings-view__recheck-btn .btn__content) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__recheck-icon {
-    width: 16px;
-    height: 16px;
+    gap: $spacing-2;
   }
 
   &__hint {

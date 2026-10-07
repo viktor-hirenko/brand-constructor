@@ -42,6 +42,16 @@ CREATE TABLE IF NOT EXISTS external_namings (
   domain TEXT,
   price REAL,
   purchase_price REAL,
+  -- Price check of a «For sale» domain (migration 016, utils/price-check-rules.ts).
+  price_source TEXT,
+  price_synced REAL,
+  price_prev REAL,
+  price_updated_at TEXT,
+  price_absent_nights INTEGER NOT NULL DEFAULT 0,
+  price_absent_date TEXT,
+  price_delisted_at TEXT,
+  price_dismissed_source TEXT,
+  price_dismissed_amount REAL,
   availability_status TEXT DEFAULT 'unknown',
   domain_checked_at TEXT,
   domain_check_source TEXT DEFAULT 'manual',
@@ -54,6 +64,22 @@ CREATE TABLE IF NOT EXISTS external_namings (
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (concept_id) REFERENCES concepts(id) ON DELETE SET NULL,
   FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS naming_price_checks (
+  naming_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  outcome TEXT NOT NULL,
+  amount REAL,
+  currency TEXT,
+  min_offer REAL,
+  url TEXT,
+  attempted_at TEXT NOT NULL,
+  read_at TEXT,
+  pending_amount REAL,
+  pending_date TEXT,
+  PRIMARY KEY (naming_id, source),
+  FOREIGN KEY (naming_id) REFERENCES external_namings(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS internal_namings (

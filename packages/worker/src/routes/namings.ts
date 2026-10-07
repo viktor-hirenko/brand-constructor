@@ -18,6 +18,15 @@ import {
   type LibraryKind,
 } from '../utils/orders'
 import { resolveAvailabilityChange, type AvailabilityRow } from '../utils/naming-availability'
+import {
+  checkNamingPrice,
+  isPriceCheckEnabled,
+  loadPriceReadings,
+  priceCheckChangeOnSave,
+  withPriceChecks,
+} from '../utils/price-check'
+import { describePriceCheck, isForSaleRow, sameAmount, type PriceRow } from '../utils/price-check-rules'
+import { PRICE_SOURCES } from '../utils/price-sources'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -105,9 +114,20 @@ const previewDomainSchema = z.object({
   domain: z.string().min(1).max(255),
 })
 
+/** The marketplace price a person takes or leaves; it must still be the one on offer. */
+const priceDecisionSchema = z.object({
+  action: z.enum(['accept', 'keep']),
+  source: z.enum(PRICE_SOURCES),
+  amount: z.number().positive(),
+})
+
+export const PRICE_CHECK_OFF = 'Price check is switched off'
+export const PRICE_OFFER_CHANGED = 'The marketplace price has changed'
+export const NOT_FOR_SALE = 'This naming has no domain the marketplaces can be asked about'
+
 /** Same row shape as GET /external (joins for author_name, concept_name, brand_name). */
 async function getExternalNamingListRow(db: D1Database, id: string) {
-  return await db
+  const row = await db
     .prepare(
       `SELECT en.*, u.name as author_name, c.name as concept_name, COALESCE(b.internal_name, en.used_in_brand_id) as brand_name,
          fb.internal_name as for_brand_name
@@ -119,7 +139,8 @@ async function getExternalNamingListRow(db: D1Database, id: string) {
        WHERE en.id = ?`
     )
     .bind(id)
-    .first()
+    .first<Record<string, unknown>>()
+  return row ? (await withPriceChecks(db, [row]))[0] : null
 }
 
 // --- External Namings ---
@@ -180,7 +201,7 @@ app.get('/external', async c => {
 
   return c.json({
     success: true,
-    data: namings.results,
+    data: await withPriceChecks(c.env.DB, namings.results),
     total: countResult?.total || 0,
     page,
     per_page: perPage,
@@ -251,6 +272,15 @@ app.post('/external', requireLibraryAccess('external_namings'), async c => {
         .bind(id)
         .first()
     }
+  }
+
+  // A taken domain may be for sale: the marketplaces are asked at once, and
+  // the naming gets «For sale» with their price without anyone typing it.
+  if (!forSale && parsed.data.domain && isPriceCheckEnabled(c.env)) {
+    await checkNamingPrice(c.env, id)
+    naming = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+      .bind(id)
+      .first()
   }
 
   return c.json({ success: true, data: naming }, 201)
@@ -334,10 +364,21 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
     return c.json({ success: false, error: change.error }, 400)
   }
 
+  // A new domain, status or price changes what the price check knows of the row.
+  const priceCheck = priceCheckChangeOnSave(existing as never, {
+    domain: rest.domain !== undefined ? rest.domain : (existing.domain as string | null),
+    purchase_price:
+      change.fields.purchase_price !== undefined
+        ? (change.fields.purchase_price as number | null)
+        : (existing.purchase_price as number | null),
+    domain_check_source:
+      (change.fields.domain_check_source as string | undefined) ?? (existing.domain_check_source as string | null),
+  })
+
   const updates: string[] = []
   const values: (string | number | null)[] = []
 
-  for (const [key, value] of Object.entries({ ...rest, ...change.fields })) {
+  for (const [key, value] of Object.entries({ ...rest, ...change.fields, ...priceCheck.fields })) {
     if (value !== undefined) {
       updates.push(`${key} = ?`)
       values.push(value as string | number | null)
@@ -354,6 +395,16 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
   await c.env.DB.prepare(`UPDATE external_namings SET ${updates.join(', ')} WHERE id = ?`)
     .bind(...values)
     .run()
+
+  if (priceCheck.readings === 'delete') {
+    await c.env.DB.prepare('DELETE FROM naming_price_checks WHERE naming_id = ?').bind(id).run()
+  } else if (priceCheck.readings === 'clear_pending') {
+    await c.env.DB.prepare(
+      'UPDATE naming_price_checks SET pending_amount = NULL, pending_date = NULL WHERE naming_id = ?'
+    )
+      .bind(id)
+      .run()
+  }
 
   let updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
     .bind(id)
@@ -377,6 +428,20 @@ app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {
         .bind(id)
         .first<{ domain: string | null; domain_check_source: string | null }>()
     }
+  }
+
+  // The same moments, the marketplaces: a taken domain that is for sale gets
+  // «For sale» and its price right away.
+  if (
+    updated?.domain_check_source !== 'admin_override' &&
+    (domainChanged || change.recheck) &&
+    domain &&
+    isPriceCheckEnabled(c.env)
+  ) {
+    await checkNamingPrice(c.env, id)
+    updated = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+      .bind(id)
+      .first<{ domain: string | null; domain_check_source: string | null }>()
   }
 
   return c.json({ success: true, data: updated })
@@ -426,7 +491,11 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
     return c.json({ success: false, error: 'No domain to check' }, 400)
   }
 
-  if (!isPananamesConfigured(c.env)) {
+  // The registrar says free or taken, the marketplaces — whether a taken one
+  // is for sale. Either may be off (the stage has no registrar key).
+  const registrar = isPananamesConfigured(c.env)
+  const marketplaces = isPriceCheckEnabled(c.env)
+  if (!registrar && !marketplaces) {
     return c.json({ success: false, error: 'Domain check service not configured' }, 503)
   }
 
@@ -440,27 +509,110 @@ app.post('/external/:id/check-domain', requireLibraryAccess('external_namings'),
     })
   }
 
-  if (!shouldRecheck(naming.domain_checked_at)) {
-    const row = await getExternalNamingListRow(c.env.DB, id)
-    return c.json({ success: true, data: row, cached: true })
+  const cached = registrar && !shouldRecheck(naming.domain_checked_at)
+  if (registrar && !cached) {
+    const result = await checkDomainAvailability(naming.domain, c.env)
+    if (!result) {
+      return c.json(
+        {
+          success: false,
+          error:
+            'Domain check failed. Check Worker logs for details (Pananames API may have returned an error or signature may be invalid).',
+        },
+        502
+      )
+    }
+    await updateNamingDomainStatus(c.env.DB, id, result)
   }
 
-  const result = await checkDomainAvailability(naming.domain, c.env)
-  if (!result) {
-    return c.json(
-      {
-        success: false,
-        error:
-          'Domain check failed. Check Worker logs for details (Pananames API may have returned an error or signature may be invalid).',
-      },
-      502
-    )
-  }
-
-  await updateNamingDomainStatus(c.env.DB, id, result)
+  // At most once an hour per naming, like the registrar (`checkNamingPrice`).
+  if (marketplaces) await checkNamingPrice(c.env, id)
 
   const row = await getExternalNamingListRow(c.env.DB, id)
 
+  return cached ? c.json({ success: true, data: row, cached: true }) : c.json({ success: true, data: row })
+})
+
+// --- Purchase price check (docs/architecture/domain-price-sync-plan.md) ---
+
+/** The recheck button of a «For sale» row: the marketplaces, at most once an hour. */
+app.post('/external/:id/check-price', requireLibraryAccess('external_namings'), async c => {
+  const id = c.req.param('id')
+
+  if (!isPriceCheckEnabled(c.env)) {
+    return c.json({ success: false, error: PRICE_CHECK_OFF }, 503)
+  }
+
+  const result = await checkNamingPrice(c.env, id)
+  if (result === 'not_found') {
+    return c.json({ success: false, error: 'External naming not found' }, 404)
+  }
+  if (result === 'not_for_sale') {
+    return c.json({ success: false, error: NOT_FOR_SALE }, 400)
+  }
+  if (result === 'used') {
+    return c.json({ success: false, error: 'Cannot modify a naming used in a brand' }, 409)
+  }
+
+  const row = await getExternalNamingListRow(c.env.DB, id)
+  return c.json({ success: true, data: row, cached: result === 'cached' })
+})
+
+/** «Оновити ціну» / «Залишити поточну» in the price window of a row. */
+app.post('/external/:id/price-decision', requireLibraryAccess('external_namings'), async c => {
+  const id = c.req.param('id')
+  const parsed = priceDecisionSchema.safeParse(await c.req.json())
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+      400
+    )
+  }
+
+  const existing = await c.env.DB.prepare('SELECT * FROM external_namings WHERE id = ?')
+    .bind(id)
+    .first<PriceRow>()
+  if (!existing) {
+    return c.json({ success: false, error: 'External naming not found' }, 404)
+  }
+  if (existing.status === 'used') {
+    return c.json({ success: false, error: 'Cannot modify a naming used in a brand' }, 409)
+  }
+  if (!isForSaleRow(existing)) {
+    return c.json({ success: false, error: NOT_FOR_SALE }, 400)
+  }
+
+  // The price is taken from what the server last read, not from the request:
+  // the request only names the offer the person saw.
+  const { action, source, amount } = parsed.data
+  const readings = (await loadPriceReadings(c.env.DB, id)).get(id) ?? []
+  const offer = describePriceCheck(existing, readings)
+  if (offer?.kind !== 'proposal' || offer.source !== source || !sameAmount(offer.amount, amount)) {
+    return c.json({ success: false, error: PRICE_OFFER_CHANGED }, 409)
+  }
+
+  const guard = `id = ? AND status = 'active' AND domain_check_source = 'admin_override'`
+  if (action === 'accept') {
+    await c.env.DB.prepare(
+      `UPDATE external_namings
+       SET purchase_price = ?, price_source = ?, price_synced = ?,
+           price_prev = NULL, price_updated_at = NULL,
+           price_dismissed_source = NULL, price_dismissed_amount = NULL,
+           updated_at = datetime('now')
+       WHERE ${guard}`
+    )
+      .bind(offer.amount, source, offer.amount, id)
+      .run()
+  } else {
+    await c.env.DB.prepare(
+      `UPDATE external_namings SET price_dismissed_source = ?, price_dismissed_amount = ? WHERE ${guard}`
+    )
+      .bind(source, offer.amount, id)
+      .run()
+  }
+
+  const row = await getExternalNamingListRow(c.env.DB, id)
   return c.json({ success: true, data: row })
 })
 
