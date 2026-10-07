@@ -286,6 +286,10 @@ export interface BrandListRow extends BrandRow {
   submitted_by_name?: string | null
   approved_by_name?: string | null
   needs_revision_by_name?: string | null
+  concept_name?: string | null
+  internal_naming_name?: string | null
+  /** JSON array of names, in the order they were picked. */
+  external_naming_names?: string | null
 }
 
 export function rowToBrand(row: BrandRow): Brand {
@@ -360,5 +364,8 @@ export function rowToBrandListItem(row: BrandListRow) {
     submittedByName: row.submitted_by_name ?? null,
     approvedByName: row.approved_by_name ?? null,
     needsRevisionByName: row.needs_revision_by_name ?? null,
+    conceptName: row.concept_name ?? null,
+    internalNamingName: row.internal_naming_name ?? null,
+    externalNamingNames: row.external_naming_names ? (JSON.parse(row.external_naming_names) as string[]) : [],
   }
 }
