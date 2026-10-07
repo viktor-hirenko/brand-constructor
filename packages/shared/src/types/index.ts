@@ -43,6 +43,7 @@ export type {
   OrderState,
   OrderAnswerLine,
   OrderCreatedCounts,
+  OrderCreatedNames,
   OrderListItem,
   OrderListResponseCounts,
   OrderListResponse,

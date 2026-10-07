@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import SearchSelect from '@/components/ui/SearchSelect.vue'
 import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vue'
 import {
   buildDomainModeBody,
@@ -69,6 +70,12 @@ const conceptChoices = computed(() =>
   props.conceptOptions ??
   [...libraryConcepts.value].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, name: c.name }))
 )
+
+/** The concept is picked by typing (SearchSelect): the list grows with the library. */
+const conceptSelectOptions = computed(() => [
+  ...(props.conceptOptions ? [] : [{ value: null, label: '— Без концепту —' }]),
+  ...conceptChoices.value.map(c => ({ value: c.id, label: c.name })),
+])
 
 const briefOptions = ref<{ id: string; name: string }[]>([])
 
@@ -242,10 +249,7 @@ async function handleCreate() {
         />
         <div class="create-form__field">
           <label class="create-form__label" for="naming-concept">Концепт</label>
-          <select id="naming-concept" v-model="conceptId" class="create-form__select">
-            <option v-if="!props.conceptOptions" :value="null">— Без концепту —</option>
-            <option v-for="c in conceptChoices" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+          <SearchSelect id="naming-concept" v-model="conceptId" :options="conceptSelectOptions" />
         </div>
       </template>
       <p v-if="error" class="create-form__error" role="alert">{{ error }}</p>

@@ -272,6 +272,14 @@ d('«Готово»', () => {
     expect(await tabs()).toEqual({ open: 0, ready: 1, archive: 0 })
     const ready = await json(await app.request('strategy', 'GET', '/api/orders?tab=ready'))
     expect(ready.data.items[0]).toMatchObject({ brandId: id, kinds: ['concept'], created: { concepts: 1, externalNamings: 1 } })
+    // The table names what was made, not only how many (owner, 07.10).
+    expect(ready.data.items[0].createdNames.concepts).toHaveLength(1)
+    expect(ready.data.items[0].createdNames.externalNamings).toHaveLength(1)
+    expect(ready.data.items[0].createdNames.internalNamings).toEqual([])
+    for (const name of [...ready.data.items[0].createdNames.concepts, ...ready.data.items[0].createdNames.externalNamings]) {
+      expect(typeof name).toBe('string')
+      expect(name.length).toBeGreaterThan(0)
+    }
   })
 })
 

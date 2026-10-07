@@ -28,6 +28,13 @@ export interface OrderCreatedCounts {
   internalNamings: number
 }
 
+/** What the team made for the brief, by name — the orders table shows these, not how many. */
+export interface OrderCreatedNames {
+  concepts: string[]
+  externalNamings: string[]
+  internalNamings: string[]
+}
+
 export interface OrderListItem {
   brandId: string
   brandName: string
@@ -45,6 +52,7 @@ export interface OrderListItem {
   /** The earliest `namingDeadline` of the orders. */
   deadline: string | null
   created: OrderCreatedCounts
+  createdNames: OrderCreatedNames
 }
 
 export interface OrderListResponseCounts {

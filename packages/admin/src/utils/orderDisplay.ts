@@ -1,6 +1,6 @@
 import { ORDER_KIND_LABELS } from '@brand-constructor/shared'
 import { countUk } from '@/utils/pluralUk'
-import type { OrderCreatedCounts, OrderKind, OrderState } from '@brand-constructor/shared'
+import type { OrderCreatedCounts, OrderCreatedNames, OrderKind, OrderState } from '@brand-constructor/shared'
 
 /**
  * How the Orders pages say things (brief-orders plan, phase 2a). Pure, so the
@@ -32,6 +32,55 @@ export function createdSummary(c: OrderCreatedCounts): string {
   if (c.externalNamings) parts.push(plural(c.externalNamings, 'назва', 'назви', 'назв'))
   if (c.internalNamings) parts.push(plural(c.internalNamings, 'внутрішня', 'внутрішні', 'внутрішніх'))
   return parts.length > 0 ? parts.join(' · ') : '—'
+}
+
+/** Names shown in a row of the orders table before «ще N». */
+const CREATED_NAMES_SHOWN = 3
+
+/**
+ * What the team made, by name: «Golden Frontier · Frontiera, Goldfront» —
+ * concepts, then names, then internal names. A count («1 концепт · 2 назви»)
+ * said how much and hid what, and every order had to be opened to learn it
+ * (owner, 07.10). `full` is the whole list for the tooltip.
+ */
+export function createdNamesSummary(names: OrderCreatedNames): { text: string; full: string } {
+  const made = createdNamesGroups(names)
+  const text = made.groups.map(g => g.names.join(', ')).join(' · ')
+  if (!text) return { text: '—', full: '' }
+  return { text: made.more > 0 ? `${text} · ще ${made.more}` : text, full: made.full }
+}
+
+/** Which glyph stands before the names: a concept, or names (external and internal alike). */
+export type CreatedKind = 'concept' | 'naming'
+
+export interface CreatedNamesGroups {
+  /** The names shown, by kind — the table puts the kind's glyph before each group. */
+  groups: { kind: CreatedKind; names: string[] }[]
+  /** How many more there are («ще N»). */
+  more: number
+  /** The whole list, for the tooltip. */
+  full: string
+}
+
+export function createdNamesGroups(names: OrderCreatedNames): CreatedNamesGroups {
+  const all: { kind: CreatedKind; names: string[] }[] = [
+    { kind: 'concept' as const, names: names.concepts },
+    { kind: 'naming' as const, names: [...names.externalNamings, ...names.internalNamings] },
+  ].filter(g => g.names.length > 0)
+  const total = all.reduce((n, g) => n + g.names.length, 0)
+  let left = CREATED_NAMES_SHOWN
+  const groups = all
+    .map(g => {
+      const part = g.names.slice(0, left)
+      left -= part.length
+      return { kind: g.kind, names: part }
+    })
+    .filter(g => g.names.length > 0)
+  return {
+    groups,
+    more: Math.max(0, total - CREATED_NAMES_SHOWN),
+    full: all.map(g => g.names.join(', ')).join(' · '),
+  }
 }
 
 export function formatOrderDate(value: string | null | undefined): string {

@@ -12,6 +12,7 @@ import {
 } from '@brand-constructor/shared'
 import type {
   BrandStatus,
+  OrderCreatedNames,
   OrderDetail,
   OrderListItem,
   OrderListResponse,
@@ -104,6 +105,7 @@ orders.get('/', async c => {
   const lastEventMeta = new Map<string, string>()
   const cancelMetas = new Map<string, string[]>()
   const counts = new Map<string, { concepts: number; externalNamings: number; internalNamings: number }>()
+  const names = new Map<string, OrderCreatedNames>()
   if (ids.length > 0) {
     const marks = ids.map(() => '?').join(',')
     const events = await c.env.DB.prepare(
@@ -131,15 +133,19 @@ orders.get('/', async c => {
       ['external_namings', 'externalNamings'],
       ['internal_namings', 'internalNamings'],
     ] as const) {
+      // By name, oldest first: the table shows what was made, not how many.
       const made = await c.env.DB.prepare(
-        `SELECT for_brand_id, COUNT(*) AS n FROM ${table} WHERE for_brand_id IN (${marks}) GROUP BY for_brand_id`
+        `SELECT for_brand_id, name FROM ${table} WHERE for_brand_id IN (${marks}) ORDER BY created_at, id`
       )
         .bind(...ids)
-        .all<{ for_brand_id: string; n: number }>()
+        .all<{ for_brand_id: string; name: string }>()
       for (const m of made.results) {
         const entry = counts.get(m.for_brand_id) ?? { concepts: 0, externalNamings: 0, internalNamings: 0 }
-        entry[key] = Number(m.n)
+        entry[key] += 1
         counts.set(m.for_brand_id, entry)
+        const named = names.get(m.for_brand_id) ?? { concepts: [], externalNamings: [], internalNamings: [] }
+        named[key].push(m.name)
+        names.set(m.for_brand_id, named)
       }
     }
   }
@@ -153,6 +159,10 @@ orders.get('/', async c => {
     )
     const cancelledKinds = cancelledKindsFromEvents(cancelMetas.get(row.id) ?? [])
     const made = counts.get(row.id) ?? { concepts: 0, externalNamings: 0, internalNamings: 0 }
+    const named = names.get(row.id) ?? { concepts: [], externalNamings: [], internalNamings: [] }
+    const showConcepts = kinds.includes(ORDER_KINDS.CONCEPT)
+    const showExternal = kinds.includes(ORDER_KINDS.EXTERNAL_NAMING) || showConcepts
+    const showInternal = kinds.includes(ORDER_KINDS.INTERNAL_NAMING)
     return {
       brandId: row.id,
       brandName: row.internal_name || row.id,
@@ -166,12 +176,14 @@ orders.get('/', async c => {
       readyAt: row.orders_ready_at ?? null,
       deadline: orderDeadline(row),
       created: {
-        concepts: kinds.includes(ORDER_KINDS.CONCEPT) ? made.concepts : 0,
-        externalNamings:
-          kinds.includes(ORDER_KINDS.EXTERNAL_NAMING) || kinds.includes(ORDER_KINDS.CONCEPT)
-            ? made.externalNamings
-            : 0,
-        internalNamings: kinds.includes(ORDER_KINDS.INTERNAL_NAMING) ? made.internalNamings : 0,
+        concepts: showConcepts ? made.concepts : 0,
+        externalNamings: showExternal ? made.externalNamings : 0,
+        internalNamings: showInternal ? made.internalNamings : 0,
+      },
+      createdNames: {
+        concepts: showConcepts ? named.concepts : [],
+        externalNamings: showExternal ? named.externalNamings : [],
+        internalNamings: showInternal ? named.internalNamings : [],
       },
     }
   })

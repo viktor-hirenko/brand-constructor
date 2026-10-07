@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { OrderListItem } from '@brand-constructor/shared'
 import { briefsForKind, forBriefLabel } from '@/utils/orderBriefs'
-import { createdSummary, availabilityLabel, ORDER_STATE_BADGES, orderBadge, orderedSummary, orderSectionBadge, orderStatusNote } from '@/utils/orderDisplay'
+import { createdNamesGroups, createdNamesSummary, createdSummary, availabilityLabel, ORDER_STATE_BADGES, orderBadge, orderedSummary, orderSectionBadge, orderStatusNote } from '@/utils/orderDisplay'
 
 /*
  * «For brief» on the library pages and the words of the Orders pages
@@ -59,6 +59,40 @@ describe('the words', () => {
   it('sums up what was made', () => {
     expect(createdSummary({ concepts: 1, externalNamings: 3, internalNamings: 0 })).toBe('1 концепт · 3 назви')
     expect(createdSummary({ concepts: 0, externalNamings: 0, internalNamings: 0 })).toBe('—')
+  })
+
+  // The table said «1 концепт · 2 назви»: how much, not what (owner, 07.10).
+  it('the orders table names what was made — concepts, then names, then internal ones', () => {
+    const made = { concepts: ['Golden Frontier'], externalNamings: ['Frontiera', 'Goldfront'], internalNamings: [] }
+    expect(createdNamesSummary(made)).toEqual({
+      text: 'Golden Frontier · Frontiera, Goldfront',
+      full: 'Golden Frontier · Frontiera, Goldfront',
+    })
+  })
+
+  it('more than three names: the first three and «ще N», the whole list in the tooltip', () => {
+    const made = { concepts: ['Wonka'], externalNamings: ['A', 'B', 'C', 'D'], internalNamings: ['Int One'] }
+    expect(createdNamesSummary(made)).toEqual({
+      text: 'Wonka · A, B · ще 3',
+      full: 'Wonka · A, B, C, D, Int One',
+    })
+  })
+
+  it('names come by kind, so the table can put a glyph before each: a concept, then names of both libraries', () => {
+    const made = { concepts: ['Golden Frontier'], externalNamings: ['Frontiera'], internalNamings: ['Int One', 'Int Two'] }
+    expect(createdNamesGroups(made)).toEqual({
+      groups: [
+        { kind: 'concept', names: ['Golden Frontier'] },
+        { kind: 'naming', names: ['Frontiera', 'Int One'] },
+      ],
+      more: 1,
+      full: 'Golden Frontier · Frontiera, Int One, Int Two',
+    })
+    expect(createdNamesGroups({ concepts: [], externalNamings: [], internalNamings: [] }).groups).toEqual([])
+  })
+
+  it('nothing made yet — a dash and no tooltip', () => {
+    expect(createdNamesSummary({ concepts: [], externalNamings: [], internalNamings: [] })).toEqual({ text: '—', full: '' })
   })
 
   it('has a badge for every state', () => {

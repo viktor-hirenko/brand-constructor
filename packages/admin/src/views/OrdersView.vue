@@ -6,11 +6,18 @@ import { apiGet } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import {
   orderBadge,
-  createdSummary,
+  createdNamesGroups,
   formatOrderDate,
   formatAnswerValue,
   orderKindLabel,
 } from '@/utils/orderDisplay'
+import lightbulb from '@phosphor-icons/core/regular/lightbulb.svg?raw'
+import textAa from '@phosphor-icons/core/regular/text-aa.svg?raw'
+import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
+import type { CreatedKind } from '@/utils/orderDisplay'
+
+/** The same glyphs as the menu: «Концепти» and «Неймінги». */
+const MADE_GLYPHS: Record<CreatedKind, string> = { concept: lightbulb, naming: textAa }
 
 /**
  * Orders — briefs `in_work` as the Strategy team works them (brief-orders plan,
@@ -109,7 +116,19 @@ useListPolling(() => load({ silent: true }))
             <td>{{ item.authorName }}</td>
             <td>{{ formatOrderDate(item.sentToWorkAt) }}</td>
             <td>{{ item.deadline ? formatAnswerValue(item.deadline) : '—' }}</td>
-            <td>{{ createdSummary(item.created) }}</td>
+            <td class="orders-view__made" :title="createdNamesGroups(item.createdNames).full || undefined">
+              <span
+                v-for="group in createdNamesGroups(item.createdNames).groups"
+                :key="group.kind"
+                class="orders-view__made-group"
+              >
+                <PhosphorIcon :svg="MADE_GLYPHS[group.kind]" class="orders-view__made-icon" />{{ group.names.join(', ') }}
+              </span>
+              <span v-if="createdNamesGroups(item.createdNames).more" class="orders-view__made-more">
+                ще {{ createdNamesGroups(item.createdNames).more }}
+              </span>
+              <template v-if="createdNamesGroups(item.createdNames).groups.length === 0">—</template>
+            </td>
             <td>
               <span class="badge" :class="orderBadge(item.state, item.briefStatus).cls">
                 {{ orderBadge(item.state, item.briefStatus).label }}
@@ -231,6 +250,30 @@ useListPolling(() => load({ silent: true }))
 
   &__name-cell {
     font-weight: $font-weight-medium;
+  }
+
+  // What was made, by name, on one line like every cell: the glyph of the
+  // menu's «Концепти» before a concept, of «Неймінги» before names.
+  &__made-group {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-1;
+
+    & + &,
+    & + .orders-view__made-more {
+      margin-left: $spacing-3;
+    }
+  }
+
+  &__made-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: $color-text-secondary;
+  }
+
+  &__made-more {
+    color: $color-text-secondary;
   }
 
   &__kind {
