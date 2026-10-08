@@ -80,12 +80,12 @@ describe('the sentences', () => {
 })
 
 describe('where they stand', () => {
-  it('the «Ціна» header carries a mark with the sentence; «Статус домену» answers the pointer without one', () => {
-    expect(VIEW).toContain(':title="PRICE_COLUMN_HINT" :aria-label="PRICE_COLUMN_HINT"')
-    // That header is the widest thing in its column: a mark there widened the
-    // table by 20 px and pushed «Автор» further under the actions (08.10).
+  it('the «Ціна» and «Статус домену» headers answer the pointer with a sentence, and carry no mark', () => {
+    expect(VIEW).toContain('<span :title="PRICE_COLUMN_HINT">Ціна</span>')
     expect(VIEW).toContain('<span :title="STATUS_COLUMN_HINT">Статус домену</span>')
-    expect(VIEW.match(/namings-view__th-hint-icon" \/>/g)).toHaveLength(1)
+    // An «i» beside «Ціна» sat off the line and read as a thing of its own
+    // («непонятно, что это за буковка и для чего она», the owner, 08.10).
+    expect(VIEW).not.toContain('th-hint')
   })
 
   it('a price, a status badge and every quick filter answer the pointer with theirs', () => {

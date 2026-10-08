@@ -8,6 +8,7 @@ import {
   describeDomainCard,
   describeSourceReading,
   formatCheckDate,
+  keptOffer,
   priceOffer,
   recheckKind,
   type CheckedNaming,
@@ -23,14 +24,14 @@ const props = defineProps<{
   naming: CheckedNaming
   /** Roles that edit namings get the buttons; the rest only read. */
   canWrite: boolean
-  saving: 'accept' | 'keep' | null
+  saving: 'accept' | 'keep' | 'reopen' | null
   checking: boolean
   error: string | null
 }>()
 
 const emit = defineEmits<{
   close: []
-  decide: [action: 'accept' | 'keep']
+  decide: [action: 'accept' | 'keep' | 'reopen']
   recheck: []
 }>()
 
@@ -39,6 +40,8 @@ const sources = computed(() => props.naming.price_check?.sources ?? [])
 const offer = computed(() =>
   props.canWrite && props.naming.status === 'active' ? priceOffer(props.naming.price_check) : null
 )
+// «Залишити свою» was pressed: the same offer can be put back on the table.
+const kept = computed(() => (props.canWrite ? keptOffer(props.naming) : null))
 const canRecheck = computed(() => props.canWrite && recheckKind(props.naming) !== null)
 const busy = computed(() => props.saving !== null || props.checking)
 </script>
@@ -83,6 +86,17 @@ const busy = computed(() => props.saving !== null || props.checking)
         <BaseButton :loading="saving === 'accept'" :disabled="busy" @click="emit('decide', 'accept')">
           Взяти ціну сайту — {{ formatUsd(offer.amount) }}
         </BaseButton>
+      </template>
+      <template v-else-if="kept">
+        <BaseButton
+          variant="secondary"
+          :loading="saving === 'reopen'"
+          :disabled="busy"
+          @click="emit('decide', 'reopen')"
+        >
+          Змінити рішення
+        </BaseButton>
+        <BaseButton variant="secondary" :disabled="busy" @click="emit('close')">Закрити</BaseButton>
       </template>
       <BaseButton v-else variant="secondary" @click="emit('close')">Закрити</BaseButton>
     </template>

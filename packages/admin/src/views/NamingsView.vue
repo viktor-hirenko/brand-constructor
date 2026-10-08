@@ -24,7 +24,6 @@ import SearchSelect from '@/components/ui/SearchSelect.vue'
 import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vue'
 import NamingPriceCheckModal from '@/components/namings/NamingPriceCheckModal.vue'
 import NamingHelpModal from '@/components/namings/NamingHelpModal.vue'
-import infoIcon from '@phosphor-icons/core/regular/info.svg?raw'
 import {
   DOMAIN_CARD_HINT,
   FILTER_HINTS,
@@ -64,6 +63,7 @@ import {
   needsDecision,
   priceCellExtras,
   priceDecisionErrorText,
+  keptOffer,
   priceOffer,
   recheckKind,
   type DomainCard,
@@ -222,7 +222,7 @@ const showHelp = ref(false)
 const priceWindowNaming = computed(
   () => externalNamings.value.find(n => n.id === priceWindowId.value) ?? null
 )
-const priceDeciding = ref<'accept' | 'keep' | null>(null)
+const priceDeciding = ref<'accept' | 'keep' | 'reopen' | null>(null)
 const priceDecisionError = ref<string | null>(null)
 
 function clearEditPreviewTimer() {
@@ -460,10 +460,11 @@ function openPriceWindow(namingId: string) {
   priceWindowId.value = namingId
 }
 
-async function handlePriceDecision(action: 'accept' | 'keep') {
+async function handlePriceDecision(action: 'accept' | 'keep' | 'reopen') {
   const naming = priceWindowNaming.value
-  const offer = priceOffer(naming?.price_check)
-  if (!naming || !offer) return
+  if (!naming) return
+  const offer = action === 'reopen' ? keptOffer(naming) : priceOffer(naming.price_check)
+  if (!offer) return
   priceDeciding.value = action
   priceDecisionError.value = null
   try {
@@ -472,7 +473,8 @@ async function handlePriceDecision(action: 'accept' | 'keep') {
       { action, ...offer }
     )
     replaceExternalRow(row)
-    priceWindowId.value = null
+    // «Змінити рішення» leaves the card open: the two buttons are back in it.
+    if (action !== 'reopen') priceWindowId.value = null
   } catch (e) {
     priceDecisionError.value = priceDecisionErrorText(e instanceof Error ? e.message : null)
     refreshList({ silent: true })
@@ -625,10 +627,8 @@ async function confirmDeleteNaming() {
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('price')">
-                Ціна
-                <span class="namings-view__th-hint" :title="PRICE_COLUMN_HINT" :aria-label="PRICE_COLUMN_HINT" role="img">
-                  <PhosphorIcon :svg="infoIcon" class="namings-view__th-hint-icon" />
-                </span>
+                <!-- A word on hover and no mark: the «i» beside it read as a thing of its own (the owner, 08.10). -->
+                <span :title="PRICE_COLUMN_HINT">Ціна</span>
                 <span v-if="extSortField === 'price'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
@@ -1209,19 +1209,6 @@ async function confirmDeleteNaming() {
   // registration or the purchase price (owner, 06.10).
   &__price-cell {
     white-space: nowrap;
-  }
-
-  &__th-hint {
-    display: inline-flex;
-    vertical-align: middle;
-    margin-left: 2px;
-    color: $color-text-muted;
-    cursor: help;
-  }
-
-  &__th-hint-icon {
-    width: 14px;
-    height: 14px;
   }
 
   &__help-link {

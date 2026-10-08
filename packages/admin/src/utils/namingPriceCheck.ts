@@ -140,6 +140,19 @@ export function priceOffer(
   return { source: check.source, amount: check.amount }
 }
 
+/**
+ * The offer a person turned down with «Залишити свою», while the marketplace
+ * still asks the same: the card lets them change their mind («Змінити
+ * рішення»), or a slip of the hand hides the red mark for good.
+ */
+export function keptOffer(n: CheckedNaming): { source: NamingPriceSource; amount: number } | null {
+  const check = n.price_check
+  // A price that follows a marketplace also reads «differs» while a new one waits for its second day.
+  if (n.status !== 'active' || !isForSale(n) || n.price_auto === true) return null
+  if (check?.kind !== 'differs' || check.source == null || check.amount == null) return null
+  return { source: check.source, amount: check.amount }
+}
+
 /** The one thing in the table a person has to act on. */
 export function needsDecision(n: CheckedNaming): boolean {
   return n.status === 'active' && priceOffer(n.price_check) !== null
