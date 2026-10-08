@@ -25,7 +25,14 @@ import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vu
 import NamingPriceCheckModal from '@/components/namings/NamingPriceCheckModal.vue'
 import NamingHelpModal from '@/components/namings/NamingHelpModal.vue'
 import infoIcon from '@phosphor-icons/core/regular/info.svg?raw'
-import { FILTER_HINTS, PRICE_COLUMN_HINT, STATUS_COLUMN_HINT, priceHint, statusHint } from '@/utils/namingHelp'
+import {
+  DOMAIN_CARD_HINT,
+  FILTER_HINTS,
+  PRICE_COLUMN_HINT,
+  STATUS_COLUMN_HINT,
+  priceHint,
+  statusHint,
+} from '@/utils/namingHelp'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import arrowUp from '@phosphor-icons/core/regular/arrow-up.svg?raw'
 import arrowDown from '@phosphor-icons/core/regular/arrow-down.svg?raw'
@@ -692,17 +699,23 @@ async function confirmDeleteNaming() {
                   <span v-if="n.tagline" class="namings-view__tagline" :title="n.tagline">{{ n.tagline }}</span>
                 </div>
               </td>
-              <td>{{ n.domain || '—' }}</td>
               <td>
+                <!-- The one way into the domain's card: the card is about the domain, its price and status are in it. -->
                 <button
-                  v-if="resolveNamingPrice(n)"
+                  v-if="n.domain"
                   type="button"
-                  class="namings-view__cell-button namings-view__price-cell"
-                  :title="priceHint(n.availability_status)"
+                  class="namings-view__cell-button namings-view__domain-link"
+                  :title="DOMAIN_CARD_HINT"
                   @click.stop="openPriceWindow(n.id)"
                 >
-                  {{ resolveNamingPrice(n)?.amount }}
+                  {{ n.domain }}
                 </button>
+                <template v-else>—</template>
+              </td>
+              <td>
+                <span v-if="resolveNamingPrice(n)" class="namings-view__price-cell" :title="priceHint(n.availability_status)">
+                  {{ resolveNamingPrice(n)?.amount }}
+                </span>
                 <span v-else>—</span>
                 <template v-if="priceCellExtras(n).trend">
                   <span
@@ -719,26 +732,25 @@ async function confirmDeleteNaming() {
                   </span>
                   <span class="namings-view__price-was">{{ priceCellExtras(n).previous }}</span>
                 </template>
-                <span v-else-if="priceCellExtras(n).manual" class="namings-view__price-manual">
-                  вручну
+                <span
+                  v-else-if="priceCellExtras(n).manual"
+                  class="namings-view__price-manual"
+                  :class="{ 'namings-view__price-manual--stale': priceCellExtras(n).manualSince }"
+                  :title="priceCellExtras(n).manualTitle ?? undefined"
+                >
+                  вручну<template v-if="priceCellExtras(n).manualSince"> · {{ priceCellExtras(n).manualSince }}</template>
                 </span>
               </td>
               <td>
                 <div class="namings-view__availability-cell">
                   <div class="namings-view__availability-row">
-                    <component
-                      :is="n.domain ? 'button' : 'span'"
-                      :type="n.domain ? 'button' : undefined"
+                    <span
                       class="namings-view__status-badge"
-                      :class="[
-                        `namings-view__status-badge--${resolveNamingStatusBadge(n.availability_status).modifier}`,
-                        { 'namings-view__cell-button': n.domain },
-                      ]"
-                      :title="statusHint(n.availability_status, !!n.domain)"
-                      @click.stop="n.domain && openPriceWindow(n.id)"
+                      :class="`namings-view__status-badge--${resolveNamingStatusBadge(n.availability_status).modifier}`"
+                      :title="statusHint(n.availability_status)"
                     >
                       {{ resolveNamingStatusBadge(n.availability_status).label }}
-                    </component>
+                    </span>
                     <button
                       v-if="needsDecision(n)"
                       type="button"
@@ -1199,24 +1211,6 @@ async function confirmDeleteNaming() {
     white-space: nowrap;
   }
 
-  // What opens a card says so before the pointer is over it: a dotted line
-  // under a price, a mark after a status. The card explains every domain in
-  // sentences, and nobody found it behind plain text (the owner, 08.10).
-  button.namings-view__price-cell {
-    text-decoration: underline dotted $color-text-muted;
-    text-underline-offset: 3px;
-
-    &:hover {
-      text-decoration: underline solid currentColor;
-    }
-  }
-
-  button.namings-view__status-badge::after {
-    content: '›';
-    margin-left: $spacing-1;
-    opacity: 0.55;
-  }
-
   &__th-hint {
     display: inline-flex;
     vertical-align: middle;
@@ -1250,8 +1244,10 @@ async function confirmDeleteNaming() {
     }
   }
 
-  // A price and a status open the card with everything the system knows of
-  // the domain: they look as before and answer to the pointer.
+  // The domain opens the card with everything the system knows of it, and
+  // looks it: a link, like any other in the admin. A price and a status were
+  // two more ways into the same card, each with a look of its own — «зачем и
+  // цена, и статус открывают одну карточку» (the owner, 08.10).
   &__cell-button {
     border: 0;
     font-family: inherit;
@@ -1267,11 +1263,12 @@ async function confirmDeleteNaming() {
     }
   }
 
-  button.namings-view__price-cell {
+  &__domain-link {
     padding: 0;
     background: none;
     font-size: inherit;
-    color: inherit;
+    color: $color-primary;
+    text-align: left;
   }
 
   // Beside the price and nothing more: what it was before the marketplace
@@ -1286,6 +1283,11 @@ async function confirmDeleteNaming() {
 
   &__price-was {
     text-decoration: line-through;
+  }
+
+  // A price a person typed a month ago or more: the eye should stop on it.
+  &__price-manual--stale {
+    color: #b45309;
   }
 
   // Which way the marketplace moved the price: up costs the buyer more.

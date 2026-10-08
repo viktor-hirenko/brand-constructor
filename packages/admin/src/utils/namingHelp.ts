@@ -5,9 +5,9 @@ import type { DomainFilter } from '@/utils/namingFilters'
  * the first time (the owner, 08.10): the «Ціна» column holds two different
  * prices, a price and a status open a card, the quick filters are words
  * without a context, and nothing says the prices are found and kept
- * automatically. Three layers, the cheapest first: the things that open a
- * card look it; a sentence on hover for a term; «Як це працює» — one screen
- * for the whole picture. Described, not ordered: the tone of the tab's other
+ * automatically. Three layers, the cheapest first: the one thing that opens
+ * the card — the domain — looks a link; a sentence on hover for a term;
+ * «Як це працює» — one screen for the whole picture. Described, not ordered: the tone of the tab's other
  * hints (06.10).
  */
 
@@ -16,7 +16,8 @@ export const PRICE_COLUMN_HINT =
 
 export const STATUS_COLUMN_HINT = 'Визначається автоматично і перевіряється щодня.'
 
-const CARD = 'Подробиці — у картці домену.'
+/** On the domain: the one way into its card. */
+export const DOMAIN_CARD_HINT = 'Картка домену: звідки ціна, коли її перевірено, ціни трьох сайтів.'
 
 type DomainStatus = 'available' | 'sold' | 'for_sale' | 'unknown'
 
@@ -31,16 +32,16 @@ function known(status: string | null | undefined): DomainStatus {
   return status === 'available' || status === 'sold' || status === 'for_sale' ? status : 'unknown'
 }
 
-/** On a status badge; `card` — the badge opens the domain's card. */
-export function statusHint(status: string | null | undefined, card: boolean): string {
-  return card ? `${STATUS_HINTS[known(status)]} ${CARD}` : STATUS_HINTS[known(status)]
+/** On a status badge. */
+export function statusHint(status: string | null | undefined): string {
+  return STATUS_HINTS[known(status)]
 }
 
 /** On a price: which of the two prices this one is. */
-export function priceHint(status: string | null | undefined): string {
-  if (status === 'for_sale') return `Ціна, за яку домен продає власник. ${CARD}`
-  if (status === 'available') return `Вартість реєстрації вільного домену. ${CARD}`
-  return CARD
+export function priceHint(status: string | null | undefined): string | undefined {
+  if (status === 'for_sale') return 'Ціна, за яку домен продає власник.'
+  if (status === 'available') return 'Вартість реєстрації вільного домену.'
+  return undefined
 }
 
 export const FILTER_HINTS: Record<DomainFilter, string> = {
@@ -93,4 +94,4 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
 ]
 
-export const HELP_FOOTNOTE = 'Усе про конкретний домен — у його картці: вона відкривається з ціни або статусу в таблиці.'
+export const HELP_FOOTNOTE = 'Усе про конкретний домен — у його картці: вона відкривається з назви домену в таблиці.'
