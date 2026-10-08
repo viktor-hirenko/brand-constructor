@@ -65,13 +65,26 @@ export function initialDomainMode(source: string | null | undefined): DomainMode
   return source === 'admin_override' ? 'for_sale' : 'automatic'
 }
 
+const IS_STAGE = import.meta.env.VITE_ENVIRONMENT === 'stage'
+
+export interface DomainPreviewProblem {
+  text: string
+  /** False: nothing is broken — a note in the hint's grey, not an error's red. */
+  error: boolean
+}
+
 /**
- * The registrar preview's error, in words: the stage runs without the
- * registrar on purpose, and the server says so in English.
+ * Why the registrar's preview shows nothing, in words. The stage runs without
+ * the registrar on purpose: there it is a note, not an error — the owner read
+ * the red line as a failure (08.10), and so would anyone testing on the stage.
  */
-export function domainPreviewErrorText(message: string | null | undefined): string {
-  if (message === 'Domain check service not configured') return 'Перевірка доменів на цьому сервері недоступна'
-  return 'Не вдалося перевірити домен'
+export function domainPreviewProblem(message: string | null | undefined, stage: boolean = IS_STAGE): DomainPreviewProblem {
+  if (message === 'Domain check service not configured') {
+    return stage
+      ? { text: 'На тестовому стенді не перевіряється, чи домен вільний. Ціна викупу перевіряється.', error: false }
+      : { text: 'Перевірка доменів на цьому сервері недоступна', error: true }
+  }
+  return { text: 'Не вдалося перевірити домен', error: true }
 }
 
 /** The purchase price field's text → dollars, or null when it is not a positive number. */

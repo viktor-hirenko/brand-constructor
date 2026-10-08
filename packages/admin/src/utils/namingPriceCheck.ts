@@ -136,7 +136,7 @@ export function describeDomainCard(n: CheckedNaming): DomainCard {
           : 'Домен вільний.'
         : n.availability_status === 'sold'
           ? 'Домен зайнятий.'
-          : 'Статус домену ще не визначено.'
+          : 'Невідомо, чи домен вільний.'
     const details: string[] = []
     if (check?.kind === 'delisted') {
       const was = check.prev != null ? ` за ${formatUsd(check.prev)}` : ''
@@ -146,12 +146,29 @@ export function describeDomainCard(n: CheckedNaming): DomainCard {
     } else if (n.domain_check_source === 'pananames') {
       const checked = formatCheckDate(n.domain_checked_at)
       details.push(checked ? `Перевірено автоматично ${checked}.` : 'Перевірено автоматично.')
-    } else {
-      details.push('Автоматичної перевірки ще не було.')
     }
     if (used) details.push(locked)
     else if (n.availability_status !== 'available' && n.domain_check_source !== 'admin_override') {
-      details.push(`Якщо домен з’явиться у продажу на ${SITES}, статус For sale і ціна встановляться автоматично.`)
+      // A taken domain without a price: say outright that the marketplaces
+      // were asked and nobody sells it — «—» alone reads as «not checked».
+      const checked = on ? ` Перевірено ${on}.` : ''
+      const willCome = 'Якщо домен з’явиться у продажу, статус For sale і ціна встановляться автоматично.'
+      switch (check?.kind) {
+        case 'delisted':
+          details.push(`Якщо домен з’явиться у продажу на ${SITES}, статус For sale і ціна встановляться автоматично.`)
+          break
+        case 'not_listed':
+          details.push(`На ${SITES} домен не продається.${checked}`, willCome)
+          break
+        case 'no_fixed_price':
+          details.push(`На ${SITES} домен не має фіксованої ціни в доларах.${checked}`, willCome)
+          break
+        case 'unread':
+          details.push(on ? `Не всі сайти відповіли. Остання вдала перевірка — ${on}.` : 'Сайти ще не відповіли.', willCome)
+          break
+        default:
+          details.push(`${SITES} ще не перевірялися.`, willCome)
+      }
     }
     return { headline, details }
   }
@@ -210,6 +227,113 @@ export function describeDomainCard(n: CheckedNaming): DomainCard {
       details.push(manual ? 'Ціну введено вручну.' : 'Ціна із сайту.', `${SITES} ще не перевірялися. Перевірка — щодня вранці.`)
   }
   return { headline, details }
+}
+
+/** What the server answers about a domain being typed (`previewDomainPrice`). */
+export interface PricePreview {
+  sources: NamingPriceSourceReading[]
+  /** The price a save would write: the first fixed USD one, Afternic → Sedo → Namecheap. */
+  price: number | null
+  source: NamingPriceSource | null
+}
+
+/** Enough of a domain to ask the marketplaces about: a dot and a zone after it. */
+export function looksLikeDomain(text: string): boolean {
+  return /[^\s./]\.[a-z]{2,}/i.test(text.trim())
+}
+
+/**
+ * The sentence above the three marketplaces in the create and edit windows.
+ * `automatic` — the choice «Автоматично» is on, so a save writes this price.
+ */
+export function describePricePreview(preview: PricePreview, automatic: boolean): string {
+  if (preview.price != null && preview.source != null) {
+    const found = `Продається власником за ${formatUsd(preview.price)} — ціна з ${PRICE_SOURCE_LABELS[preview.source]}.`
+    return automatic ? `${found} Після збереження: статус For sale і ця ціна.` : found
+  }
+  if (preview.sources.some(s => s.outcome === 'unread')) return 'Не всі сайти відповіли. Ціну буде перевірено після збереження.'
+  if (preview.sources.some(s => s.outcome === 'no_fixed_price')) return `На ${SITES} домен не має фіксованої ціни в доларах.`
+  return `На ${SITES} домен не продається.`
+}
+
+/**
+ * The frame with the three marketplaces in the create and edit windows. It is
+ * in the window from the moment it opens and keeps its height in every state
+ * — only what stands inside changes: the owner counted four jumps of the
+ * window while a domain was typed (08.10), each one a piece appearing late.
+ *
+ *   idle    — no domain in the field yet
+ *   loading — the marketplaces are being asked
+ *   ready   — their answer about the domain in the field
+ *   saved   — edit: what the last check stored, nobody is asked again
+ *   failed  — the server could not ask them
+ *   free    — the registrar says the domain is free: nobody to buy it from
+ */
+export type SitePricesState = 'idle' | 'loading' | 'ready' | 'saved' | 'failed' | 'free'
+
+export function sitePricesState(input: {
+  domain: string
+  free: boolean
+  saved: boolean
+  loading: boolean
+  failed: boolean
+  ready: boolean
+}): SitePricesState {
+  if (input.free) return 'free'
+  if (input.saved) return 'saved'
+  if (!looksLikeDomain(input.domain)) return 'idle'
+  if (input.failed) return 'failed'
+  return input.ready && !input.loading ? 'ready' : 'loading'
+}
+
+/** The sentence above the three rows; null — still being asked, a skeleton stands there. */
+export function sitePricesSummary(
+  state: SitePricesState,
+  given: { preview: PricePreview | null; automatic: boolean; saved: NamingPriceSourceReading[] | null }
+): string | null {
+  switch (state) {
+    case 'idle':
+      return `Введіть домен — тут з’являться ціни викупу на ${SITES}.`
+    case 'loading':
+      return null
+    case 'ready':
+      return given.preview ? describePricePreview(given.preview, given.automatic) : null
+    case 'saved': {
+      const last = (given.saved ?? []).reduce<string | null>(
+        (max, r) => (r.read_at != null && (max == null || r.read_at > max) ? r.read_at : max),
+        null
+      )
+      const on = formatCheckDate(last)
+      return on ? `Остання перевірка — ${on}.` : 'Дані останньої перевірки.'
+    }
+    case 'failed':
+      return 'Не вдалося перевірити сайти. Ціну буде визначено після збереження.'
+    case 'free':
+      return 'Домен вільний — викуповувати не потрібно.'
+  }
+}
+
+export interface SitePricesRow {
+  source: NamingPriceSource
+  label: string
+  /** The listing — once the marketplace answered. */
+  url: string | null
+  /** null — being asked: a skeleton stands in its place. */
+  value: string | null
+}
+
+/** Always the same three rows, in the same order: only the value changes. */
+export function sitePricesRows(state: SitePricesState, sources: NamingPriceSourceReading[] | null): SitePricesRow[] {
+  const known = state === 'ready' || state === 'saved'
+  return (Object.keys(PRICE_SOURCE_LABELS) as NamingPriceSource[]).map(source => {
+    const reading = known ? (sources ?? []).find(r => r.source === source) : undefined
+    return {
+      source,
+      label: PRICE_SOURCE_LABELS[source],
+      url: reading?.url ?? null,
+      value: state === 'loading' ? null : reading ? describeSourceReading(reading) : '—',
+    }
+  })
 }
 
 /** One marketplace in the card: «$2 995», «1 300 EUR», «не знайдено»… */

@@ -14,7 +14,8 @@ import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vu
 import {
   buildDomainModeBody,
   canSaveDomainMode,
-  domainPreviewErrorText,
+  domainPreviewProblem,
+  type DomainPreviewProblem,
   type DomainMode,
 } from '@/utils/namingDomainStatus'
 
@@ -102,7 +103,7 @@ onMounted(async () => {
 // --- Domain preview (external only): availability + price, not saved ---
 
 const previewLoading = ref(false)
-const previewError = ref<string | null>(null)
+const previewError = ref<DomainPreviewProblem | null>(null)
 const previewData = ref<DomainPreview | null>(null)
 const previewAttempted = ref(false)
 let previewTimer: ReturnType<typeof setTimeout> | null = null
@@ -133,7 +134,7 @@ async function loadPreview() {
       domain: raw,
     })
   } catch (e) {
-    previewError.value = domainPreviewErrorText(e instanceof Error ? e.message : null)
+    previewError.value = domainPreviewProblem(e instanceof Error ? e.message : null)
   } finally {
     previewLoading.value = false
     previewAttempted.value = true
@@ -220,10 +221,15 @@ async function handleCreate() {
       <BaseInput v-model="tagline" label="Опис" placeholder="Короткий опис…" />
       <template v-if="props.kind === 'external'">
         <BaseInput v-model="domain" label="Домен" placeholder="напр. example.com" />
-        <div v-if="domain.trim() && domain.includes('.')" class="create-form__domain-preview">
+        <!-- Always in the window, one row tall: what the registrar says comes into it and pushes nothing. -->
+        <div class="create-form__domain-preview">
           <p v-if="previewLoading" class="create-form__hint">Перевіряємо домен…</p>
-          <p v-else-if="previewError" class="create-form__hint create-form__hint--error">
-            {{ previewError }}
+          <p
+            v-else-if="previewError"
+            class="create-form__hint"
+            :class="{ 'create-form__hint--error': previewError.error }"
+          >
+            {{ previewError.text }}
           </p>
           <p v-else-if="previewData" class="create-form__domain-preview-row">
             <span
@@ -246,6 +252,8 @@ async function handleCreate() {
           v-model:mode="domainMode"
           v-model:purchase-price="purchasePrice"
           name="create-domain-mode"
+          :domain="domain"
+          :free="previewData?.available === true"
         />
         <div class="create-form__field">
           <label class="create-form__label" for="naming-concept">Концепт</label>
@@ -271,7 +279,9 @@ async function handleCreate() {
   &__domain-preview {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: $spacing-1;
+    min-height: 28px;
   }
 
   &__domain-preview-row {

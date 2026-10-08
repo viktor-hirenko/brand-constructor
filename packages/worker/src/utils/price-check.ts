@@ -2,11 +2,15 @@
 // answers to the rules (`price-check-rules.ts`) and writes what they decide
 // (docs/architecture/domain-price-sync-plan.md). Three ways in:
 //
-//   06:30 UTC — every «For sale» domain: its price, or that it is gone
-//   06:45 UTC — taken domains nobody marked: is one of them for sale now
-//   one row   — on a save in the admin and from «Перевірити зараз»
+//   every night — every «For sale» domain: its price, or that it is gone;
+//                 then every taken domain nobody marked: is it for sale now
+//   one row     — on a save in the admin and from «Перевірити зараз»
+//
+// The night is not one run but as many as the list needs: the schedule fires
+// every five minutes, a firing takes the next domains not asked about today,
+// and once none is left it asks nobody (`runPriceNight`).
 
-import type { NamingPriceCheck } from '@brand-constructor/shared'
+import type { NamingPriceCheck, NamingPriceSource, NamingPriceSourceReading } from '@brand-constructor/shared'
 import type { Env } from '../types'
 import { checkDomainAvailability, isPananamesConfigured, updateNamingDomainStatus } from './domain-check'
 import { resolveAvailabilityChange } from './naming-availability'
@@ -32,26 +36,22 @@ import {
   type SourceReading,
 } from './price-sources'
 
-/** The schedule entries of the two nightly runs in `wrangler.toml`. */
-export const PRICE_CHECK_CRON = '30 6 * * *'
-export const PRICE_DISCOVERY_CRON = '45 6 * * *'
+/**
+ * The schedule entry of the night in `wrangler.toml`: every five minutes from
+ * 00:00 to 05:55 UTC — 72 runs, all on one UTC date, since the rules count
+ * dates (a price read «on two dates», no listing «on three»). A run of
+ * `PRICE_RUN_MAX_DOMAINS` takes well under five minutes even when every
+ * request waits out its timeout, so two runs never overlap.
+ */
+export const PRICE_NIGHT_CRON = '*/5 0-5 * * *'
 
 /**
- * Domains per nightly run, the longest unchecked first. One run is one
- * request to Namecheap and two per domain, and the smallest Cloudflare plan
- * allows 50 requests out per run, the database included.
+ * Domains per run. One run is one request to Namecheap and two per domain,
+ * and the smallest Cloudflare plan allows 50 requests out per run, the
+ * database included. The limit is on a run, not on the night: the next run
+ * takes the next domains.
  */
-export const PRICE_CHECK_MAX_DOMAINS = 20
-
-/**
- * The discovery run asks Namecheap about every taken domain — one request for
- * up to `NAMECHEAP_BATCH` of them, `NAMECHEAP_BATCHES` requests at most — and
- * Afternic and Sedo about this many: the ones Namecheap lists first, then the
- * longest unchecked. The same allowance of requests as above.
- */
-export const DISCOVERY_MAX_DOMAINS = 15
-const NAMECHEAP_BATCH = 40
-const NAMECHEAP_BATCHES = 3
+export const PRICE_RUN_MAX_DOMAINS = 20
 
 /** Between two domains, so no marketplace gets more than a request a second. */
 const PAUSE_MS = 1000
@@ -133,7 +133,7 @@ export async function withPriceChecks<T extends Record<string, unknown>>(
   rows: T[]
 ): Promise<(T & { price_check: NamingPriceCheck | null; price_auto: boolean })[]> {
   const typed = rows as unknown as (T & PriceRow & { id: string })[]
-  const needsReadings = typed.some(isForSaleRow)
+  const needsReadings = typed.some(row => isForSaleRow(row) || isDiscoverableRow(row))
   const readings = needsReadings ? await loadPriceReadings(db) : new Map<string, StoredReading[]>()
   return typed.map(row => {
     const stored = readings.get(row.id) ?? []
@@ -237,6 +237,57 @@ async function recheckAtRegistrar(env: Env, row: CheckRow): Promise<void> {
   if (result) await updateNamingDomainStatus(env.DB, row.id, result)
 }
 
+// ── A domain being typed: what the marketplaces say, nothing written ────────
+
+export interface PricePreview {
+  sources: NamingPriceSourceReading[]
+  /** The price a save would put on the domain if it is taken: the first fixed USD one. */
+  price: number | null
+  source: NamingPriceSource | null
+}
+
+/** A taken domain nobody marked — the row a save of a new domain makes. */
+const PREVIEW_ROW: PriceRow = {
+  status: 'active',
+  availability_status: 'unknown',
+  domain_check_source: 'manual',
+  purchase_price: null,
+  ...PRICE_STATE_RESET,
+}
+
+/**
+ * The create and edit windows show the three marketplaces' prices the moment a
+ * domain is typed: the owner looked for them there, not in a card behind the
+ * table (08.10). The price is decided by the same rule the save runs.
+ */
+export async function previewDomainPrice(rawDomain: string, deps: PriceCheckDeps = {}): Promise<PricePreview | null> {
+  const domain = normalizeDomain(rawDomain)
+  if (!domain) return null
+  const fetcher = deps.fetch ?? fetch
+  const now = (deps.now ?? (() => new Date()))()
+
+  const [afternic, sedo, namecheap] = await Promise.all([
+    readAfternic(domain, fetcher),
+    readSedo(domain, fetcher),
+    readNamecheap([domain], fetcher),
+  ])
+  const fresh = [afternic.reading, sedo.reading, namecheap.readings.get(domain) ?? unread('namecheap', domain, 'no answer')]
+  const change = applyPriceReadings(PREVIEW_ROW, [], fresh, now)
+  return {
+    sources: change.readings.map(r => ({
+      source: r.source,
+      outcome: r.outcome,
+      amount: r.amount,
+      currency: r.currency,
+      min_offer: r.minOffer,
+      url: r.url,
+      read_at: r.readAt,
+    })),
+    price: change.list ? (change.fields.purchase_price ?? null) : null,
+    source: change.list ? ((change.fields.price_source as NamingPriceSource | null | undefined) ?? null) : null,
+  }
+}
+
 // ── One row: the recheck button ─────────────────────────────────────────────
 
 export type CheckNamingPriceResult = 'not_found' | 'not_for_sale' | 'used' | 'cached' | 'checked'
@@ -272,57 +323,63 @@ export async function checkNamingPrice(env: Env, namingId: string, deps: PriceCh
   return 'checked'
 }
 
-// ── Every row: the nightly run ──────────────────────────────────────────────
+// ── Every row: the night ────────────────────────────────────────────────────
 
-export interface PriceCheckSummary {
-  namings: number
-  domains: number
+type QueuedRow = CheckRow & { last_attempt: string | null }
+
+/**
+ * Rows of one kind that no marketplace was asked about today, the longest
+ * unasked first. An unread attempt counts as asked: a marketplace that refused
+ * is not tried again for the same domain the same night.
+ */
+function notAskedToday(db: D1Database, where: string, today: string): Promise<D1Result<QueuedRow>> {
+  return db
+    .prepare(
+      `SELECT * FROM (
+         SELECT ${ROW_COLUMNS},
+                (SELECT MIN(pc.attempted_at) FROM naming_price_checks pc WHERE pc.naming_id = en.id) AS last_attempt
+         FROM external_namings en
+         WHERE en.domain IS NOT NULL AND en.domain != '' AND ${where}
+       )
+       WHERE last_attempt IS NULL OR last_attempt < ?
+       ORDER BY last_attempt IS NOT NULL, last_attempt ASC, id`
+    )
+    .bind(today)
+    .all<QueuedRow>()
+}
+
+interface RunBatch {
+  rowsByDomain: Map<string, CheckRow[]>
   /** Domains left for the next run by the per-run limit. */
   postponed: number
-  updated: number
-  delisted: number
+}
+
+/** The first `PRICE_RUN_MAX_DOMAINS` domains of the queue, with every naming on them. */
+function takeBatch(rows: CheckRow[]): RunBatch {
+  const rowsByDomain = new Map<string, CheckRow[]>()
+  const left = new Set<string>()
+  for (const row of rows) {
+    const domain = normalizeDomain(row.domain)
+    if (!domain) continue
+    const taken = rowsByDomain.get(domain)
+    if (taken) taken.push(row)
+    else if (rowsByDomain.size < PRICE_RUN_MAX_DOMAINS) rowsByDomain.set(domain, [row])
+    else left.add(domain)
+  }
+  return { rowsByDomain, postponed: left.size }
+}
+
+interface Asked {
+  freshByDomain: Map<string, SourceReading[]>
   refused: string[]
   unread: Record<string, number>
 }
 
-export async function runPriceCheck(env: Env, deps: PriceCheckDeps = {}): Promise<PriceCheckSummary> {
+/** One request to Namecheap for the batch, then Afternic and Sedo domain by domain. */
+async function askMarketplaces(domains: string[], deps: PriceCheckDeps): Promise<Asked> {
   const fetcher = deps.fetch ?? fetch
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>(r => setTimeout(r, ms)))
-  const now = (deps.now ?? (() => new Date()))()
-
-  // Used namings are read too — for the line in the table only (rule 8).
-  const { results } = await env.DB.prepare(
-    `SELECT ${ROW_COLUMNS},
-            (SELECT MIN(pc.attempted_at) FROM naming_price_checks pc WHERE pc.naming_id = en.id) AS last_attempt
-     FROM external_namings en
-     WHERE en.availability_status = 'for_sale'
-       AND en.domain_check_source = 'admin_override'
-       AND en.domain IS NOT NULL AND en.domain != ''
-       AND en.status IN ('active', 'used')
-     ORDER BY last_attempt IS NOT NULL, last_attempt ASC, en.id`
-  ).all<CheckRow & { last_attempt: string | null }>()
-
-  const rowsByDomain = new Map<string, CheckRow[]>()
-  let postponed = 0
-  for (const row of results) {
-    const domain = normalizeDomain(row.domain)
-    if (!domain) continue
-    const rows = rowsByDomain.get(domain)
-    if (rows) rows.push(row)
-    else if (rowsByDomain.size < PRICE_CHECK_MAX_DOMAINS) rowsByDomain.set(domain, [row])
-    else postponed++
-  }
-  const domains = [...rowsByDomain.keys()]
-  const summary: PriceCheckSummary = {
-    namings: 0,
-    domains: domains.length,
-    postponed,
-    updated: 0,
-    delisted: 0,
-    refused: [],
-    unread: { afternic: 0, sedo: 0, namecheap: 0 },
-  }
-  if (domains.length === 0) return summary
+  const unreadCount: Record<string, number> = { afternic: 0, sedo: 0, namecheap: 0 }
 
   const refused = new Set<string>()
   const namecheap = await readNamecheap(domains, fetcher)
@@ -340,17 +397,56 @@ export async function runPriceCheck(env: Env, deps: PriceCheckDeps = {}): Promis
     }
     const [afternic, sedo] = await Promise.all([ask('afternic', readAfternic), ask('sedo', readSedo)])
     const fresh = [afternic, sedo, namecheap.readings.get(domain) ?? unread('namecheap', domain, 'no answer')]
-    for (const reading of fresh) if (reading.outcome === 'unread') summary.unread[reading.source]++
+    for (const reading of fresh) if (reading.outcome === 'unread') unreadCount[reading.source]++
     freshByDomain.set(domain, fresh)
   }
-  summary.refused = [...refused]
+  return { freshByDomain, refused: [...refused], unread: unreadCount }
+}
+
+export interface PriceCheckSummary {
+  namings: number
+  domains: number
+  /** Domains left for the next run by the per-run limit. */
+  postponed: number
+  updated: number
+  delisted: number
+  refused: string[]
+  unread: Record<string, number>
+}
+
+/** One run over «For sale» domains: the next ones not asked about today. */
+export async function runPriceCheck(env: Env, deps: PriceCheckDeps = {}): Promise<PriceCheckSummary> {
+  const now = (deps.now ?? (() => new Date()))()
+
+  // Used namings are read too — for the line in the table only (rule 8).
+  const { results } = await notAskedToday(
+    env.DB,
+    `en.availability_status = 'for_sale' AND en.domain_check_source = 'admin_override' AND en.status IN ('active', 'used')`,
+    now.toISOString().slice(0, 10)
+  )
+  const { rowsByDomain, postponed } = takeBatch(results)
+  const domains = [...rowsByDomain.keys()]
+  const summary: PriceCheckSummary = {
+    namings: 0,
+    domains: domains.length,
+    postponed,
+    updated: 0,
+    delisted: 0,
+    refused: [],
+    unread: { afternic: 0, sedo: 0, namecheap: 0 },
+  }
+  if (domains.length === 0) return summary
+
+  const asked = await askMarketplaces(domains, deps)
+  summary.refused = asked.refused
+  summary.unread = asked.unread
 
   const stored = await loadPriceReadings(env.DB)
   const statements: D1PreparedStatement[] = []
   const delisted: CheckRow[] = []
   for (const [domain, rows] of rowsByDomain) {
     for (const row of rows) {
-      const change = applyPriceReadings(row, stored.get(row.id) ?? [], freshByDomain.get(domain) ?? [], now)
+      const change = applyPriceReadings(row, stored.get(row.id) ?? [], asked.freshByDomain.get(domain) ?? [], now)
       statements.push(...statementsFor(env.DB, row, change))
       summary.namings++
       if (change.delist) delisted.push(row)
@@ -368,83 +464,35 @@ export async function runPriceCheck(env: Env, deps: PriceCheckDeps = {}): Promis
 export interface PriceDiscoverySummary {
   namings: number
   domains: number
-  /** Domains Afternic and Sedo were asked about. */
-  asked: number
+  /** Domains left for the next run by the per-run limit. */
+  postponed: number
   listed: number
   refused: string[]
 }
 
+/** One run over taken domains nobody marked: the next ones not asked about today. */
 export async function runPriceDiscovery(env: Env, deps: PriceCheckDeps = {}): Promise<PriceDiscoverySummary> {
-  const fetcher = deps.fetch ?? fetch
-  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>(r => setTimeout(r, ms)))
   const now = (deps.now ?? (() => new Date()))()
 
-  // The longest since Afternic was asked first: Namecheap is asked every night.
-  const { results } = await env.DB.prepare(
-    `SELECT ${ROW_COLUMNS},
-            (SELECT pc.attempted_at FROM naming_price_checks pc
-              WHERE pc.naming_id = en.id AND pc.source = 'afternic') AS last_attempt
-     FROM external_namings en
-     WHERE en.status = 'active'
-       AND en.domain IS NOT NULL AND en.domain != ''
-       AND en.domain_check_source != 'admin_override'
-       AND COALESCE(en.availability_status, 'unknown') IN ('sold', 'unknown')
-     ORDER BY last_attempt IS NOT NULL, last_attempt ASC, en.id`
-  ).all<CheckRow>()
-
-  const rowsByDomain = new Map<string, CheckRow[]>()
-  for (const row of results) {
-    const domain = normalizeDomain(row.domain)
-    if (!domain) continue
-    const rows = rowsByDomain.get(domain)
-    if (rows) rows.push(row)
-    else if (rowsByDomain.size < NAMECHEAP_BATCH * NAMECHEAP_BATCHES) rowsByDomain.set(domain, [row])
-  }
+  const { results } = await notAskedToday(
+    env.DB,
+    `en.status = 'active' AND en.domain_check_source != 'admin_override'
+       AND COALESCE(en.availability_status, 'unknown') IN ('sold', 'unknown')`,
+    now.toISOString().slice(0, 10)
+  )
+  const { rowsByDomain, postponed } = takeBatch(results)
   const domains = [...rowsByDomain.keys()]
-  const summary: PriceDiscoverySummary = { namings: 0, domains: domains.length, asked: 0, listed: 0, refused: [] }
+  const summary: PriceDiscoverySummary = { namings: 0, domains: domains.length, postponed, listed: 0, refused: [] }
   if (domains.length === 0) return summary
 
-  const refused = new Set<string>()
-  const namecheap = new Map<string, SourceReading>()
-  for (let from = 0; from < domains.length && !refused.has('namecheap'); from += NAMECHEAP_BATCH) {
-    if (from > 0) await sleep(PAUSE_MS)
-    const answer = await readNamecheap(domains.slice(from, from + NAMECHEAP_BATCH), fetcher)
-    for (const [domain, reading] of answer.readings) namecheap.set(domain, reading)
-    if (answer.refused) refused.add('namecheap')
-  }
-
-  const onNamecheap = (domain: string) => {
-    const outcome = namecheap.get(domain)?.outcome
-    return outcome === 'listed' || outcome === 'no_fixed_price'
-  }
-  const full = [...domains.filter(onNamecheap), ...domains.filter(d => !onNamecheap(d))].slice(0, DISCOVERY_MAX_DOMAINS)
-
-  const freshByDomain = new Map<string, SourceReading[]>()
-  for (const domain of domains) {
-    const reading = namecheap.get(domain)
-    if (reading) freshByDomain.set(domain, [reading])
-  }
-  for (const [index, domain] of full.entries()) {
-    if (index > 0) await sleep(PAUSE_MS)
-    const ask = async (source: 'afternic' | 'sedo', read: typeof readAfternic) => {
-      if (refused.has(source)) return unread(source, domain, 'skipped after a refusal')
-      const answer = await read(domain, fetcher)
-      if (answer.refused) refused.add(source)
-      return answer.reading
-    }
-    const [afternic, sedo] = await Promise.all([ask('afternic', readAfternic), ask('sedo', readSedo)])
-    freshByDomain.set(domain, [afternic, sedo, namecheap.get(domain) ?? unread('namecheap', domain, 'no answer')])
-  }
-  summary.asked = full.length
-  summary.refused = [...refused]
+  const asked = await askMarketplaces(domains, deps)
+  summary.refused = asked.refused
 
   const stored = await loadPriceReadings(env.DB)
   const statements: D1PreparedStatement[] = []
   for (const [domain, rows] of rowsByDomain) {
-    const fresh = freshByDomain.get(domain)
-    if (!fresh) continue
     for (const row of rows) {
-      const change = applyPriceReadings(row, stored.get(row.id) ?? [], fresh, now)
+      const change = applyPriceReadings(row, stored.get(row.id) ?? [], asked.freshByDomain.get(domain) ?? [], now)
       statements.push(...statementsFor(env.DB, row, change))
       summary.namings++
       if (change.list) summary.listed++
@@ -452,6 +500,25 @@ export async function runPriceDiscovery(env: Env, deps: PriceCheckDeps = {}): Pr
   }
   if (statements.length > 0) await env.DB.batch(statements)
   return summary
+}
+
+// ── The night: one firing of the schedule ───────────────────────────────────
+
+export type PriceNightSummary =
+  | { job: 'check'; summary: PriceCheckSummary }
+  | { job: 'discovery'; summary: PriceDiscoverySummary }
+  | { job: 'idle' }
+
+/**
+ * «For sale» domains first; once every one of them was asked about today, the
+ * taken ones; once those too — nothing, and no marketplace hears from us.
+ * One firing does one of the two, so it stays inside a run's allowance.
+ */
+export async function runPriceNight(env: Env, deps: PriceCheckDeps = {}): Promise<PriceNightSummary> {
+  const check = await runPriceCheck(env, deps)
+  if (check.domains > 0) return { job: 'check', summary: check }
+  const discovery = await runPriceDiscovery(env, deps)
+  return discovery.domains > 0 ? { job: 'discovery', summary: discovery } : { job: 'idle' }
 }
 
 // ── A person's save ─────────────────────────────────────────────────────────

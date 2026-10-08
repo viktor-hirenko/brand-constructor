@@ -4,12 +4,11 @@ import worker from '../../../src/index'
 import namings from '../../../src/routes/namings'
 import { batchCheckDomains } from '../../../src/utils/domain-check'
 import {
-  DISCOVERY_MAX_DOMAINS,
-  PRICE_CHECK_CRON,
-  PRICE_CHECK_MAX_DOMAINS,
-  PRICE_DISCOVERY_CRON,
+  PRICE_NIGHT_CRON,
+  PRICE_RUN_MAX_DOMAINS,
   runPriceCheck,
   runPriceDiscovery,
+  runPriceNight,
 } from '../../../src/utils/price-check'
 import { PRICE_CHECK_USER_AGENT } from '../../../src/utils/price-sources'
 import { USERS, seedLibrary, type UserKey } from '../../helpers/brandApp'
@@ -31,8 +30,8 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-/** 06:30 UTC of the n-th night. */
-const night = (n: number) => new Date(Date.UTC(2026, 9, 7 + n, 6, 30))
+/** 00:30 UTC of the n-th night. */
+const night = (n: number) => new Date(Date.UTC(2026, 9, 7 + n, 0, 30))
 
 function createApp(options: { enabled?: boolean; pananames?: boolean } = {}) {
   const db = createTestD1()
@@ -59,7 +58,15 @@ function createApp(options: { enabled?: boolean; pananames?: boolean } = {}) {
     env,
     market,
     pauses,
-    /** The 06:45 run over taken domains. */
+    /** One firing of the schedule: «For sale» domains, then taken ones, then nothing. */
+    fire(n: number) {
+      return runPriceNight(env as never, {
+        fetch: market.fetch,
+        sleep: async ms => void pauses.push(ms),
+        now: () => night(n),
+      })
+    },
+    /** One run over taken domains. */
     discover(n: number) {
       return runPriceDiscovery(env as never, {
         fetch: market.fetch,
@@ -76,7 +83,7 @@ function createApp(options: { enabled?: boolean; pananames?: boolean } = {}) {
         )
         .run(id, domain.split('.')[0], domain, status, source)
     },
-    /** The nightly run, as the schedule starts it. */
+    /** One run over «For sale» domains. */
     run(n: number) {
       return runPriceCheck(env as never, {
         fetch: market.fetch,
@@ -334,18 +341,43 @@ d('the nightly run', () => {
     expect(app.market.asked('registrar')).toEqual([])
   })
 
-  it('more domains than one run may ask: the longest unchecked go first, the rest the next night', async () => {
+  it('more domains than one run may ask: the next run the same night takes the rest, and every night asks about them all', async () => {
     const app = createApp()
-    const total = PRICE_CHECK_MAX_DOMAINS + 3
+    const total = PRICE_RUN_MAX_DOMAINS + 3
     for (let i = 0; i < total; i++) app.forSale(`exn_${String(i).padStart(2, '0')}`, `d${i}.com`, 1000)
 
-    expect(await app.run(0)).toMatchObject({ domains: PRICE_CHECK_MAX_DOMAINS, postponed: 3 })
+    expect(await app.run(0)).toMatchObject({ domains: PRICE_RUN_MAX_DOMAINS, postponed: 3 })
     app.market.calls.length = 0
-    await app.run(1)
+    expect(await app.run(0)).toMatchObject({ domains: 3, postponed: 0 })
+    expect(app.market.asked('afternic').sort()).toEqual([`d${total - 3}.com`, `d${total - 2}.com`, `d${total - 1}.com`])
 
-    const asked = app.market.asked('afternic')
-    expect(asked).toHaveLength(PRICE_CHECK_MAX_DOMAINS)
-    expect(asked.slice(0, 3).sort()).toEqual([`d${total - 3}.com`, `d${total - 2}.com`, `d${total - 1}.com`])
+    // Everything was asked about today: a third run asks nobody.
+    app.market.calls.length = 0
+    expect(await app.run(0)).toMatchObject({ domains: 0, postponed: 0 })
+    expect(app.market.calls).toEqual([])
+
+    // The next night — all of them again.
+    const asked: string[] = []
+    for (let run = 0; run < 3; run++) {
+      app.market.calls.length = 0
+      await app.run(1)
+      asked.push(...app.market.asked('afternic'))
+    }
+    expect(asked).toHaveLength(total)
+    expect(new Set(asked).size).toBe(total)
+  })
+
+  it('a row checked from the admin today is not asked about again that night', async () => {
+    const app = createApp()
+    app.forSale('exn_cash', 'cashdisco.com', 7888)
+    app.forSale('exn_chamboo', 'chamboo.com', 2685)
+    vi.useFakeTimers({ now: night(0), toFake: ['Date'] })
+    await app.request('POST', '/api/namings/external/exn_cash/check-price', {})
+    app.market.calls.length = 0
+
+    await app.run(0)
+
+    expect(app.market.asked('afternic')).toEqual(['chamboo.com'])
   })
 
   it('the registrar’s nightly check still leaves «For sale» rows alone', async () => {
@@ -364,20 +396,21 @@ d('the switch', () => {
   it('without PRICE_CHECK_ENABLED the schedule asks no marketplace', async () => {
     const app = createApp({ enabled: false })
     app.forSale('exn_cash', 'cashdisco.com', 7888)
-    await scheduled(app.env, PRICE_CHECK_CRON)
+    await scheduled(app.env, PRICE_NIGHT_CRON)
     expect(app.market.calls).toEqual([])
     expect(app.readings('exn_cash')).toEqual([])
   })
 
-  it('with it, the 06:30 entry runs the price check and the 06:00 one does not', async () => {
+  it('with it, the night’s entry runs the price check; the registrar’s 06:00 one and the old 06:30 one do not', async () => {
     const app = createApp()
     app.forSale('exn_cash', 'cashdisco.com', 7888)
     app.market.listings.set('cashdisco.com', { afternic: 7888 })
 
     await scheduled(app.env, '0 6 * * *')
+    await scheduled(app.env, '30 6 * * *')
     expect(app.market.calls).toEqual([])
 
-    await scheduled(app.env, PRICE_CHECK_CRON)
+    await scheduled(app.env, PRICE_NIGHT_CRON)
     expect(app.row('exn_cash')).toMatchObject({ price_source: 'afternic' })
   })
 
@@ -556,12 +589,23 @@ d('a person’s save and the price check', () => {
     expect(app.readings('exn_dark')).toHaveLength(3)
   })
 
-  it('«Автоматично» chosen by a person with no listing anywhere leaves no trace of the price check', async () => {
+  it('«Автоматично» chosen by a person with no listing anywhere: nothing of the old price is left, the card says nobody sells it', async () => {
     const app = await led()
     app.market.listings.delete('darkmont.com')
     await app.request('PUT', '/api/namings/external/exn_dark', { domain_check_source: 'manual' })
     expect(app.row('exn_dark')).toMatchObject({ availability_status: 'unknown', price_source: null, price_delisted_at: null })
-    expect(await app.line('exn_dark')).toBeNull()
+    expect(await app.line('exn_dark')).toMatchObject({ kind: 'not_listed', amount: null, prev: null, source: null })
+  })
+
+  it('the list tells a taken domain nobody sells from one never asked about', async () => {
+    const app = createApp()
+    app.taken('exn_asked', 'nobody.com')
+    app.taken('exn_new', 'fresh.com')
+    app.forSale('exn_cash', 'cashdisco.com', 7888)
+    await app.request('POST', '/api/namings/external/exn_asked/check-domain', {})
+
+    expect(await app.line('exn_asked')).toMatchObject({ kind: 'not_listed' })
+    expect(await app.line('exn_new')).toBeNull()
   })
 
   it('«Автоматично» chosen over a typed price: the marketplace’s price comes back at once', async () => {
@@ -675,11 +719,12 @@ d('a taken domain gets «For sale» without anyone typing it', () => {
     expect(body.data).toMatchObject({ availability_status: 'for_sale', purchase_price: 2695, price_auto: true })
   })
 
-  it('the nightly discovery: one request to Namecheap for every taken domain, Afternic and Sedo for the ones it lists first', async () => {
+  it('the nightly discovery: every taken domain is asked about at all three, a run at a time, and nobody else is', async () => {
     const app = createApp()
-    const total = DISCOVERY_MAX_DOMAINS + 5
+    const total = PRICE_RUN_MAX_DOMAINS + 5
     for (let i = 0; i < total; i++) app.taken(`exn_${String(i).padStart(2, '0')}`, `d${i}.com`)
-    app.market.listings.set(`d${total - 1}.com`, { afternic: 5000, namecheap: 4990 })
+    app.market.listings.set('d3.com', { afternic: 5000, namecheap: 4990 })
+    app.market.listings.set(`d${total - 1}.com`, { sedo: 700 })
     app.forSale('exn_typed', 'typed.com', 100)
     app.forSale('exn_used', 'used.com', 100, 'used')
     app.db.raw
@@ -690,18 +735,18 @@ d('a taken domain gets «For sale» without anyone typing it', () => {
       )
       .run()
 
-    const summary = await app.discover(0)
+    const first = await app.discover(0)
 
-    expect(summary).toMatchObject({ domains: total, asked: DISCOVERY_MAX_DOMAINS, listed: 1, refused: [] })
+    expect(first).toMatchObject({ domains: PRICE_RUN_MAX_DOMAINS, postponed: 5, listed: 1, refused: [] })
     expect(app.market.asked('namecheap')).toHaveLength(1)
-    expect(app.market.asked('namecheap')[0].split(',')).toHaveLength(total)
-    expect(app.market.asked('afternic')).toHaveLength(DISCOVERY_MAX_DOMAINS)
-    expect(app.market.asked('afternic')[0]).toBe(`d${total - 1}.com`)
+    expect(app.market.asked('namecheap')[0].split(',')).toHaveLength(PRICE_RUN_MAX_DOMAINS)
+    expect(app.market.asked('afternic')).toHaveLength(PRICE_RUN_MAX_DOMAINS)
+    expect(app.market.asked('sedo')).toHaveLength(PRICE_RUN_MAX_DOMAINS)
     const asked = app.market.calls.flatMap(c => c.domains.join(',').split(','))
     for (const domain of ['typed.com', 'used.com', 'free.com', 'oldie.com']) expect(asked).not.toContain(domain)
     for (const call of app.market.calls) expect(call.userAgent).toBe(PRICE_CHECK_USER_AGENT)
 
-    expect(app.row(`exn_${total - 1}`)).toMatchObject({
+    expect(app.row('exn_03')).toMatchObject({
       availability_status: 'for_sale',
       domain_check_source: 'admin_override',
       purchase_price: 5000,
@@ -710,12 +755,25 @@ d('a taken domain gets «For sale» without anyone typing it', () => {
     expect(app.row('exn_00')).toMatchObject({ availability_status: 'sold', purchase_price: null })
     expect(app.row('exn_typed')).toMatchObject({ purchase_price: 100 })
 
-    // The next night starts with the domains Afternic was not asked about.
+    // The same night: the rest, and then nobody.
     app.market.calls.length = 0
-    await app.discover(1)
-    const second = app.market.asked('afternic')
-    expect(second).not.toContain(`d${total - 1}.com`)
-    expect(second.slice(0, 5).sort()).toEqual(['d14.com', 'd15.com', 'd16.com', 'd17.com', 'd18.com'])
+    expect(await app.discover(0)).toMatchObject({ domains: 5, postponed: 0, listed: 1 })
+    expect(app.market.asked('afternic').sort()).toEqual(['d20.com', 'd21.com', 'd22.com', 'd23.com', 'd24.com'])
+    expect(app.row(`exn_${total - 1}`)).toMatchObject({ availability_status: 'for_sale', purchase_price: 700, price_source: 'sedo' })
+    app.market.calls.length = 0
+    expect(await app.discover(0)).toMatchObject({ domains: 0 })
+    expect(app.market.calls).toEqual([])
+
+    // The next night: every domain still taken, none twice. The two found are «For sale» rows now.
+    const second: string[] = []
+    for (let run = 0; run < 3; run++) {
+      app.market.calls.length = 0
+      await app.discover(1)
+      second.push(...app.market.asked('afternic'))
+    }
+    expect(second).toHaveLength(total - 2)
+    expect(new Set(second).size).toBe(total - 2)
+    expect(second).not.toContain('d3.com')
   })
 
   it('a refusal stops the discovery for that marketplace and puts nothing For sale on a guess', async () => {
@@ -733,9 +791,9 @@ d('a taken domain gets «For sale» without anyone typing it', () => {
     for (let i = 0; i < 4; i++) expect(app.row(`exn_${i}`)).toMatchObject({ availability_status: 'sold', purchase_price: null })
   })
 
-  it('the schedule: 06:45 runs the discovery, and not without the switch', async () => {
+  it('the schedule: a firing runs the discovery once no «For sale» domain is left, and not without the switch', async () => {
     const scheduled = (env: unknown) =>
-      worker.scheduled({ cron: PRICE_DISCOVERY_CRON, scheduledTime: Date.now() } as never, env as never, { waitUntil() {} } as never)
+      worker.scheduled({ cron: PRICE_NIGHT_CRON, scheduledTime: Date.now() } as never, env as never, { waitUntil() {} } as never)
     const off = createApp({ enabled: false })
     off.taken('exn_x', 'chamboo.com')
     await scheduled(off.env)
@@ -748,7 +806,35 @@ d('a taken domain gets «For sale» without anyone typing it', () => {
     expect(on.row('exn_x')).toMatchObject({ availability_status: 'for_sale', purchase_price: 2695, price_source: 'sedo' })
   })
 
-  it('found by the discovery, then followed by the 06:30 run like any For sale row', async () => {
+  it('one night, firing after firing: «For sale» domains first, then the taken ones, then nobody is asked', async () => {
+    const app = createApp()
+    const forSale = PRICE_RUN_MAX_DOMAINS + 2
+    const taken = PRICE_RUN_MAX_DOMAINS + 1
+    for (let i = 0; i < forSale; i++) app.forSale(`exn_s${String(i).padStart(2, '0')}`, `s${i}.com`, 1000)
+    for (let i = 0; i < taken; i++) app.taken(`exn_t${String(i).padStart(2, '0')}`, `t${i}.com`)
+
+    const jobs: string[] = []
+    const perFiring: number[] = []
+    for (let firing = 0; firing < 6; firing++) {
+      app.market.calls.length = 0
+      jobs.push((await app.fire(0)).job)
+      perFiring.push(app.market.calls.length)
+    }
+
+    expect(jobs).toEqual(['check', 'check', 'discovery', 'discovery', 'idle', 'idle'])
+    // One request to Namecheap and two per domain — inside 50 with the database's.
+    expect(Math.max(...perFiring)).toBe(1 + 2 * PRICE_RUN_MAX_DOMAINS)
+    expect(perFiring.slice(4)).toEqual([0, 0])
+    const left = app.db.raw
+      .prepare(
+        `SELECT COUNT(*) AS n FROM external_namings en
+         WHERE en.domain LIKE '_%.com' AND NOT EXISTS (SELECT 1 FROM naming_price_checks pc WHERE pc.naming_id = en.id)`
+      )
+      .get() as { n: number }
+    expect(left.n).toBe(0)
+  })
+
+  it('found by the discovery, then followed by the price check like any For sale row', async () => {
     const app = createApp()
     app.taken('exn_x', 'chamboo.com')
     app.market.listings.set('chamboo.com', { afternic: 2695 })
@@ -758,6 +844,77 @@ d('a taken domain gets «For sale» without anyone typing it', () => {
     await app.run(2)
     expect(app.row('exn_x')).toMatchObject({ purchase_price: 2995, price_prev: 2695 })
     expect(await app.line('exn_x')).toMatchObject({ kind: 'updated', prev: 2695 })
+  })
+})
+
+d('the price preview of a typed domain', () => {
+  const count = (app: ReturnType<typeof createApp>, table: string) =>
+    (app.db.raw.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n
+
+  it('answers with the three marketplaces and the price a save would write — and writes nothing', async () => {
+    const app = createApp()
+    app.market.listings.set('betwood.com', { afternic: 3495, sedo: 3495, namecheap: 3480 })
+    const namings = count(app, 'external_namings')
+
+    const res = await app.request('POST', '/api/namings/external/preview-price', { domain: 'Betwood.com' })
+    const body = (await res.json()) as { data: { price: number; source: string; sources: Record<string, unknown>[] } }
+
+    expect(res.status).toBe(200)
+    expect(body.data).toMatchObject({ price: 3495, source: 'afternic' })
+    expect(body.data.sources.map(s => [s.source, s.outcome, s.amount])).toEqual([
+      ['afternic', 'listed', 3495],
+      ['sedo', 'listed', 3495],
+      ['namecheap', 'listed', 3480],
+    ])
+    for (const call of app.market.calls) expect(call.userAgent).toBe(PRICE_CHECK_USER_AGENT)
+    expect(count(app, 'external_namings')).toBe(namings)
+    expect(count(app, 'naming_price_checks')).toBe(0)
+
+    // Only those who edit namings may make the server ask the marketplaces.
+    app.market.calls.length = 0
+    for (const user of ['po', 'ceo', 'pr', 'design'] as const) {
+      expect((await app.request('POST', '/api/namings/external/preview-price', { domain: 'betwood.com' }, user)).status).toBe(403)
+    }
+    expect(app.market.calls).toEqual([])
+  })
+
+  it('the price is the one the save then writes', async () => {
+    const app = createApp()
+    app.market.listings.set('boomico.com', { afternic: 'lander', sedo: 3315, namecheap: 3300 })
+
+    const preview = await app.request('POST', '/api/namings/external/preview-price', { domain: 'boomico.com' })
+    const { data } = (await preview.json()) as { data: { price: number; source: string } }
+    const created = await app.request('POST', '/api/namings/external', { name: 'Boomico', domain: 'boomico.com' })
+    const saved = (await created.json()) as { data: { purchase_price: number; price_source: string } }
+
+    expect(data).toMatchObject({ price: 3315, source: 'sedo' })
+    expect(saved.data).toMatchObject({ purchase_price: data.price, price_source: data.source })
+  })
+
+  it('nobody sells it: three answers and no price; a silent marketplace is shown as not read', async () => {
+    const app = createApp()
+    const none = await app.request('POST', '/api/namings/external/preview-price', { domain: 'preland.com' })
+    const body = (await none.json()) as { data: { price: null; sources: { outcome: string }[] } }
+    expect(body.data.price).toBeNull()
+    expect(body.data.sources.map(s => s.outcome)).toEqual(['absent', 'absent', 'absent'])
+
+    app.market.refusing.add('afternic')
+    const refused = await app.request('POST', '/api/namings/external/preview-price', { domain: 'preland.com' })
+    const after = (await refused.json()) as { data: { price: null; sources: { source: string; outcome: string }[] } }
+    expect(after.data.sources.find(s => s.source === 'afternic')?.outcome).toBe('unread')
+    expect(after.data.price).toBeNull()
+  })
+
+  it('without the switch it answers that the check is off and asks nobody; a broken domain asks nobody either', async () => {
+    const off = createApp({ enabled: false })
+    const res = await off.request('POST', '/api/namings/external/preview-price', { domain: 'betwood.com' })
+    expect(res.status).toBe(503)
+    expect(off.market.calls).toEqual([])
+
+    const on = createApp()
+    const broken = await on.request('POST', '/api/namings/external/preview-price', { domain: 'com' })
+    expect(((await broken.json()) as { data: unknown }).data).toBeNull()
+    expect(on.market.calls).toEqual([])
   })
 })
 

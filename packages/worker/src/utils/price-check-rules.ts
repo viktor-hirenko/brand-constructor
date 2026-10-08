@@ -314,8 +314,19 @@ export function describePriceCheck(row: PriceRow, stored: StoredReading[]): Nami
   })
 
   if (!isForSaleRow(row)) {
-    if (row.price_delisted_at == null || row.domain_check_source === 'admin_override') return null
-    return view('delisted', { date: row.price_delisted_at, prev: row.purchase_price })
+    if (row.domain_check_source === 'admin_override') return null
+    if (row.price_delisted_at != null) return view('delisted', { date: row.price_delisted_at, prev: row.purchase_price })
+    // A taken domain the marketplaces were asked about and nobody sells at a
+    // fixed price: the card says so, or a row without a price reads as «not
+    // checked» (the owner, 08.10).
+    if (!isDiscoverableRow(row) || stored.length === 0) return null
+    const date = latest(stored.map(r => r.readAt))
+    const everyoneAnswered = PRICE_SOURCES.every(source => {
+      const outcome = readings.get(source)?.outcome
+      return outcome != null && outcome !== 'unread'
+    })
+    if (!everyoneAnswered) return view('unread', { date })
+    return view(stored.some(r => r.outcome === 'no_fixed_price') ? 'no_fixed_price' : 'not_listed', { date })
   }
   const record = row.purchase_price
   if (stored.length === 0 || record == null) return null
