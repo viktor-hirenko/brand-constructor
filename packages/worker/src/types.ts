@@ -47,6 +47,11 @@ export interface Env {
   PRICE_CHECK_ENABLED?: string
   /** Where the night's price check reports a marketplace it could not reach; unset — nowhere. */
   SLACK_CHANNEL_PRICE_ALERTS?: string
+  /**
+   * Dynadot's API key: with it Afternic and Sedo are asked through Dynadot and
+   * at their own addresses only where it cannot answer (`utils/price-dynadot.ts`).
+   */
+  DYNADOT_API_KEY?: string
 }
 
 export interface AuthUser {

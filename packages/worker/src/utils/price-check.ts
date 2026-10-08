@@ -26,6 +26,7 @@ import {
   type PriceRow,
   type StoredReading,
 } from './price-check-rules'
+import { DYNADOT_RUN_REQUESTS, askAfternicAndSedo, type AskState } from './price-dynadot'
 import {
   normalizeDomain,
   readAfternic,
@@ -309,12 +310,21 @@ export async function checkNamingPrice(env: Env, namingId: string, deps: PriceCh
   const lastAttempt = stored.reduce<string | null>((max, r) => (max == null || r.attemptedAt > max ? r.attemptedAt : max), null)
   if (lastAttempt && now.getTime() - new Date(lastAttempt).getTime() < RECHECK_AFTER_MS) return 'cached'
 
-  const [afternic, sedo, namecheap] = await Promise.all([
-    readAfternic(domain, fetcher),
-    readSedo(domain, fetcher),
+  const state: AskState = {
+    fetch: fetcher,
+    dynadotKey: env.DYNADOT_API_KEY,
+    refused: new Set(),
+    dynadotOff: new Set(),
+    out: { dynadot: 0, direct: 0 },
+  }
+  const [pair, namecheap] = await Promise.all([
+    askAfternicAndSedo(domain, state, { confirmAbsent: isForSaleRow(row) }),
     readNamecheap([domain], fetcher),
   ])
-  const fresh = [afternic.reading, sedo.reading, namecheap.readings.get(domain) ?? unread('namecheap', domain, 'no answer')]
+  // One row has no allowance to run out of.
+  const [afternic, sedo] = pair as [SourceReading, SourceReading]
+  const fresh = [afternic, sedo, namecheap.readings.get(domain) ?? unread('namecheap', domain, 'no answer')]
+  console.log('Price check of one row, requests out:', JSON.stringify({ namecheap: 1, ...state.out }))
 
   const change = applyPriceReadings(row, stored, fresh, now)
   const statements = statementsFor(env.DB, row, change)
@@ -377,37 +387,50 @@ function takeBatch(rows: CheckRow[]): RunBatch {
 }
 
 interface Asked {
+  /** A domain missing here was not reached: the run's allowance ended, the next firing asks. */
   freshByDomain: Map<string, SourceReading[]>
   refused: string[]
   unread: Record<string, number>
 }
 
-/** One request to Namecheap for the batch, then Afternic and Sedo domain by domain. */
-async function askMarketplaces(domains: string[], deps: PriceCheckDeps): Promise<Asked> {
+/**
+ * One request to Namecheap for the batch, then Afternic and Sedo domain by
+ * domain — through Dynadot when there is a key (`price-dynadot.ts`).
+ * `confirmAbsent`: the rows are «For sale», and «no listing» can take it off.
+ */
+async function askMarketplaces(
+  domains: string[],
+  deps: PriceCheckDeps,
+  options: { dynadotKey?: string; confirmAbsent: boolean }
+): Promise<Asked> {
   const fetcher = deps.fetch ?? fetch
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>(r => setTimeout(r, ms)))
   const unreadCount: Record<string, number> = { afternic: 0, sedo: 0, namecheap: 0 }
 
-  const refused = new Set<string>()
+  const state: AskState = {
+    fetch: fetcher,
+    dynadotKey: options.dynadotKey,
+    refused: new Set(),
+    dynadotOff: new Set(),
+    budget: options.dynadotKey ? { left: DYNADOT_RUN_REQUESTS } : undefined,
+    out: { dynadot: 0, direct: 0 },
+  }
   const namecheap = await readNamecheap(domains, fetcher)
-  if (namecheap.refused) refused.add('namecheap')
+  if (namecheap.refused) state.refused.add('namecheap')
 
   const freshByDomain = new Map<string, SourceReading[]>()
   for (const [index, domain] of domains.entries()) {
+    if (state.budget && state.budget.left < 2) break
     if (index > 0) await sleep(PAUSE_MS)
-    // A refusal ends the run for that marketplace: no retries, no way round.
-    const ask = async (source: 'afternic' | 'sedo', read: typeof readAfternic) => {
-      if (refused.has(source)) return unread(source, domain, 'skipped after a refusal')
-      const answer = await read(domain, fetcher)
-      if (answer.refused) refused.add(source)
-      return answer.reading
-    }
-    const [afternic, sedo] = await Promise.all([ask('afternic', readAfternic), ask('sedo', readSedo)])
-    const fresh = [afternic, sedo, namecheap.readings.get(domain) ?? unread('namecheap', domain, 'no answer')]
+    const pair = await askAfternicAndSedo(domain, state, { confirmAbsent: options.confirmAbsent })
+    if (!pair) break
+    const fresh = [...pair, namecheap.readings.get(domain) ?? unread('namecheap', domain, 'no answer')]
     for (const reading of fresh) if (reading.outcome === 'unread') unreadCount[reading.source]++
     freshByDomain.set(domain, fresh)
   }
-  return { freshByDomain, refused: [...refused], unread: unreadCount }
+  if (state.dynadotOff.size > 0) console.warn('Dynadot did not answer about:', [...state.dynadotOff].join(', '))
+  console.log('Price run, requests out:', JSON.stringify({ namecheap: 1, ...state.out, domains: freshByDomain.size }))
+  return { freshByDomain, refused: [...state.refused], unread: unreadCount }
 }
 
 export interface PriceCheckSummary {
@@ -439,16 +462,20 @@ export async function runPriceCheck(env: Env, deps: PriceCheckDeps = {}): Promis
   }
   if (domains.length === 0) return summary
 
-  const asked = await askMarketplaces(domains, deps)
+  const asked = await askMarketplaces(domains, deps, { dynadotKey: env.DYNADOT_API_KEY, confirmAbsent: true })
   summary.refused = asked.refused
   summary.unread = asked.unread
+  summary.postponed += domains.length - asked.freshByDomain.size
+  summary.domains = asked.freshByDomain.size
 
   const stored = await loadPriceReadings(env.DB)
   const statements: D1PreparedStatement[] = []
   const delisted: CheckRow[] = []
   for (const [domain, rows] of rowsByDomain) {
+    const fresh = asked.freshByDomain.get(domain)
+    if (!fresh) continue
     for (const row of rows) {
-      const change = applyPriceReadings(row, stored.get(row.id) ?? [], asked.freshByDomain.get(domain) ?? [], now)
+      const change = applyPriceReadings(row, stored.get(row.id) ?? [], fresh, now)
       statements.push(...statementsFor(env.DB, row, change))
       summary.namings++
       if (change.delist) delisted.push(row)
@@ -482,14 +509,18 @@ export async function runPriceDiscovery(env: Env, deps: PriceCheckDeps = {}): Pr
   const summary: PriceDiscoverySummary = { namings: 0, domains: domains.length, postponed, listed: 0, refused: [] }
   if (domains.length === 0) return summary
 
-  const asked = await askMarketplaces(domains, deps)
+  const asked = await askMarketplaces(domains, deps, { dynadotKey: env.DYNADOT_API_KEY, confirmAbsent: false })
   summary.refused = asked.refused
+  summary.postponed += domains.length - asked.freshByDomain.size
+  summary.domains = asked.freshByDomain.size
 
   const stored = await loadPriceReadings(env.DB)
   const statements: D1PreparedStatement[] = []
   for (const [domain, rows] of rowsByDomain) {
+    const fresh = asked.freshByDomain.get(domain)
+    if (!fresh) continue
     for (const row of rows) {
-      const change = applyPriceReadings(row, stored.get(row.id) ?? [], asked.freshByDomain.get(domain) ?? [], now)
+      const change = applyPriceReadings(row, stored.get(row.id) ?? [], fresh, now)
       statements.push(...statementsFor(env.DB, row, change))
       summary.namings++
       if (change.list) summary.listed++
