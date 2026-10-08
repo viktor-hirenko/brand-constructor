@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { NamingPriceCheck, NamingPriceSourceReading } from '@brand-constructor/shared'
 import {
@@ -12,6 +14,7 @@ import {
   sitePricesSummary,
   needsDecision,
   MANUAL_STALE_DAYS,
+  keptOffer,
   priceCellExtras,
   priceDecisionErrorText,
   priceOffer,
@@ -63,6 +66,31 @@ const card = (n: CheckedNaming) => {
   const c = describeDomainCard(n)
   return plain([c.headline, ...c.details].join(' '))
 }
+
+describe('«Залишити свою» can be taken back', () => {
+  const offer = { source: 'afternic' as const, amount: 97000 }
+
+  it('a price a person typed, with the marketplace’s offer turned down: the same offer is there to reopen', () => {
+    const n = forSale(1200, { price_auto: false, price_check: check('differs', offer) })
+    expect(keptOffer(n)).toEqual(offer)
+  })
+
+  it('not while the offer is open, not for a naming used in a brand, not for a row that is not For sale', () => {
+    expect(keptOffer(forSale(1200, { price_auto: false, price_check: check('proposal', offer) }))).toBeNull()
+    expect(keptOffer(forSale(1200, { price_auto: false, status: 'used', price_check: check('differs', offer) }))).toBeNull()
+    expect(keptOffer(automatic({ price_check: check('differs', offer) }))).toBeNull()
+  })
+
+  it('a price that follows a marketplace reads «differs» while a new one waits for its second day — that is no turned-down offer', () => {
+    expect(keptOffer(forSale(2795, { price_auto: true, price_check: check('differs', { source: 'afternic', amount: 2995 }) }))).toBeNull()
+  })
+
+  it('the card has the button, beside «Закрити», and only for those who edit namings', () => {
+    const modal = readFileSync(resolve(__dirname, '../../../src/components/namings/NamingPriceCheckModal.vue'), 'utf8')
+    expect(modal).toContain('const kept = computed(() => (props.canWrite ? keptOffer(props.naming) : null))')
+    expect(modal).toMatch(/<template v-else-if="kept">[\s\S]*@click="emit\('decide', 'reopen'\)"[\s\S]*Змінити рішення/)
+  })
+})
 
 describe('beside the price in the table', () => {
   it('a marketplace’s price that did not change: nothing', () => {

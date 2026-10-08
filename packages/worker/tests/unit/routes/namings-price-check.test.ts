@@ -525,6 +525,33 @@ d('«Оновити ціну» and «Залишити поточну»', () => {
     expect(await app.line('exn_chamboo')).toMatchObject({ kind: 'proposal', source: 'namecheap', amount: 2900 })
   })
 
+  // «Залишити свою» pressed by mistake: the red mark was gone for good, as far
+  // as the person could tell (the owner, 08.10).
+  it('reopen: the offer a person turned down is on the table again, the price untouched', async () => {
+    const app = await offered()
+    await decide(app, { action: 'keep', source: 'namecheap', amount: 2685 })
+    expect(await app.line('exn_chamboo')).toMatchObject({ kind: 'differs' })
+
+    const res = await decide(app, { action: 'reopen', source: 'namecheap', amount: 2685 })
+    expect(res.status).toBe(200)
+    expect(app.row('exn_chamboo')).toMatchObject({ purchase_price: 2600, price_dismissed_source: null, price_dismissed_amount: null })
+    expect(await app.line('exn_chamboo')).toMatchObject({ kind: 'proposal', source: 'namecheap', amount: 2685 })
+    // …and both answers work on it as before.
+    expect((await decide(app, { action: 'accept', source: 'namecheap', amount: 2685 })).status).toBe(200)
+    expect(app.row('exn_chamboo')).toMatchObject({ purchase_price: 2685 })
+  })
+
+  it('reopen of what was not turned down, or of another offer, is refused and changes nothing', async () => {
+    const app = await offered()
+    expect((await decide(app, { action: 'reopen', source: 'namecheap', amount: 2685 })).status).toBe(409)
+
+    await decide(app, { action: 'keep', source: 'namecheap', amount: 2685 })
+    expect((await decide(app, { action: 'reopen', source: 'namecheap', amount: 2900 })).status).toBe(409)
+    expect((await decide(app, { action: 'reopen', source: 'afternic', amount: 2685 })).status).toBe(409)
+    expect((await decide(app, { action: 'reopen', source: 'namecheap', amount: 2685 }, 'po')).status).toBe(403)
+    expect(app.row('exn_chamboo')).toMatchObject({ price_dismissed_source: 'namecheap', price_dismissed_amount: 2685 })
+  })
+
   it('refused for a used naming, for a row with nothing on offer and for a role that does not edit namings', async () => {
     const app = await offered()
     expect((await decide(app, { action: 'accept', source: 'namecheap', amount: 2685 }, 'po')).status).toBe(403)

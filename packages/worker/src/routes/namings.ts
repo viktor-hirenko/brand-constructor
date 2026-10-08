@@ -71,7 +71,7 @@ const previewDomainSchema = z.object({
 
 /** The marketplace price a person takes or leaves; it must still be the one on offer. */
 const priceDecisionSchema = z.object({
-  action: z.enum(['accept', 'keep']),
+  action: z.enum(['accept', 'keep', 'reopen']),
   source: z.enum(PRICE_SOURCES),
   amount: z.number().positive(),
 })
@@ -539,6 +539,23 @@ app.post('/external/:id/price-decision', requireLibraryAccess('external_namings'
   // The price is taken from what the server last read, not from the request:
   // the request only names the offer the person saw.
   const { action, source, amount } = parsed.data
+
+  // «Залишити свою» pressed by mistake hid the offer until the marketplace
+  // changed its price — for good, as far as the person could tell (the
+  // owner, 08.10). `reopen` puts the same offer back on the table.
+  if (action === 'reopen') {
+    if (existing.price_dismissed_source !== source || !sameAmount(existing.price_dismissed_amount, amount)) {
+      return c.json({ success: false, error: PRICE_OFFER_CHANGED }, 409)
+    }
+    await c.env.DB.prepare(
+      `UPDATE external_namings SET price_dismissed_source = NULL, price_dismissed_amount = NULL
+       WHERE id = ? AND status = 'active' AND domain_check_source = 'admin_override'`
+    )
+      .bind(id)
+      .run()
+    return c.json({ success: true, data: await getExternalNamingListRow(c.env.DB, id) })
+  }
+
   const readings = (await loadPriceReadings(c.env.DB, id)).get(id) ?? []
   const offer = describePriceCheck(existing, readings)
   if (offer?.kind !== 'proposal' || offer.source !== source || !sameAmount(offer.amount, amount)) {
