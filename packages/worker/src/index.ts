@@ -15,6 +15,7 @@ import brandsRoutes from './routes/brands'
 import ordersRoutes from './routes/orders'
 import { batchCheckDomains, isPananamesConfigured } from './utils/domain-check'
 import { PRICE_NIGHT_CRON, isPriceCheckEnabled, runPriceNight } from './utils/price-check'
+import { isLastFiringOfNight, reportPriceNight } from './utils/price-health'
 import {
   assetKeysToTry,
   ASSET_CACHE_CONTROL,
@@ -113,8 +114,20 @@ export default {
         console.log('Scheduled price night: PRICE_CHECK_ENABLED is not "true", skipping')
         return
       }
-      const night = await runPriceNight(env)
-      if (night.job !== 'idle') console.log(`Scheduled price ${night.job} completed:`, JSON.stringify(night.summary))
+      try {
+        const night = await runPriceNight(env)
+        if (night.job !== 'idle') console.log(`Scheduled price ${night.job} completed:`, JSON.stringify(night.summary))
+      } finally {
+        // The night is over: one Slack message if a marketplace was not reached
+        // or the list was not finished — otherwise nobody learns of it.
+        if (isLastFiringOfNight(event.scheduledTime)) {
+          const report = await reportPriceNight(env, new Date(event.scheduledTime)).catch(error => {
+            console.error('Price night report failed:', error)
+            return 'failed'
+          })
+          console.log('Price night report:', report)
+        }
+      }
       return
     }
 

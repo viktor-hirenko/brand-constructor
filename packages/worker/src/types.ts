@@ -45,6 +45,8 @@ export interface Env {
    * the nightly run and the recheck button (`utils/price-check.ts`).
    */
   PRICE_CHECK_ENABLED?: string
+  /** Where the night's price check reports a marketplace it could not reach; unset — nowhere. */
+  SLACK_CHANNEL_PRICE_ALERTS?: string
 }
 
 export interface AuthUser {

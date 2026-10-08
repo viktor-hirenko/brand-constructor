@@ -325,6 +325,13 @@ export async function checkNamingPrice(env: Env, namingId: string, deps: PriceCh
 
 // ── Every row: the night ────────────────────────────────────────────────────
 
+/** «For sale» rows; used namings are read too — for the line in the table only (rule 8). */
+export const FOR_SALE_ROWS = `en.availability_status = 'for_sale' AND en.domain_check_source = 'admin_override' AND en.status IN ('active', 'used')`
+
+/** Taken domains nobody marked: the check may put «For sale» on them (`isDiscoverableRow`). */
+export const DISCOVERABLE_ROWS = `en.status = 'active' AND en.domain_check_source != 'admin_override'
+       AND COALESCE(en.availability_status, 'unknown') IN ('sold', 'unknown')`
+
 type QueuedRow = CheckRow & { last_attempt: string | null }
 
 /**
@@ -418,12 +425,7 @@ export interface PriceCheckSummary {
 export async function runPriceCheck(env: Env, deps: PriceCheckDeps = {}): Promise<PriceCheckSummary> {
   const now = (deps.now ?? (() => new Date()))()
 
-  // Used namings are read too — for the line in the table only (rule 8).
-  const { results } = await notAskedToday(
-    env.DB,
-    `en.availability_status = 'for_sale' AND en.domain_check_source = 'admin_override' AND en.status IN ('active', 'used')`,
-    now.toISOString().slice(0, 10)
-  )
+  const { results } = await notAskedToday(env.DB, FOR_SALE_ROWS, now.toISOString().slice(0, 10))
   const { rowsByDomain, postponed } = takeBatch(results)
   const domains = [...rowsByDomain.keys()]
   const summary: PriceCheckSummary = {
@@ -474,12 +476,7 @@ export interface PriceDiscoverySummary {
 export async function runPriceDiscovery(env: Env, deps: PriceCheckDeps = {}): Promise<PriceDiscoverySummary> {
   const now = (deps.now ?? (() => new Date()))()
 
-  const { results } = await notAskedToday(
-    env.DB,
-    `en.status = 'active' AND en.domain_check_source != 'admin_override'
-       AND COALESCE(en.availability_status, 'unknown') IN ('sold', 'unknown')`,
-    now.toISOString().slice(0, 10)
-  )
+  const { results } = await notAskedToday(env.DB, DISCOVERABLE_ROWS, now.toISOString().slice(0, 10))
   const { rowsByDomain, postponed } = takeBatch(results)
   const domains = [...rowsByDomain.keys()]
   const summary: PriceDiscoverySummary = { namings: 0, domains: domains.length, postponed, listed: 0, refused: [] }
