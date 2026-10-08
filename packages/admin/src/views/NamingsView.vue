@@ -23,6 +23,9 @@ import SearchInput from '@/components/ui/SearchInput.vue'
 import SearchSelect from '@/components/ui/SearchSelect.vue'
 import NamingDomainModeField from '@/components/namings/NamingDomainModeField.vue'
 import NamingPriceCheckModal from '@/components/namings/NamingPriceCheckModal.vue'
+import NamingHelpModal from '@/components/namings/NamingHelpModal.vue'
+import infoIcon from '@phosphor-icons/core/regular/info.svg?raw'
+import { FILTER_HINTS, PRICE_COLUMN_HINT, STATUS_COLUMN_HINT, priceHint, statusHint } from '@/utils/namingHelp'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import arrowUp from '@phosphor-icons/core/regular/arrow-up.svg?raw'
 import arrowDown from '@phosphor-icons/core/regular/arrow-down.svg?raw'
@@ -207,6 +210,8 @@ const checkingDomainId = ref<string | null>(null)
 
 // The card behind a price or a status: what the system knows of the domain.
 const priceWindowId = ref<string | null>(null)
+// «Як це працює»: the whole picture on one screen, for a person new to the table.
+const showHelp = ref(false)
 const priceWindowNaming = computed(
   () => externalNamings.value.find(n => n.id === priceWindowId.value) ?? null
 )
@@ -304,7 +309,7 @@ watch(activeTab, () => {
 })
 
 const pollingPaused = computed(
-  () => showCreateModal.value || showEditModal.value || priceWindowId.value !== null
+  () => showCreateModal.value || showEditModal.value || priceWindowId.value !== null || showHelp.value
 )
 useListPolling(() => refreshList({ silent: true }), { paused: pollingPaused })
 
@@ -578,10 +583,14 @@ async function confirmDeleteNaming() {
           'namings-view__status-tab--alert': f.id === 'decision',
         }"
         :aria-pressed="domainFilter === f.id"
+        :title="FILTER_HINTS[f.id]"
         @click="domainFilter = domainFilter === f.id ? null : f.id"
       >
         {{ f.label }}
         <span class="namings-view__filter-count">{{ domainFilterCounts[f.id] }}</span>
+      </button>
+      <button v-if="activeTab === 'external'" type="button" class="namings-view__help-link" @click="showHelp = true">
+        Як це працює?
       </button>
     </div>
 
@@ -610,12 +619,16 @@ async function confirmDeleteNaming() {
               </th>
               <th class="sortable-th" @click="toggleExtSort('price')">
                 Ціна
+                <span class="namings-view__th-hint" :title="PRICE_COLUMN_HINT" :aria-label="PRICE_COLUMN_HINT" role="img">
+                  <PhosphorIcon :svg="infoIcon" class="namings-view__th-hint-icon" />
+                </span>
                 <span v-if="extSortField === 'price'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
               </th>
               <th class="sortable-th" @click="toggleExtSort('availability_status')">
-                Статус домену
+                <!-- No mark here: this header is the widest thing in its column, and a mark would widen the table. -->
+                <span :title="STATUS_COLUMN_HINT">Статус домену</span>
                 <span v-if="extSortField === 'availability_status'" class="sort-arrow">{{
                   extSortDir === 'asc' ? '\u2191' : '\u2193'
                 }}</span>
@@ -685,7 +698,7 @@ async function confirmDeleteNaming() {
                   v-if="resolveNamingPrice(n)"
                   type="button"
                   class="namings-view__cell-button namings-view__price-cell"
-                  title="Докладніше про ціну"
+                  :title="priceHint(n.availability_status)"
                   @click.stop="openPriceWindow(n.id)"
                 >
                   {{ resolveNamingPrice(n)?.amount }}
@@ -721,7 +734,7 @@ async function confirmDeleteNaming() {
                         `namings-view__status-badge--${resolveNamingStatusBadge(n.availability_status).modifier}`,
                         { 'namings-view__cell-button': n.domain },
                       ]"
-                      :title="n.domain ? 'Докладніше про домен' : undefined"
+                      :title="statusHint(n.availability_status, !!n.domain)"
                       @click.stop="n.domain && openPriceWindow(n.id)"
                     >
                       {{ resolveNamingStatusBadge(n.availability_status).label }}
@@ -817,6 +830,8 @@ async function confirmDeleteNaming() {
       @close="showCreateModal = false"
       @created="onNamingCreated"
     />
+
+    <NamingHelpModal v-if="showHelp" @close="showHelp = false" />
 
     <NamingPriceCheckModal
       v-if="priceWindowNaming"
@@ -1182,6 +1197,57 @@ async function confirmDeleteNaming() {
   // registration or the purchase price (owner, 06.10).
   &__price-cell {
     white-space: nowrap;
+  }
+
+  // What opens a card says so before the pointer is over it: a dotted line
+  // under a price, a mark after a status. The card explains every domain in
+  // sentences, and nobody found it behind plain text (the owner, 08.10).
+  button.namings-view__price-cell {
+    text-decoration: underline dotted $color-text-muted;
+    text-underline-offset: 3px;
+
+    &:hover {
+      text-decoration: underline solid currentColor;
+    }
+  }
+
+  button.namings-view__status-badge::after {
+    content: '›';
+    margin-left: $spacing-1;
+    opacity: 0.55;
+  }
+
+  &__th-hint {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-left: 2px;
+    color: $color-text-muted;
+    cursor: help;
+  }
+
+  &__th-hint-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  &__help-link {
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    color: $color-primary;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-border-focus;
+      outline-offset: 2px;
+    }
   }
 
   // A price and a status open the card with everything the system knows of
