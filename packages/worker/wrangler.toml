@@ -33,7 +33,8 @@ crons = ["0 6 * * *", "*/5 0-5 * * *"]
 # Production
 # ─────────────────────────────────────────────────────────────────────────────
 # Secrets (Cloudflare Dashboard only — never commit):
-#   JWT_SECRET, SLACK_BOT_TOKEN, JIRA_API_TOKEN, SLACK_CHANNEL_*, PANANAMES_SIGNATURE
+#   JWT_SECRET, SLACK_BOT_TOKEN, JIRA_API_TOKEN, SLACK_CHANNEL_*, PANANAMES_SIGNATURE,
+#   DYNADOT_API_KEY (Afternic and Sedo through Dynadot; without it they are read directly)
 # List: wrangler secret list --env production
 
 [env.production]
@@ -51,6 +52,10 @@ CORS_ORIGINS = "https://brand-constructor.pages.dev,https://brand-constructor-ap
 GOOGLE_CLIENT_ID = "804378181409-aavgj640t9bcojg4qrsb1fp89nvtmhb9.apps.googleusercontent.com"
 # Email *domains* only (part after @). Per-user allow-list lives in D1 `users`.
 ALLOWED_EMAIL_DOMAINS = "upstars.com,gmail.com"
+
+# The switch of the nightly price check and of its recheck button: anything
+# but "true" and the server asks no marketplace. On production since 08.10.2026.
+PRICE_CHECK_ENABLED = "true"
 
 # ── Jira (DHC Initiative) ───────────────────────────────────────────────────
 # Token: wrangler secret put JIRA_API_TOKEN --env production
