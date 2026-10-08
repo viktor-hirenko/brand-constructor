@@ -143,7 +143,7 @@ export interface UpdateInternalNamingPayload {
  * No problems — nothing is shown.
  */
 export interface NamingPriceHealthProblem {
-  kind: 'night_missed' | 'night_incomplete' | 'source_silent' | 'source_partial' | 'source_empty'
+  kind: 'night_missed' | 'night_incomplete' | 'source_silent' | 'source_partial' | 'source_empty' | 'dynadot_silent'
   source: NamingPriceSource | null
   /** The sentence for a person, in Ukrainian. */
   text: string

@@ -22,6 +22,7 @@
 import type { NamingPriceHealth, NamingPriceHealthProblem, NamingPriceSource } from '@brand-constructor/shared'
 import type { Env } from '../types'
 import { DISCOVERABLE_ROWS, FOR_SALE_ROWS } from './price-check'
+import { readDynadot } from './price-dynadot'
 import { PRICE_SOURCES, normalizeDomain } from './price-sources'
 import { sendSlackMessage } from './slack'
 
@@ -188,14 +189,42 @@ export function isLastFiringOfNight(scheduledTime: number): boolean {
 export type PriceNightReport = 'ok' | 'sent' | 'not_sent'
 
 /**
+ * With a key the night goes through Dynadot, and when it is silent the prices
+ * still come — from the marketplaces' own addresses. So no record and no
+ * reading shows it; it is asked once here. For the people who keep the tool,
+ * not for the namings table: there nothing is wrong.
+ */
+async function dynadotProblem(env: Pick<Env, 'DB' | 'DYNADOT_API_KEY'>): Promise<NamingPriceHealthProblem | null> {
+  if (!env.DYNADOT_API_KEY) return null
+  const { results } = await env.DB.prepare(
+    `SELECT en.domain FROM external_namings en WHERE en.domain IS NOT NULL AND en.domain != '' AND ${FOR_SALE_ROWS} LIMIT 20`
+  ).all<{ domain: string }>()
+  const domain = results.map(r => normalizeDomain(r.domain)).find(d => d != null)
+  if (!domain) return null
+
+  const silent: string[] = []
+  for (const source of ['afternic', 'sedo'] as const) {
+    if (!(await readDynadot(source, domain, env.DYNADOT_API_KEY, fetch))) silent.push(LABELS[source])
+  }
+  if (silent.length === 0) return null
+  return {
+    kind: 'dynadot_silent',
+    source: null,
+    text: `Dynadot не відповідає щодо ${silent.join(' і ')}. Ціни читаються напряму з сайтів, як раніше.`,
+  }
+}
+
+/**
  * `not_sent` — there is something to say and nowhere to: no bot token (the
  * stage has none) or no SLACK_CHANNEL_PRICE_ALERTS. The server log has it.
  */
 export async function reportPriceNight(
-  env: Pick<Env, 'DB' | 'SLACK_BOT_TOKEN' | 'SLACK_CHANNEL_PRICE_ALERTS'>,
+  env: Pick<Env, 'DB' | 'SLACK_BOT_TOKEN' | 'SLACK_CHANNEL_PRICE_ALERTS' | 'DYNADOT_API_KEY'>,
   now: Date
 ): Promise<PriceNightReport> {
   const health = await loadPriceHealth(env.DB, now.toISOString().slice(0, 10))
+  const dynadot = await dynadotProblem(env)
+  if (dynadot) health.problems.push(dynadot)
   if (health.problems.length === 0) return 'ok'
   console.warn('Price night problems:', JSON.stringify(health))
   if (!env.SLACK_BOT_TOKEN || !env.SLACK_CHANNEL_PRICE_ALERTS) return 'not_sent'
