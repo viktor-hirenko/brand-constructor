@@ -31,7 +31,7 @@ export interface NamingPriceSourceReading {
 }
 
 /**
- * The line under a «For sale» price in the admin, decided on the server
+ * What the price check knows of a domain, for the admin's card, decided on the server
  * (`worker/src/utils/price-check-rules.ts`):
  *
  *   verified         — the price equals the marketplace's
@@ -43,6 +43,10 @@ export interface NamingPriceSourceReading {
  *   not_found_manual — no listing, and the price was never a marketplace's
  *   unread           — the marketplace did not answer
  *   delisted         — «For sale» was taken off automatically
+ *   not_listed       — a taken domain: no marketplace has a listing (it is not «For sale»)
+ *
+ * A taken domain that is not «For sale» gets `not_listed`, `no_fixed_price`
+ * or `unread` once the marketplaces were asked about it.
  */
 export interface NamingPriceCheck {
   kind:
@@ -55,6 +59,7 @@ export interface NamingPriceCheck {
     | 'not_found_manual'
     | 'unread'
     | 'delisted'
+    | 'not_listed'
   date: string | null
   source: NamingPriceSource | null
   url: string | null
@@ -83,7 +88,7 @@ export interface ExternalNaming {
   used_in_brand_id: string | null
   created_at: string
   updated_at: string
-  /** Only in list rows of a «For sale» naming that has been checked. */
+  /** Only in list rows of a naming the marketplaces were asked about. */
   price_check?: NamingPriceCheck | null
   /** List rows: the «For sale» price is a marketplace's and follows it, not typed by a person. */
   price_auto?: boolean

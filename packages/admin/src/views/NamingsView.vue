@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import type { ExternalNaming, InternalNaming, Concept } from '@brand-constructor/shared'
+import type { ExternalNaming, InternalNaming, Concept, NamingPriceSourceReading } from '@brand-constructor/shared'
 import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
@@ -32,7 +32,8 @@ import {
 } from '@/utils/namingFilters'
 import {
   buildDomainModeBody,
-  domainPreviewErrorText,
+  domainPreviewProblem,
+  type DomainPreviewProblem,
   canSaveDomainMode,
   resolveNamingPrice,
   resolveNamingStatusBadge,
@@ -175,7 +176,7 @@ const newPurchasePrice = ref('')
 const creating = ref(false)
 
 const createPreviewLoading = ref(false)
-const createPreviewError = ref<string | null>(null)
+const createPreviewError = ref<DomainPreviewProblem | null>(null)
 const createPreviewData = ref<DomainPreview | null>(null)
 const createPreviewAttempted = ref(false)
 let createPreviewTimer: ReturnType<typeof setTimeout> | null = null
@@ -185,7 +186,7 @@ const editName = ref('')
 const editTagline = ref('')
 const editDomain = ref('')
 const editPreviewLoading = ref(false)
-const editPreviewError = ref<string | null>(null)
+const editPreviewError = ref<DomainPreviewProblem | null>(null)
 const editPreviewData = ref<DomainPreview | null>(null)
 const editPreviewAttempted = ref(false)
 let editPreviewTimer: ReturnType<typeof setTimeout> | null = null
@@ -196,6 +197,15 @@ const editDomainCheckSource = ref<string | null>(null)
 const editPriceAuto = ref(false)
 /** What the system found for the domain being edited, shown above the choice. */
 const editFound = ref<DomainCard | null>(null)
+/** The domain as saved and what the last check read about it — for the prices in the edit window. */
+const editSavedDomain = ref<string | null>(null)
+const editSavedSources = ref<NamingPriceSourceReading[] | null>(null)
+const editSavedFree = ref(false)
+const editFree = computed(
+  () =>
+    editPreviewData.value?.available === true ||
+    (editSavedFree.value && editDomain.value.trim().toLowerCase() === (editSavedDomain.value ?? '').trim().toLowerCase())
+)
 const saving = ref(false)
 
 const checkingDomainId = ref<string | null>(null)
@@ -254,7 +264,7 @@ async function loadCreateDomainPreview() {
     })
     createPreviewData.value = data
   } catch (e) {
-    createPreviewError.value = domainPreviewErrorText(e instanceof Error ? e.message : null)
+    createPreviewError.value = domainPreviewProblem(e instanceof Error ? e.message : null)
   } finally {
     createPreviewLoading.value = false
     createPreviewAttempted.value = true
@@ -285,7 +295,7 @@ async function loadEditDomainPreview() {
     })
     editPreviewData.value = data
   } catch (e) {
-    editPreviewError.value = domainPreviewErrorText(e instanceof Error ? e.message : null)
+    editPreviewError.value = domainPreviewProblem(e instanceof Error ? e.message : null)
   } finally {
     editPreviewLoading.value = false
     editPreviewAttempted.value = true
@@ -440,6 +450,9 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
     editDomainCheckSource.value = extNaming.domain_check_source || null
     editPriceAuto.value = extNaming.price_auto === true
     editFound.value = extNaming.domain ? describeDomainCard(extNaming) : null
+    editSavedDomain.value = extNaming.domain
+    editSavedSources.value = extNaming.price_check?.sources ?? null
+    editSavedFree.value = extNaming.availability_status === 'available'
     editDomainMode.value = initialPriceMode(extNaming)
     editPurchasePrice.value =
       extNaming.purchase_price != null ? String(extNaming.purchase_price) : ''
@@ -449,6 +462,9 @@ function openEditModal(naming: ExternalNamingRow | InternalNamingRow) {
     editDomainCheckSource.value = null
     editPriceAuto.value = false
     editFound.value = null
+    editSavedDomain.value = null
+    editSavedSources.value = null
+    editSavedFree.value = false
     editDomainMode.value = 'automatic'
     editPurchasePrice.value = ''
   }
@@ -877,15 +893,17 @@ async function confirmDeleteNaming() {
         <BaseInput v-model="newTagline" label="Опис" placeholder="Короткий опис…" />
         <template v-if="activeTab === 'external'">
           <BaseInput v-model="newDomain" label="Домен" placeholder="напр. example.com" />
-          <div
-            v-if="newDomain.trim() && newDomain.includes('.')"
-            class="namings-view__domain-preview"
-          >
+          <!-- Always in the window, one row tall: what the registrar says comes into it and pushes nothing. -->
+          <div class="namings-view__domain-preview">
             <p v-if="createPreviewLoading" class="namings-view__hint">
               Перевіряємо домен…
             </p>
-            <p v-else-if="createPreviewError" class="namings-view__hint namings-view__hint--error">
-              {{ createPreviewError }}
+            <p
+              v-else-if="createPreviewError"
+              class="namings-view__hint"
+              :class="{ 'namings-view__hint--error': createPreviewError.error }"
+            >
+              {{ createPreviewError.text }}
             </p>
             <template v-else-if="createPreviewData">
               <p class="namings-view__domain-preview-row">
@@ -920,6 +938,8 @@ async function confirmDeleteNaming() {
             v-model:mode="newDomainMode"
             v-model:purchase-price="newPurchasePrice"
             name="create-domain-mode"
+            :domain="newDomain"
+            :free="createPreviewData?.available === true"
           />
           <div class="namings-view__field">
             <label class="namings-view__label" for="create-naming-concept">Концепт</label>
@@ -972,15 +992,17 @@ async function confirmDeleteNaming() {
         <BaseInput v-model="editTagline" label="Опис" placeholder="Короткий опис…" />
         <template v-if="activeTab === 'external'">
           <BaseInput v-model="editDomain" label="Домен" placeholder="напр. example.com" />
-          <div
-            v-if="editDomain.trim() && editDomain.includes('.')"
-            class="namings-view__domain-preview"
-          >
+          <!-- Always in the window, one row tall: what the registrar says comes into it and pushes nothing. -->
+          <div class="namings-view__domain-preview">
             <p v-if="editPreviewLoading" class="namings-view__hint">
               Перевіряємо домен…
             </p>
-            <p v-else-if="editPreviewError" class="namings-view__hint namings-view__hint--error">
-              {{ editPreviewError }}
+            <p
+              v-else-if="editPreviewError"
+              class="namings-view__hint"
+              :class="{ 'namings-view__hint--error': editPreviewError.error }"
+            >
+              {{ editPreviewError.text }}
             </p>
             <template v-else-if="editPreviewData">
               <p class="namings-view__domain-preview-row">
@@ -1013,6 +1035,10 @@ async function confirmDeleteNaming() {
             v-model:purchase-price="editPurchasePrice"
             name="edit-domain-mode"
             :found="editFound"
+            :domain="editDomain"
+            :saved-domain="editSavedDomain"
+            :saved-sources="editSavedSources"
+            :free="editFree"
           />
           <div class="namings-view__field">
             <label class="namings-view__label" for="edit-naming-concept">Концепт</label>
@@ -1243,7 +1269,7 @@ async function confirmDeleteNaming() {
     flex-direction: column;
     justify-content: center;
     gap: $spacing-1;
-    min-height: 24px;
+    min-height: 28px;
   }
 
   &__domain-preview-row {

@@ -12,10 +12,12 @@ compatibility_flags = ["nodejs_compat"]
 
 [triggers]
 # 06:00 UTC — domain availability at the registrar (needs PANANAMES_SIGNATURE).
-# 06:30 UTC — purchase price of «For sale» domains at the marketplaces.
-# 06:45 UTC — taken domains: is one of them for sale now.
-# The last two do nothing unless PRICE_CHECK_ENABLED = "true" (`utils/price-check.ts`).
-crons = ["0 6 * * *", "30 6 * * *", "45 6 * * *"]
+# 00:00–05:55 UTC, every five minutes — the marketplaces: the purchase price of
+# every «For sale» domain, then every taken domain (is it for sale now). A
+# firing takes the next 20 domains not asked about today and asks nobody once
+# none is left, so the night covers the whole list however long it is
+# (`utils/price-check.ts`). Does nothing unless PRICE_CHECK_ENABLED = "true".
+crons = ["0 6 * * *", "*/5 0-5 * * *"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Default (top-level) environment is intentionally empty — NO production bindings.
@@ -93,7 +95,7 @@ simple = { limit = 5, period = 60 }
 [env.stage]
 
 [env.stage.triggers]
-crons = ["30 6 * * *", "45 6 * * *"]
+crons = ["*/5 0-5 * * *"]
 
 [env.stage.vars]
 ENVIRONMENT = "stage"

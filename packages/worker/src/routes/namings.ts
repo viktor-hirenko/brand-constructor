@@ -13,6 +13,7 @@ import { resolveAvailabilityChange, type AvailabilityRow } from '../utils/naming
 import {
   checkNamingPrice,
   isPriceCheckEnabled,
+  previewDomainPrice,
   loadPriceReadings,
   priceCheckChangeOnSave,
   withPriceChecks,
@@ -258,6 +259,24 @@ app.post('/external/preview-domain', requireLibraryAccess('external_namings'), a
       checkedAt: result.checkedAt,
     },
   })
+})
+
+/**
+ * Live preview for the admin's windows: what Afternic, Sedo and Namecheap ask
+ * for a domain, and the price a save would write — without persisting.
+ */
+app.post('/external/preview-price', requireLibraryAccess('external_namings'), async c => {
+  const parsed = previewDomainSchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+      400
+    )
+  }
+  if (!isPriceCheckEnabled(c.env)) {
+    return c.json({ success: false, error: PRICE_CHECK_OFF }, 503)
+  }
+  return c.json({ success: true, data: await previewDomainPrice(parsed.data.domain) })
 })
 
 app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {

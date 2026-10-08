@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest'
 import type { NamingPriceCheck, NamingPriceSourceReading } from '@brand-constructor/shared'
 import {
   describeDomainCard,
+  describePricePreview,
   describeSourceReading as describeSourceReadingRaw,
   formatCheckDate,
   initialPriceMode,
+  looksLikeDomain,
+  sitePricesRows,
+  sitePricesState,
+  sitePricesSummary,
   needsDecision,
   priceCellExtras,
   priceDecisionErrorText,
@@ -179,20 +184,38 @@ describe('the card: who set the price, when it was checked, what happens next', 
   it('«For sale» taken off by the system: what it was and when', () => {
     const n = automatic({ availability_status: 'unknown', domain_check_source: 'manual', purchase_price: 1500, price_check: check('delisted', { prev: 1500 }) })
     expect(card(n)).toBe(
-      'Статус домену ще не визначено. Домен продавався за $1 500. 07.10 оголошення зникло з усіх сайтів, статус For sale знято автоматично. Якщо домен з’явиться у продажу на Afternic, Sedo, Namecheap, статус For sale і ціна встановляться автоматично.'
+      'Невідомо, чи домен вільний. Домен продавався за $1 500. 07.10 оголошення зникло з усіх сайтів, статус For sale знято автоматично. Якщо домен з’явиться у продажу на Afternic, Sedo, Namecheap, статус For sale і ціна встановляться автоматично.'
     )
   })
 
-  it('a taken domain: For sale will come by itself', () => {
+  it('a taken domain nobody sells: the card says the sites were asked, when, and that For sale will come by itself', () => {
+    expect(card(automatic({ domain_checked_at: '2026-10-07 12:00:00', price_check: check('not_listed') }))).toBe(
+      'Домен зайнятий. Перевірено автоматично 07.10. На Afternic, Sedo, Namecheap домен не продається. Перевірено 07.10. Якщо домен з’явиться у продажу, статус For sale і ціна встановляться автоматично.'
+    )
+  })
+
+  it('the stage, where nobody says whether a domain is free: still «не продається», never «перевірки ще не було»', () => {
+    const text = card(automatic({ availability_status: 'unknown', domain_check_source: 'manual', price_check: check('not_listed') }))
+    expect(text).toBe(
+      'Невідомо, чи домен вільний. На Afternic, Sedo, Namecheap домен не продається. Перевірено 07.10. Якщо домен з’явиться у продажу, статус For sale і ціна встановляться автоматично.'
+    )
+    expect(text).not.toContain('перевірки ще не було')
+  })
+
+  it('a taken domain: offers only; a site that did not answer; sites not asked yet', () => {
+    expect(card(automatic({ price_check: check('no_fixed_price') }))).toContain(
+      'На Afternic, Sedo, Namecheap домен не має фіксованої ціни в доларах. Перевірено 07.10.'
+    )
+    expect(card(automatic({ price_check: check('unread') }))).toContain('Не всі сайти відповіли. Остання вдала перевірка — 07.10.')
     expect(card(automatic({ domain_checked_at: '2026-10-07 12:00:00' }))).toBe(
-      'Домен зайнятий. Перевірено автоматично 07.10. Якщо домен з’явиться у продажу на Afternic, Sedo, Namecheap, статус For sale і ціна встановляться автоматично.'
+      'Домен зайнятий. Перевірено автоматично 07.10. Afternic, Sedo, Namecheap ще не перевірялися. Якщо домен з’явиться у продажу, статус For sale і ціна встановляться автоматично.'
     )
   })
 
   it('a free domain; a status nobody checked yet; an old manual status', () => {
     expect(card(automatic({ availability_status: 'available', price: 15 }))).toBe('Домен вільний. Реєстрація — $15. Перевірено автоматично.')
     expect(card(automatic({ availability_status: 'unknown', domain_check_source: 'manual' }))).toContain(
-      'Статус домену ще не визначено. Автоматичної перевірки ще не було.'
+      'Невідомо, чи домен вільний. Afternic, Sedo, Namecheap ще не перевірялися.'
     )
     expect(card(automatic({ availability_status: 'sold', domain_check_source: 'admin_override' }))).toBe(
       'Домен зайнятий. Статус встановлено вручну.'
@@ -296,5 +319,83 @@ describe('formatCheckDate, priceDecisionErrorText', () => {
       'Ціна на сайті вже інша. Дані в таблиці оновлено.'
     )
     expect(priceDecisionErrorText('Internal Server Error')).toBe('Не вдалося зберегти')
+  })
+})
+
+describe('the three sites in the create and edit windows', () => {
+  const reading = (
+    source: NamingPriceSourceReading['source'],
+    outcome: NamingPriceSourceReading['outcome'],
+    amount: number | null = null
+  ): NamingPriceSourceReading => ({ source, outcome, amount, currency: amount == null ? null : 'USD', min_offer: null, url: null, read_at: AT })
+  const everywhere = [reading('afternic', 'listed', 3495), reading('sedo', 'listed', 3495), reading('namecheap', 'listed', 3480)]
+  const nowhere = [reading('afternic', 'absent'), reading('sedo', 'absent'), reading('namecheap', 'absent')]
+
+  it('a domain for sale: the price, the site it is from, and that a save writes it — only when «Автоматично» is on', () => {
+    const preview = { sources: everywhere, price: 3495, source: 'afternic' as const }
+    expect(plain(describePricePreview(preview, true))).toBe(
+      'Продається власником за $3 495 — ціна з Afternic. Після збереження: статус For sale і ця ціна.'
+    )
+    expect(plain(describePricePreview(preview, false))).toBe('Продається власником за $3 495 — ціна з Afternic.')
+  })
+
+  it('nobody sells it; offers only; a site that did not answer — three different sentences', () => {
+    expect(describePricePreview({ sources: nowhere, price: null, source: null }, true)).toBe(
+      'На Afternic, Sedo, Namecheap домен не продається.'
+    )
+    expect(
+      describePricePreview({ sources: [reading('afternic', 'no_fixed_price'), ...nowhere.slice(1)], price: null, source: null }, true)
+    ).toBe('На Afternic, Sedo, Namecheap домен не має фіксованої ціни в доларах.')
+    expect(
+      describePricePreview({ sources: [reading('afternic', 'unread'), ...nowhere.slice(1)], price: null, source: null }, true)
+    ).toBe('Не всі сайти відповіли. Ціну буде перевірено після збереження.')
+  })
+
+  // The frame keeps its height in every state: the same three rows and a
+  // sentence (or its skeleton) — the owner counted four jumps of the window.
+  const at = (over: Partial<Parameters<typeof sitePricesState>[0]>) =>
+    sitePricesState({ domain: 'joystones.com', free: false, saved: false, loading: false, failed: false, ready: false, ...over })
+
+  it('the state of the frame: nothing typed, being asked, answered, saved, failed, free', () => {
+    expect(at({ domain: '' })).toBe('idle')
+    expect(at({ domain: 'joystones' })).toBe('idle')
+    expect(at({ loading: true })).toBe('loading')
+    // Between the keystroke and the answer there is never an empty frame.
+    expect(at({})).toBe('loading')
+    expect(at({ ready: true })).toBe('ready')
+    expect(at({ ready: true, loading: true })).toBe('loading')
+    expect(at({ failed: true })).toBe('failed')
+    expect(at({ saved: true, loading: true })).toBe('saved')
+    expect(at({ free: true, saved: true })).toBe('free')
+  })
+
+  it('always the same three rows in the same order — only the value changes', () => {
+    const sites = (state: Parameters<typeof sitePricesRows>[0], sources: NamingPriceSourceReading[] | null) =>
+      sitePricesRows(state, sources).map(r => [r.label, r.value === null ? null : plain(r.value)])
+    expect(sites('idle', null)).toEqual([['Afternic', '—'], ['Sedo', '—'], ['Namecheap', '—']])
+    expect(sites('loading', everywhere)).toEqual([['Afternic', null], ['Sedo', null], ['Namecheap', null]])
+    expect(sites('ready', everywhere)).toEqual([['Afternic', '$3 495'], ['Sedo', '$3 495'], ['Namecheap', '$3 480']])
+    expect(sites('saved', nowhere)).toEqual([['Afternic', 'не знайдено'], ['Sedo', 'не знайдено'], ['Namecheap', 'не знайдено']])
+    // A site the check never stored still has its row.
+    expect(sites('saved', everywhere.slice(0, 1))).toEqual([['Afternic', '$3 495'], ['Sedo', '—'], ['Namecheap', '—']])
+    expect(sites('free', everywhere)).toEqual([['Afternic', '—'], ['Sedo', '—'], ['Namecheap', '—']])
+    expect(sites('failed', null)).toHaveLength(3)
+  })
+
+  it('the sentence above the rows: a hint, a skeleton while asked, the answer, the date of a saved check', () => {
+    const given = { preview: { sources: everywhere, price: 3495, source: 'afternic' as const }, automatic: true, saved: null }
+    expect(sitePricesSummary('idle', given)).toBe('Введіть домен — тут з’являться ціни викупу на Afternic, Sedo, Namecheap.')
+    expect(sitePricesSummary('loading', given)).toBeNull()
+    expect(plain(sitePricesSummary('ready', given) ?? '')).toContain('Продається власником за $3 495 — ціна з Afternic.')
+    expect(sitePricesSummary('saved', { ...given, saved: nowhere })).toBe('Остання перевірка — 07.10.')
+    expect(sitePricesSummary('failed', given)).toBe('Не вдалося перевірити сайти. Ціну буде визначено після збереження.')
+    expect(sitePricesSummary('free', given)).toBe('Домен вільний — викуповувати не потрібно.')
+  })
+
+  it('the sites are asked about a domain, not about every keystroke', () => {
+    for (const text of ['hunteria.com', ' Betwood.COM ', 'https://www.preland.com/page', 'my-site.co.uk']) {
+      expect(looksLikeDomain(text), text).toBe(true)
+    }
+    for (const text of ['', 'hunteria', 'hunteria.', 'hunteria.c', '.com', 'a b']) expect(looksLikeDomain(text), text).toBe(false)
   })
 })

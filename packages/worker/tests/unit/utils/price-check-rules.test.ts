@@ -95,6 +95,10 @@ function naming(initial: PriceRow) {
   }
 }
 
+/** A taken domain nobody marked — the row the check may put «For sale» on. */
+const taken = (over: Partial<PriceRow> = {}) =>
+  forSale(0, { availability_status: 'sold', domain_check_source: 'pananames', purchase_price: null, ...over })
+
 describe('rule 1 — a price no marketplace has is never touched', () => {
   it('whatever the marketplaces say, for as long as they say it', () => {
     const n = naming(forSale(2600))
@@ -382,9 +386,6 @@ describe('rule 11 — an automatic update says what it replaced', () => {
 
 describe('a taken domain is put «For sale» by the check itself', () => {
   /** Taken, as the registrar left it; `unknown` — the stage, which has no registrar. */
-  const taken = (over: Partial<PriceRow> = {}) =>
-    forSale(0, { availability_status: 'sold', domain_check_source: 'pananames', purchase_price: null, ...over })
-
   it('a marketplace lists it at a fixed price: For sale with that price, led from the first night', () => {
     const n = naming(taken())
     const change = n.check(prices(null, 2695, 2685), night(0))
@@ -518,8 +519,47 @@ describe('the line under the price', () => {
     expect(euros.row.price_source).toBeNull()
   })
 
-  it('a row that is not «For sale» and was never taken off has no line', () => {
+  it('a row that is not «For sale» and was never asked about has no line', () => {
     const row = forSale(2795, { availability_status: 'sold', domain_check_source: 'pananames' })
     expect(describePriceCheck(row, [])).toBeNull()
+  })
+
+  it('a taken domain nobody sells: the line says it was asked about and when, with every marketplace’s answer', () => {
+    const n = naming(taken())
+    n.check(nowhere, night(0))
+    expect(n.row.availability_status).toBe('sold')
+    expect(n.line).toMatchObject({ kind: 'not_listed', date: night(0).toISOString(), amount: null })
+    expect(n.line?.sources.map(s => [s.source, s.outcome])).toEqual([
+      ['afternic', 'absent'],
+      ['sedo', 'absent'],
+      ['namecheap', 'absent'],
+    ])
+
+    // The stage has no registrar: the status is unknown, the answer is the same.
+    const stage = naming(taken({ availability_status: 'unknown', domain_check_source: 'manual' }))
+    stage.check(nowhere, night(0))
+    expect(stage.line).toMatchObject({ kind: 'not_listed' })
+  })
+
+  it('a taken domain with offers only is not «nobody sells it»; an unanswered marketplace is not either', () => {
+    const offered = naming(taken())
+    offered.check([offers('afternic'), gone('sedo'), gone('namecheap')], night(0))
+    expect(offered.line).toMatchObject({ kind: 'no_fixed_price' })
+
+    const silent = naming(taken())
+    silent.check([failed('afternic'), gone('sedo'), gone('namecheap')], night(0))
+    expect(silent.line).toMatchObject({ kind: 'unread' })
+  })
+
+  it('a free domain and a status set by hand have no line, whatever was stored', () => {
+    const stored: StoredReading[] = nowhere.map(r => ({
+      ...r,
+      attemptedAt: night(0).toISOString(),
+      readAt: night(0).toISOString(),
+      pendingAmount: null,
+      pendingDate: null,
+    }))
+    expect(describePriceCheck(taken({ availability_status: 'available' }), stored)).toBeNull()
+    expect(describePriceCheck(taken({ domain_check_source: 'admin_override' }), stored)).toBeNull()
   })
 })

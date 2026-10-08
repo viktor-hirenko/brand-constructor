@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDomainModeBody,
   canSaveDomainMode,
-  domainPreviewErrorText,
+  domainPreviewProblem,
   formatUsd,
   initialDomainMode,
   parsePurchasePrice,
@@ -40,10 +40,21 @@ describe('resolveNamingPrice', () => {
   })
 })
 
-describe('domainPreviewErrorText', () => {
-  it('says in Ukrainian why the stage shows no check', () => {
-    expect(domainPreviewErrorText('Domain check service not configured')).toBe('Перевірка доменів на цьому сервері недоступна')
-    expect(domainPreviewErrorText('HTTP 502')).toBe('Не вдалося перевірити домен')
+describe('domainPreviewProblem', () => {
+  it('on the stage the missing registrar is a note, not an error: nothing is broken there', () => {
+    expect(domainPreviewProblem('Domain check service not configured', true)).toEqual({
+      text: 'На тестовому стенді не перевіряється, чи домен вільний. Ціна викупу перевіряється.',
+      error: false,
+    })
+  })
+
+  it('anywhere else it is an error, and so is a failed check — the stage included', () => {
+    expect(domainPreviewProblem('Domain check service not configured', false)).toEqual({
+      text: 'Перевірка доменів на цьому сервері недоступна',
+      error: true,
+    })
+    expect(domainPreviewProblem('HTTP 502', true)).toEqual({ text: 'Не вдалося перевірити домен', error: true })
+    expect(domainPreviewProblem(null, false).error).toBe(true)
   })
 })
 

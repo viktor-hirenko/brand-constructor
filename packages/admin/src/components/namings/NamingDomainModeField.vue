@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { NamingPriceSourceReading } from '@brand-constructor/shared'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import NamingSitePrices from '@/components/namings/NamingSitePrices.vue'
 import { parsePurchasePrice, type DomainMode } from '@/utils/namingDomainStatus'
 import type { DomainCard } from '@/utils/namingPriceCheck'
 
@@ -16,6 +18,13 @@ defineProps<{
   name: string
   /** Edit: what the system knows of the saved domain, shown above the choice. */
   found?: DomainCard | null
+  /** The domain in the field: the three marketplaces' prices for it stand above the choice. */
+  domain?: string
+  /** Edit: the domain as saved and what the last check read about it. */
+  savedDomain?: string | null
+  savedSources?: NamingPriceSourceReading[] | null
+  /** The registrar says the domain is free. */
+  free?: boolean
 }>()
 
 const mode = defineModel<DomainMode>('mode', { required: true })
@@ -35,6 +44,14 @@ const priceError = computed(() =>
       <strong>{{ found.headline }}</strong>
       <span v-for="line in found.details" :key="line">{{ line }}</span>
     </p>
+    <NamingSitePrices
+      v-if="domain !== undefined"
+      :domain="domain"
+      :automatic="mode === 'automatic'"
+      :saved-domain="savedDomain"
+      :saved-sources="savedSources"
+      :free="free"
+    />
     <label class="naming-domain-mode__option">
       <input v-model="mode" type="radio" :name="name" value="automatic" class="naming-domain-mode__radio" />
       <span>
