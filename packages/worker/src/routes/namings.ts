@@ -19,6 +19,7 @@ import {
   withPriceChecks,
 } from '../utils/price-check'
 import { describePriceCheck, isForSaleRow, sameAmount, type PriceRow } from '../utils/price-check-rules'
+import { loadPriceHealth, nightDateOf } from '../utils/price-health'
 import { PRICE_SOURCES } from '../utils/price-sources'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
@@ -277,6 +278,15 @@ app.post('/external/preview-price', requireLibraryAccess('external_namings'), as
     return c.json({ success: false, error: PRICE_CHECK_OFF }, 503)
   }
   return c.json({ success: true, data: await previewDomainPrice(parsed.data.domain) })
+})
+
+/**
+ * Did last night's price check reach the marketplaces — for the line above
+ * the namings table. `null` while the check is switched off: nothing to say.
+ */
+app.get('/external/price-health', async c => {
+  if (!isPriceCheckEnabled(c.env)) return c.json({ success: true, data: null })
+  return c.json({ success: true, data: await loadPriceHealth(c.env.DB, nightDateOf(new Date())) })
 })
 
 app.put('/external/:id', requireLibraryAccess('external_namings'), async c => {

@@ -14,6 +14,8 @@ export type {
   NamingPriceOutcome,
   NamingPriceSourceReading,
   NamingPriceCheck,
+  NamingPriceHealth,
+  NamingPriceHealthProblem,
   DomainAvailabilityStatus,
   DomainCheckSource,
   CreateExternalNamingPayload,

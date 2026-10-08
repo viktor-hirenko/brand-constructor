@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import type { ExternalNaming, InternalNaming, Concept, NamingPriceSourceReading } from '@brand-constructor/shared'
-import { useApiList, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import type {
+  ExternalNaming,
+  InternalNaming,
+  Concept,
+  NamingPriceHealth,
+  NamingPriceSourceReading,
+} from '@brand-constructor/shared'
+import { useApiList, apiGet, apiPost, apiPut, apiDelete } from '@/composables/useApi'
+import NamingPriceHealthNotice from '@/components/namings/NamingPriceHealthNotice.vue'
 import { useListPolling } from '@/composables/useListPolling'
 import { useTableSort } from '@/composables/useTableSort'
 import { useAuthStore } from '@/stores/auth'
@@ -327,8 +334,24 @@ function refreshList(options?: { silent?: boolean }) {
   }
 }
 
+// Last night's price check: did it reach the marketplaces. The table waits for
+// the answer, so the line above it comes with the rows and pushes nothing down.
+const priceHealth = ref<NamingPriceHealth | null>(null)
+const priceHealthPending = ref(true)
+
+async function loadPriceHealth() {
+  try {
+    priceHealth.value = await apiGet<NamingPriceHealth | null>('/api/namings/external/price-health')
+  } catch {
+    priceHealth.value = null
+  } finally {
+    priceHealthPending.value = false
+  }
+}
+
 onMounted(() => {
   refreshList()
+  loadPriceHealth()
   fetchConcepts({ per_page: '100', status: 'all' })
 })
 watch([activeTab, conceptFilter, statusFilter], () => refreshList())
@@ -671,7 +694,9 @@ async function confirmDeleteNaming() {
       </button>
     </div>
 
-    <div v-if="activeTab === 'external' ? extLoading : intLoading" class="namings-view__loading">
+    <NamingPriceHealthNotice v-if="activeTab === 'external' && !priceHealthPending" :health="priceHealth" />
+
+    <div v-if="activeTab === 'external' ? extLoading || priceHealthPending : intLoading" class="namings-view__loading">
       Завантаження…
     </div>
 

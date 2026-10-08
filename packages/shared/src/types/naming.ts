@@ -136,3 +136,24 @@ export interface UpdateInternalNamingPayload {
   tagline?: string
   status?: NamingStatus
 }
+
+/**
+ * Did last night's price check reach the marketplaces — decided on the server
+ * (`utils/price-health.ts`), shown above the namings table and sent to Slack.
+ * No problems — nothing is shown.
+ */
+export interface NamingPriceHealthProblem {
+  kind: 'night_missed' | 'night_incomplete' | 'source_silent' | 'source_partial' | 'source_empty'
+  source: NamingPriceSource | null
+  /** The sentence for a person, in Ukrainian. */
+  text: string
+}
+
+export interface NamingPriceHealth {
+  /** The night it is about, YYYY-MM-DD (UTC). */
+  date: string
+  /** Domains the night owed a check, and how many of them were asked about. */
+  due: number
+  asked: number
+  problems: NamingPriceHealthProblem[]
+}
