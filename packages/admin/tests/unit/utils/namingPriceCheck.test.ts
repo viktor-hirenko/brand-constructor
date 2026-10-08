@@ -11,6 +11,7 @@ import {
   sitePricesState,
   sitePricesSummary,
   needsDecision,
+  MANUAL_STALE_DAYS,
   priceCellExtras,
   priceDecisionErrorText,
   priceOffer,
@@ -66,7 +67,7 @@ const card = (n: CheckedNaming) => {
 describe('beside the price in the table', () => {
   it('a marketplace’s price that did not change: nothing', () => {
     const n = forSale(2795, { price_check: check('verified', { source: 'afternic' }) })
-    expect(priceCellExtras(n, NOW)).toEqual({ previous: null, trend: null, trendTitle: null, manual: false })
+    expect(priceCellExtras(n, NOW)).toEqual({ previous: null, trend: null, trendTitle: null, manual: false, manualSince: null, manualTitle: null })
   })
 
   it('the marketplace raised the price: an arrow up and the old price, for a week', () => {
@@ -90,9 +91,49 @@ describe('beside the price in the table', () => {
     expect(priceCellExtras(forSale(1200, { price_auto: undefined }), NOW).manual).toBe(true)
   })
 
+  // Nothing checks a price a person typed when no marketplace lists the
+  // domain, so its age is the only sign it may be stale (the owner, 08.10:
+  // «выбрал вручную, а потом забыл»).
+  it('…and once nobody saved the record for a month, the day stands beside it: this year without the year, another with it', () => {
+    const now = new Date('2026-10-08T12:00:00.000Z')
+    const typed = (updated_at: string) => priceCellExtras(forSale(1200, { price_auto: false, updated_at }), now)
+    expect(typed('2026-08-12 08:30:00')).toMatchObject({
+      manualSince: '12.08',
+      manualTitle: 'Ціну введено вручну, автоматично вона не змінюється. Запис востаннє змінювали 12.08.2026.',
+    })
+    expect(typed('2025-11-03 08:30:00').manualSince).toBe('03.11.25')
+    expect(MANUAL_STALE_DAYS).toBe(30)
+    expect(typed('2026-09-08 11:00:00').manualSince).toBe('08.09')
+    expect(typed('2026-09-08 13:00:00').manualSince).toBeNull()
+  })
+
+  it('a fresh one is «вручну» alone — the column stays as wide as it was; its day is in the tooltip', () => {
+    const now = new Date('2026-10-08T12:00:00.000Z')
+    expect(priceCellExtras(forSale(1200, { price_auto: false, updated_at: '2026-10-06 09:00:00' }), now)).toMatchObject({
+      manual: true,
+      manualSince: null,
+      manualTitle: 'Ціну введено вручну, автоматично вона не змінюється. Запис востаннє змінювали 06.10.2026.',
+    })
+  })
+
+  it('no date in the record, or one that is no date: «вручну» alone, and its sentence without a day', () => {
+    for (const updated_at of [undefined, '', 'yesterday']) {
+      expect(priceCellExtras(forSale(1200, { price_auto: false, updated_at }), NOW)).toMatchObject({
+        manual: true,
+        manualSince: null,
+        manualTitle: 'Ціну введено вручну, автоматично вона не змінюється.',
+      })
+    }
+  })
+
+  it('a price that follows a marketplace carries no day: it is checked every night', () => {
+    const n = forSale(2795, { updated_at: '2025-09-12 08:30:00', price_check: check('verified', { source: 'afternic' }) })
+    expect(priceCellExtras(n, NOW)).toMatchObject({ manual: false, manualSince: null, manualTitle: null })
+  })
+
   it('a row that is not For sale has no marks, whatever is left in the record', () => {
     const n = automatic({ purchase_price: 1500, price_check: check('delisted', { prev: 1500 }) })
-    expect(priceCellExtras(n, NOW)).toEqual({ previous: null, trend: null, trendTitle: null, manual: false })
+    expect(priceCellExtras(n, NOW)).toEqual({ previous: null, trend: null, trendTitle: null, manual: false, manualSince: null, manualTitle: null })
   })
 })
 

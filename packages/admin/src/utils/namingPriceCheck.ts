@@ -46,7 +46,8 @@ export type CheckedNaming = Pick<
   | 'used_in_brand_id'
   | 'price_check'
   | 'price_auto'
->
+> &
+  Partial<Pick<ExternalNaming, 'updated_at'>>
 
 function isForSale(n: CheckedNaming): boolean {
   return n.availability_status === 'for_sale' && n.domain_check_source === 'admin_override'
@@ -63,6 +64,41 @@ export interface PriceCellExtras {
   trendTitle: string | null
   /** A person typed the price. */
   manual: boolean
+  /**
+   * «12.07» beside «вручну», once the record has not been saved for
+   * `MANUAL_STALE_DAYS`: nothing checks such a price when no marketplace lists
+   * the domain, so its age is the only sign it may be stale. A fresh one is
+   * «вручну» alone — the day is in its tooltip, and the column stays as wide
+   * as it was.
+   */
+  manualSince: string | null
+  manualTitle: string | null
+}
+
+/** A price a person typed and nobody saved since is shown with its day. */
+export const MANUAL_STALE_DAYS = 30
+
+/** «12.09», with the year when it is not this one: «12.09.25». */
+function formatSince(iso: string | null | undefined, now: Date): { short: string; full: string; at: number } | null {
+  if (!iso) return null
+  const date = new Date(/^\d{4}-\d{2}-\d{2} /.test(iso) ? `${iso.replace(' ', 'T')}Z` : iso)
+  if (Number.isNaN(date.getTime())) return null
+  const two = (n: number) => String(n).padStart(2, '0')
+  const day = `${two(date.getDate())}.${two(date.getMonth() + 1)}`
+  const year = date.getFullYear()
+  return { short: year === now.getFullYear() ? day : `${day}.${two(year % 100)}`, full: `${day}.${year}`, at: date.getTime() }
+}
+
+function manualExtras(n: CheckedNaming, manual: boolean, now: Date): Pick<PriceCellExtras, 'manual' | 'manualSince' | 'manualTitle'> {
+  const since = manual ? formatSince(n.updated_at, now) : null
+  const stale = since != null && now.getTime() - since.at >= MANUAL_STALE_DAYS * 24 * 60 * 60 * 1000
+  return {
+    manual,
+    manualSince: stale ? since.short : null,
+    manualTitle: manual
+      ? `Ціну введено вручну, автоматично вона не змінюється.${since ? ` Запис востаннє змінювали ${since.full}.` : ''}`
+      : null,
+  }
 }
 
 /**
@@ -73,8 +109,8 @@ export interface PriceCellExtras {
  */
 export function priceCellExtras(n: CheckedNaming, now: Date = new Date()): PriceCellExtras {
   const none = { previous: null, trend: null, trendTitle: null }
-  if (!isForSale(n)) return { ...none, manual: false }
-  const manual = n.price_auto !== true
+  if (!isForSale(n)) return { ...none, ...manualExtras(n, false, now) }
+  const manual = manualExtras(n, n.price_auto !== true, now)
   const check = n.price_check
   if (
     check?.kind !== 'updated' ||
@@ -84,7 +120,7 @@ export function priceCellExtras(n: CheckedNaming, now: Date = new Date()): Price
     n.purchase_price === check.prev ||
     now.getTime() - new Date(check.date).getTime() >= PREVIOUS_PRICE_DAYS * 24 * 60 * 60 * 1000
   ) {
-    return { ...none, manual }
+    return { ...none, ...manual }
   }
   const previous = formatUsd(check.prev)
   const up = n.purchase_price > check.prev
@@ -92,7 +128,7 @@ export function priceCellExtras(n: CheckedNaming, now: Date = new Date()): Price
     previous,
     trend: up ? 'up' : 'down',
     trendTitle: `${up ? 'Ціна зросла' : 'Ціна знизилась'}: було ${previous}`,
-    manual,
+    ...manual,
   }
 }
 

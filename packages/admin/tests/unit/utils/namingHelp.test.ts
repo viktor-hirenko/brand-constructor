@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { resolveNamingStatusBadge } from '@/utils/namingDomainStatus'
 import { DOMAIN_FILTERS } from '@/utils/namingFilters'
 import {
+  DOMAIN_CARD_HINT,
   FILTER_HINTS,
   HELP_FOOTNOTE,
   HELP_SECTIONS,
@@ -27,15 +28,15 @@ const VIEW = read('views/NamingsView.vue')
 const MODAL = read('components/namings/NamingHelpModal.vue')
 
 const EVERY_TEXT = [
+  DOMAIN_CARD_HINT,
   PRICE_COLUMN_HINT,
   STATUS_COLUMN_HINT,
   HELP_FOOTNOTE,
   ...Object.values(STATUS_HINTS),
   ...Object.values(FILTER_HINTS),
   ...HELP_SECTIONS.flatMap(s => [s.title, ...s.lines]),
-  priceHint('for_sale'),
-  priceHint('available'),
-  priceHint('sold'),
+  priceHint('for_sale') ?? '',
+  priceHint('available') ?? '',
 ]
 
 describe('the sentences', () => {
@@ -50,21 +51,18 @@ describe('the sentences', () => {
       expect(STATUS_HINTS[status].startsWith(`${word} — `), status).toBe(true)
     }
     // A status nobody listed reads as «not checked yet», never as nothing.
-    expect(statusHint('something new', false)).toBe(STATUS_HINTS.unknown)
-    expect(statusHint(null, false)).toBe(STATUS_HINTS.unknown)
-  })
-
-  it('a badge that opens the card says so; one that does not — only what the status means', () => {
-    expect(statusHint('for_sale', true)).toBe('For sale — домен зайнятий, але власник його продає. Подробиці — у картці домену.')
-    expect(statusHint('for_sale', false)).toBe('For sale — домен зайнятий, але власник його продає.')
+    expect(statusHint('something new')).toBe(STATUS_HINTS.unknown)
+    expect(statusHint(null)).toBe(STATUS_HINTS.unknown)
+    expect(statusHint('for_sale')).toBe('For sale — домен зайнятий, але власник його продає.')
   })
 
   it('the «Ціна» column holds two prices, and each cell says which one it is', () => {
     expect(PRICE_COLUMN_HINT).toContain('вартість реєстрації')
     expect(PRICE_COLUMN_HINT).toContain('продає власник')
-    expect(priceHint('for_sale')).toContain('Ціна, за яку домен продає власник.')
-    expect(priceHint('available')).toContain('Вартість реєстрації вільного домену.')
-    expect(priceHint('for_sale')).not.toBe(priceHint('available'))
+    expect(priceHint('for_sale')).toBe('Ціна, за яку домен продає власник.')
+    expect(priceHint('available')).toBe('Вартість реєстрації вільного домену.')
+    // Any other row has a dash for a price: nothing to explain.
+    expect(priceHint('sold')).toBeUndefined()
   })
 
   it('describe, not order: no imperative, no «команда», no «нічна перевірка», no «система сама»', () => {
@@ -92,13 +90,28 @@ describe('where they stand', () => {
 
   it('a price, a status badge and every quick filter answer the pointer with theirs', () => {
     expect(VIEW).toContain(':title="priceHint(n.availability_status)"')
-    expect(VIEW).toContain(':title="statusHint(n.availability_status, !!n.domain)"')
+    expect(VIEW).toContain(':title="statusHint(n.availability_status)"')
     expect(VIEW).toContain(':title="FILTER_HINTS[f.id]"')
   })
 
-  it('what opens the card looks it: a dotted line under a price, a mark after a status that is a button', () => {
-    expect(VIEW).toMatch(/button\.namings-view__price-cell \{\s*text-decoration: underline dotted/)
-    expect(VIEW).toMatch(/button\.namings-view__status-badge::after \{\s*content: '›'/)
+  // A price, a status and the red mark all opened the same card, each with a
+  // look of its own: «зачем и цена, и статус открывают одну карточку» (the
+  // owner, 08.10). The card is about the domain — the domain opens it.
+  it('one way into the card — the domain, and it looks a link; a price and a status are text', () => {
+    const row = VIEW.slice(VIEW.indexOf('<tr v-for="n in sortedExternal"'), VIEW.indexOf('<tr v-if="sortedInternal.length === 0"'))
+    expect(row).toMatch(/class="namings-view__cell-button namings-view__domain-link"\s*:title="DOMAIN_CARD_HINT"\s*@click\.stop="openPriceWindow\(n\.id\)"/)
+    // The domain, and the red «Потрібне рішення» mark: there a person has to act.
+    expect(row.match(/openPriceWindow\(n\.id\)/g)).toHaveLength(2)
+    expect(row).toContain('<span v-if="resolveNamingPrice(n)" class="namings-view__price-cell"')
+    expect(row).not.toMatch(/<button[^>]*namings-view__(price-cell|status-badge)/)
+    expect(VIEW).toMatch(/&__domain-link \{[^}]*color: \$color-primary;/)
+    expect(HELP_FOOTNOTE).toContain('відкривається з назви домену')
+  })
+
+  it('«вручну» says on hover when the record was last saved; a month-old one shows the day and changes colour', () => {
+    expect(VIEW).toContain(':title="priceCellExtras(n).manualTitle ?? undefined"')
+    expect(VIEW).toContain(`:class="{ 'namings-view__price-manual--stale': priceCellExtras(n).manualSince }"`)
+    expect(VIEW).toContain(`вручну<template v-if="priceCellExtras(n).manualSince"> · {{ priceCellExtras(n).manualSince }}</template>`)
   })
 
   it('«Як це працює?» stands beside the quick filters of External Naming only and opens the window', () => {
