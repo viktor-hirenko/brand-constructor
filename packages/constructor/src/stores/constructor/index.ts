@@ -3,7 +3,7 @@ import type {
   BrandStepData,
   BrandCeoComments,
 } from '@brand-constructor/shared/types'
-import { useBrandData } from './useBrandData'
+import { useBrandData, type SaveBrandOptions } from './useBrandData'
 import { useSupervisorReview } from './useSupervisorReview'
 import { forgetOwnVariant, keepOwnVariant } from '@/utils/revisionKeptOwn'
 import { useSupervisorAlternativeDraft } from './useSupervisorAlternativeDraft'
@@ -116,9 +116,9 @@ export const useConstructorStore = defineStore('brand-constructor', () => {
    * written to the browser first (so a save that dies on an expired session
    * is not lost), and dropped once the server has it.
    */
-  async function saveBrand(): Promise<boolean> {
+  async function saveBrand(options: SaveBrandOptions = {}): Promise<boolean> {
     flushWizardDraftCopy()
-    const saved = await brandDataPublic.saveBrand()
+    const saved = await brandDataPublic.saveBrand(options)
     if (saved) markWizardDraftSaved(brandDataPublic.serverUpdatedAt.value)
     return saved
   }
