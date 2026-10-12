@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import type { LayoutMode } from './dualPaneLayoutClasses'
 import {
   shellBaseClass,
@@ -11,6 +11,7 @@ import {
 } from './dualPaneLayoutClasses'
 import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
 import { useAdminDimWhile } from '@/composables/useAdminDim'
+import { useEmbedImmersive } from '@/composables/useEmbedImmersive'
 import { useWizardPaneMetrics } from '@/composables/useWizardPaneMetrics'
 import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
 import CloseIcon from '@/components/icons/CloseIcon.vue'
@@ -79,12 +80,46 @@ const isPreviewOpen = ref(false)
 const showRightColumn = computed(() => props.showRight && !props.fullWidth)
 const isDrawerMode = computed(() => isNarrowEmbed.value && showRightColumn.value)
 
-function openPreview(): void {
+/**
+ * The drawer takes the WHOLE screen — the owner, 12.10, on a phone and a tablet:
+ * «у нас визуально образуется какая-то лесенка»: the Admin's bar, the wizard's
+ * bar with the cross that leaves the brief, and under them the panel with its
+ * own cross. Now there is one bar and one cross.
+ *
+ * Two halves. The drawer is fixed to the frame (the rules below), so it lies
+ * over the wizard's bar. And the frame itself is laid over the Admin's bar for
+ * as long as the drawer is open — that the Admin does, when asked
+ * (`useEmbedImmersive.ts`). The screen first, the drawer after: a frame that
+ * grows under a drawer already on its way would move the page by the height of
+ * the Admin's bar in plain sight. Back the same way round: the screen is given
+ * back once the drawer has slid away.
+ */
+const immersive = useEmbedImmersive()
+
+/** The slide of the drawer — the same 0.32s as `.constructor-dual-pane-shell__drawer` below. */
+const PREVIEW_DRAWER_SLIDE_MS = 320
+/**
+ * When the drawer is gone for certain. The slide starts with the browser's next
+ * style pass, not with the click, so a timer of exactly its length can fire a
+ * frame before it ends — and the screen would be given back under a drawer that
+ * is still, by a hair, on it.
+ */
+const PREVIEW_DRAWER_GONE_MS = PREVIEW_DRAWER_SLIDE_MS + 60
+
+// A tap on «Превʼю» waits for the Admin's answer; a close in between cancels it.
+let openTicket = 0
+
+async function openPreview(): Promise<void> {
+  const ticket = ++openTicket
+  await immersive.enter()
+  if (ticket !== openTicket || !isDrawerMode.value) return
   isPreviewOpen.value = true
 }
 
 function closePreview(): void {
+  openTicket++
   isPreviewOpen.value = false
+  immersive.leave(PREVIEW_DRAWER_GONE_MS)
 }
 
 // Leaving drawer mode (panel widened) must not leave the drawer stuck open.
@@ -98,8 +133,14 @@ useAdminDimWhile(() => isDrawerMode.value && isPreviewOpen.value, {
 })
 
 watch(isDrawerMode, mode => {
-  if (!mode) isPreviewOpen.value = false
+  if (mode) return
+  // No slide to wait for: the drawer is a column again.
+  openTicket++
+  isPreviewOpen.value = false
+  immersive.leave()
 })
+
+onBeforeUnmount(() => immersive.leave())
 
 const leftColumnClass = computed(() => [
   'constructor-dual-pane-shell__left flex flex-col min-h-0',
@@ -185,9 +226,9 @@ const rightContentStyle = computed(() =>
   <div class="constructor-dual-pane-shell" :class="shellBase" :style="shellStyle">
     <!-- Kit `Wizard` = `Wizard header` 1230×73 + `Wizard content` (`5382:30951`,
          drawn on all 29 refactor frames and all four breakpoints). The shell is
-         therefore a column, and the two panes are the row inside it. The row —
-         not the shell — is the positioning context for the narrow-panel drawer,
-         so the drawer slides under the header instead of over it. -->
+         therefore a column, and the two panes are the row inside it. The
+         narrow-panel drawer is fixed to the frame, not placed in the row: it
+         lies over this header as well (see `openPreview`). -->
     <slot name="header" />
 
     <!-- `__content` / `__frame` are the ">1920 px" regime of the designer's
@@ -271,13 +312,20 @@ const rightContentStyle = computed(() =>
 </template>
 
 <style scoped>
+/* Fixed to the frame, so the drawer covers the wizard's own header too — and,
+   once the Admin has laid the frame over its bar, the whole screen.
+
+   Closed, it is hidden outright, not only moved aside: its shadow reaches 40px
+   to the left of it, and from beyond the right edge that lay on the brief as a
+   grey strip. `visibility` turns off only when the slide out has ended. */
 .constructor-dual-pane-shell__drawer {
-  position: absolute;
+  position: fixed;
   inset: 0;
   width: 100% !important;
   z-index: 40;
   transform: translateX(100%);
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  visibility: hidden;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.32s;
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.18);
   /* Safety net: some screens set `overflow-hidden` on this pane (e.g. review)
      because standalone/wide-embed never needs it to scroll — the drawer is
@@ -288,10 +336,12 @@ const rightContentStyle = computed(() =>
 
 .constructor-dual-pane-shell__drawer--open {
   transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
 }
 
 .constructor-dual-pane-shell__drawer-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 39;
   background-color: rgba(0, 0, 0, 0.45);

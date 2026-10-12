@@ -130,6 +130,28 @@ html.wizard-embed {
 }
 
 /*
+ * The preview of a narrow frame takes the whole screen — the owner, 12.10, on a
+ * phone and a tablet: three bars stood one under another over the preview
+ * («лесенка»): the Admin's, the wizard's, the panel's own.
+ *
+ * The wizard cannot draw outside its frame, so for as long as that panel is
+ * open the Admin lays the frame over its own bar and says, in the same breath,
+ * how far the frame has grown on each side (`--embed-inset-*`, written by the
+ * Admin's `WizardWorkspaceView`). The wizard pads itself by exactly that, so
+ * nothing under the sliding panel moves — and leaves the strip unpainted: the
+ * Admin's bar is seen through it until the panel, which is fixed to the frame,
+ * has covered it.
+ *
+ * With no insets — always, except while that panel is open — both declarations
+ * do nothing.
+ */
+html.wizard-embed .constructor-layout {
+  padding: var(--embed-inset-top, 0px) var(--embed-inset-right, 0px) var(--embed-inset-bottom, 0px)
+    var(--embed-inset-left, 0px);
+  background-clip: content-box;
+}
+
+/*
  * Concept grid — the card size, per breakpoint, read off the four frames:
  * 1280 `5395:119372` 3×133, 1440 `5395:118745` 4×125.75, 1920 `5395:119192`
  * 5×156.6, 2560 `5395:119545` 5×140.

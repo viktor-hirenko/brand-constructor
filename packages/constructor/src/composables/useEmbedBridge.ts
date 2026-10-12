@@ -18,7 +18,7 @@ interface NavigatedPayload {
 
 interface EmbedMessage {
   source: 'brand-wizard';
-  type: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close' | 'dim';
+  type: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close' | 'dim' | 'immersive';
   payload?: unknown;
 }
 
@@ -80,6 +80,34 @@ export function onAdminBackdropClick(handler: () => void): void {
     const data = event.data as { source?: string; type?: string } | null;
     if (!data || data.source !== 'brand-admin' || data.type !== 'backdrop-click') return;
     handler();
+  });
+}
+
+/**
+ * Ask the Admin for the whole screen (`true`), or give it back (`false`).
+ *
+ * The preview panel of a narrow frame — a phone, a tablet held upright — takes
+ * the whole screen, the Admin's own bar included. The wizard cannot reach
+ * outside its frame, so the Admin lays the frame over its bar and answers; the
+ * single sender is `useEmbedImmersive.ts`.
+ */
+export function postImmersive(on: boolean): void {
+  if (!isEmbedded()) return;
+  post('immersive', { on });
+}
+
+/**
+ * The Admin's answer to `postImmersive`: its frame now has the whole screen
+ * (`true`) or stands in its own place again (`false`). Same origin and the
+ * Admin's own `source` only.
+ */
+export function onAdminImmersive(handler: (on: boolean) => void): void {
+  if (!isEmbedded()) return;
+  window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data as { source?: string; type?: string; payload?: { on?: unknown } } | null;
+    if (!data || data.source !== 'brand-admin' || data.type !== 'immersive') return;
+    handler(data.payload?.on === true);
   });
 }
 
