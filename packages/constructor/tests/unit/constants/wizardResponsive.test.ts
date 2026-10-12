@@ -12,6 +12,10 @@ import {
   WIZARD_RIGHT_PANE_MIN_WIDTH,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
+import { PREVIEW_PANEL_PHONE_INSET_PX, PREVIEW_PANEL_PHONE_ROW_CLASS } from '@/constants/previewLayout'
+import { PREVIEW_CANVAS, PREVIEW_CHASSIS } from '@/constants/visualPreviewLayout'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 /**
  * The responsive formula — Figma `Responsive behavior` `5395:118197`.
@@ -194,5 +198,85 @@ describe('the phone previews shrink into the square instead of being cropped', (
     for (const side of [0, -1, Number.NaN]) {
       expect(fitPhoneBoxRem(side, STEP7).heightRem * 16).toBe(650)
     }
+  })
+})
+
+/**
+ * DP-15450, CEO view 4 · HIGH — «Preview справа некоректно масштабується:
+ * порушуються пропорції, частина контенту не вміщується. → Зберігати фіксовані
+ * пропорції preview без crop: підлаштовувати його по висоті viewport, а ширину
+ * рахувати пропорційно.»
+ *
+ * Checked live on 12.10: at 1280×720 the square is 527 and the phones on Final
+ * review and on the CEO's screen ran 31 px under its bottom edge (5 px at
+ * 1366×768); the right column scrolled. The fit above measured the bare phone,
+ * 520, against the bare square, 527 — and «fits». It left out what the phone
+ * actually occupies: the kit's 24 above it (`PREVIEW_PANEL_PHONE_ROW_CLASS`,
+ * `pt-6`) and the bezel, which hangs out of the phone box on every side.
+ *
+ * So the hosts now tell the fit about the inset: 24 above — the kit's number —
+ * and never less than 24 below. On the square she drew, 575, that changes
+ * nothing: 24 + 520 + 24 = 568.
+ */
+describe('CEO view 4: the phone, its inset and its bezel all stay inside the square', () => {
+  const INSET = { insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX, insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX }
+  const ONE = { designWidthPx: 239.1761932373047, designHeightPx: 520, ...INSET }
+  const PAIR = { ...ONE, count: 2, gapPx: 32 }
+  // How far the bezel reaches below the phone box, per px of the box's height.
+  const BEZEL_BELOW = (PREVIEW_CHASSIS.topPx + PREVIEW_CHASSIS.heightPx - PREVIEW_CANVAS.heightPx) / PREVIEW_CANVAS.heightPx
+
+  it('the inset in the arithmetic is the inset in the class', () => {
+    expect(PREVIEW_PANEL_PHONE_INSET_PX).toBe(24)
+    expect(PREVIEW_PANEL_PHONE_ROW_CLASS.split(' ')).toContain('pt-6')
+  })
+
+  it('leaves the drawn size alone on the square she drew and above it', () => {
+    for (const side of [575, 608, 727, 840]) {
+      expect(fitPhoneBoxRem(side, ONE).heightRem * 16).toBe(520)
+      expect(fitPhoneBoxRem(side, PAIR).widthRem * 16).toBeCloseTo(239.176, 2)
+    }
+  })
+
+  it('shrinks the phone on the squares where it used to run under the edge', () => {
+    // 1280×720 → 527: it stood 520 tall from y=24, bezel down to 557.7.
+    expect(fitPhoneBoxRem(527, PAIR).heightRem * 16).toBeCloseTo(479, 4)
+    expect(fitPhoneBoxRem(527, ONE).heightRem * 16).toBeCloseTo(479, 4)
+    // 1366×768 → 553.
+    expect(fitPhoneBoxRem(553, PAIR).heightRem * 16).toBeCloseTo(505, 4)
+  })
+
+  it('nothing of the phone is below the square, bezel included', () => {
+    for (const side of [400, 450, 500, 527, 553, 575, 727]) {
+      for (const opts of [ONE, PAIR]) {
+        const box = fitPhoneBoxRem(side, opts)
+        const height = box.heightRem * 16
+        expect(PREVIEW_PANEL_PHONE_INSET_PX + height * (1 + BEZEL_BELOW)).toBeLessThanOrEqual(side)
+        expect(box.widthRem / box.heightRem).toBeCloseTo(ONE.designWidthPx / ONE.designHeightPx, 10)
+      }
+    }
+  })
+
+  it('the pair still fits across', () => {
+    for (const side of [400, 527, 553]) {
+      expect(fitPhoneBoxRem(side, PAIR).widthRem * 16 * 2 + 32).toBeLessThanOrEqual(side)
+    }
+  })
+
+  it('without an inset the fit is what it was', () => {
+    expect(fitPhoneBoxRem(527, { designWidthPx: 239.1761932373047, designHeightPx: 520 }).heightRem * 16).toBe(520)
+  })
+
+  it('every screen that stands a phone in the square passes the inset', () => {
+    const src = (rel: string) => readFileSync(resolve(__dirname, '../../../src', rel), 'utf8')
+    const step7 = src('components/constructor/layout/StepPreviewRightPanel.vue')
+    const review = src('components/constructor/preview/BrandPreviewPanel.vue')
+
+    for (const file of [step7, review]) {
+      expect(file).toMatch(/insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX/)
+      expect(file).toMatch(/insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX/)
+    }
+    // The review's lone phone («Довірити вибір дизайнерам») used to take the
+    // default box and so was never fitted at all.
+    expect(review).not.toMatch(/<PhonePreviewCanvas>/)
   })
 })

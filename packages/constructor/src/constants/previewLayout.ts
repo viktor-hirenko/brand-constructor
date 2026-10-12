@@ -142,6 +142,14 @@ export const PREVIEW_PANEL_PLACEHOLDER_TEXT = 'Оберіть концепт з�
 export const PREVIEW_PANEL_PHONE_ROW_CLASS = 'flex h-full w-full items-start justify-center pt-6'
 
 /**
+ * That `pt-6`, as the number the fit works with: 24 above the phone box — and
+ * the fit keeps as much below it, so the bezel never runs under the square's
+ * bottom edge (`fitPhoneBoxRem`, DP-15450 CEO view 4). A test holds the two
+ * equal.
+ */
+export const PREVIEW_PANEL_PHONE_INSET_PX = 24
+
+/**
  * ── How a concept picture sits in the square — DP-15450, both HIGH rows ──────
  *
  * The designer wrote the same sentence on two screens: «Зберігати фіксовані

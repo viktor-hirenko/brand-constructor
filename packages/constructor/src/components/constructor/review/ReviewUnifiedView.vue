@@ -608,7 +608,7 @@ defineExpose({
           </ReviewSection>
 
           <ReviewSection
-            title="Visual Components"
+            title="Interface Components"
             :edit-step="isAuthorEditable ? 7 : undefined"
             :has-unresolved="hasSectionUnresolvedComment('visualComponents')"
             @edit="step => emitEditSection(step, 'visualComponents')"

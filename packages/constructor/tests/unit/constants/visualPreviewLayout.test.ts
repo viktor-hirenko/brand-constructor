@@ -106,8 +106,10 @@ describe('resolveCanvasUnitRem', () => {
     expect(PREVIEW_REVIEW_PHONE_BOX.widthRem).toBe(PREVIEW_PHONE_BOX.widthRem)
     expect(PREVIEW_REVIEW_PHONE_BOX.heightRem * 16).toBe(520)
 
-    // And one phone alone clears the narrowest drawn square with room to spare,
-    // so `fitPhoneBoxRem` never has to shrink it on any breakpoint she drew.
+    // One phone BOX alone is shorter than the narrowest drawn square. That is
+    // not the same as fitting it: the phone opens 24 down and its bezel hangs
+    // below the box, so at 527 it does have to shrink — `wizardResponsive.test.ts`,
+    // «CEO view 4».
     expect(PREVIEW_PHONE_BOX.heightRem * 16).toBeLessThanOrEqual(527)
   })
 

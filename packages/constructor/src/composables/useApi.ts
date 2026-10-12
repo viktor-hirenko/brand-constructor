@@ -130,15 +130,15 @@ export function useApiList<T>(url: string) {
     error.value = null;
 
     try {
-      const params = {
-        page: String(page.value),
-        per_page: String(perPage.value),
-        ...queryParams,
-      };
-      const queryString = '?' + new URLSearchParams(params).toString();
-      const result = await request<ApiListResponse<T>>(`${url}${queryString}`);
-      data.value = result.data;
-      total.value = result.total;
+      // `per_page` — from the params or from `perPage` — is the size of one
+      // request, not of the list: the list is read to its end (`apiGetAll`).
+      // A pick list that stopped at its first page hid the oldest rows from
+      // the person choosing; `page` is not honoured, there is nothing to page.
+      const { per_page: asked, page: _page, ...filters } = queryParams ?? {};
+      const pageSize = parseInt(asked ?? '') || perPage.value;
+      const queryString = new URLSearchParams(filters).toString();
+      data.value = await apiGetAll<T>(queryString ? `${url}?${queryString}` : url, pageSize);
+      total.value = data.value.length;
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unknown error';
     } finally {
@@ -185,4 +185,62 @@ export async function apiGet<T>(url: string): Promise<T> {
 /** A list endpoint's page together with its `total` — for callers that page through it. */
 export async function apiGetList<T>(url: string): Promise<ApiListResponse<T>> {
   return request<ApiListResponse<T>>(url);
+}
+
+/** Rows asked for per request when a list is read whole. The server allows 100 on every list. */
+export const LIST_PAGE_SIZE = 100;
+
+/** A list that long is not a list any more; the walk stops rather than spin on a route that misreports itself. */
+const LIST_MAX_REQUESTS = 200;
+
+/**
+ * A list route read to its END, page after page.
+ *
+ * H-59 (12.10.2026): Final review looked a picked name up in a library it had
+ * read with `per_page=100`. The library is ordered newest first, so the 101st
+ * free name and every older one were «not picked» for that screen — «Назву не
+ * обрано» under a name the brief had saved. The same ceiling stood in every
+ * pick list as a 50 or a 100. The owner: «Такого вообще никаких условий не
+ * должно быть».
+ *
+ * So the number passed here is how much to ask for at once, never how much to
+ * show. The walk ends on the server's `total`; a ceiling lower than `pageSize`
+ * therefore costs requests, not rows. Three guards keep it finite on a route
+ * that does not behave like the rest:
+ *  - an empty page ends it, even if `total` says there is more;
+ *  - a route with no `total` (`/api/pr-packages` answers with everything and
+ *    ignores `page`) ends on the first short page;
+ *  - rows are told apart by `id`, so such a route with more rows than a page
+ *    ends on the first page that brings nothing new, and nothing is doubled.
+ */
+export async function apiGetAll<T>(url: string, pageSize: number = LIST_PAGE_SIZE): Promise<T[]> {
+  const [path, query = ''] = url.split('?');
+  const all: T[] = [];
+  const seen = new Set<unknown>();
+
+  for (let page = 1; page <= LIST_MAX_REQUESTS; page++) {
+    const params = new URLSearchParams(query);
+    params.set('page', String(page));
+    params.set('per_page', String(pageSize));
+    const result = await apiGetList<T>(`${path}?${params.toString()}`);
+    const rows = result.data ?? [];
+
+    const fresh = rows.filter(row => {
+      const id = (row as { id?: unknown } | null)?.id;
+      if (id === undefined) return true;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    all.push(...fresh);
+
+    if (rows.length === 0 || fresh.length === 0) break;
+    if (typeof result.total === 'number') {
+      if (all.length >= result.total) break;
+    } else if (rows.length < pageSize) {
+      break;
+    }
+  }
+
+  return all;
 }

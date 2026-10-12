@@ -79,6 +79,22 @@ describe('the printed brief calls step 7 what the rest of the builder calls it',
 })
 
 /**
+ * The same remark, checked live on 12.10: the step and the printed brief said
+ * «Interface Components», while the section on Final review, on the CEO's
+ * screen and in the approved brief — one component draws all three — still said
+ * «Visual Components». Her own drawing of that screen (`5382:37135`) carries the
+ * old heading too; the owner settled it on 12.10: «Исправь».
+ */
+describe('the review calls that section what step 7 is called', () => {
+  const review = read('components/constructor/review/ReviewUnifiedView.vue')
+
+  it('the section heading on Final review, the CEO screen and the approved brief', () => {
+    expect(review).toContain('title="Interface Components"')
+    expect(review).not.toContain('title="Visual Components"')
+  })
+})
+
+/**
  * CEO view 5 · LOW — «Змінити заголовок на "Затвердити бриф зі змінами?".
  * Primary: "Затвердити зі змінами", secondary: "Повернути на доопрацювання".»
  *

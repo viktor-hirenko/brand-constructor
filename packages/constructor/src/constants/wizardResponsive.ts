@@ -279,6 +279,13 @@ export interface FitPhoneBoxOptions {
   count?: number
   /** Kit gap between them when there is more than one. */
   gapPx?: number
+  /**
+   * What the square keeps clear above and below the phone box. Like the gap,
+   * these are kit spacings and do NOT scale, so they come off the square before
+   * the phone is measured against what is left. See `fitPhoneBoxRem`.
+   */
+  insetTopPx?: number
+  insetBottomPx?: number
 }
 
 /**
@@ -300,10 +307,26 @@ export interface FitPhoneBoxOptions {
  *
  * `previewSide` of 0 means "not measured yet" and returns the design size, so
  * the first paint is the full-size phone rather than a collapsed one.
+ *
+ * **The insets — DP-15450, CEO view 4, checked live 12.10.2026.** Measured bare,
+ * the 520 phone «fits» the 527 square of a 1280×720 window. It does not: the
+ * phone opens 24 down from the square's top (`PREVIEW_PANEL_PHONE_ROW_CLASS`)
+ * and its bezel hangs 13.7 below the box, so it ended at 557.7 and the right
+ * column scrolled 31 px on Final review, on the CEO's screen and on step 7.
+ * A host that stands the phone at an inset passes it here; with 24 above and 24
+ * below the box, the bezel (13.7 at full size, less when shrunk) always lands
+ * inside the square, and on the drawn 575 nothing moves: 24 + 520 + 24 = 568.
  */
 export function fitPhoneBoxRem(
   previewSide: number,
-  { designWidthPx, designHeightPx, count = 1, gapPx = 0 }: FitPhoneBoxOptions
+  {
+    designWidthPx,
+    designHeightPx,
+    count = 1,
+    gapPx = 0,
+    insetTopPx = 0,
+    insetBottomPx = 0,
+  }: FitPhoneBoxOptions
 ): PhoneBoxRem {
   const design: PhoneBoxRem = { widthRem: designWidthPx / 16, heightRem: designHeightPx / 16 }
   if (!Number.isFinite(previewSide) || previewSide <= 0) return design
@@ -315,10 +338,11 @@ export function fitPhoneBoxRem(
   // square by exactly that gap's share; the test caught it at a 300 square.
   const gaps = gapPx * Math.max(0, count - 1)
   const forPhones = Math.max(0, previewSide - gaps)
+  const forHeight = Math.max(0, previewSide - insetTopPx - insetBottomPx)
   const scale = Math.min(
     1,
     forPhones / (designWidthPx * count),
-    previewSide / designHeightPx
+    forHeight / designHeightPx
   )
 
   return {
