@@ -182,13 +182,27 @@ describe('only the square scrolls — the header stays put (row 94)', () => {
   it('keeps the horizontal 32 off the pane so the bar can float in it', () => {
     // `5396:120156`: the bar sits 4 in from the PANE edge and 22 clear of the
     // square, i.e. inside the pane's own padding. That only works if the pane
-    // stops at `py-8` and the scroll area spans it edge to edge.
+    // carries no horizontal padding and the scroll area spans it edge to edge.
     for (const mode of ['wizard', 'edit', 'review'] as const) {
-      expect(rightPaneClass(mode)).toContain('py-8')
+      expect(rightPaneClass(mode)).toContain('pt-8')
       expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])p-8\b/)
       expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])px-8\b/)
     }
     expect(PREVIEW_PANEL_HEADER_CLASS).toContain('px-8')
+  })
+
+  it('keeps the bottom 32 INSIDE the scrolling area, not under it', () => {
+    // 12.10.2026, the owner on a landscape phone: «этот нижний отступ, он тогда
+    // логически не нужен». With the 32 on the pane, a preview too tall for the
+    // window was cut off 32 above the pane's edge and a white band stood under
+    // it for good. Inside the scrolling area the same 32 is the end of the
+    // scroll: a preview that fits looks exactly as before (square + 32), and
+    // one that does not runs to the edge.
+    for (const mode of ['wizard', 'edit', 'review'] as const) {
+      expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])py-8\b/)
+      expect(rightPaneClass(mode)).not.toMatch(/(?<![a-z-])pb-8\b/)
+    }
+    expect(PREVIEW_PANEL_SCROLL_CLASS.split(' ')).toContain('pb-8')
   })
 
   it('pays for the drawn bar with padding, never with the square', () => {

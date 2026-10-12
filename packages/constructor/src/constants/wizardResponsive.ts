@@ -146,6 +146,15 @@ export const WIZARD_PREVIEW_SIDE_CAPPED = 840
 export const WIZARD_RIGHT_PANE_MIN_WIDTH = 320
 
 /**
+ * The smallest the preview is drawn below 1920 before the panel starts to
+ * scroll instead — see `resolveWizardPaneGeometry`. At 400 the phone inside is
+ * 352 tall, still legible. **The number is ours**: the sticker `5395:118367`
+ * speaks of «мінімально допустимий розмір» and names one only for the frame
+ * above 1920.
+ */
+export const WIZARD_PREVIEW_MIN_SIDE = 400
+
+/**
  * The kit's own cap on the wizard frame above 1920 (`5395:119538`), plus the
  * inset the frame sits in. `min-height: 860` is declared on the same node but
  * is **not** honoured here: the designer's own short-viewport frame
@@ -205,8 +214,28 @@ export function resolvePreviewSide(wizardWidth: number): number {
   return last.side
 }
 
+/**
+ * How far the preview may shrink at this wizard width. Below 1920 it is
+ * `WIZARD_PREVIEW_MIN_SIDE`; in the capped frame above it the floor IS the
+ * drawn size, i.e. the preview never shrinks there and a short window scrolls —
+ * what her short frame `5395:119983` draws, and a regime the owner has not
+ * asked to change.
+ */
+export function resolvePreviewFloor(wizardWidth: number): number {
+  return wizardWidth >= WIZARD_CAPPED_MIN_WIDTH ? WIZARD_PREVIEW_SIDE_CAPPED : WIZARD_PREVIEW_MIN_SIDE
+}
+
 export interface WizardPaneGeometry {
-  /** Side of the square preview. */
+  /**
+   * The square drawn for the breakpoint — decided by the WIDTH alone. It sizes
+   * the right column and nothing the window height does can move it.
+   */
+  columnSide: number
+  /**
+   * Side of the preview actually drawn inside that column: `columnSide` when
+   * the row is tall enough, less on a short window (down to the floor). This is
+   * what `--wizard-preview-side` and the phones are given.
+   */
   previewSide: number
   /** Width the right column must take so the square fits its padding. */
   rightPaneWidth: number
@@ -222,45 +251,61 @@ export interface WizardPaneGeometry {
 /**
  * Right-column geometry for a given row height.
  *
- * `previewSide` comes from `resolvePreviewSide` and is the whole answer: the
- * square IS that number, decided by the WIDTH alone. Growing it with the
+ * `side` comes from `resolvePreviewSide` and decides the COLUMN: its width is
+ * that number plus the two paddings, from the WIDTH alone. Growing it with the
  * height ate the left column; shrinking it with the height made the concept
- * tiles grow as the window got smaller. Both were defects.
+ * tiles grow as the window got smaller. Both were defects (24.09).
+ *
+ * **What the height does decide, since 12.10.2026, is how tall the preview is
+ * drawn inside that column.** The square used to keep its full side whatever
+ * the window, and a short one scrolled it. On production that cut the phones
+ * of the preview off on a landscape tablet (1024×768: a 527 square in 496 of
+ * room) and left a landscape phone (956×440) with 168 of it. The owner: «Либо
+ * это скролл, либо это уменьшение… Нужно сделать это как-то разумно». So:
+ *
+ *   preview = clamp(row − 120, floor, side)
+ *
+ * — whole on screen while the row can hold it at `floor` or more, and from
+ * there down the floor, with the panel scrolling. That last part is the
+ * sticker's own bullet: «Якщо висоти viewport недостатньо для відображення
+ * preview у мінімально допустимому розмірі, права колонка стає вертикально
+ * scrollable». The box stays a square of that side, centred in the column
+ * (`.wizard-preview-square` in `app.css`) — «Preview завжди зберігає пропорції»
+ * — and the phones take the same number through `fitPhoneBoxRem`.
+ *
+ * `minSide` is the floor, from `resolvePreviewFloor`. A floor at or above
+ * `side` means «never shrink» — the capped frame above 1920.
  *
  * A non-finite or absurd height (first paint, a detached node) returns zeroes,
  * which the caller reads as "not measured yet" and leaves the column on its CSS
  * default — never as "collapse the column to nothing".
  *
- * `previewSide` is **required**: the height alone cannot decide anything but
- * whether the panel fits or scrolls.
+ * Both `previewSide` and `minSide` are **required**: the height alone cannot
+ * size the column, and without a floor the rule has no end.
  */
 export function resolveWizardPaneGeometry(
   paneHeight: number,
-  { previewSide: side }: { previewSide: number }
+  { previewSide: side, minSide }: { previewSide: number; minSide: number }
 ): WizardPaneGeometry {
   if (!Number.isFinite(paneHeight) || paneHeight <= 0 || !Number.isFinite(side)) {
-    return { previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0 }
+    return { columnSide: 0, previewSide: 0, rightPaneWidth: 0, rightPaneHeight: 0 }
   }
 
-  // The square comes from the width and nothing else. The window height moves
-  // nothing: too short simply means the panel scrolls, exactly as
-  // the left column already does, and exactly as `5395:119983` draws it — a
-  // 740×740 `Preview` inside a 651-tall `Content`, overflowing by 145.
-  const previewSide = side
+  const floor = Math.min(Number.isFinite(minSide) ? minSide : side, side)
+  const previewSide = Math.min(side, Math.max(floor, paneHeight - WIZARD_PREVIEW_VERTICAL_CHROME))
 
   return {
+    columnSide: side,
     previewSide,
-    rightPaneWidth: Math.max(
-      WIZARD_RIGHT_PANE_MIN_WIDTH,
-      previewSide + WIZARD_RIGHT_PANE_HORIZONTAL_CHROME
-    ),
-    // What the panel claims: never more than the row, so a short row scrolls.
+    rightPaneWidth: Math.max(WIZARD_RIGHT_PANE_MIN_WIDTH, side + WIZARD_RIGHT_PANE_HORIZONTAL_CHROME),
+    // What the panel claims: never more than the row, so a row too short even
+    // for the floor scrolls.
     //
-    // The square itself does NOT come from this number — it is `previewSide`,
-    // stated on the box as a definite height (`--wizard-preview-side`, see
-    // `constants/previewLayout.ts`). A panel shorter than `side + 120` leaves
-    // the scroll area around the square short of it, and the area scrolls; the
-    // header above it is outside that area and stays put (divergences row 94).
+    // The preview itself is `previewSide`, stated on the box as a definite
+    // height (`--wizard-preview-side`, see `constants/previewLayout.ts`). A
+    // panel shorter than `previewSide + 120` leaves the scroll area around the
+    // box short of it, and the area scrolls; the header above it is outside
+    // that area and stays put (divergences row 94).
     rightPaneHeight: Math.min(previewSide + WIZARD_PREVIEW_VERTICAL_CHROME, paneHeight),
   }
 }

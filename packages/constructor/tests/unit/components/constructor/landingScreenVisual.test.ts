@@ -120,10 +120,13 @@ describe('right column — Right panel 5409:35332, one full-bleed picture', () =
 
   it('the pane itself gives up the 32 padding that frames a preview square', () => {
     expect(rightPaneClass('landing')).not.toContain('py-8')
+    expect(rightPaneClass('landing')).not.toContain('pt-8')
     expect(rightPaneClass('landing')).toContain('relative')
-    // Every other screen keeps it — this is a landing-only exemption.
-    expect(rightPaneClass('wizard')).toContain('py-8')
-    expect(rightPaneClass('review')).toContain('py-8')
+    // Every other screen keeps the 32 above — this is a landing-only exemption.
+    // (The 32 below lives inside the scrolling area since 12.10, see
+    // `previewPanelHeader.test.ts`.)
+    expect(rightPaneClass('wizard')).toContain('pt-8')
+    expect(rightPaneClass('review')).toContain('pt-8')
   })
 })
 

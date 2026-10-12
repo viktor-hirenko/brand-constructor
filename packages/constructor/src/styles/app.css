@@ -296,9 +296,24 @@ html.wizard-embed {
  *
  * The fallback is for the narrow-panel drawer, which is a full-height overlay
  * the responsive section never measures.
+ *
+ * Since 12.10.2026 the number is the breakpoint's side only while the row can
+ * hold it. On a short window the shell hands down less (never under 400 below
+ * 1920), so the preview stays whole instead of running under the edge —
+ * `resolveWizardPaneGeometry`.
+ *
+ * **It stays a SQUARE when it shrinks**, centred in the column: «Preview завжди
+ * зберігає пропорції та не обрізається» (sticker `5395:118367`). Hence the
+ * `max-width` — the class still says `w-full`, which is the same number while
+ * the square is the breakpoint's own. A box that only got shorter filled its
+ * picture and cut 6 % off it at 1024×768 (the picture is square, the box was
+ * 527 × 496); centred, the phones of step 7 and of the review stay under the
+ * middle of the panel, where the scroll hint points.
  */
 .wizard-preview-square {
   height: var(--wizard-preview-side, 100%);
+  max-width: var(--wizard-preview-side, 100%);
+  margin-inline: auto;
 }
 
 /*
