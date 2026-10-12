@@ -517,10 +517,16 @@ function navigateAfterSectionEdit(fallbackStep: number) {
   router.push(`/constructor/step/${fallbackStep}`)
 }
 
-/** PO inline section edit — persist then return to brand review (or wizard step 8). */
+/**
+ * PO inline section edit — persist then return to brand review (or wizard step 8).
+ *
+ * The save names that screen as the one to reopen the brief on (H-60): the
+ * section is edited on its own step's route, and saved with that step the
+ * brief came back on step 6 of 8 the next time it was opened.
+ */
 async function handleSaveSectionEdit() {
   const fallbackStep = store.returnToStep ?? 8
-  const saved = await store.saveBrand()
+  const saved = await store.saveBrand({ resumeStep: fallbackStep })
   if (!saved) return
   store.commitEditSection()
   navigateAfterSectionEdit(fallbackStep)

@@ -79,6 +79,21 @@ function getInitialStepData(): BrandStepData {
   }
 }
 
+/**
+ * What a save may say beyond the brief itself.
+ *
+ * `resumeStep` — the step the brief is to reopen on, when that is not the step
+ * on screen (H-60). A section edited from the last screen is edited on its own
+ * step's route, so the store's step is that step; saved as it stood, the brief
+ * reopened on step 6 of 8 after «Редагувати» Deliverables → «Зберегти». The
+ * section save names the screen the author came from instead. A plain «Далі»
+ * passes nothing and writes the step it is on, as before — the owner, 12.10:
+ * «я не думаю, что тут нужно всё переделывать, логику».
+ */
+export interface SaveBrandOptions {
+  resumeStep?: number
+}
+
 interface SaveBrandResult {
   id?: string
   status?: string
@@ -429,13 +444,14 @@ export function useBrandData() {
    * answered would carry the version that one is replacing, and be refused as
    * if another tab had saved.
    */
-  function saveBrand(): Promise<boolean> {
-    const next = lastSave.then(saveBrandNow, saveBrandNow)
+  function saveBrand(options: SaveBrandOptions = {}): Promise<boolean> {
+    const run = () => saveBrandNow(options)
+    const next = lastSave.then(run, run)
     lastSave = next
     return next
   }
 
-  async function saveBrandNow(): Promise<boolean> {
+  async function saveBrandNow(options: SaveBrandOptions = {}): Promise<boolean> {
     isSaving.value = true
     saveError.value = null
 
@@ -467,7 +483,7 @@ export function useBrandData() {
         developmentDeadline: sd.deliverables.developmentDeadline || undefined,
         newNamingBrief: sd.externalNaming.newNamingBrief,
         stepData: { ...sd, concept: conceptForApi },
-        currentStep: currentStep.value,
+        currentStep: clampWizardStep(options.resumeStep ?? currentStep.value),
       }
 
       let result: SaveBrandResult
