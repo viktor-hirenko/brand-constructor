@@ -34,9 +34,11 @@ import {
   PREVIEW_PANEL_SQUARE_CLASS,
   PREVIEW_PANEL_TITLE_CLASS,
 } from '@/constants/previewLayout'
-import { PREVIEW_PHONE_BOX } from '@/constants/visualPreviewLayout'
-import { fitPhoneBoxRem } from '@/constants/wizardResponsive'
+import { PREVIEW_PANEL_PHONE_LIMITS, PREVIEW_PHONE_BOX } from '@/constants/visualPreviewLayout'
+import { WIZARD_PANE_PADDING, fitPhoneBoxRem, fitPhonesToPanel } from '@/constants/wizardResponsive'
 import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
+import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
+import { usePreviewPanelBox } from '@/composables/usePreviewPanelBox'
 import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCanvas.vue'
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
@@ -139,14 +141,31 @@ const sidebarScrollHint = useSidebarScrollHint(
   computed(() => constructorStore.brandId ?? null),
 )
 
-const phoneBox = computed(() =>
-  fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
+/**
+ * A wizard 900 wide or narrower shows the preview as a full-screen panel; the
+ * phone there is sized from the panel, not from a column that is not there —
+ * see `fitPhonesToPanel` and `preview/BrandPreviewPanel.vue`.
+ */
+const { isNarrowEmbed } = useNarrowEmbed()
+const { panelRef, box: panelBox } = usePreviewPanelBox()
+
+const phoneBox = computed(() => {
+  const design = {
     designWidthPx: PREVIEW_PHONE_BOX.widthRem * 16,
     designHeightPx: PREVIEW_PHONE_BOX.heightRem * 16,
     insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX,
     insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX,
-  })
-)
+  }
+  if (!isNarrowEmbed.value) return fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, design)
+
+  return fitPhonesToPanel(
+    {
+      width: panelBox.value.width - WIZARD_PANE_PADDING * 2,
+      height: panelBox.value.height - WIZARD_PANE_PADDING,
+    },
+    { ...design, panelWidthPx: panelBox.value.width, ...PREVIEW_PANEL_PHONE_LIMITS }
+  )
+})
 </script>
 
 <template>
@@ -304,7 +323,7 @@ const phoneBox = computed(() =>
           <SparklesIcon :class="PREVIEW_PANEL_ICON_CLASS" />
           <h2 :class="PREVIEW_PANEL_TITLE_CLASS">Превʼю</h2>
         </header>
-        <div :class="PREVIEW_PANEL_SCROLL_CLASS">
+        <div ref="panelRef" :class="PREVIEW_PANEL_SCROLL_CLASS">
         <div :class="PREVIEW_PANEL_SQUARE_CLASS">
         <!-- The phone opens 24 below the top of the square and is centred
              across it — `5382:64270` puts its 239.18×520 at y=24, and the

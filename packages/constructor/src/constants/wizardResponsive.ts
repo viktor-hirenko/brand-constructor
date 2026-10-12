@@ -263,13 +263,17 @@ export interface WizardPaneGeometry {
  * room) and left a landscape phone (956×440) with 168 of it. The owner: «Либо
  * это скролл, либо это уменьшение… Нужно сделать это как-то разумно». So:
  *
- *   preview = clamp(row − 120, floor, side)
+ *   preview = row − 120      while that is `floor` or more: whole on screen
+ *   preview = side           when it is less: full size, and the panel scrolls
  *
- * — whole on screen while the row can hold it at `floor` or more, and from
- * there down the floor, with the panel scrolling. That last part is the
- * sticker's own bullet: «Якщо висоти viewport недостатньо для відображення
- * preview у мінімально допустимому розмірі, права колонка стає вертикально
- * scrollable». The box stays a square of that side, centred in the column
+ * The second line is the sticker's own bullet — «Якщо висоти viewport
+ * недостатньо для відображення preview у мінімально допустимому розмірі, права
+ * колонка стає вертикально scrollable» — and the first cut read it one step
+ * too far: it held the preview AT the floor while it scrolled. On a landscape
+ * phone that was the worst of both, phones 162 × 352 in a 591 column and a
+ * scrollbar all the same, and the owner said so: «Почему они такие
+ * маленькие?… Смысл их нам делать такими мелкими?» Shrinking pays only where
+ * it removes the scroll; where it cannot, the preview is not shrunk at all. The box stays a square of that side, centred in the column
  * (`.wizard-preview-square` in `app.css`) — «Preview завжди зберігає пропорції»
  * — and the phones take the same number through `fitPhoneBoxRem`.
  *
@@ -292,7 +296,8 @@ export function resolveWizardPaneGeometry(
   }
 
   const floor = Math.min(Number.isFinite(minSide) ? minSide : side, side)
-  const previewSide = Math.min(side, Math.max(floor, paneHeight - WIZARD_PREVIEW_VERTICAL_CHROME))
+  const room = paneHeight - WIZARD_PREVIEW_VERTICAL_CHROME
+  const previewSide = room >= side ? side : room >= floor ? room : side
 
   return {
     columnSide: side,
@@ -393,5 +398,101 @@ export function fitPhoneBoxRem(
   return {
     widthRem: (designWidthPx * scale) / 16,
     heightRem: (designHeightPx * scale) / 16,
+  }
+}
+
+/** `(max-width: 560px)` in `app.css`: from there down the review's two phones stand in a column. */
+export const PREVIEW_PANEL_STACK_MAX_WIDTH = 560
+
+export interface PanelPhoneFit extends PhoneBoxRem {
+  /** Gap between the phones, scaled with them. */
+  gapPx: number
+  /** The pair stands in a column — the panel is `PREVIEW_PANEL_STACK_MAX_WIDTH` or narrower. */
+  stacked: boolean
+}
+
+export interface FitPhonesToPanelOptions extends FitPhoneBoxOptions {
+  /** The panel's own width: decides row or column. */
+  panelWidthPx: number
+  /** How far the bezel hangs out of the phone box on one side, as a share of the box's width. */
+  bezelSideShare: number
+  /** Never taller than this — the canvas the slices are drawn on. */
+  maxHeightPx: number
+}
+
+/**
+ * The phones of the preview when the preview is a full-screen PANEL — a wizard
+ * 900 wide or narrower (`useNarrowEmbed`), i.e. a phone or a tablet held
+ * upright. There is no column and no square there, so `fitPhoneBoxRem` has
+ * nothing to measure against: it sized the phones for the 527 square of a
+ * laptop, 220 × 479 on an iPad with half the screen empty.
+ *
+ * Here they are sized from the panel itself — `room` is the width and the
+ * VISIBLE height it has for them (the scroll area's client box less its
+ * paddings). That is a container measure, so it follows any device:
+ *
+ *   side by side   the largest size at which every phone is whole on the
+ *                  screen — the boxes, the gaps between them and the bezel
+ *                  hanging out of the two outer edges all inside `room.width`,
+ *                  so nothing scrolls sideways (the owner: «на планшете смотри,
+ *                  чтобы не было горизонтального скролла»), and inset + phone +
+ *                  inset inside `room.height`, so nothing scrolls down either;
+ *   in a column    the same for ONE phone — the next one is a scroll away;
+ *   the ceiling    the canvas the slices are drawn on, never larger;
+ *   too short      a panel that cannot hold a phone at the floor
+ *                  (`WIZARD_PREVIEW_MIN_SIDE` less the insets) does not shrink
+ *                  it: the drawn size, scrolling down — the rule of
+ *                  `resolveWizardPaneGeometry`.
+ *
+ * The gap scales with the phones. It is a kit spacing and in the column it
+ * holds still, but the kit draws it for the drawn size, where the two bezels
+ * stand 3 px apart; a third larger with the same 32 they overlap.
+ *
+ * An unmeasured panel returns the drawn size, for the same reason as above.
+ */
+export function fitPhonesToPanel(
+  room: { width: number; height: number },
+  {
+    designWidthPx,
+    designHeightPx,
+    count = 1,
+    gapPx = 0,
+    insetTopPx = 0,
+    insetBottomPx = 0,
+    panelWidthPx,
+    bezelSideShare,
+    maxHeightPx,
+  }: FitPhonesToPanelOptions
+): PanelPhoneFit {
+  const drawn: PanelPhoneFit = {
+    widthRem: designWidthPx / 16,
+    heightRem: designHeightPx / 16,
+    gapPx,
+    stacked: false,
+  }
+  if (!(room.width > 0) || !(room.height > 0)) return drawn
+
+  const stacked = count > 1 && panelWidthPx <= PREVIEW_PANEL_STACK_MAX_WIDTH
+  const perRow = stacked ? 1 : count
+  const ratio = designWidthPx / designHeightPx
+
+  // In units of one phone's width: the boxes, the gaps (which scale with them)
+  // and the bezel outside the first and the last box.
+  const widthUnits = perRow + ((perRow - 1) * gapPx) / designWidthPx + 2 * bezelSideShare
+  const byWidth = room.width / widthUnits / ratio
+  const byHeight = room.height - insetTopPx - insetBottomPx
+  const floor = WIZARD_PREVIEW_MIN_SIDE - insetTopPx - insetBottomPx
+
+  const height =
+    byHeight >= floor
+      ? Math.min(byWidth, byHeight, maxHeightPx)
+      : Math.min(byWidth, designHeightPx)
+  const scale = height / designHeightPx
+
+  return {
+    widthRem: (designWidthPx * scale) / 16,
+    heightRem: height / 16,
+    gapPx: gapPx * scale,
+    stacked,
   }
 }

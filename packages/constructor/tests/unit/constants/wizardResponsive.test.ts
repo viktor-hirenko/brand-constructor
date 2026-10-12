@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   fitPhoneBoxRem,
+  fitPhonesToPanel,
+  PREVIEW_PANEL_STACK_MAX_WIDTH,
   WIZARD_CAPPED_MIN_WIDTH,
   WIZARD_PREVIEW_ANCHORS,
   WIZARD_PREVIEW_SIDE_CAPPED,
@@ -15,7 +17,7 @@ import {
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
 import { PREVIEW_PANEL_PHONE_INSET_PX, PREVIEW_PANEL_PHONE_ROW_CLASS } from '@/constants/previewLayout'
-import { PREVIEW_CANVAS, PREVIEW_CHASSIS } from '@/constants/visualPreviewLayout'
+import { PREVIEW_CANVAS, PREVIEW_CHASSIS, PREVIEW_PANEL_PHONE_LIMITS } from '@/constants/visualPreviewLayout'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -118,9 +120,22 @@ describe('a short window shrinks the preview, never the column', () => {
     // Shorter: the row minus the chrome — whole on screen, nothing to scroll.
     expect(resolveWizardPaneGeometry(600, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(480)
     expect(resolveWizardPaneGeometry(600, { previewSide: 575, minSide: FLOOR }).rightPaneHeight).toBe(600)
-    // Shorter still: the floor, and from here the panel scrolls.
-    expect(resolveWizardPaneGeometry(400, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(400)
-    expect(resolveWizardPaneGeometry(120, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(400)
+    // Down to the floor, and not a pixel under it.
+    expect(resolveWizardPaneGeometry(520, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(400)
+  })
+
+  it('a row too short even for the floor does NOT shrink the preview — it scrolls at full size', () => {
+    // The first cut held the preview at the floor from here down, and it
+    // scrolled all the same. The owner, on a landscape phone (956×440), the
+    // phones 162 × 352 in a 591 column: «Почему они такие маленькие?… Смысл их
+    // нам делать такими мелкими?» Shrinking is worth it only where it removes
+    // the scroll; where it cannot, the preview keeps the size drawn for the
+    // width.
+    expect(resolveWizardPaneGeometry(519, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(575)
+    expect(resolveWizardPaneGeometry(400, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(575)
+    expect(resolveWizardPaneGeometry(120, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(575)
+    // The panel is still the row, so what does not fit scrolls.
+    expect(resolveWizardPaneGeometry(400, { previewSide: 575, minSide: FLOOR }).rightPaneHeight).toBe(400)
   })
 
   it('never moves the column: its width is the square of the breakpoint plus 64, at any height', () => {
@@ -136,8 +151,9 @@ describe('a short window shrinks the preview, never the column', () => {
     const geometry = resolveWizardPaneGeometry(400, { previewSide: 575, minSide: FLOOR })
     expect(geometry.rightPaneHeight).toBe(400)
     // …and the scroll area is the panel minus the 120 of chrome: 280 of the
-    // 400 preview visible, the rest reachable by scrolling.
+    // 575 preview visible, the rest reachable by scrolling.
     expect(geometry.rightPaneHeight - WIZARD_PREVIEW_VERTICAL_CHROME).toBe(280)
+    expect(geometry.previewSide).toBe(575)
   })
 
   it('a floor above the drawn size means «do not shrink», not «grow»', () => {
@@ -165,12 +181,171 @@ describe('a short window shrinks the preview, never the column', () => {
     // Laptop 1280×640: row 567.
     expect(resolveWizardPaneGeometry(567, { previewSide: 527, minSide: FLOOR }).previewSide).toBe(447)
 
-    // Landscape phone 956×440: wizard area 956×361, row 288 — the floor, and
-    // the panel scrolls.
+    // Landscape phone 956×440: wizard area 956×361, row 288 — no room even for
+    // the floor, so the preview is not shrunk at all and the panel scrolls.
     const phone = resolveWizardPaneGeometry(288, { previewSide: 527, minSide: FLOOR })
-    expect(phone.previewSide).toBe(400)
+    expect(phone.previewSide).toBe(527)
     expect(phone.rightPaneWidth).toBe(591)
     expect(phone.rightPaneHeight).toBe(288)
+    const big = fitPhoneBoxRem(phone.previewSide, {
+      designWidthPx: 239.1761932373047,
+      designHeightPx: 520,
+      count: 2,
+      gapPx: 32,
+      insetTopPx: 24,
+      insetBottomPx: 24,
+    })
+    expect(big.heightRem * 16).toBeCloseTo(479, 4)
+  })
+})
+
+/**
+ * ── The preview as a full-screen PANEL (a wizard 900 wide or narrower) ───────
+ *
+ * On a portrait phone or tablet the right column is not a column: the preview
+ * opens over the whole wizard. The phones in it were sized for the 527 square
+ * of a laptop column that is not there — 220 × 479 on an iPad mini (768×1024)
+ * with half the screen empty, and the same on an iPhone 16 Pro Max (440×956).
+ *
+ * The owner, 12.10: «Если есть место сделать их чуть-чуть больше для
+ * отображения, можно… может, тут стоит рассмотреть какие-то контейнерные
+ * единицы… вертикальный телефон, он может быть разной ширины». And on the
+ * sketch: «Да, правильно. Только на планшете смотри, чтобы не было
+ * горизонтального скролла… если планшет позволяет, чтобы поместилось на экран,
+ * пусть помещается».
+ *
+ * So in the panel the phones are sized from the PANEL — its own width and the
+ * height it shows — which is the container, whatever device it is on:
+ *   a pair that fits side by side takes the largest size at which BOTH are
+ *   whole on the screen, bezels included, with nothing to scroll either way;
+ *   under 560 the pair stands in a column (`app.css`) and ONE phone is whole
+ *   on the screen;
+ *   never wider than the canvas the slices are drawn on (360 × 782.69);
+ *   a panel too short to hold a phone at the floor does not shrink it — the
+ *   drawn 520, scrolling down, as in the column.
+ * The gap between the phones scales with them: at the drawn size the bezels
+ * stand 3 px apart, at 1.3× with a fixed 32 they would overlap.
+ */
+describe('in the full-screen panel the phones are sized from the panel itself', () => {
+  const PHONE = { designWidthPx: 239.1761932373047, designHeightPx: 520, insetTopPx: 24, insetBottomPx: 24, ...PREVIEW_PANEL_PHONE_LIMITS }
+  const PAIR = { ...PHONE, count: 2, gapPx: 32 }
+  const RATIO = PHONE.designWidthPx / PHONE.designHeightPx
+  /** What the hosts hand over: the scroll area's client box minus its 32 paddings. */
+  const room = (clientWidth: number, clientHeight: number) => ({ width: clientWidth - 64, height: clientHeight - 32 })
+  /** Width a row of phones really takes: the boxes, the gaps, and the bezel hanging out of the two outer edges. */
+  const rowWidth = (fit: { widthRem: number; gapPx: number }, perRow: number) =>
+    fit.widthRem * 16 * (perRow + 2 * PREVIEW_PANEL_PHONE_LIMITS.bezelSideShare) + fit.gapPx * (perRow - 1)
+
+  it('takes its limits from the phone canvas, not from thin air', () => {
+    expect(PREVIEW_PANEL_PHONE_LIMITS.maxHeightPx).toBe(PREVIEW_CANVAS.heightPx)
+    expect(PREVIEW_PANEL_PHONE_LIMITS.bezelSideShare).toBeCloseTo(-PREVIEW_CHASSIS.leftPx / PREVIEW_CANVAS.widthPx, 10)
+  })
+
+  it('iPad mini, portrait (panel 768 × 784): both phones side by side, whole, nothing to scroll', () => {
+    const fit = fitPhonesToPanel(room(768, 784), { ...PAIR, panelWidthPx: 768 })
+    const height = fit.heightRem * 16
+
+    expect(fit.stacked).toBe(false)
+    // Far larger than the 479 of the laptop column…
+    expect(height).toBeGreaterThan(650)
+    // …and inside the panel on both axes: no horizontal scroll, no vertical one.
+    expect(rowWidth(fit, 2)).toBeLessThanOrEqual(768 - 64 + 0.01)
+    expect(24 + height + 24).toBeLessThanOrEqual(784 - 32)
+    expect(fit.widthRem / fit.heightRem).toBeCloseTo(RATIO, 10)
+  })
+
+  it('no tablet width between 561 and 900 gives the row more than the panel is wide', () => {
+    for (const width of [561, 600, 700, 768, 820, 834, 900]) {
+      for (const height of [500, 700, 784, 1000, 1200]) {
+        const fit = fitPhonesToPanel(room(width, height), { ...PAIR, panelWidthPx: width })
+        expect(fit.stacked).toBe(false)
+        expect(rowWidth(fit, 2)).toBeLessThanOrEqual(width - 64 + 0.01)
+      }
+    }
+  })
+
+  it('iPhone 16 Pro Max, portrait (panel 440 × 737): a column, one phone whole on the screen', () => {
+    const fit = fitPhonesToPanel(room(440, 737), { ...PAIR, panelWidthPx: 440 })
+    const height = fit.heightRem * 16
+
+    expect(fit.stacked).toBe(true)
+    expect(height).toBeCloseTo(737 - 32 - 48, 4)
+    expect(rowWidth(fit, 1)).toBeLessThanOrEqual(440 - 64 + 0.01)
+  })
+
+  it('a narrower phone gets a narrower one — the width binds, whatever the model', () => {
+    for (const width of [320, 360, 375, 390, 414, 440, 560]) {
+      const fit = fitPhonesToPanel(room(width, 900), { ...PAIR, panelWidthPx: width })
+      expect(fit.stacked).toBe(true)
+      expect(rowWidth(fit, 1)).toBeLessThanOrEqual(width - 64 + 0.01)
+      expect(fit.widthRem / fit.heightRem).toBeCloseTo(RATIO, 10)
+    }
+    const small = fitPhonesToPanel(room(320, 900), { ...PAIR, panelWidthPx: 320 })
+    const large = fitPhonesToPanel(room(440, 900), { ...PAIR, panelWidthPx: 440 })
+    expect(small.widthRem).toBeLessThan(large.widthRem)
+  })
+
+  it('the lone phone of step 7 fills the panel the same way', () => {
+    const tablet = fitPhonesToPanel(room(768, 784), { ...PHONE, panelWidthPx: 768 })
+    expect(tablet.stacked).toBe(false)
+    expect(tablet.heightRem * 16).toBeCloseTo(784 - 32 - 48, 4)
+
+    const phone = fitPhonesToPanel(room(440, 737), { ...PHONE, panelWidthPx: 440 })
+    expect(phone.heightRem * 16).toBeCloseTo(737 - 32 - 48, 4)
+  })
+
+  it('never draws the phone larger than the canvas its slices are drawn on', () => {
+    const fit = fitPhonesToPanel(room(900, 2000), { ...PHONE, panelWidthPx: 900 })
+    expect(fit.heightRem * 16).toBeCloseTo(PREVIEW_CANVAS.heightPx, 4)
+  })
+
+  it('a panel too short for the floor keeps the drawn 520 and scrolls down — never sideways', () => {
+    // A phone on its side, 844 × 390: the wizard is 844 wide, the panel shows
+    // some 150 of height.
+    const fit = fitPhonesToPanel(room(844, 150), { ...PAIR, panelWidthPx: 844 })
+    expect(fit.stacked).toBe(false)
+    expect(fit.heightRem * 16).toBe(520)
+    expect(rowWidth(fit, 2)).toBeLessThanOrEqual(844 - 64 + 0.01)
+
+    // And where even the drawn pair is too wide for it, the width still wins.
+    const narrow = fitPhonesToPanel(room(561, 150), { ...PAIR, panelWidthPx: 561 })
+    expect(rowWidth(narrow, 2)).toBeLessThanOrEqual(561 - 64 + 0.01)
+    expect(narrow.heightRem * 16).toBeLessThan(520)
+  })
+
+  it('scales the gap with the phones, so the bezels never touch', () => {
+    const fit = fitPhonesToPanel(room(768, 784), { ...PAIR, panelWidthPx: 768 })
+    const scale = (fit.heightRem * 16) / 520
+    expect(fit.gapPx).toBeCloseTo(32 * scale, 6)
+    // Bezel of the left phone + bezel of the right one, against the gap between the boxes.
+    expect(2 * fit.widthRem * 16 * PREVIEW_PANEL_PHONE_LIMITS.bezelSideShare).toBeLessThan(fit.gapPx)
+  })
+
+  it('before the panel is measured it is the drawn size, not a collapsed phone', () => {
+    for (const box of [{ width: 0, height: 0 }, { width: -64, height: -32 }, { width: Number.NaN, height: 100 }]) {
+      const fit = fitPhonesToPanel(box, { ...PAIR, panelWidthPx: 0 })
+      expect(fit.heightRem * 16).toBe(520)
+      expect(fit.gapPx).toBe(32)
+    }
+  })
+
+  it('the column starts where the stylesheet says it does', () => {
+    const css = readFileSync(resolve(__dirname, '../../../src/styles/app.css'), 'utf8')
+    expect(css).toMatch(
+      new RegExp(`@media \\(max-width: ${PREVIEW_PANEL_STACK_MAX_WIDTH}px\\)\\s*\\{\\s*html\\.wizard-embed \\.brand-preview-panel__dual-phones`)
+    )
+  })
+
+  it('both screens that stand a phone in the panel size it from the panel', () => {
+    const src = (rel: string) => readFileSync(resolve(__dirname, '../../../src', rel), 'utf8')
+    for (const file of [
+      src('components/constructor/layout/StepPreviewRightPanel.vue'),
+      src('components/constructor/preview/BrandPreviewPanel.vue'),
+    ]) {
+      expect(file).toContain('usePreviewPanelBox()')
+      expect(file).toContain('fitPhonesToPanel(')
+      expect(file).toMatch(/isNarrowEmbed\.value/)
+    }
   })
 })
 
