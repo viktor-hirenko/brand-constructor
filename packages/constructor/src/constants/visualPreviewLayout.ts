@@ -97,6 +97,17 @@ export const PREVIEW_REVIEW_PHONE_BOX = {
   heightRem: 520 / 16,
 } as const
 
+/**
+ * What bounds a phone in the full-screen preview panel (`fitPhonesToPanel`):
+ * how far the bezel hangs out of the phone box on one side — the chassis is
+ * 21.49 wider than the 360 canvas on each — and the canvas's own height, which
+ * is as large as the slices are drawn and so as large as the phone may get.
+ */
+export const PREVIEW_PANEL_PHONE_LIMITS = {
+  bezelSideShare: -PREVIEW_CHASSIS.leftPx / PREVIEW_CANVAS.widthPx,
+  maxHeightPx: PREVIEW_CANVAS.heightPx,
+} as const
+
 /** Kit `spacing/32` between the two review phones — `5387:91764`. */
 export const PREVIEW_REVIEW_PHONE_GAP_CLASS = 'gap-8'
 export const PREVIEW_REVIEW_PHONE_GAP_PX = 32

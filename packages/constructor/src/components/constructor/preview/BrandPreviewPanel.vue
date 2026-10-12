@@ -24,12 +24,15 @@ import {
   PREVIEW_PANEL_TITLE_CLASS,
 } from '@/constants/previewLayout'
 import {
+  PREVIEW_PANEL_PHONE_LIMITS,
   PREVIEW_REVIEW_PHONE_BOX,
   PREVIEW_REVIEW_PHONE_GAP_CLASS,
   PREVIEW_REVIEW_PHONE_GAP_PX,
 } from '@/constants/visualPreviewLayout'
-import { fitPhoneBoxRem } from '@/constants/wizardResponsive'
+import { WIZARD_PANE_PADDING, fitPhoneBoxRem, fitPhonesToPanel } from '@/constants/wizardResponsive'
 import { WIZARD_PANE_GEOMETRY_KEY } from '@/composables/wizardPaneGeometryContext'
+import { useNarrowEmbed } from '@/composables/useNarrowEmbed'
+import { usePreviewPanelBox } from '@/composables/usePreviewPanelBox'
 import PhonePreviewCanvas from '@/components/constructor/preview/PhonePreviewCanvas.vue'
 import PhonePreviewSidebar from '@/components/constructor/preview/PhonePreviewSidebar.vue'
 import PhonePreviewSlice from '@/components/constructor/preview/PhonePreviewSlice.vue'
@@ -46,25 +49,60 @@ const { loadVariants, buildComposition, getOverlaySlice } = useBrandPreviewLayer
  */
 const paneGeometry = inject(WIZARD_PANE_GEOMETRY_KEY, undefined)
 
-const phoneBox = computed(() =>
-  fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
-    designWidthPx: PREVIEW_REVIEW_PHONE_BOX.widthRem * 16,
-    designHeightPx: PREVIEW_REVIEW_PHONE_BOX.heightRem * 16,
-    count: 2,
-    gapPx: PREVIEW_REVIEW_PHONE_GAP_PX,
-    insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX,
-    insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX,
-  })
+/**
+ * A wizard 900 wide or narrower shows the preview as a full-screen panel, with
+ * no column and no square to fit into. There the phones are sized from the
+ * panel itself — its width and the height it shows — so that on a tablet both
+ * are whole on the screen with nothing to scroll, and on a phone one is. See
+ * `fitPhonesToPanel`; the owner's words are in its test.
+ */
+const { isNarrowEmbed } = useNarrowEmbed()
+const { panelRef, box: panelBox } = usePreviewPanelBox()
+
+const DESIGN = {
+  designWidthPx: PREVIEW_REVIEW_PHONE_BOX.widthRem * 16,
+  designHeightPx: PREVIEW_REVIEW_PHONE_BOX.heightRem * 16,
+  insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX,
+  insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX,
+}
+
+function fitToPanel(count: number) {
+  return fitPhonesToPanel(
+    {
+      // The scroll area's client box less its own `px-8` and `pb-8`.
+      width: panelBox.value.width - WIZARD_PANE_PADDING * 2,
+      height: panelBox.value.height - WIZARD_PANE_PADDING,
+    },
+    {
+      ...DESIGN,
+      count,
+      gapPx: count > 1 ? PREVIEW_REVIEW_PHONE_GAP_PX : 0,
+      panelWidthPx: panelBox.value.width,
+      ...PREVIEW_PANEL_PHONE_LIMITS,
+    }
+  )
+}
+
+const pairInPanel = computed(() => (isNarrowEmbed.value ? fitToPanel(2) : null))
+
+const phoneBox = computed(
+  () =>
+    pairInPanel.value ??
+    fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
+      ...DESIGN,
+      count: 2,
+      gapPx: PREVIEW_REVIEW_PHONE_GAP_PX,
+    })
+)
+
+/** In the panel the gap grows with the phones; in the column it is the kit's 32 from the class. */
+const phoneRowStyle = computed(() =>
+  pairInPanel.value ? { gap: `${pairInPanel.value.gapPx}px` } : undefined
 )
 
 /** The lone phone of «Довірити вибір дизайнерам» — fitted the same way; it used to take the default box. */
 const lonePhoneBox = computed(() =>
-  fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
-    designWidthPx: PREVIEW_REVIEW_PHONE_BOX.widthRem * 16,
-    designHeightPx: PREVIEW_REVIEW_PHONE_BOX.heightRem * 16,
-    insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX,
-    insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX,
-  })
+  isNarrowEmbed.value ? fitToPanel(1) : fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, DESIGN)
 )
 
 const isDelegated = computed(() => store.stepData.visualComponents.delegateToDesigners)
@@ -98,7 +136,7 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
       <h2 :class="PREVIEW_PANEL_TITLE_CLASS">Превʼю</h2>
     </header>
 
-    <div :class="PREVIEW_PANEL_SCROLL_CLASS">
+    <div ref="panelRef" :class="PREVIEW_PANEL_SCROLL_CLASS">
       <div :class="PREVIEW_PANEL_SQUARE_CLASS">
     <!-- Delegated: single phone carrying the empty state, as on step 7. -->
     <div v-if="isDelegated" :class="PREVIEW_PANEL_PHONE_ROW_CLASS">
@@ -129,6 +167,7 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
         PREVIEW_PANEL_PHONE_ROW_CLASS,
         PREVIEW_REVIEW_PHONE_GAP_CLASS,
       ]"
+      :style="phoneRowStyle"
     >
       <PhonePreviewCanvas
         v-for="phone in phones"

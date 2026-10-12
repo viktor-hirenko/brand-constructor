@@ -230,11 +230,11 @@ describe('a taller window must not move the columns', () => {
     // as the window got smaller. A short window must do nothing to either
     // column's width.
     //
-    // 12.10: what it does now is shrink the PREVIEW the column holds — down to
-    // 400, then the panel scrolls. On production the phones of the preview ran
-    // under the edge on a landscape tablet and a landscape phone.
-    const EXPECTED_SIDE: Record<number, number> = { 646: 453, 560: 400, 505: 400, 443: 400 }
-    for (const height of [646, 560, 505, 443]) {
+    // 12.10: what it does now is shrink the PREVIEW the column holds while that
+    // keeps it whole on screen (down to 400); a window too short even for 400
+    // leaves it at the drawn size and the panel scrolls.
+    const EXPECTED_SIDE: Record<number, number> = { 646: 453, 600: 407, 560: 575, 505: 575, 443: 575 }
+    for (const height of [646, 600, 560, 505, 443]) {
       const short = layoutForViewport(1440, height)
       expect(short.rightPaneWidth).toBe(639)
       expect(short.leftPaneWidth).toBe(591)
@@ -246,7 +246,7 @@ describe('a taller window must not move the columns', () => {
   })
 
   it('keeps 1280 at 479 · 591 however short the window gets', () => {
-    const EXPECTED_SIDE: Record<number, number> = { 720: 527, 640: 447, 600: 407, 500: 400 }
+    const EXPECTED_SIDE: Record<number, number> = { 720: 527, 640: 447, 600: 407, 500: 527 }
     for (const height of [720, 640, 600, 500]) {
       const layout = layoutForViewport(1280, height)
       expect(layout.leftPaneWidth).toBe(479)
