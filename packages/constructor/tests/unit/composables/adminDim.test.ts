@@ -123,7 +123,7 @@ describe('every wizard backdrop reports the black it paints', () => {
 describe('the bridge carries it', () => {
   const bridge = read('composables/useEmbedBridge.ts')
   it('declares the dim message and sends it only through postDim', () => {
-    expect(bridge).toMatch(/type: 'ready' \| 'done' \| 'auth-required' \| 'navigated' \| 'close' \| 'dim';/)
+    expect(bridge).toMatch(/type: 'ready' \| 'done' \| 'auth-required' \| 'navigated' \| 'close' \| 'dim' \| 'immersive';/)
     expect(bridge).toContain("post('dim', payload);")
   })
   it('accepts the Admin’s click only from the same origin and the Admin itself', () => {

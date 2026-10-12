@@ -11,7 +11,7 @@
 // requests, so the Wizard resolves the current user with no extra login. The
 // only cross-frame contract is `postMessage` (see useEmbedBridge in the
 // constructor package): `ready`, `done`, `auth-required`.
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { buildWizardIframeSrc } from '@/utils/wizardLink'
 import { useAuthStore } from '@/stores/auth'
@@ -24,6 +24,13 @@ import {
   type FrameRect,
   type WizardDimState,
 } from '@/utils/wizardDim'
+import {
+  EMBED_INSETS_NONE,
+  embedInsetDeclarations,
+  embedInsets,
+  parseWizardImmersive,
+  type EmbedInsets,
+} from '@/utils/wizardImmersive'
 
 interface WizardNavigatedPayload {
   brandId?: string | null
@@ -33,7 +40,7 @@ interface WizardNavigatedPayload {
 
 interface WizardBridgeMessage {
   source?: string
-  type?: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close' | 'dim'
+  type?: 'ready' | 'done' | 'auth-required' | 'navigated' | 'close' | 'dim' | 'immersive'
   payload?: unknown
 }
 
@@ -115,6 +122,51 @@ function forwardDimClick() {
   )
 }
 
+// ── The wizard's preview over the whole screen — the owner's «лесенка», 12.10 ──
+// On a phone and a tablet three bars stood over the wizard's preview: this
+// Admin's, the wizard's, the panel's own. While that panel is open the frame is
+// laid over the whole screen, this Admin's bar included; the wizard asks for it
+// and is answered (`immersive`), and it gives the screen back the same way.
+const rootRef = ref<HTMLElement | null>(null)
+const immersive = ref(false)
+
+function rectOf(el: Element | null): FrameRect {
+  const r = el?.getBoundingClientRect()
+  return r ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : { left: 0, top: 0, right: 0, bottom: 0 }
+}
+
+// The wizard is told how far its frame has grown through custom properties on
+// its root, and pads itself by them in its own stylesheet. Written straight
+// into the frame's document — it is same-origin — because a message would land
+// a task later: one painted frame with the wizard's page shifted by the height
+// of this Admin's bar.
+function writeEmbedInsets(insets: EmbedInsets) {
+  const root = frameRef.value?.contentDocument?.documentElement
+  if (!root) return
+  for (const [name, value] of embedInsetDeclarations(insets)) root.style.setProperty(name, value)
+}
+
+async function setImmersive(on: boolean) {
+  immersive.value = on
+  // The frame takes its new box here; nothing has been painted yet.
+  await nextTick()
+  writeEmbedInsets(
+    immersive.value ? embedInsets(rectOf(rootRef.value), rectOf(frameRef.value)) : EMBED_INSETS_NONE,
+  )
+  measureFrame()
+  frameRef.value?.contentWindow?.postMessage(
+    { source: 'brand-admin', type: 'immersive', payload: { on: immersive.value } },
+    window.location.origin,
+  )
+}
+
+// The bar this frame lies over changes height with the window; the strip the
+// wizard keeps clear has to follow while the frame has the screen.
+function syncGeometry() {
+  measureFrame()
+  if (immersive.value) writeEmbedInsets(embedInsets(rectOf(rootRef.value), rectOf(frameRef.value)))
+}
+
 function syncAdminUrl(payload: WizardNavigatedPayload) {
   const brandId = payload.brandId
   if (!brandId) return
@@ -170,6 +222,9 @@ function handleMessage(event: MessageEvent<WizardBridgeMessage>) {
       measureFrame()
       dim.value = parseWizardDim(data.payload)
       break
+    case 'immersive':
+      void setImmersive(parseWizardImmersive(data.payload))
+      break
     case 'close':
       // The kit's Wizard header (`5382:30951`) draws a close cross at the right
       // edge of every wizard screen. The mockup has no Admin header, so there
@@ -185,15 +240,17 @@ function handleIframeLoad() {
   // Fallback in case the bridge `ready` message is missed (e.g. legacy build
   // without the bridge): the raw load event still clears the loader.
   isLoading.value = false
-  // A frame that (re)loaded has no modal open, whatever it reported before.
+  // A frame that (re)loaded has no modal open, whatever it reported before —
+  // and no panel over the whole screen either.
   dim.value = WIZARD_DIM_OFF
+  immersive.value = false
 }
 
 onMounted(() => {
   window.addEventListener('message', handleMessage)
-  window.addEventListener('resize', measureFrame)
+  window.addEventListener('resize', syncGeometry)
   if (frameRef.value && typeof ResizeObserver !== 'undefined') {
-    frameObserver = new ResizeObserver(measureFrame)
+    frameObserver = new ResizeObserver(syncGeometry)
     frameObserver.observe(frameRef.value)
   }
   measureFrame()
@@ -201,13 +258,13 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('message', handleMessage)
-  window.removeEventListener('resize', measureFrame)
+  window.removeEventListener('resize', syncGeometry)
   frameObserver?.disconnect()
 })
 </script>
 
 <template>
-  <div class="wizard-workspace">
+  <div ref="rootRef" class="wizard-workspace">
     <div v-if="isLoading || isSessionEnding" class="wizard-workspace__loading">
       <span class="wizard-workspace__spinner" />
       <span>{{ isSessionEnding ? 'Сесія завершилась — переходимо до входу…' : 'Завантаження брифу…' }}</span>
@@ -218,6 +275,7 @@ onBeforeUnmount(() => {
       :key="iframeKey"
       :src="iframeSrc"
       class="wizard-workspace__frame"
+      :class="{ 'wizard-workspace__frame--immersive': immersive }"
       title="Бриф бренду"
       @load="handleIframeLoad"
     />
@@ -248,6 +306,17 @@ onBeforeUnmount(() => {
     width: 100%;
     height: 100%;
     border: 0;
+  }
+
+  // The wizard's preview on a phone and a tablet takes the whole screen: the
+  // frame lies over this Admin's bar and its collapsed menu, and stays under
+  // this Admin's own dialogs. Width and height are the 100% above — of the
+  // screen now, not of the content area.
+  &__frame--immersive {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: $z-sidebar + 1;
   }
 
   &__loading {
