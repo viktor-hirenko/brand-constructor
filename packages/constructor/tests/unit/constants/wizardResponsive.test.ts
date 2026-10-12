@@ -8,8 +8,10 @@ import {
   WIZARD_FRAME_MAX_HEIGHT,
   WIZARD_FRAME_MAX_WIDTH,
   WIZARD_PANE_PADDING,
+  WIZARD_PREVIEW_MIN_SIDE,
   WIZARD_PREVIEW_VERTICAL_CHROME,
   WIZARD_RIGHT_PANE_MIN_WIDTH,
+  resolvePreviewFloor,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
 import { PREVIEW_PANEL_PHONE_INSET_PX, PREVIEW_PANEL_PHONE_ROW_CLASS } from '@/constants/previewLayout'
@@ -30,6 +32,9 @@ import { resolve } from 'node:path'
  * goes red on its own.
  */
 
+/** The floor of the preview below 1920 — `WIZARD_PREVIEW_MIN_SIDE`, spelled once for the calls below. */
+const FLOOR = 400
+
 /** The five frames of the section, each as (pane height → left · right). */
 const FRAMES = [
   { name: '1280×720  `5395:119360`', paneHeight: 647, wizard: 1070, right: 591, preview: 527, previewSide: 527 },
@@ -42,8 +47,8 @@ const FRAMES = [
 ] as const
 
 describe('the right column is the driver, and it comes from the height', () => {
-  it.each(FRAMES)('$name', ({ paneHeight, right, preview, previewSide }) => {
-    const geometry = resolveWizardPaneGeometry(paneHeight, { previewSide })
+  it.each(FRAMES)('$name', ({ paneHeight, right, preview, previewSide, wizard }) => {
+    const geometry = resolveWizardPaneGeometry(paneHeight, { previewSide, minSide: resolvePreviewFloor(wizard) })
     expect(geometry.previewSide).toBe(preview)
     expect(geometry.rightPaneWidth).toBe(right)
   })
@@ -59,62 +64,129 @@ describe('the right column is the driver, and it comes from the height', () => {
     expect(WIZARD_PREVIEW_VERTICAL_CHROME).toBe(120)
     expect(WIZARD_PANE_PADDING).toBe(32)
     // right = square + the two horizontal paddings.
-    expect(resolveWizardPaneGeometry(695, { previewSide: 575 }).rightPaneWidth).toBe(575 + 64)
+    expect(resolveWizardPaneGeometry(695, { previewSide: 575, minSide: FLOOR }).rightPaneWidth).toBe(575 + 64)
     // And a row exactly tall enough for the square gets a panel exactly that
-    // tall: square + the 120. One pixel less and the panel starts scrolling.
-    expect(resolveWizardPaneGeometry(695, { previewSide: 575 }).rightPaneHeight).toBe(695)
-    expect(resolveWizardPaneGeometry(694, { previewSide: 575 }).rightPaneHeight).toBe(694)
+    // tall: square + the 120. One pixel less and the preview gives that pixel
+    // up — the panel is still the row, and nothing scrolls.
+    expect(resolveWizardPaneGeometry(695, { previewSide: 575, minSide: FLOOR }).rightPaneHeight).toBe(695)
+    expect(resolveWizardPaneGeometry(694, { previewSide: 575, minSide: FLOOR }).rightPaneHeight).toBe(694)
+    expect(resolveWizardPaneGeometry(694, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(574)
   })
 })
 
-describe('the window height moves nothing — it only decides scroll', () => {
-  it('keeps the square at the size drawn for the breakpoint, however short', () => {
-    // Her short 2560 frame `5395:119983` draws 804/740, and 740 is
-    // `min-height: 860` of the container minus the 120 of chrome. That
-    // `min-height` was already rejected (divergences row 86) because her own
-    // frame draws the container 715, below her stated minimum. Keeping 740
-    // while rejecting 860 is the same number twice, so neither is honoured.
+/**
+ * ── 12.10.2026: the height moves the PREVIEW, and still never the columns ────
+ *
+ * Until now a short window did nothing to the square: it kept the size drawn
+ * for the breakpoint and the panel scrolled. The owner opened production on a
+ * landscape tablet (1024×768) and a landscape phone (956×440) and saw the
+ * phones of the preview cut off at the bottom: «Либо это скролл, либо это
+ * уменьшение… Нужно сделать это как-то разумно».
+ *
+ * The rule of 24.09 stays where it was earned: the COLUMNS come from the width
+ * alone — shrinking the right column with the height made the concept tiles
+ * grow as the window got smaller. What changes is only what is drawn inside the
+ * column: the preview takes the height the row can give, down to a floor, and
+ * below the floor the panel scrolls — the sticker's own bullet, «Якщо висоти
+ * viewport недостатньо для відображення preview у мінімально допустимому
+ * розмірі, права колонка стає вертикально scrollable».
+ *
+ * Above 1920 nothing changes: there the floor IS the drawn 840, which is what
+ * her short frame `5395:119983` shows — a preview the window is too short for,
+ * and a scrollbar.
+ */
+describe('a short window shrinks the preview, never the column', () => {
+  it('names the floor once: 400 below 1920, the drawn 840 above it', () => {
+    expect(WIZARD_PREVIEW_MIN_SIDE).toBe(400)
+    expect(resolvePreviewFloor(1070)).toBe(400)
+    expect(resolvePreviewFloor(1670)).toBe(400)
+    expect(resolvePreviewFloor(1671)).toBe(840)
+    expect(resolvePreviewFloor(2310)).toBe(840)
+  })
+
+  it('above 1920 keeps the preview at the drawn size, however short', () => {
     for (const height of [960, 860, 715, 500]) {
-      expect(resolveWizardPaneGeometry(height, { previewSide: 840 }).previewSide).toBe(840)
-      expect(resolveWizardPaneGeometry(height, { previewSide: 840 }).rightPaneWidth).toBe(904)
+      const geometry = resolveWizardPaneGeometry(height, { previewSide: 840, minSide: resolvePreviewFloor(1700) })
+      expect(geometry.previewSide).toBe(840)
+      expect(geometry.rightPaneWidth).toBe(904)
     }
   })
 
-  it('does not shrink the square below 1920 either', () => {
-    expect(resolveWizardPaneGeometry(715, { previewSide: 575 }).previewSide).toBe(575)
-    expect(resolveWizardPaneGeometry(400, { previewSide: 575 }).previewSide).toBe(575)
+  it('below 1920 gives the preview what the row has left after the 120 of chrome', () => {
+    // Tall enough: the drawn size, as before.
+    expect(resolveWizardPaneGeometry(715, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(575)
+    // Shorter: the row minus the chrome — whole on screen, nothing to scroll.
+    expect(resolveWizardPaneGeometry(600, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(480)
+    expect(resolveWizardPaneGeometry(600, { previewSide: 575, minSide: FLOOR }).rightPaneHeight).toBe(600)
+    // Shorter still: the floor, and from here the panel scrolls.
+    expect(resolveWizardPaneGeometry(400, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(400)
+    expect(resolveWizardPaneGeometry(120, { previewSide: 575, minSide: FLOOR }).previewSide).toBe(400)
   })
 
-  it('lets the PANEL shrink to the row, so the overflow scrolls', () => {
+  it('never moves the column: its width is the square of the breakpoint plus 64, at any height', () => {
+    for (const height of [1200, 695, 600, 400, 200]) {
+      const geometry = resolveWizardPaneGeometry(height, { previewSide: 575, minSide: FLOOR })
+      expect(geometry.rightPaneWidth).toBe(639)
+      expect(geometry.columnSide).toBe(575)
+    }
+  })
+
+  it('lets the PANEL shrink to the row, so what is left over scrolls', () => {
     // The panel never claims more height than the row it sits in…
-    expect(resolveWizardPaneGeometry(400, { previewSide: 575 }).rightPaneHeight).toBe(400)
-    // …while the square keeps its full side and overflows the scroll area
-    // inside the panel. That difference is the scrollbar the kit draws in BOTH
-    // columns of the short frame, and the reason the square stops squashing
-    // into a rectangle. The square is stated on the box itself now
-    // (`--wizard-preview-side`, `constants/previewLayout.ts`), which is what
-    // lets the header above the scroll area stay put — divergences row 94.
-    expect(resolveWizardPaneGeometry(400, { previewSide: 575 }).previewSide).toBe(575)
-    // The scroll area is the panel minus the 120 of chrome: 280 of a 575
-    // square visible, 295 reachable by scrolling.
-    const geometry = resolveWizardPaneGeometry(400, { previewSide: 575 })
+    const geometry = resolveWizardPaneGeometry(400, { previewSide: 575, minSide: FLOOR })
+    expect(geometry.rightPaneHeight).toBe(400)
+    // …and the scroll area is the panel minus the 120 of chrome: 280 of the
+    // 400 preview visible, the rest reachable by scrolling.
     expect(geometry.rightPaneHeight - WIZARD_PREVIEW_VERTICAL_CHROME).toBe(280)
+  })
+
+  it('a floor above the drawn size means «do not shrink», not «grow»', () => {
+    expect(resolveWizardPaneGeometry(300, { previewSide: 527, minSide: 9999 }).previewSide).toBe(527)
+  })
+
+  it('the three windows the owner showed', () => {
+    // Landscape tablet 1024×768: below 1280 the Admin keeps its 79 header, the
+    // wizard area is 1024×689 and the row under the wizard header 616.
+    const tablet = resolveWizardPaneGeometry(616, { previewSide: 527, minSide: FLOOR })
+    expect(tablet.previewSide).toBe(496)
+    expect(tablet.rightPaneWidth).toBe(591)
+    expect(tablet.rightPaneHeight).toBe(616)
+    // The pair of phones inside it, with the kit's 24 above and below.
+    const phones = fitPhoneBoxRem(tablet.previewSide, {
+      designWidthPx: 239.1761932373047,
+      designHeightPx: 520,
+      count: 2,
+      gapPx: 32,
+      insetTopPx: 24,
+      insetBottomPx: 24,
+    })
+    expect(phones.heightRem * 16).toBeCloseTo(448, 4)
+
+    // Laptop 1280×640: row 567.
+    expect(resolveWizardPaneGeometry(567, { previewSide: 527, minSide: FLOOR }).previewSide).toBe(447)
+
+    // Landscape phone 956×440: wizard area 956×361, row 288 — the floor, and
+    // the panel scrolls.
+    const phone = resolveWizardPaneGeometry(288, { previewSide: 527, minSide: FLOOR })
+    expect(phone.previewSide).toBe(400)
+    expect(phone.rightPaneWidth).toBe(591)
+    expect(phone.rightPaneHeight).toBe(288)
   })
 })
 
 describe('bad input never collapses a column', () => {
   it.each([0, -50, Number.NaN])('returns 0 for %s so the caller keeps the CSS default', height => {
-    expect(resolveWizardPaneGeometry(height, { previewSide: 575 }).rightPaneWidth).toBe(0)
+    expect(resolveWizardPaneGeometry(height, { previewSide: 575, minSide: FLOOR }).rightPaneWidth).toBe(0)
   })
 
   it('returns 0 when the breakpoint size is missing, rather than guessing one', () => {
     expect(
-      resolveWizardPaneGeometry(695, { previewSide: Number.POSITIVE_INFINITY }).rightPaneWidth
+      resolveWizardPaneGeometry(695, { previewSide: Number.POSITIVE_INFINITY, minSide: FLOOR }).rightPaneWidth
     ).toBe(0)
   })
 
   it('never returns a column narrower than the floor once it returns one', () => {
-    expect(resolveWizardPaneGeometry(130, { previewSide: 1 }).rightPaneWidth).toBe(
+    expect(resolveWizardPaneGeometry(130, { previewSide: 1, minSide: FLOOR }).rightPaneWidth).toBe(
       WIZARD_RIGHT_PANE_MIN_WIDTH
     )
   })

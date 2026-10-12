@@ -199,6 +199,14 @@ interface RightPaneOptions {
  *
  * The divider between the columns is on the LEFT pane, because it is drawn
  * full height and this one is not.
+ *
+ * **Only the TOP 32 is on the pane since 12.10.2026.** The bottom 32 moved into
+ * the scroll area (`PREVIEW_PANEL_SCROLL_CLASS`, `pb-8`). On the pane it stood
+ * under a preview the window was too short for as a white band that never went
+ * away — the owner, on a landscape phone: «этот нижний отступ, он тогда
+ * логически не нужен». Inside the scroll area it is the end of the scroll: a
+ * preview that fits sits exactly where it did (box + 32 = the same 120 of
+ * chrome), and one that does not runs to the pane's edge.
  */
 export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): string {
   // Step 0 is the one screen whose right pane holds no preview square, so it
@@ -211,7 +219,7 @@ export function rightPaneClass(mode: LayoutMode, opts: RightPaneOptions = {}): s
   }
 
   const base =
-    'constructor-dual-pane-shell__right min-h-0 min-w-0 shrink-0 bg-card py-8 overflow-hidden'
+    'constructor-dual-pane-shell__right min-h-0 min-w-0 shrink-0 bg-card pt-8 overflow-hidden'
 
   if (mode === 'review') {
     return `${base} flex flex-col`

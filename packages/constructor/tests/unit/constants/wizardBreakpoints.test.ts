@@ -11,6 +11,7 @@ import {
   WIZARD_FRAME_INSET,
   WIZARD_FRAME_MAX_HEIGHT,
   WIZARD_FRAME_MAX_WIDTH,
+  resolvePreviewFloor,
   resolvePreviewSide,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
@@ -31,7 +32,8 @@ import {
  *   wizard header  73, on all four frames             (`5382:30951`)
  *   frame inset    48 top + 48 bottom, only above 1920 (`5395:119537`)
  *   frame height   capped at 960 above 1920            (`5395:119538`)
- *   square         min(height − 120, the size drawn for the breakpoint)
+ *   square         the size drawn for the breakpoint; on a short window the
+ *                  preview inside takes height − 120, down to a floor of 400
  *   columns        right = square + 64, left = the rest
  *
  * Verified to fail, not assumed to: put the Admin header back (subtract 88
@@ -73,7 +75,7 @@ function layoutForViewport(viewportWidth: number, viewportHeight: number): Layou
 
   const { previewSide, rightPaneWidth, rightPaneHeight } = resolveWizardPaneGeometry(
     frameHeight,
-    { previewSide: resolvePreviewSide(frameWidth) }
+    { previewSide: resolvePreviewSide(frameWidth), minSide: resolvePreviewFloor(frameWidth) }
   )
 
   return {
@@ -221,28 +223,35 @@ describe('a taller window must not move the columns', () => {
     }
   })
 
-  it('does NOT shrink when the window is shorter either — it scrolls', () => {
-    // The second defect, and the one the owner spotted by dragging the window
-    // shorter: the square shrank, the right column narrowed behind it and the
-    // left column swallowed the difference, so the concept tiles GREW as the
-    // window got smaller. A short window must do to the right column exactly
-    // what it already does to the left one: nothing to its width, and a
-    // scrollbar inside. Both drawn columns of `5395:119983` carry a scrollbar.
+  it('a shorter window does not move the COLUMNS either — only the preview inside', () => {
+    // The second defect of 24.09, and the one the owner spotted by dragging the
+    // window shorter: the square shrank, the right column narrowed behind it
+    // and the left column swallowed the difference, so the concept tiles GREW
+    // as the window got smaller. A short window must do nothing to either
+    // column's width.
+    //
+    // 12.10: what it does now is shrink the PREVIEW the column holds — down to
+    // 400, then the panel scrolls. On production the phones of the preview ran
+    // under the edge on a landscape tablet and a landscape phone.
+    const EXPECTED_SIDE: Record<number, number> = { 646: 453, 560: 400, 505: 400, 443: 400 }
     for (const height of [646, 560, 505, 443]) {
       const short = layoutForViewport(1440, height)
-      expect(short.previewSide).toBe(575)
       expect(short.rightPaneWidth).toBe(639)
       expect(short.leftPaneWidth).toBe(591)
-      // The panel can no longer be taller than the row: it scrolls inside.
+      expect(short.previewSide).toBe(EXPECTED_SIDE[height])
+      // The panel is never taller than the row: at 646 the preview fits it
+      // exactly, below that it scrolls inside.
       expect(short.rightPaneHeight).toBe(height - 73)
     }
   })
 
   it('keeps 1280 at 479 · 591 however short the window gets', () => {
-    for (const height of [720, 600, 500]) {
+    const EXPECTED_SIDE: Record<number, number> = { 720: 527, 640: 447, 600: 407, 500: 400 }
+    for (const height of [720, 640, 600, 500]) {
       const layout = layoutForViewport(1280, height)
-      expect(layout.previewSide).toBe(527)
       expect(layout.leftPaneWidth).toBe(479)
+      expect(layout.rightPaneWidth).toBe(591)
+      expect(layout.previewSide).toBe(EXPECTED_SIDE[height])
     }
   })
 
@@ -380,6 +389,18 @@ describe('the concept cards are her size, and that is the pane minus 64', () => 
     const grid = cardSizeIn(591 - 64 - 1, cardMinFor(1230))
     expect(grid.columns).toBe(3)
     expect(grid.card).toBeCloseTo(170, 0)
+  })
+
+  it('the preview stays a square when a short window shrinks it', () => {
+    // 12.10.2026. The first cut of «shrink on a short window» only made the box
+    // shorter: 527 × 496 at 1024×768, and the square concept picture inside it
+    // lost 6 % to `object-cover`. «Preview завжди зберігає пропорції та не
+    // обрізається» — so the box is capped at the same side on both axes and
+    // centred in the column.
+    const rule = APP_CSS.match(/\.wizard-preview-square\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(rule).toMatch(/height:\s*var\(--wizard-preview-side, 100%\)/)
+    expect(rule).toMatch(/max-width:\s*var\(--wizard-preview-side, 100%\)/)
+    expect(rule).toMatch(/margin-inline:\s*auto/)
   })
 
   it('keeps both panes off the scrollbar-gutter arithmetic', () => {

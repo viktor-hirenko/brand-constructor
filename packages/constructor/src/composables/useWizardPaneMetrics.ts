@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import {
   WIZARD_CAPPED_MIN_WIDTH,
+  resolvePreviewFloor,
   resolvePreviewSide,
   resolveWizardPaneGeometry,
 } from '@/constants/wizardResponsive'
@@ -50,12 +51,14 @@ export function useWizardPaneMetrics(target: Ref<HTMLElement | null>) {
 
   const isCapped = computed(() => paneWidth.value >= WIZARD_CAPPED_MIN_WIDTH)
 
-  // The square comes from the WIDTH — her number at her four widths, the
-  // straight line between her numbers in between. The height only decides
-  // whether the panel fits or scrolls.
+  // The column comes from the WIDTH — her number at her four widths, the
+  // straight line between her numbers in between. The height decides only how
+  // tall the preview is drawn inside it: whole on a short window down to the
+  // floor, and scrolling below that.
   const geometry = computed(() =>
     resolveWizardPaneGeometry(paneHeight.value, {
       previewSide: resolvePreviewSide(paneWidth.value),
+      minSide: resolvePreviewFloor(paneWidth.value),
     })
   )
 

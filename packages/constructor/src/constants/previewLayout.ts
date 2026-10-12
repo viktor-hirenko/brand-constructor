@@ -84,9 +84,13 @@ export const PREVIEW_PANEL_HEADER_GAP_CLASS = 'gap-2'
  * its card sizes; see `LEFT_PANE_SCROLL_GUTTER_CLASS`. The bar overlays the
  * padding, which is what the kit draws: `5396:120156` sits 4 in from the
  * pane's edge, not beside the square.
+ *
+ * `pb-8` is the pane's bottom `spacing/32`, carried here since 12.10.2026 so
+ * that a preview too tall for the window scrolls to the pane's edge instead of
+ * stopping above a white band — see `rightPaneClass`.
  */
 export const PREVIEW_PANEL_SCROLL_CLASS =
-  'wizard-scrollbar min-h-0 flex-1 overflow-y-auto px-8'
+  'wizard-scrollbar min-h-0 flex-1 overflow-y-auto px-8 pb-8'
 
 /**
  * The square. Its height is the side the shell measured, published as
