@@ -3,6 +3,8 @@
  * Worker writes these; admin History modal parses them (legacy rows may be partial).
  */
 
+import { briefSectionLabel } from '../constants/workflow'
+
 export interface WorkflowSelectionChange {
   field: string
   fieldLabel: string
@@ -124,14 +126,19 @@ export function parseWorkflowSelectionChanges(v: unknown): WorkflowSelectionChan
   return v.filter(isWorkflowSelectionChange)
 }
 
+/** The section is named as it is called today, not as it was when the event was written. */
+function withCurrentSectionLabel<T extends { section: string; sectionLabel: string }>(entry: T): T {
+  return { ...entry, sectionLabel: briefSectionLabel(entry.section, entry.sectionLabel) }
+}
+
 export function parseWorkflowPoComments(v: unknown): WorkflowPoCommentEntry[] {
   if (!Array.isArray(v)) return []
-  return v.filter(isWorkflowPoCommentEntry)
+  return v.filter(isWorkflowPoCommentEntry).map(withCurrentSectionLabel)
 }
 
 export function parseWorkflowCommentEntries(v: unknown): WorkflowCommentEntry[] {
   if (!Array.isArray(v)) return []
-  return v.filter(isWorkflowCommentEntry)
+  return v.filter(isWorkflowCommentEntry).map(withCurrentSectionLabel)
 }
 
 export function parseWorkflowSelectionFinals(v: unknown): WorkflowSelectionFinal[] {
@@ -172,10 +179,10 @@ export function parsePoCommentResolvedEventMeta(
 ): PoCommentResolvedEventMeta {
   return {
     section: typeof meta.section === 'string' ? meta.section : '',
-    sectionLabel:
-      typeof meta.sectionLabel === 'string'
-        ? meta.sectionLabel
-        : String(meta.section ?? 'Section'),
+    sectionLabel: briefSectionLabel(
+      meta.section,
+      typeof meta.sectionLabel === 'string' ? meta.sectionLabel : String(meta.section ?? 'Section')
+    ),
     resolved: meta.resolved !== false,
   }
 }

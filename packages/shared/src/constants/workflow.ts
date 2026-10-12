@@ -48,6 +48,22 @@ export const BRIEF_SECTION_LABELS: Record<BriefSectionKey, string> = {
   [BRIEF_SECTION_KEYS.INTERNAL_NAMING]: 'Internal naming',
   [BRIEF_SECTION_KEYS.MARKETING_PACKAGE]: 'Marketing package',
   [BRIEF_SECTION_KEYS.DELIVERABLES]: 'Deliverables',
-  [BRIEF_SECTION_KEYS.VISUAL_COMPONENTS]: 'Visual components',
+  [BRIEF_SECTION_KEYS.VISUAL_COMPONENTS]: 'Interface components',
   [BRIEF_SECTION_KEYS.GENERAL]: 'General',
+}
+
+/**
+ * The name of a brief section as the history shows it today.
+ *
+ * The worker writes the section's name of the day into every event
+ * (`sectionLabel`), so a section that is renamed — DP-15450, «visual
+ * components» → «Interface Components» — would keep the old name in every event
+ * already in the base. The key is stored next to it: the key decides, and the
+ * stored name is only for rows that have no key or a key nobody knows.
+ */
+export function briefSectionLabel(section: unknown, stored?: string): string {
+  if (typeof section === 'string' && Object.prototype.hasOwnProperty.call(BRIEF_SECTION_LABELS, section)) {
+    return BRIEF_SECTION_LABELS[section as BriefSectionKey]
+  }
+  return stored ?? (typeof section === 'string' ? section : '')
 }

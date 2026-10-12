@@ -22,6 +22,7 @@ export {
   BRAND_WORKFLOW_EVENT_LABELS,
   BRIEF_SECTION_KEYS,
   BRIEF_SECTION_LABELS,
+  briefSectionLabel,
 } from './workflow'
 export type { BrandWorkflowEventType, BriefSectionKey } from './workflow'
 

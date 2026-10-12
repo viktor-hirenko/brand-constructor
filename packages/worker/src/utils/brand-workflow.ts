@@ -42,7 +42,7 @@ const PO_COMMENT_SECTIONS: { section: string; label: string; column: keyof Brand
   { section: 'internalNaming', label: 'Internal naming', column: 'internal_naming_comment' },
   { section: 'marketingPackage', label: 'Marketing package', column: 'pr_package_comment' },
   { section: 'deliverables', label: 'Deliverables', column: 'deliverables_comment' },
-  { section: 'visualComponents', label: 'Visual components', column: 'components_comment' },
+  { section: 'visualComponents', label: 'Interface components', column: 'components_comment' },
 ]
 
 export interface BrandWorkflowEventRow {
