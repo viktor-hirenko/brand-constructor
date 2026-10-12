@@ -649,7 +649,7 @@ defineExpose({
           </ReviewSection>
 
           <ReviewSection
-            title="Visual Components"
+            title="Interface Components"
             :edit-step="sectionEditStep('visualComponents', 7)"
             :has-unresolved="hasSectionUnresolvedComment('visualComponents')"
             @edit="step => emitEditSection(step, 'visualComponents')"

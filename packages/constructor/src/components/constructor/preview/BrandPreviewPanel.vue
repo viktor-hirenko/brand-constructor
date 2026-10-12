@@ -16,6 +16,7 @@ import {
   PREVIEW_PANEL_HEADER_CLASS,
   PREVIEW_PANEL_HEADER_GAP_CLASS,
   PREVIEW_PANEL_ICON_CLASS,
+  PREVIEW_PANEL_PHONE_INSET_PX,
   PREVIEW_PANEL_PHONE_ROW_CLASS,
   PREVIEW_PANEL_ROOT_CLASS,
   PREVIEW_PANEL_SCROLL_CLASS,
@@ -51,6 +52,18 @@ const phoneBox = computed(() =>
     designHeightPx: PREVIEW_REVIEW_PHONE_BOX.heightRem * 16,
     count: 2,
     gapPx: PREVIEW_REVIEW_PHONE_GAP_PX,
+    insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX,
+    insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX,
+  })
+)
+
+/** The lone phone of «Довірити вибір дизайнерам» — fitted the same way; it used to take the default box. */
+const lonePhoneBox = computed(() =>
+  fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
+    designWidthPx: PREVIEW_REVIEW_PHONE_BOX.widthRem * 16,
+    designHeightPx: PREVIEW_REVIEW_PHONE_BOX.heightRem * 16,
+    insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX,
+    insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX,
   })
 )
 
@@ -89,7 +102,10 @@ watch(() => Object.keys(store.stepData?.visualComponents?.selections ?? {}).join
       <div :class="PREVIEW_PANEL_SQUARE_CLASS">
     <!-- Delegated: single phone carrying the empty state, as on step 7. -->
     <div v-if="isDelegated" :class="PREVIEW_PANEL_PHONE_ROW_CLASS">
-      <PhonePreviewCanvas>
+      <PhonePreviewCanvas
+        :box-width-rem="lonePhoneBox.widthRem"
+        :box-height-rem="lonePhoneBox.heightRem"
+      >
         <template #body>
           <VisualComponentsPhoneEmptyState variant="delegated" />
         </template>

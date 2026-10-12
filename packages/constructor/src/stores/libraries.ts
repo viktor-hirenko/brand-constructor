@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { apiGet } from '@/composables/useApi'
+import { apiGetAll } from '@/composables/useApi'
 import { logSilent } from '@/utils/log'
 import type { Concept, ExternalNaming, InternalNaming, PrPackage } from '@brand-constructor/shared/types'
 
@@ -25,12 +25,15 @@ export const useLibrariesStore = defineStore('libraries', () => {
     if (!force && isFresh(brandId)) return
     isLoading.value = true
     try {
-      const qs = `?per_page=100${brandId ? `&available_for_brand=${brandId}` : ''}`
+      // Each library WHOLE (H-59). The review, the CEO's screen and the printed
+      // brief find a pick by its id in these lists; read as «the newest hundred»
+      // they wrote «Назву не обрано» under the 101st name and every older one.
+      const qs = brandId ? `?available_for_brand=${brandId}` : ''
       const [c, e, i, p] = await Promise.all([
-        apiGet<Concept[]>(`/api/concepts${qs}`),
-        apiGet<ExternalNaming[]>(`/api/namings/external${qs}`),
-        apiGet<InternalNaming[]>(`/api/namings/internal${qs}`),
-        apiGet<PrPackage[]>(`/api/pr-packages${qs}`),
+        apiGetAll<Concept>(`/api/concepts${qs}`),
+        apiGetAll<ExternalNaming>(`/api/namings/external${qs}`),
+        apiGetAll<InternalNaming>(`/api/namings/internal${qs}`),
+        apiGetAll<PrPackage>(`/api/pr-packages${qs}`),
       ])
       concepts.value = c
       externalNamings.value = e

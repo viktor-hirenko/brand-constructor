@@ -27,6 +27,7 @@ import {
   PREVIEW_PANEL_HEADER_CLASS,
   PREVIEW_PANEL_HEADER_GAP_CLASS,
   PREVIEW_PANEL_ICON_CLASS,
+  PREVIEW_PANEL_PHONE_INSET_PX,
   PREVIEW_PANEL_PHONE_ROW_CLASS,
   PREVIEW_PANEL_ROOT_CLASS,
   PREVIEW_PANEL_SCROLL_CLASS,
@@ -142,6 +143,8 @@ const phoneBox = computed(() =>
   fitPhoneBoxRem(paneGeometry?.value.previewSide ?? 0, {
     designWidthPx: PREVIEW_PHONE_BOX.widthRem * 16,
     designHeightPx: PREVIEW_PHONE_BOX.heightRem * 16,
+    insetTopPx: PREVIEW_PANEL_PHONE_INSET_PX,
+    insetBottomPx: PREVIEW_PANEL_PHONE_INSET_PX,
   })
 )
 </script>
