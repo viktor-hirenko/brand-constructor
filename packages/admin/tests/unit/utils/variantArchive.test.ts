@@ -73,6 +73,14 @@ describe('ComponentVariantsView puts a variant away and brings it back', () => {
     expect(actions).toContain('Видалити')
   })
 
+  it('the buttons of a card are one size — the owner, 13.10: «совершенно разного размера кнопки. Почему так?»', () => {
+    const from = TEMPLATE.indexOf('<div v-if="canWrite" class="variant-card__actions">')
+    const row = TEMPLATE.slice(from, TEMPLATE.indexOf('</div>', from))
+    const buttons = row.match(/<BaseButton[\s\S]*?>/g) ?? []
+    expect(buttons).toHaveLength(3)
+    for (const button of buttons) expect(button).toContain('size="sm"')
+  })
+
   it('an archived card says what that means', () => {
     expect(TEMPLATE).toMatch(/'variant-card--archived': isArchivedVariant\(v\)/)
     expect(TEMPLATE).toMatch(/v-if="isArchivedVariant\(v\)"[^>]*class="variant-card__archived"/)
