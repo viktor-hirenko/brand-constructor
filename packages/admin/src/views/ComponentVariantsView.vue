@@ -347,8 +347,12 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
             Не пропонується на кроці Interface Components. У брифах, де його вже обрано, залишається.
           </p>
           <div v-if="canWrite" class="variant-card__actions">
+            <!-- One size for the whole row. «Замінити картинку» used to be a
+                 size larger than «Видалити» beside it; with «В архів» between
+                 them the owner asked why the buttons differ (13.10). -->
             <BaseButton
               variant="secondary"
+              size="sm"
               :loading="uploadingIds.has(v.id)"
               @click="triggerUpload(v.id)"
             >
