@@ -12,6 +12,12 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { useErrorDialog } from '@/composables/useErrorDialog'
+import {
+  VARIANT_STATUS_TABS,
+  isArchivedVariant,
+  variantArchiveAction,
+  type VariantStatusFilter,
+} from '@/utils/variantArchive'
 import PhosphorIcon from '@/components/ui/PhosphorIcon.vue'
 import arrowLeft from '@phosphor-icons/core/regular/arrow-left.svg?raw'
 import imageSquare from '@phosphor-icons/core/regular/image-square.svg?raw'
@@ -29,7 +35,7 @@ const typeId = route.params.typeId as string
 const componentType = ref<ComponentType | null>(null)
 const variants = ref<(ComponentVariant & { author_name: string; brand_name: string | null })[]>([])
 const loading = ref(false)
-const statusFilter = ref<'all' | 'active'>('all')
+const statusFilter = ref<VariantStatusFilter>('all')
 
 const { sortedData: sortedVariants, setSort: setVariantSort } = useTableSort(
   variants,
@@ -88,6 +94,25 @@ async function confirmRename() {
   }
 }
 
+// The archive — DP-15450, visual components 5 (`utils/variantArchive.ts`): the
+// variant leaves the choice of the wizard's step 7 and stays in the briefs that
+// have picked it. A change of status, never a delete.
+const archivingIds = ref<Set<string>>(new Set())
+
+async function toggleArchive(v: { id: string; status: string }) {
+  const action = variantArchiveAction(v)
+  if (!action || archivingIds.value.has(v.id)) return
+  archivingIds.value = new Set([...archivingIds.value, v.id])
+  try {
+    await apiPut(`/api/components/variants/${v.id}`, { status: action.status })
+    await fetchVariants({ silent: true })
+  } catch (err) {
+    showError(err, 'save')
+  } finally {
+    archivingIds.value = new Set([...archivingIds.value].filter(id => id !== v.id))
+  }
+}
+
 const uploadingIds = ref<Set<string>>(new Set())
 const uploadInputRefs = ref<Map<string, HTMLInputElement>>(new Map())
 
@@ -133,6 +158,7 @@ const pollingPaused = computed(
     lightboxUrl.value !== null ||
     deleteTarget.value !== null ||
     uploadingIds.value.size > 0 ||
+    archivingIds.value.size > 0 ||
     renamingId.value !== null
 )
 useListPolling(() => fetchVariants({ silent: true }), { paused: pollingPaused })
@@ -212,18 +238,13 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
 
     <div class="variants-view__status-tabs">
       <button
+        v-for="tab in VARIANT_STATUS_TABS"
+        :key="tab.status"
         class="variants-view__status-tab"
-        :class="{ 'variants-view__status-tab--active': statusFilter === 'all' }"
-        @click="statusFilter = 'all'"
+        :class="{ 'variants-view__status-tab--active': statusFilter === tab.status }"
+        @click="statusFilter = tab.status"
       >
-        Усі
-      </button>
-      <button
-        class="variants-view__status-tab"
-        :class="{ 'variants-view__status-tab--active': statusFilter === 'active' }"
-        @click="statusFilter = 'active'"
-      >
-        Не використані
+        {{ tab.label }}
       </button>
     </div>
 
@@ -264,7 +285,12 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
       :name="transitionName"
       @before-leave="pinLeavingCard"
     >
-      <div v-for="v in sortedVariants" :key="v.id" class="variant-card">
+      <div
+        v-for="v in sortedVariants"
+        :key="v.id"
+        class="variant-card"
+        :class="{ 'variant-card--archived': isArchivedVariant(v) }"
+      >
         <div class="variant-card__preview">
           <img
             v-if="v.thumbnail_url"
@@ -316,6 +342,10 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
               new Date(v.created_at).toLocaleDateString()
             }}</span>
           </div>
+          <p v-if="isArchivedVariant(v)" class="variant-card__archived">
+            <strong>В архіві.</strong>
+            Не пропонується на кроці Interface Components. У брифах, де його вже обрано, залишається.
+          </p>
           <div v-if="canWrite" class="variant-card__actions">
             <BaseButton
               variant="secondary"
@@ -323,6 +353,15 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
               @click="triggerUpload(v.id)"
             >
               {{ v.thumbnail_url ? 'Замінити картинку' : 'Завантажити картинку' }}
+            </BaseButton>
+            <BaseButton
+              v-if="variantArchiveAction(v)"
+              variant="secondary"
+              size="sm"
+              :loading="archivingIds.has(v.id)"
+              @click="toggleArchive(v)"
+            >
+              {{ variantArchiveAction(v)?.label }}
             </BaseButton>
             <BaseButton variant="danger" size="sm" @click="handleDelete(v.id, v.name)">
               Видалити
@@ -473,6 +512,26 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
   border-radius: $radius-lg;
   overflow: hidden;
 
+  // In the archive: the picture steps back, the card says why.
+  &--archived &__preview {
+    opacity: 0.45;
+  }
+
+  &__archived {
+    margin-bottom: $spacing-2;
+    padding: $spacing-2 $spacing-3;
+    border-radius: $radius-md;
+    background-color: $color-bg;
+    font-size: $font-size-xs;
+    line-height: 1.45;
+    color: $color-text-secondary;
+
+    strong {
+      color: $color-text;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
   &__preview {
     background-color: #e2e8f0;
     overflow: hidden;
@@ -565,6 +624,7 @@ async function handleUploadThumbnail(event: Event, variantId: string) {
   &__actions {
     margin-top: $spacing-3;
     display: flex;
+    flex-wrap: wrap;
     gap: $spacing-2;
   }
 }
