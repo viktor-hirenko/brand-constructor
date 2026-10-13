@@ -151,13 +151,16 @@ async function handleLogout() {
     bottom: 0;
     z-index: $z-sidebar;
     transform: translateX(-100%);
-    transition: transform $transition-slow;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+    // The shadow is the open menu's. Carried while the menu stood beyond the
+    // edge, it reached back onto the screen as a grey strip along the left of
+    // every page on a phone and a tablet.
+    transition: transform $transition-slow, box-shadow $transition-slow;
   }
 
   &--open {
     @include sidebar-collapsed {
       transform: translateX(0);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
     }
   }
 
