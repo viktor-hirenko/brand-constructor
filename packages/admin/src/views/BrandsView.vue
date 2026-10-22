@@ -161,6 +161,9 @@ function formatDate(dateStr: string | null | undefined): string {
   return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+// The «Розгляд» column is hidden, not removed: true brings it back.
+const showReviewColumn = false
+
 function reviewDisplay(brand: BrandListItem) {
   return getBrandReviewDisplay(brand)
 }
@@ -306,7 +309,7 @@ async function confirmDeleteBrand() {
                 sortDirection === 'asc' ? '↑' : '↓'
               }}</span>
             </th>
-            <th class="brands-view__review-col">Розгляд</th>
+            <th v-if="showReviewColumn" class="brands-view__review-col">Розгляд</th>
             <th class="sortable-th brands-view__waiting-col" @click="handleSort('waitingSince')">
               Очікує
               <span v-if="sortField === 'waitingSince'" class="sort-arrow">{{
@@ -357,7 +360,7 @@ async function confirmDeleteBrand() {
               >
             </td>
             <td>{{ formatDate(brand.createdAt) }}</td>
-            <td class="brands-view__review-cell">
+            <td v-if="showReviewColumn" class="brands-view__review-cell">
               <span
                 class="brands-view__cell-line"
                 :class="{
