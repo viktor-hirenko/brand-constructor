@@ -38,34 +38,34 @@ const api = (page, path) => page.evaluate(p => fetch(p).then(r => r.json()), pat
     log('modal:', (await L.text(page.mainFrame(), '.modal')).replace(/\n/g, ' | ').slice(0, 300))
     await L.shot(page, 'F2a-3-create-concept')
     conceptName = `Stand Sunrise ${Date.now() % 1000}`
-    await page.getByPlaceholder('e.g. WonderLand').fill(conceptName)
-    await L.clickText(page.mainFrame(), 'Create Concept'); await L.wait(page, 2500)
+    await page.getByPlaceholder('напр. WonderLand').fill(conceptName)
+    await L.clickText(page.mainFrame(), 'Створити концепт', { exact: true, within: '.modal' }); await L.wait(page, 2500)
     log('after create url:', page.url())
     log('concept page:', (await L.text(page.mainFrame(), '.concept-detail__back')).replace(/\n/g, ' | '), '/', await L.text(page.mainFrame(), '.concept-detail__meta'))
     await L.shot(page, 'F2a-4-concept-page')
-    await L.clickText(page.mainFrame(), 'Back to order'); await L.wait(page, 2000)
+    await L.clickText(page.mainFrame(), 'До замовлення'); await L.wait(page, 2000)
   }
 
   if (kinds.includes('concept') || kinds.includes('externalNaming')) {
-    // 4. «Додати назву».
-    await L.clickText(page.mainFrame(), 'Додати назву'); await L.wait(page, 800)
+    // 4. «Створити назву».
+    await L.clickText(page.mainFrame(), 'Створити назву'); await L.wait(page, 800)
     log('naming modal:', (await L.text(page.mainFrame(), '.modal')).replace(/\n/g, ' | ').slice(0, 300))
-    await page.getByPlaceholder('Enter naming...').fill(`Stand Beam ${Date.now() % 1000}`)
+    await page.getByPlaceholder('Введіть назву…').fill(`Stand Beam ${Date.now() % 1000}`)
     await L.shot(page, 'F2a-5-add-name')
-    await L.clickText(page.mainFrame(), 'Create', { exact: true }); await L.wait(page, 2000)
+    await L.clickText(page.mainFrame(), 'Створити', { exact: true, within: '.modal' }); await L.wait(page, 2000)
   }
   if (kinds.includes('internalNaming')) {
-    await L.clickText(page.mainFrame(), 'Додати Internal Naming'); await L.wait(page, 800)
-    await page.getByPlaceholder('Enter naming...').fill(`Stand Inner ${Date.now() % 1000}`)
-    await L.clickText(page.mainFrame(), 'Create', { exact: true }); await L.wait(page, 2000)
+    await page.locator('.order-detail__section', { hasText: 'Нова внутрішня назва' }).getByRole('button', { name: 'Створити назву' }).click(); await L.wait(page, 800)
+    await page.getByPlaceholder('Введіть назву…').fill(`Stand Inner ${Date.now() % 1000}`)
+    await L.clickText(page.mainFrame(), 'Створити', { exact: true, within: '.modal' }); await L.wait(page, 2000)
   }
   log('order buttons after making:', await L.buttons(page.mainFrame()))
   await page.screenshot({ path: `${L.SP}/run/F2a-6-made.png`, fullPage: true })
 
   // 5. «Готово».
-  await L.clickText(page.mainFrame(), 'Готово — повідомити замовника'); await L.wait(page, 800)
+  await L.clickText(page.mainFrame(), 'Відправити замовнику'); await L.wait(page, 800)
   await L.shot(page, 'F2a-7-confirm')
-  await L.clickText(page.mainFrame(), 'Готово', { exact: true, within: '.modal' }); await L.wait(page, 2000)
+  await L.clickText(page.mainFrame(), 'Відправити', { exact: true, within: '.modal' }); await L.wait(page, 2000)
   log('after ready:', (await L.text(page.mainFrame(), '.order-detail__note')))
   await page.screenshot({ path: `${L.SP}/run/F2a-8-ready.png`, fullPage: true })
   log('db:', JSON.stringify(L.sql(`select orders_ready_at is not null as ready, orders_ready_by from brands where id='${target.brandId}'`)))

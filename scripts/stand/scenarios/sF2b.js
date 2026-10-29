@@ -34,7 +34,7 @@ const modalText = async page => { const m = L.wiz(page).locator('.ui-modal'); re
   const stamp = Date.now() % 1000
   const concept = await post(st.page, '/api/concepts', { name: `Stand Dawn ${stamp}`, description: 'made for the order', mode: 'dark', for_brand_id: id })
   const conceptId = concept.body?.data?.id
-  const naming = await post(st.page, '/api/namings/external', { name: `Stand Ray ${stamp}`, domain: `ray${stamp}.com`, availability_status: 'available', concept_id: conceptId, for_brand_id: id })
+  const naming = await post(st.page, '/api/namings/external', { name: `Stand Ray ${stamp}`, domain: `ray${stamp}.com`, concept_id: conceptId, for_brand_id: id })
   log('made:', concept.status, conceptId, naming.status)
 
   // 3. The author, before the order is sent: waiting, the made concept hidden.

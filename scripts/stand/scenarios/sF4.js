@@ -80,7 +80,7 @@ const events = id => L.sql(`SELECT event_type FROM brand_workflow_events WHERE b
   const stamp = Date.now() % 1000
   const concept = await post(st.page, '/api/concepts', { name: `Stand Phoenix ${stamp}`, description: 'made after the CEO return', mode: 'light', for_brand_id: id })
   const conceptId = concept.body?.data?.id
-  const naming = await post(st.page, '/api/namings/external', { name: `Stand Ember ${stamp}`, domain: `ember${stamp}.com`, availability_status: 'available', concept_id: conceptId, for_brand_id: id })
+  const naming = await post(st.page, '/api/namings/external', { name: `Stand Ember ${stamp}`, domain: `ember${stamp}.com`, concept_id: conceptId, for_brand_id: id })
   const ready = await post(st.page, `/api/orders/${id}/ready`, {})
   log('made:', concept.status, naming.status, 'ready:', ready.status, ready.body?.error ?? '')
   await st.page.goto(`${L.O}/orders/${id}`, { waitUntil: 'networkidle' }); await L.wait(st.page, 2000)

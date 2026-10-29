@@ -46,7 +46,7 @@ const modal = async page => { const m = L.wiz(page).locator('.ui-modal'); return
   await st.page.goto(`${L.O}/orders/${id}`, { waitUntil: 'networkidle' }); await L.wait(st.page, 1200)
   const stamp = Date.now() % 1000
   const c = await post(st.page, '/api/concepts', { name: `Golden Sun ${stamp}`, description: 'made for the order', mode: 'light', for_brand_id: id })
-  await post(st.page, '/api/namings/external', { name: `Golden ${stamp}`, domain: `golden${stamp}.com`, availability_status: 'available', concept_id: c.body.data.id, for_brand_id: id })
+  await post(st.page, '/api/namings/external', { name: `Golden ${stamp}`, domain: `golden${stamp}.com`, concept_id: c.body.data.id, for_brand_id: id })
   log('ready:', (await post(st.page, `/api/orders/${id}/ready`, {})).status)
 
   await F.open(page, id)

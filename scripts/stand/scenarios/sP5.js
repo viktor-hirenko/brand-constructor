@@ -39,7 +39,7 @@ async function orderMade(b) {
   await st.page.goto(`${L.O}/orders/${id}`, { waitUntil: 'networkidle' }); await L.wait(st.page, 1500)
   const stamp = Date.now() % 100000
   const concept = await post(st.page, '/api/concepts', { name: `P5 Dawn ${stamp}`, description: 'made for the order', for_brand_id: id })
-  await post(st.page, '/api/namings/external', { name: `P5 Ray ${stamp}`, domain: `p5ray${stamp}.com`, availability_status: 'available', concept_id: concept.body?.data?.id, for_brand_id: id })
+  await post(st.page, '/api/namings/external', { name: `P5 Ray ${stamp}`, domain: `p5ray${stamp}.com`, concept_id: concept.body?.data?.id, for_brand_id: id })
   await st.page.reload({ waitUntil: 'networkidle' }); await L.wait(st.page, 1500)
   console.log('in work:', id, F.dbSummary(id))
   return { id, po, st, stamp }

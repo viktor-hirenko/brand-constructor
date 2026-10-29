@@ -102,15 +102,17 @@ const CHECKS = {
     const id = await F.submitted(b)
     const ceo = await L.session(b, 'ceo'); await F.open(ceo.page, id)
     await F.sectionBtn(ceo.page, 'Concept', 'Змінити вибір')
-    await L.wiz(ceo.page).locator('.concept-card', { hasText: 'Retro Pixel' }).first().click({ force: true }); await L.wait(ceo.page, 1200)
+    await L.wiz(ceo.page).locator('.concept-card', { hasText: 'Wonderland' }).first().click({ force: true }); await L.wait(ceo.page, 1200)
     await F.next(ceo.page)
     const name = await L.wiz(ceo.page).evaluate(() => {
-      const card = [...document.querySelectorAll('.external-naming-grid button, .external-naming-grid [role=button]')].find(e => e.offsetParent && !e.disabled && !/Sold/.test(e.textContent))
+      const cards = [...document.querySelectorAll('.external-naming-grid button, .external-naming-grid [role=button]')].filter(e => e.offsetParent && !e.disabled)
+      // «For sale» and «Sold» ask for a comment before «Зберегти»
+      const card = cards.find(e => /Available/.test(e.textContent)) || cards.find(e => !/Sold/.test(e.textContent))
       return card ? card.textContent.trim().split(/\s+/)[0] : null
     })
     await L.clickText(L.wiz(ceo.page), name); await L.wait(ceo.page, 500)
     await L.clickText(L.wiz(ceo.page), 'Зберегти', { exact: true }); await L.wait(ceo.page, 3000)
-    await F.ceoComment(ceo.page, 'Concept', 'CEO: Retro Pixel fits better')
+    await F.ceoComment(ceo.page, 'Concept', 'CEO: Wonderland fits better')
     await L.clickText(L.wiz(ceo.page), 'Повернути на доопрацювання'); await L.wait(ceo.page, 1500)
     const warn = await L.wiz(ceo.page).evaluate(() => (document.body.innerText.match(/Додайте[^\n]*/) || ['нет'])[0])
     await toText(ceo.page, /^Додайте/); await L.shot(ceo.page, 'P3-T-042-a-ceo-one-comment')
@@ -127,7 +129,7 @@ const CHECKS = {
     const resolved = L.brand(id).ceo_comments
     await F.open(page, id); const b3 = await banner(page)
     verdict('T-042', /кожного розділу, де ви змінили вибір/.test(warn) && st === 'needs_revision' && b0 === '2 секції потребують уваги' && b1 === '1 секція потребує уваги' && /\[off\]/.test(s1) && b2 === 'нет' && /\[on\]/.test(s2) && resolved.concept.resolved && resolved.externalNaming.resolved && b3 === 'нет',
-      `CEO: Retro Pixel + ${name}, комментарий только у Concept → «Повернути»: «${warn}»; оба комментария → ${st}. PO: плашка «${b0}» → «Застосувати варіант CEO» в Concept → «${b1}», кнопка ${s1} → в External → плашка ${b2}, кнопка ${s2}; в базе комментарии вирішені: Concept ${resolved.concept.resolved}, External ${resolved.externalNaming.resolved}; F5 → плашка ${b3}`)
+      `CEO: Wonderland + ${name}, комментарий только у Concept → «Повернути»: «${warn}»; оба комментария → ${st}. PO: плашка «${b0}» → «Застосувати варіант CEO» в Concept → «${b1}», кнопка ${s1} → в External → плашка ${b2}, кнопка ${s2}; в базе комментарии вирішені: Concept ${resolved.concept.resolved}, External ${resolved.externalNaming.resolved}; F5 → плашка ${b3}`)
     await ctx.close()
   },
   // CEO changes Internal only; the Author's Internal screen asks nothing the server does not have.

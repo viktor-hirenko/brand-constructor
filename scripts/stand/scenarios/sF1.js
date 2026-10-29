@@ -46,8 +46,9 @@ async function finalState(page) {
   log('in work review:', JSON.stringify(await finalState(page))); await L.shot(page, 'F1-3-in-work')
 
   // 4. «Редагувати» Concept → a library concept → «Далі» → names → «Зберегти».
-  // a concept that still has a free name (approved runs use names up)
-  const free = L.sql("select distinct c.name from concepts c join external_namings en on en.concept_id = c.id where c.status = 'active' and en.status = 'active' and en.used_in_brand_id is null and coalesce(en.availability_status, '') != 'sold'").map(r => r.name)
+  // a concept that still has a free «Available» name (approved runs use names up;
+  // a «For sale» or «Sold» pick asks for a comment before «Зберегти»)
+  const free = L.sql("select distinct c.name from concepts c join external_namings en on en.concept_id = c.id where c.status = 'active' and en.status = 'active' and en.used_in_brand_id is null and en.for_brand_id is null and en.availability_status = 'available'").map(r => r.name)
   await F.editSection(page, 'Concept')
   const shown = await L.wiz(page).locator('.concept-card').allInnerTexts()
   const pick = free.find(n => shown.some(t => t.includes(n)))

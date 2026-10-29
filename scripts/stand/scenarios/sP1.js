@@ -112,7 +112,7 @@ const CHECKS = {
     const id = await toStep(page, 3)
     const off = await picked(L.wiz(page), 'Joymus'); await L.clickText(L.wiz(page), 'Joymus'); await L.wait(page, 500)
     const on = await picked(L.wiz(page), 'Joymus'); await L.shot(page, 'P1-D-21-a-step3-picked')
-    await page.getByRole('link', { name: /Brands/ }).first().click(); await L.wait(page, 2500); const url = page.url().replace(L.O, ''); await L.shot(page, 'P1-D-21-b-after-menu')
+    await page.getByRole('link', { name: /Бренди|Brands/ }).first().click(); await L.wait(page, 2500); const url = page.url().replace(L.O, ''); await L.shot(page, 'P1-D-21-b-after-menu')
     await openFromBrands(page, id); const now = await picked(L.wiz(page), 'Joymus'); await L.shot(page, 'P1-D-21-c-reopened')
     verdict('D-21', on !== off && now === on, `«Brands» в меню → ${url}; бриф открыт снова (${L.wiz(page).url().replace(L.O, '')}): Joymus ${now === on ? 'выбран' : 'НЕ выбран'}`)
     await ctx.close()
