@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 1084" width="880" height="1084" font-family='"Helvetica Neue", Helvetica, Arial, sans-serif'>
+<defs><marker id="ah-line" viewBox="0 0 14 14" refX="11.5" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M3 2 L11.5 7 L3 12" fill="none" stroke="#6f6f6f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect width="880" height="1084" fill="#ffffff"/>
+<rect x="16" y="152" width="848" height="318" rx="4" fill="#fff4d9"/>
+<text x="56" y="174" text-anchor="start" font-size="14" fill="#5b6474"><tspan x="56" dy="0" font-weight="700">For sale, ціна з майданчика</tspan></text>
+<rect x="16" y="484" width="848" height="116" rx="4" fill="#fff4d9"/>
+<text x="56" y="506" text-anchor="start" font-size="14" fill="#5b6474"><tspan x="56" dy="0" font-weight="700">For sale, ціну ввів співробітник (позначка «вручну»)</tspan></text>
+<rect x="16" y="614" width="848" height="170" rx="4" fill="#f4f5f7"/>
+<text x="56" y="636" text-anchor="start" font-size="14" fill="#5b6474"><tspan x="56" dy="0" font-weight="700">Sold</tspan></text>
+<rect x="16" y="798" width="848" height="170" rx="4" fill="#e2f6f5"/>
+<text x="56" y="820" text-anchor="start" font-size="14" fill="#5b6474"><tspan x="56" dy="0" font-weight="700">Будь-яка назва</tspan></text>
+<path d="M379 1030 L428 1030" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 932 L428 932" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 862 L428 862" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 748 L428 748" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 690 L428 690" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 552 L428 552" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 424 L428 424" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 348 L428 348" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 272 L428 272" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M34 210 L428 210" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<path d="M440 126 L440 133 Q440 140 433 140 L43 140 Q34 140 34 149 L34 932" fill="none" stroke="#6f6f6f" stroke-width="2"/>
+<path d="M440 53 L440 68" fill="none" stroke="#6f6f6f" stroke-width="2" marker-end="url(#ah-line)"/>
+<g data-node="s"><rect x="310" y="14" width="260" height="39" rx="7" fill="#1e1e1e"/><text x="440" y="38.75" text-anchor="middle" font-size="15" fill="#ffffff"><tspan x="440" dy="0">Щоночі: перевірка цін</tspan></text></g>
+<g data-node="ask"><rect x="140" y="68" width="600" height="58" rx="7" fill="#ffffff" stroke="#6f6f6f" stroke-width="2"/><text x="440" y="92.75" text-anchor="middle" font-size="15" fill="#1e1e1e"><tspan x="440" dy="0">Система дізнається на Afternic, Sedo і Namecheap ціну</tspan><tspan x="440" dy="19">кожного домену For sale і кожного зайнятого домену (Sold)</tspan></text></g>
+<g data-node="same"><rect x="428" y="190.5" width="424" height="39" rx="7" fill="#ffffff" stroke="#6f6f6f" stroke-width="2"/><text x="442" y="215.25" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Оновлюється лише дата перевірки</tspan></text></g>
+<g data-node="upd"><rect x="428" y="243" width="424" height="58" rx="7" fill="#e6edff" stroke="#2f5fd0" stroke-width="2.6"/><text x="442" y="267.75" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Нова ціна записується, якщо наступного дня</tspan><tspan x="442" dy="19">вона та сама. У таблиці: стрілка й попередня ціна</tspan></text></g>
+<g data-node="jump"><rect x="428" y="319" width="424" height="58" rx="7" fill="#ffe8e6" stroke="#d1372f" stroke-width="2.2"/><text x="442" y="343.75" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Не записується. «Потрібне рішення»:</tspan><tspan x="442" dy="19">вирішує співробітник</tspan></text></g>
+<g data-node="gone"><rect x="428" y="395" width="424" height="58" rx="7" fill="#e6edff" stroke="#2f5fd0" stroke-width="2.6"/><text x="442" y="419.75" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Статус For sale знімається.</tspan><tspan x="442" dy="19">Pananames визначає: Sold або Available</tspan></text></g>
+<g data-node="own"><rect x="428" y="523" width="424" height="58" rx="7" fill="#ffe8e6" stroke="#d1372f" stroke-width="2.2"/><text x="442" y="547.75" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Запис не змінюється. «Потрібне рішення»:</tspan><tspan x="442" dy="19">взяти ціну сайту або залишити свою</tspan></text></g>
+<g data-node="found"><rect x="428" y="670.5" width="424" height="39" rx="7" fill="#e6edff" stroke="#2f5fd0" stroke-width="2.6"/><text x="442" y="695.25" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">For sale і ціна викупу — автоматично</tspan></text></g>
+<g data-node="none"><rect x="428" y="728.5" width="424" height="39" rx="7" fill="#ffffff" stroke="#6f6f6f" stroke-width="2"/><text x="442" y="753.25" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Залишається Sold</tspan></text></g>
+<g data-node="fail"><rect x="428" y="833" width="424" height="58" rx="7" fill="#ffffff" stroke="#6f6f6f" stroke-width="2"/><text x="442" y="857.75" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Нічого не змінюється. Над таблицею — рядок про збій,</tspan><tspan x="442" dy="19">у Slack — повідомлення в каналі bc-alerts</tspan></text></g>
+<g data-node="locked"><rect x="428" y="912.5" width="424" height="39" rx="7" fill="#ffffff" stroke="#6f6f6f" stroke-width="2"/><text x="442" y="937.25" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Ціна не змінюється</tspan></text></g>
+<g data-node="m"><rect x="49" y="1010.5" width="330" height="39" rx="7" fill="#1e1e1e"/><text x="214" y="1035.25" text-anchor="middle" font-size="15" fill="#ffffff"><tspan x="214" dy="0">Щоранку: перевірка доступності</tspan></text></g>
+<g data-node="reg"><rect x="428" y="1001" width="424" height="58" rx="7" fill="#ffffff" stroke="#6f6f6f" stroke-width="2"/><text x="442" y="1025.75" text-anchor="start" font-size="15" fill="#1e1e1e"><tspan x="442" dy="0">Pananames перевіряє, чи домен вільний, для всіх назв,</tspan><tspan x="442" dy="19">крім For sale: статус Available або Sold</tspan></text></g>
+<text x="48" y="201" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">майданчик показує ту саму ціну</tspan></text>
+<text x="48" y="246" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">ціна на майданчику змінилась,</tspan><tspan x="48" dy="17">але не більш ніж удвічі</tspan></text>
+<text x="48" y="339" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">ціна змінилась більш ніж удвічі</tspan></text>
+<text x="48" y="398" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">оголошення немає на жодному</tspan><tspan x="48" dy="17">з трьох майданчиків три дні поспіль</tspan></text>
+<text x="48" y="543" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">майданчик називає іншу ціну</tspan></text>
+<text x="48" y="664" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">на майданчику з’явилась</tspan><tspan x="48" dy="17">фіксована ціна в доларах</tspan></text>
+<text x="48" y="739" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">оголошень немає</tspan></text>
+<text x="48" y="853" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">майданчик не відповів</tspan></text>
+<text x="48" y="906" text-anchor="start" font-size="14" fill="#1e1e1e"><tspan x="48" dy="0">назву закріплено</tspan><tspan x="48" dy="17">за затвердженим брендом</tspan></text>
+</svg>

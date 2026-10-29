@@ -48,7 +48,7 @@ async function editSection(page, section) {
   await card.scrollIntoViewIfNeeded(); await card.getByRole('button', { name: 'Редагувати' }).click(); await L.wait(page, 2200)
 }
 async function sec(page, name) {
-  return L.wiz(page).evaluate(n => { const s = [...document.querySelectorAll('section.ui-section-card')].find(x => x.querySelector('h3')?.textContent.trim() === n); return s ? s.innerText.replace(/\n+/g, ' | ').slice(0, 200) : 'none' }, name)
+  return L.wiz(page).evaluate(n => { const s = [...document.querySelectorAll('section.ui-section-card')].find(x => x.querySelector('h3')?.textContent.trim() === n); return s ? s.innerText.replace(/\n+/g, ' | ').slice(-400) : 'none' }, name)
 }
 async function submitState(page) {
   return L.wiz(page).evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /На погодження CEO|Відправити в роботу/.test(x.textContent)); return b ? `${b.textContent.trim()}${b.disabled ? ' [off]' : ' [on]'}` : 'none' })
