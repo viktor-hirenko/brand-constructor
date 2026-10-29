@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { OrderListItem } from '@brand-constructor/shared'
 import { briefsForKind, forBriefLabel } from '@/utils/orderBriefs'
-import { createdNamesGroups, createdNamesSummary, createdSummary, availabilityLabel, ORDER_STATE_BADGES, orderBadge, orderedSummary, orderKindLabel, orderSectionBadge, orderStatusNote } from '@/utils/orderDisplay'
+import { createdNamesGroups, createdNamesSummary, createdSummary, deadlineMark, availabilityLabel, ORDER_STATE_BADGES, orderBadge, orderedSummary, orderKindLabel, orderSectionBadge, orderStatusNote } from '@/utils/orderDisplay'
 
 /*
  * «For brief» on the library pages and the words of the Orders pages
@@ -104,6 +104,45 @@ describe('the words', () => {
 
   it('the order page still says what is new', () => {
     expect(orderedSummary(['concept', 'internalNaming'])).toBe('новий концепт і новий Internal Naming')
+  })
+
+  // The table is the history of orders: it must say whether one was made in time (owner, 07.10).
+  describe('the deadline of an order', () => {
+    const at = (day: string) => new Date(`${day}T12:00:00`)
+    const order = (over: Partial<Parameters<typeof deadlineMark>[0]> = {}) => ({
+      state: 'open' as const,
+      deadline: '2026-11-20',
+      readyAt: null,
+      ...over,
+    })
+
+    it('in work and the deadline day has passed: overdue', () => {
+      expect(deadlineMark(order(), at('2026-11-21'))).toBe('overdue')
+    })
+
+    it('the deadline day itself is still in time', () => {
+      expect(deadlineMark(order(), at('2026-11-20'))).toBeNull()
+      expect(deadlineMark(order(), at('2026-11-01'))).toBeNull()
+    })
+
+    it('sent to the customer after the deadline: late — and it stays so in the archive', () => {
+      const late = order({ state: 'closed', readyAt: at('2026-11-23').toISOString() })
+      expect(deadlineMark(late, at('2026-12-30'))).toBe('late')
+    })
+
+    it('sent in time: no mark, however long ago', () => {
+      const inTime = order({ state: 'closed', readyAt: at('2026-11-20').toISOString() })
+      expect(deadlineMark(inTime, at('2027-01-15'))).toBeNull()
+    })
+
+    it('a cancelled or closed order that was never sent is not overdue', () => {
+      expect(deadlineMark(order({ state: 'cancelled' }), at('2026-12-01'))).toBeNull()
+      expect(deadlineMark(order({ state: 'closed' }), at('2026-12-01'))).toBeNull()
+    })
+
+    it('no deadline — an Internal Naming alone has none — no mark', () => {
+      expect(deadlineMark(order({ deadline: null }), at('2026-12-01'))).toBeNull()
+    })
   })
 
   it('has a badge for every state', () => {

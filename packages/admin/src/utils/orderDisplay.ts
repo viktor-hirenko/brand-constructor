@@ -101,6 +101,41 @@ export function formatOrderDate(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('uk-UA')
 }
 
+/** The calendar day of a moment where the reader is, as `2026-11-20` — the form of a deadline. */
+function localDay(date: Date): string {
+  const two = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`
+}
+
+/**
+ * Whether the order kept its deadline — the one mark of the dates in the
+ * orders table (owner, 07.10: the table is the history of orders, and it did
+ * not say whether an order was made in time).
+ * - `overdue`: the order is still in work and the deadline day has passed;
+ * - `late`: it was sent to the customer on a day after the deadline.
+ * The deadline day itself is still in time. An order without a deadline (an
+ * Internal Naming alone has none) and a cancelled one get no mark.
+ */
+export type DeadlineMark = 'overdue' | 'late' | null
+
+export function deadlineMark(
+  order: { state: OrderState; deadline: string | null; readyAt: string | null },
+  now: Date
+): DeadlineMark {
+  if (!order.deadline || !/^\d{4}-\d{2}-\d{2}$/.test(order.deadline)) return null
+  if (order.readyAt) {
+    const ready = new Date(order.readyAt)
+    return !Number.isNaN(ready.getTime()) && localDay(ready) > order.deadline ? 'late' : null
+  }
+  return order.state === 'open' && localDay(now) > order.deadline ? 'overdue' : null
+}
+
+/** The tooltips of the two marks. */
+export const DEADLINE_MARK_TITLES: Record<Exclude<DeadlineMark, null>, string> = {
+  overdue: 'Дедлайн минув, замовлення ще в роботі',
+  late: 'Відправлено замовнику пізніше дедлайну',
+}
+
 /** A bare `2026-11-20` from a form answer as `20.11.2026`; any other text as is. */
 export function formatAnswerValue(value: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)

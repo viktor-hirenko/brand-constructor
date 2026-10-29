@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { OrderListResponse, OrderTab } from '@brand-constructor/shared'
+import type { OrderListItem, OrderListResponse, OrderTab } from '@brand-constructor/shared'
 import { apiGet } from '@/composables/useApi'
 import { useListPolling } from '@/composables/useListPolling'
 import {
   orderBadge,
   createdNamesGroups,
+  deadlineMark,
+  DEADLINE_MARK_TITLES,
   formatOrderDate,
   formatAnswerValue,
   orderKindLabel,
@@ -26,6 +28,10 @@ const MADE_GLYPHS: Record<CreatedKind, string> = { concept: lightbulb, naming: t
  */
 
 const router = useRouter()
+
+// One «now» for the page: a row does not turn overdue while it is being read.
+const now = new Date()
+const mark = (item: OrderListItem) => deadlineMark(item, now)
 
 const TABS: { key: OrderTab; label: string }[] = [
   { key: 'open', label: 'Відкриті' },
@@ -89,8 +95,9 @@ useListPolling(() => load({ silent: true }))
             <th>Бриф</th>
             <th>Замовлено</th>
             <th>Замовник</th>
-            <th>Відправлено</th>
-            <th>Дедлайн</th>
+            <th>Дата замовлення</th>
+            <th>Зробити до</th>
+            <th>Готово</th>
             <th>Створено</th>
             <th>Стан</th>
           </tr>
@@ -115,7 +122,18 @@ useListPolling(() => load({ silent: true }))
             </td>
             <td>{{ item.authorName }}</td>
             <td>{{ formatOrderDate(item.sentToWorkAt) }}</td>
-            <td>{{ item.deadline ? formatAnswerValue(item.deadline) : '—' }}</td>
+            <td
+              :class="{ 'orders-view__date--missed': mark(item) === 'overdue' }"
+              :title="mark(item) === 'overdue' ? DEADLINE_MARK_TITLES.overdue : undefined"
+            >
+              {{ item.deadline ? formatAnswerValue(item.deadline) : '—' }}
+            </td>
+            <td
+              :class="{ 'orders-view__date--missed': mark(item) === 'late' }"
+              :title="mark(item) === 'late' ? DEADLINE_MARK_TITLES.late : undefined"
+            >
+              {{ formatOrderDate(item.readyAt) }}
+            </td>
             <td class="orders-view__made" :title="createdNamesGroups(item.createdNames).full || undefined">
               <span
                 v-for="group in createdNamesGroups(item.createdNames).groups"
@@ -274,6 +292,13 @@ useListPolling(() => load({ silent: true }))
 
   &__made-more {
     color: $color-text-secondary;
+  }
+
+  // A missed deadline: the date in red, the reason in the tooltip. Under the
+  // table, or the cell's own text colour wins.
+  &__table &__date--missed {
+    color: $color-danger-hover;
+    font-weight: $font-weight-medium;
   }
 
   &__kind {
